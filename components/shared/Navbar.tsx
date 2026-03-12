@@ -174,18 +174,22 @@ export default function Navbar() {
             </div>
           
             {isLoggedIn ? (
-              <>
-              <Link href="/admin" className="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+              <div className="d-flex flex-column gap-2">
+                <div data-bs-dismiss="offcanvas">
+                  <Link href="/admin" className="btn btn-primary w-100 rounded-pill d-flex align-items-center justify-content-center py-2 fw-bold">
                     ড্যাশবোর্ড
                   </Link>
-              <button onClick={handleLogout} data-bs-dismiss="offcanvas" className="btn btn-outline-danger w-100 rounded-pill d-flex align-items-center justify-content-center py-2 fw-bold">
-                <LogOut size={18} className="me-2" /> লগআউট করুন
-              </button>
-              </>
+                </div>
+                <button onClick={handleLogout} data-bs-dismiss="offcanvas" className="btn btn-outline-danger w-100 rounded-pill d-flex align-items-center justify-content-center py-2 fw-bold">
+                  <LogOut size={18} className="me-2" /> লগআউট করুন
+                </button>
+              </div>
             ) : (
-              <Link href="/login" data-bs-dismiss="offcanvas" className="btn btn-success w-100 rounded-pill d-flex align-items-center justify-content-center py-2 text-white shadow-sm fw-bold">
-                <LogIn size={18} className="me-2" /> অ্যাডমিন লগিন
-              </Link>
+              <div data-bs-dismiss="offcanvas">
+                <Link href="/login" className="btn btn-success w-100 rounded-pill d-flex align-items-center justify-content-center py-2 text-white shadow-sm fw-bold">
+                  <LogIn size={18} className="me-2" /> অ্যাডমিন লগিন
+                </Link>
+              </div>
             )}
           </div>
         </div>
