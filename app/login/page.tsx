@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import AppHeader from "@/components/shared/AppHeader";
 import { Lock, LogIn } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -33,7 +32,7 @@ export default function LoginPage() {
 
   return (
     <div className="container py-5 fade-in">
-      <AppHeader />
+    
       <div className="row justify-content-center mt-4">
         <div className="col-md-6 col-lg-5">
           <div className="card shadow-sm border-0 rounded-4 p-4 p-md-5">
