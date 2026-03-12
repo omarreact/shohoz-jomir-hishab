@@ -2,12 +2,16 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // রিডাইরেক্ট করার জন্য
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Save, MessageSquare, Send, Trash2 } from "lucide-react";
 import { doc, getDoc, updateDoc, collection, addDoc, query, orderBy, getDocs, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import type { BlogPost } from "../page";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 interface Comment {
   id: string;
@@ -27,11 +31,9 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
   const [editData, setEditData] = useState({ title: "", content: "" });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
-  // লোডিং স্টেটগুলো
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Comment Form State
   const [newCommentName, setNewCommentName] = useState("");
   const [newCommentText, setNewCommentText] = useState("");
 
@@ -55,7 +57,6 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data() as BlogPost;
-        // সমাধান: ...data আগে দেওয়া হয়েছে এবং id পরে দেওয়া হয়েছে/page.tsx]
         setPost({ ...data, id: docSnap.id }); 
         setEditData({ title: data.title, content: data.content });
       }
@@ -63,7 +64,6 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
       const q = query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "asc"));
       const querySnapshot = await getDocs(q);
       const fetchedComments = querySnapshot.docs.map(doc => ({
-        // এখানেও একই সমাধান করা হয়েছে
         ...doc.data(),
         id: doc.id
       })) as Comment[];
@@ -93,10 +93,10 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
       setIsDeleting(true);
       try {
         await deleteDoc(doc(db, "posts", postId));
-        router.push("/blog"); // ডিলিট হলে ব্লগ লিস্টে রিডাইরেক্ট করবে
+        router.push("/blog"); 
       } catch (error) {
         console.error("Error deleting post:", error);
-        setIsDeleting(false); // ফেইল হলে লোডিং বন্ধ করবে
+        setIsDeleting(false); 
       }
     }
   };
@@ -121,6 +121,18 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+  };
+
   if (!post) return <div className="text-center py-5 mt-5 text-muted fade-in">পোস্ট লোড হচ্ছে...</div>;
 
   return (
@@ -132,12 +144,21 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
       <div className="row justify-content-center">
         <div className="col-lg-8">
           
-          {/* Post Content */}
           <div className="card shadow-sm border-0 rounded-4 p-4 p-md-5 mb-4">
             {isEditing ? (
               <>
-                <input type="text" className="form-control form-control-lg mb-3 fw-bold" value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
-                <textarea className="form-control mb-4" rows={10} value={editData.content} onChange={e => setEditData({...editData, content: e.target.value})}></textarea>
+                <input type="text" className="form-control form-control-lg mb-4 fw-bold" value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
+                
+                <div className="bg-white rounded mb-4 border" style={{ minHeight: "350px", paddingBottom: "40px" }}>
+                  <ReactQuill 
+                    theme="snow" 
+                    value={editData.content} 
+                    onChange={val => setEditData({...editData, content: val})} 
+                    modules={quillModules}
+                    style={{ height: "300px" }}
+                  />
+                </div>
+
                 <div className="d-flex gap-2">
                   <button onClick={handleSavePost} disabled={isSaving} className="btn btn-success rounded-pill px-4 d-flex align-items-center">
                     {isSaving ? <span className="spinner-border spinner-border-sm me-2"></span> : <Save size={18} className="me-2"/>} 
@@ -162,12 +183,18 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
                   )}
                 </div>
                 <h2 className="fw-bold mb-4 text-dark lh-base">{post.title}</h2>
-                <div className="text-secondary fs-5 lh-lg" style={{ whiteSpace: "pre-wrap" }}>{post.content}</div>
+                
+                {/* যেহেতু এখন ডাটাবেসে HTML কোড (বোল্ড, ছবি ইত্যাদি) জমা হবে, 
+                  তাই সেগুলোকে ব্রাউজারে সুন্দরভাবে দেখানোর জন্য dangerouslySetInnerHTML ব্যবহার করতে হবে। 
+                */}
+                <div 
+                  className="text-secondary fs-5 lh-lg blog-content" 
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
               </>
             )}
           </div>
 
-          {/* Comment Section */}
           <div className="card shadow-sm border-0 rounded-4 p-4 p-md-5">
             <h5 className="fw-bold mb-4 d-flex align-items-center">
               <MessageSquare size={20} className="me-2 text-success" /> মন্তব্যসমূহ ({comments.length})

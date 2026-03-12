@@ -18,10 +18,12 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-quill-new": "^3.8.3",
     "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@types/node": "25.3.5",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",

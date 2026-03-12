@@ -6,6 +6,14 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+// ReactQuill ডাইনামিক ইমপোর্ট
+const ReactQuill = dynamic(() => import("react-quill-new"), { 
+  ssr: false,
+  loading: () => <p className="text-muted py-3">এডিটর লোড হচ্ছে...</p>
+});
 
 export interface BlogPost {
   id: string;
@@ -22,7 +30,6 @@ export default function BlogList() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // লোডিং স্টেটগুলো
   const [isPublishing, setIsPublishing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -52,9 +59,11 @@ export default function BlogList() {
 
   const handleAddPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.title || !newPost.content) return alert("সব ফিল্ড পূরণ করুন");
+    if (!newPost.title || !newPost.content || newPost.content === "<p><br></p>") {
+      return alert("সব ফিল্ড পূরণ করুন");
+    }
     
-    setIsPublishing(true); // পাবলিশ লোডিং শুরু
+    setIsPublishing(true);
     try {
       const docRef = await addDoc(collection(db, "posts"), {
         title: newPost.title,
@@ -75,22 +84,40 @@ export default function BlogList() {
     } catch (error) {
       console.error("Error adding post: ", error);
     } finally {
-      setIsPublishing(false); // পাবলিশ লোডিং শেষ
+      setIsPublishing(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm("সত্যিই ডিলিট করতে চান?")) {
-      setDeletingId(id); // ডিলিট লোডিং শুরু
+      setDeletingId(id);
       try {
         await deleteDoc(doc(db, "posts", id));
         setPosts(posts.filter(p => p.id !== id));
       } catch (error) {
         console.error("Error deleting post: ", error);
       } finally {
-        setDeletingId(null); // ডিলিট লোডিং শেষ
+        setDeletingId(null);
       }
     }
+  };
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+  };
+
+  // HTML ট্যাগ রিমুভ করে শুধু টেক্সট দেখানোর ফাংশন (ব্লগ কার্ডের জন্য)
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
   };
 
   return (
@@ -115,16 +142,22 @@ export default function BlogList() {
           <h5 className="fw-bold mb-3 text-dark">নতুন পোস্ট লিখুন</h5>
           <form onSubmit={handleAddPost}>
             <input 
-              type="text" className="form-control bg-white mb-3" placeholder="পোস্টের শিরোনাম"
+              type="text" className="form-control bg-white mb-3 fw-bold" placeholder="পোস্টের শিরোনাম"
               value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})}
               required
             />
-            <textarea 
-              className="form-control bg-white mb-3" rows={5} placeholder="বিস্তারিত লিখুন..."
-              value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})}
-              required
-            ></textarea>
-            <button type="submit" disabled={isPublishing} className="btn btn-success fw-bold px-4 rounded-pill d-flex align-items-center">
+            {/* Textarea এর বদলে ReactQuill */}
+            <div className="bg-white rounded mb-4" style={{ minHeight: "350px", paddingBottom: "40px" }}>
+              <ReactQuill 
+                theme="snow" 
+                value={newPost.content} 
+                onChange={(val) => setNewPost({...newPost, content: val})} 
+                modules={quillModules}
+                style={{ height: "300px" }}
+                placeholder="এখানে আপনার ব্লগের লেখা শুরু করুন... ছবি যোগ করতে ওপরের ইমেজ আইকনে ক্লিক করুন।"
+              />
+            </div>
+            <button type="submit" disabled={isPublishing} className="btn btn-success fw-bold px-4 rounded-pill d-flex align-items-center mt-2">
               {isPublishing ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
               {isPublishing ? "পাবলিশ হচ্ছে..." : "পাবলিশ করুন"}
             </button>
@@ -149,7 +182,8 @@ export default function BlogList() {
                     <small className="text-success fw-bold mb-2 d-inline-block bg-success bg-opacity-10 px-2 py-1 rounded">{post.date}</small>
                     <h5 className="fw-bold mb-3 text-dark mt-2">{post.title}</h5>
                     <p className="text-muted small mb-0" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {post.content}
+                      {/* HTML ট্যাগ রিমুভ করে শুধু নরমাল টেক্সট দেখানো হচ্ছে */}
+                      {stripHtml(post.content)}
                     </p>
                   </div>
                   <div className="card-footer bg-transparent border-top p-4 d-flex justify-content-between align-items-center">
