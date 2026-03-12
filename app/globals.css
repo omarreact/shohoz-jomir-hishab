@@ -1,0 +1,274 @@
+:root {
+  /* =========================================
+     বাংলাদেশের পতাকার অফিশিয়াল কালার কোড
+     ========================================= */
+  --bd-green: #006a4e; /* Bottle Green */
+  --bd-red: #f42a41;   /* Red */
+
+  /* Light Theme Colors */
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+
+  /* Bootstrap Variable Overrides (লাইট মোডের জন্য) */
+  --bs-success: var(--bd-green);
+  --bs-success-rgb: 0, 106, 78;
+  --bs-danger: var(--bd-red);
+  --bs-danger-rgb: 244, 42, 65;
+  --bs-primary: var(--bd-green);
+  --bs-primary-rgb: 0, 106, 78;
+
+  --bs-body-bg: var(--background);
+  --bs-body-color: var(--foreground);
+}
+
+/* =========================================
+   উন্নত ডার্ক মোড (Premium Dark Mode)
+   ========================================= */
+html[data-theme="dark"] {
+  --background: #0b110f;
+  --foreground: #e2e8f0;
+  --card-bg: #131c19;
+  --border-color: #23332d;
+
+  /* ডার্ক মোডে লাল এবং সবুজ রঙকে একটু উজ্জ্বল করা হয়েছে (যাতে কন্ট্রাস্ট ভালো হয়) */
+  --bs-success: #00c490;
+  --bs-success-rgb: 0, 196, 144;
+  --bs-danger: #ff5a6e;
+  --bs-danger-rgb: 255, 90, 110;
+  --bs-primary: #00c490;
+  --bs-primary-rgb: 0, 196, 144;
+}
+
+/* =========================================
+   কোর থিম অ্যাপ্লিকেশন (Core Overrides)
+   ========================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family:
+    var(--font-tiro-bangla),
+    serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* =========================================
+   ডার্ক মোডের জন্য বুটস্ট্র্যাপ ক্লাস ওভাররাইড
+   ========================================= */
+
+/* ব্যাকগ্রাউন্ড কালার ফিক্স */
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .dropdown-menu {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .bg-light {
+  background-color: #1a2521 !important; /* ডার্ক মোডের জন্য হালকা স্লেট রং */
+}
+
+html[data-theme="dark"] .bg-dark {
+  background-color: #050807 !important; /* ডার্ক মোডের জন্য পিওর ডার্ক */
+}
+
+/* টেক্সট ও ফন্ট কালার ফিক্স */
+html[data-theme="dark"] .text-dark,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6 {
+  color: #f8fafc !important; /* ডার্ক মোডে সব টেক্সট সাদা হয়ে যাবে */
+}
+
+html[data-theme="dark"] .text-secondary,
+html[data-theme="dark"] .text-muted {
+  color: #94a3b8 !important; /* ডার্ক মোডে হালকা ধূসর রং */
+}
+
+/* বর্ডার কালার ফিক্স */
+html[data-theme="dark"] .border, 
+html[data-theme="dark"] .border-top, 
+html[data-theme="dark"] .border-bottom, 
+html[data-theme="dark"] .border-start, 
+html[data-theme="dark"] .border-end {
+  border-color: var(--border-color) !important;
+}
+
+/* =========================================
+   টেবিল ও ফর্ম ইনপুট ডার্ক মোড সাপোর্ট
+   ========================================= */
+html[data-theme="dark"] .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--foreground);
+  --bs-table-border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .table-light {
+  --bs-table-bg: #1a2521;
+  --bs-table-color: var(--foreground);
+}
+
+html[data-theme="dark"] .form-control, 
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] textarea {
+  background-color: #0f1613 !important;
+  color: #e2e8f0 !important;
+  border-color: #23332d !important;
+}
+
+html[data-theme="dark"] .form-control:focus, 
+html[data-theme="dark"] .form-select:focus {
+  border-color: var(--bs-success) !important;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-success-rgb), 0.25) !important;
+}
+
+html[data-theme="dark"] .form-control::placeholder {
+  color: #64748b !important;
+}
+
+/* =========================================
+   বাটন ফিক্স (Button Overrides)
+   ========================================= */
+.btn-success, .btn-danger, .btn-primary {
+  color: #ffffff !important;
+}
+
+/* Outline Secondary Button Fix */
+html[data-theme="dark"] .btn-outline-secondary {
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+html[data-theme="dark"] .btn-outline-secondary:hover,
+html[data-theme="dark"] .btn-outline-secondary.active {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Outline Dark Button Fix */
+html[data-theme="dark"] .btn-outline-dark {
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+html[data-theme="dark"] .btn-outline-dark:hover,
+html[data-theme="dark"] .btn-outline-dark.active {
+  background-color: #e2e8f0 !important;
+  color: #0b110f !important;
+}
+
+/* Solid Buttons Fix */
+html[data-theme="dark"] .btn-dark {
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .btn-white {
+  background-color: #131c19 !important;
+  border-color: #23332d !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .btn-light {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme="dark"] .btn-light:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Close Icon Fix (X button) */
+html[data-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Accordion Component Fixes (For FAQ / User Manuals) */
+html[data-theme="dark"] .accordion-button {
+  background-color: var(--card-bg) !important;
+  color: var(--foreground) !important;
+}
+html[data-theme="dark"] .accordion-button::after {
+  filter: invert(1);
+}
+html[data-theme="dark"] .accordion-button:not(.collapsed) {
+  background-color: rgba(var(--bs-success-rgb), 0.1) !important;
+  color: var(--bs-success) !important;
+}
+
+/* =========================================
+   Custom Scrollbar
+   ========================================= */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
+::-webkit-scrollbar-thumb:hover { background: var(--bs-success); }
+
+/* =========================================
+   Animations & Effects
+   ========================================= */
+.fade-in {
+  animation: fadeIn 0.4s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hover-shadow { transition: all 0.3s ease; }
+.hover-shadow:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.blur-effect {
+  pointer-events: none;
+  z-index: 0;
+}
+/* =========================================
+   ডার্ক গ্লাসি ব্যানার ডিজাইন (hero-banner)
+   ========================================= */
+
+/* লাইট মোডের জন্য ডিফল্ট স্টাইল (আগে যা ছিল) */
+.hero-banner {
+  background-color: #f8fafc; /* লাইট ব্যাকগ্রাউন্ড */
+}
+
+/* উন্নত ডার্ক গ্লাসি মোড (শুধুমাত্র ডার্ক মোডে) */
+html[data-theme="dark"] .hero-banner {
+  background-color: rgba(19, 28, 25, 0.65) !important; /* ট্রান্সপারেন্ট গাঢ় সবুজ/কালো রং */
+  backdrop-filter: blur(15px); /* গ্লাসি ব্লার ইফেক্ট */
+  -webkit-backdrop-filter: blur(15px); /* সাফারি ব্রাউজারের জন্য */
+  
+  /* আগের বর্ডার ডিজাইন হুবহু বজায় রাখা হয়েছে (বোঝার সুবিধার জন্য) */
+  border-bottom: 1px solid rgba(0, 196, 144, 0.1) !important; 
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); /* গ্লাসের নিচে হালকা শ্যাডো */
+}
+
+/* ডার্ক মোডে ব্যানারের ভেতরের blur orbs (সবুজ গ্লো) কে একটু উজ্জ্বল করা হচ্ছে */
+html[data-theme="dark"] .blur-effect {
+  opacity: 0.6 !important;
+  filter: blur(100px) !important;
+}
