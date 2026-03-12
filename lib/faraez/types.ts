@@ -5,6 +5,10 @@ export interface AssetsInput {
   land: number;
   gold: number;
   cash: number;
+  // নতুন যুক্ত করা হলো (খরচসমূহ)
+  funeralCost: number; // কাফন-দাফন খরচ
+  debt: number;        // ঋণ
+  wasiyat: number;     // অসিয়ত (সর্বোচ্চ ১/৩ অংশ)
 }
 
 export interface HeirsInput {

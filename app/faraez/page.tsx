@@ -27,7 +27,7 @@ const FaraezResult = dynamic(() => import("@/components/faraez/FaraezResult"), {
 export default function FaraezPage() {
   const [religion, setReligion] = useState<Religion>("muslim");
   const [gender, setGender] = useState<DeceasedGender>("male");
-  const [assets, setAssets] = useState<AssetsInput>({ land: 0, gold: 0, cash: 0 });
+  const [assets, setAssets] = useState<AssetsInput>({ land: 0, gold: 0, cash: 0, funeralCost: 0, debt: 0, wasiyat: 0 });
   const exportRef = useRef<HTMLDivElement | null>(null);
   
   const [heirs, setHeirs] = useState<HeirsInput>({
@@ -50,55 +50,46 @@ export default function FaraezPage() {
     }
   };
 
+
   const downloadMultiPagePDF = async () => {
     if (!exportRef.current) return;
-    const element = exportRef.current;
-    const originalWidth = element.style.width;
-    element.style.width = "794px";
+    
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      // @ts-ignore
+      const html2pdf = (await import("html2pdf.js")).default;
       
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      pdf.save("Faraez_Result.pdf");
+      const opt = {
+        margin:       [15, 10, 15, 10] as [number, number, number, number], 
+        filename:     'Faraez_Result.pdf',
+        image:        { type: 'jpeg' as 'jpeg', quality: 0.98 }, 
+        html2canvas:  { scale: 2, useCORS: true },
+        // এখানে orientation-এ as 'portrait' যুক্ত করে এরর ফিক্স করা হলো
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as 'portrait' }, 
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      
+      html2pdf().set(opt).from(exportRef.current).save();
     } catch (err) {
       console.error(err);
       alert("PDF তৈরিতে সমস্যা হয়েছে।");
-    } finally {
-      element.style.width = originalWidth;
     }
   };
 
-  const downloadImage = async () => {
-    if (!exportRef.current) return;
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(exportRef.current, { scale: 2, backgroundColor: "#ffffff" });
-      const link = document.createElement("a");
-      link.download = "Faraez_Result.jpg";
-      link.href = canvas.toDataURL("image/jpeg");
-      link.click();
-    } catch (err) {
-      console.error(err);
-      alert("ইমেজ তৈরিতে সমস্যা হয়েছে।");
-    }
-  };
+
+  // const downloadImage = async () => {
+  //   if (!exportRef.current) return;
+  //   try {
+  //     const html2canvas = (await import("html2canvas")).default;
+  //     const canvas = await html2canvas(exportRef.current, { scale: 2, backgroundColor: "#ffffff" });
+  //     const link = document.createElement("a");
+  //     link.download = "Faraez_Result.jpg";
+  //     link.href = canvas.toDataURL("image/jpeg");
+  //     link.click();
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("ইমেজ তৈরিতে সমস্যা হয়েছে।");
+  //   }
+  // };
 
   const downloadExcel = () => {
     if (!results || results.length === 0) return;

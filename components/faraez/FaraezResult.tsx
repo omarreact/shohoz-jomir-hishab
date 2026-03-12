@@ -1,6 +1,9 @@
+"use client";
+
 import { HeirResult } from "@/lib/faraez/types";
 import { toBn } from "@/lib/utils";
-import { Scale, Info, FileDown, FileSpreadsheet } from "lucide-react";
+import { Scale, Info, FileDown, FileSpreadsheet, PieChart as PieChartIcon } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Props {
   results: HeirResult[];
@@ -9,17 +12,28 @@ interface Props {
   onDownloadExcel: () => void;
 }
 
+// পাই চার্টের জন্য কিছু সুন্দর রঙের তালিকা
+const COLORS = ['#198754', '#0d6efd', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#0dcaf0', '#adb5bd'];
+
 export default function FaraezResult({ 
   results, exportRef, onDownloadPDF, onDownloadExcel
 }: Props) {
   if (!results || results.length === 0) return null;
 
   const validResults = results.filter((r) => r.count > 0);
+  
+  // পাই চার্টের জন্য ডাটা প্রস্তুত করা (যারা শুধু সম্পত্তি পেয়েছে তাদের জন্য)
+  const pieData = validResults
+    .filter((r) => r.fraction > 0)
+    .map((r) => ({
+      name: r.count > 1 ? `${r.heirType} (${toBn(r.count)} জন)` : r.heirType,
+      value: Number((r.fraction * 100).toFixed(2)),
+    }));
 
   return (
     <div id="resultSection" className="container pb-5 fade-in mt-4">
-      <div className="card shadow rounded-4 overflow-hidden border-success">
-        <div className="card-header bg-dark text-white text-center py-3 no-print">
+      <div className="card shadow-lg rounded-4 overflow-hidden border-success border-2">
+        <div className="card-header bg-success text-white text-center py-3 no-print">
           <h5 className="mb-0 fw-bold d-flex justify-content-center align-items-center">
             <Scale className="me-2" /> বিস্তারিত বন্টন ফলাফল
           </h5>
@@ -27,25 +41,61 @@ export default function FaraezResult({
         
         {/* এই অংশটুকু PDF বা ইমেজে ডাউনলোড হবে */}
         <div ref={exportRef} className="bg-white p-4 p-md-5">
-          <div className="text-center border-bottom pb-4 mb-4">
-            <h3 className="fw-bold text-success mb-1">
+          {/* লিগ্যাল দলিলের মতো হেডার */}
+          <div className="text-center border-bottom border-success border-2 pb-4 mb-5">
+            <h2 className="fw-bold text-success mb-2">
               সম্পত্তি বন্টন (ফারায়েজ) বিবরণী
-            </h3>
-            <p className="text-muted mb-0">
-              তারিখ: {new Date().toLocaleDateString("bn-BD")}
+            </h2>
+            <p className="text-muted mb-0 fw-semibold">
+              তারিখ: {new Date().toLocaleDateString("bn-BD")} | ইসলামী শরীয়ত মোতাবেক প্রস্তুতকৃত
             </p>
           </div>
 
-          <div className="table-responsive">
-            <table className="table table-hover table-bordered mb-0 align-middle">
-              <thead className="table-light text-center align-middle">
+          {/* পাই চার্ট সেকশন */}
+          {pieData.length > 0 && (
+            <div className="row justify-content-center mb-5 align-items-center bg-light rounded-4 p-4 mx-0 shadow-sm">
+              <div className="col-md-5 text-center mb-4 mb-md-0">
+                <h5 className="fw-bold text-dark mb-3 d-flex align-items-center justify-content-center">
+                  <PieChartIcon className="me-2 text-primary" /> অংশের গ্রাফিক্যাল রূপ
+                </h5>
+                <p className="text-muted small">নিচের চার্টে ওয়ারিশদের অংশের হার দেখানো হলো</p>
+              </div>
+              <div className="col-md-7" style={{ height: "250px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, value }) => `${toBn(value)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${toBn(value)}%`} />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* বিস্তারিত টেবিল */}
+          <div className="table-responsive shadow-sm rounded-3">
+            <table className="table table-hover table-bordered mb-0 align-middle border-secondary">
+              <thead className="table-success text-center align-middle border-success">
                 <tr>
                   <th className="px-4 py-3 text-start">ওয়ারিশ</th>
                   <th className="py-3">অংশ (%)</th>
                   <th className="py-3 text-success">প্রাপ্ত জমি<br /><small>(শতাংশ)</small></th>
-                  <th className="py-3 text-warning">প্রাপ্ত স্বর্ণ<br /><small>(ভরি)</small></th>
+                  <th className="py-3 text-warning text-dark">প্রাপ্ত স্বর্ণ<br /><small>(ভরি)</small></th>
                   <th className="py-3 text-primary">প্রাপ্ত অর্থ<br /><small>(টাকা)</small></th>
-                  <th className="px-4 py-3 text-start">আইনি ব্যাখ্যা</th>
+                  <th className="px-4 py-3 text-start" style={{width: "35%"}}>আইনি ব্যাখ্যা</th>
                 </tr>
               </thead>
               <tbody>
@@ -56,22 +106,22 @@ export default function FaraezResult({
                     const heirName = res.count > 1 ? `${res.heirType} ${toBn(i)}` : res.heirType;
 
                     rows.push(
-                      <tr key={`${groupIdx}-${i}`} className={`text-center ${isExcluded ? "table-danger bg-opacity-10" : ""}`}>
+                      <tr key={`${groupIdx}-${i}`} className={`text-center ${isExcluded ? "table-danger text-muted" : "bg-white"}`}>
                         <td className="px-4 fw-bold text-start text-nowrap">{heirName}</td>
                         <td>
                           {isExcluded ? (
                             <span className="badge bg-danger">বঞ্চিত</span>
                           ) : (
-                            <span className="badge bg-secondary">{toBn((res.fraction * 100).toFixed(2))}%</span>
+                            <span className="badge bg-success bg-opacity-75 fs-6">{toBn((res.fraction * 100).toFixed(2))}%</span>
                           )}
                         </td>
                         <td className="fw-bold text-success fs-6">{res.assets.land > 0 ? toBn(res.assets.land.toFixed(3)) : "-"}</td>
-                        <td className="fw-bold text-warning fs-6">{res.assets.gold > 0 ? toBn(res.assets.gold.toFixed(3)) : "-"}</td>
+                        <td className="fw-bold text-warning text-dark fs-6">{res.assets.gold > 0 ? toBn(res.assets.gold.toFixed(3)) : "-"}</td>
                         <td className="fw-bold text-primary fs-6">{res.assets.cash > 0 ? toBn(res.assets.cash.toFixed(2)) : "-"}</td>
                         <td className="px-4 text-muted small text-start">
                           <div className="d-flex align-items-start">
-                            <Info size={14} className={`me-2 mt-1 flex-shrink-0 ${isExcluded ? 'text-danger' : 'text-primary'}`} />
-                            <span>{res.reasoning}</span>
+                            <Info size={14} className={`me-2 mt-1 flex-shrink-0 ${isExcluded ? 'text-danger' : 'text-success'}`} />
+                            <span style={{ lineHeight: "1.6" }}>{res.reasoning}</span>
                           </div>
                         </td>
                       </tr>
@@ -83,17 +133,20 @@ export default function FaraezResult({
             </table>
           </div>
           
-          <div className="text-center text-muted small border-top pt-4 mt-5">
-            * এই দলিলটি ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত। চূড়ান্ত আইনি বন্টননামার জন্য অভিজ্ঞ আইনজীবীর পরামর্শ নিন।
+          <div className="text-center text-muted small pt-5 mt-4">
+            <p className="mb-1 border-top pt-3 d-inline-block px-5 border-secondary">
+              * এই দলিলটি <strong>সহজ জমির হিসাব</strong> ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত। 
+            </p>
+            <p>চূড়ান্ত আইনি বা দাপ্তরিক কাজের জন্য অভিজ্ঞ আইনজীবী বা মুফতির পরামর্শ গ্রহণ করুন।</p>
           </div>
         </div>
         
         {/* ডাউনলোড বাটনসমূহ (এগুলো প্রিন্ট বা পিডিএফ এ আসবে না) */}
-        <div className="card-footer bg-light p-4 no-print d-flex flex-wrap justify-content-center gap-2 border-top">
-          <button onClick={onDownloadPDF} className="btn btn-danger fw-bold shadow-sm d-flex align-items-center">
-            <FileDown size={18} className="me-2" /> PDF (A4)
+        <div className="card-footer bg-light p-4 no-print d-flex flex-wrap justify-content-center gap-3 border-top border-success">
+          <button onClick={onDownloadPDF} className="btn btn-danger px-4 fw-bold shadow-sm d-flex align-items-center rounded-pill">
+            <FileDown size={18} className="me-2" /> PDF ডাউনলোড
           </button>
-          <button onClick={onDownloadExcel} className="btn btn-success fw-bold shadow-sm d-flex align-items-center">
+          <button onClick={onDownloadExcel} className="btn btn-outline-success px-4 fw-bold shadow-sm d-flex align-items-center rounded-pill">
             <FileSpreadsheet size={18} className="me-2" /> Excel (CSV)
           </button>
         </div>

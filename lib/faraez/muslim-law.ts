@@ -3,6 +3,26 @@ import { HeirsInput, HeirResult, DeceasedGender, AssetsInput } from "./types";
 export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender, assets: AssetsInput): HeirResult[] {
   let results: Omit<HeirResult, 'assets'>[] = [];
   
+  // --- নতুন লজিক: কাফন, ঋণ ও অসিয়ত বাদ দিয়ে নীট সম্পত্তি (Net Assets) বের করা ---
+  let netLand = assets.land || 0;
+  let netGold = assets.gold || 0;
+  let netCash = assets.cash || 0;
+
+  const funeral = assets.funeralCost || 0;
+  const debt = assets.debt || 0;
+  const wasiyat = assets.wasiyat || 0;
+  const totalExpenses = funeral + debt + wasiyat;
+
+  // নগদ টাকা থেকে খরচগুলো বাদ দেওয়া হচ্ছে
+  if (totalExpenses > 0) {
+    if (netCash >= totalExpenses) {
+      netCash -= totalExpenses;
+    } else {
+      netCash = 0; // নগদ টাকা কম থাকলে আপাতত জিরো হবে
+    }
+  }
+  // -------------------------------------------------------------
+
   // ১৯৬১ সালের আইন অনুযায়ী মৃত পুত্র/কন্যাকে জীবিত ধরে প্রাথমিক হিসাব হবে
   const effectiveSons = input.sons + input.deadSons;
   const effectiveDaughters = input.daughters + input.deadDaughters;
@@ -132,7 +152,6 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
     }
   }
 
-
   // --- আসাবা (Residuaries) - অবশিষ্টভোগী ---
   if (remainingShare > 0.0001) {
     if (effectiveSons > 0 || effectiveDaughters > 0) {
@@ -180,7 +199,6 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
         remainingShare = 0;
       }
     } else {
-      // অন্যান্য পুরুষ আসাবা (সিরিয়াল অনুযায়ী)
       const asabaList = [
         { name: "সহোদর ভাইয়ের পুত্র", count: input.fullBrotherSon },
         { name: "সৎ ভাই(বৈমাত্রেয়)-এর পুত্র", count: input.consBrotherSon },
@@ -200,7 +218,7 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
         if (heir.count > 0 && remainingShare > 0) {
           addResult(heir.name, heir.count, remainingShare, `নিকটতম পুরুষ আত্মীয় হিসেবে অবশিষ্টভোগী বা আসাবা হবেন (হাদিস: বুখারী ও মুসলিম)।`);
           remainingShare = 0;
-          break; // একজন আসাবা পেলে নিচের সিরিয়ালের সবাই বঞ্চিত
+          break; 
         } else if (heir.count > 0) {
            addExcluded(heir.name, heir.count, "উর্ধ্বতন অগ্রাধিকারপ্রাপ্ত ওয়ারিশ থাকায় বঞ্চিত।");
         }
@@ -222,13 +240,13 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
     });
   }
 
-  // সম্পত্তিতে রূপান্তর
+  // নতুন আপডেটেড সম্পত্তিতে রূপান্তর (Net Assets দিয়ে)
   return results.map(r => ({
     ...r,
     assets: {
-      land: r.totalShare > 0 ? (assets.land * r.fraction) : 0,
-      gold: r.totalShare > 0 ? (assets.gold * r.fraction) : 0,
-      cash: r.totalShare > 0 ? (assets.cash * r.fraction) : 0,
+      land: r.totalShare > 0 ? (netLand * r.fraction) : 0,
+      gold: r.totalShare > 0 ? (netGold * r.fraction) : 0,
+      cash: r.totalShare > 0 ? (netCash * r.fraction) : 0,
     }
   }));
 }

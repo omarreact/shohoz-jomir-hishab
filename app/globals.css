@@ -272,3 +272,31 @@ html[data-theme="dark"] .blur-effect {
   opacity: 0.6 !important;
   filter: blur(100px) !important;
 }
+@media print {
+  /* পুরো টেবিল যেন প্রয়োজন হলে পেজ ব্রেক নিতে পারে */
+  table {
+    page-break-inside: auto !important;
+  }
+  
+  /* টেবিলের রো যেন মাঝখান থেকে না কাটে */
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  
+  /* এই লাইনটি ম্যাজিকের মতো প্রতি পেজে হেডার রিপিট করবে */
+  thead {
+    display: table-header-group !important; 
+  }
+  
+  /* প্রিন্ট করার সময় যেন অন্যান্য জিনিস (যেমন বাটন, মেনু) না আসে */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* ব্যাকগ্রাউন্ড কালার যেন প্রিন্টেও সুন্দর আসে */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

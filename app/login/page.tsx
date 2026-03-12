@@ -32,7 +32,6 @@ export default function LoginPage() {
 
   return (
     <div className="container py-5 fade-in">
-    
       <div className="row justify-content-center mt-4">
         <div className="col-md-6 col-lg-5">
           <div className="card shadow-sm border-0 rounded-4 p-4 p-md-5">
