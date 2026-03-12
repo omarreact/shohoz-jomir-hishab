@@ -1,6 +1,11 @@
 import { Plus, Trash2, Users } from "lucide-react";
 import { toBn } from "@/lib/utils";
 
+// খতিয়ানের ঐতিহ্যবাহী চিহ্নসমূহ
+const anaSymbols = ["০", "১ ( / )", "২ ( // )", "৩ ( /// )", "৪ ( । )", "৫ ( ।/ )", "৬ ( ।// )", "৭ ( ।/// )", "৮ ( ॥ )", "৯ ( ॥/ )", "১০ ( ॥// )", "১১ ( ॥/// )", "১২ ( ৲ )", "১৩ ( ৲/ )", "১৪ ( ৲// )", "১৫ ( ৲/// )", "১৬ ( ১ )"];
+const koraSymbols = ["০", "১ ( / )", "২ ( // )", "৩ ( /// )"];
+const krantiSymbols = ["০", "১ ( ৴ )", "২ ( ৵ )"];
+
 export default function OwnersCard({
   owners,
   onAddOwner,
@@ -8,8 +13,8 @@ export default function OwnersCard({
   onUpdateOwner,
 }: any) {
 
-  // সিলেক্ট অপশনের জন্য ০ থেকে নির্দিষ্ট সংখ্যা পর্যন্ত লিস্ট তৈরির ফাংশন
-  const generateOptions = (max: number) => {
+  // গণ্ডা এবং তিলের জন্য সাধারণ নাম্বার জেনারেট করার ফাংশন
+  const generateNumberOptions = (max: number) => {
     return Array.from({ length: max + 1 }, (_, i) => (
       <option key={i} value={i}>
         {toBn(i)}
@@ -88,11 +93,12 @@ export default function OwnersCard({
                       <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">আনা</label>
                         <select
-                          className="form-select text-center px-1"
+                          className="form-select text-center px-0"
+                          style={{fontSize: '14px'}}
                           value={owner.a || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "a", Number(e.target.value))}
                         >
-                          {generateOptions(16)}
+                          {anaSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
                         </select>
                       </div>
                       <div className="col-4 col-md-2">
@@ -102,27 +108,29 @@ export default function OwnersCard({
                           value={owner.g || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "g", Number(e.target.value))}
                         >
-                          {generateOptions(19)}
+                          {generateNumberOptions(19)}
                         </select>
                       </div>
                       <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">কড়া</label>
                         <select
-                          className="form-select text-center px-1"
+                          className="form-select text-center px-0"
+                          style={{fontSize: '14px'}}
                           value={owner.k || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "k", Number(e.target.value))}
                         >
-                          {generateOptions(3)}
+                          {koraSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
                         </select>
                       </div>
                       <div className="col-6 col-md-3">
                         <label className="form-label small text-muted">ক্রান্তি</label>
                         <select
-                          className="form-select text-center px-1"
+                          className="form-select text-center px-0"
+                          style={{fontSize: '14px'}}
                           value={owner.kr || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "kr", Number(e.target.value))}
                         >
-                          {generateOptions(2)}
+                          {krantiSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
                         </select>
                       </div>
                       <div className="col-6 col-md-3">
@@ -132,7 +140,7 @@ export default function OwnersCard({
                           value={owner.ti || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "ti", Number(e.target.value))}
                         >
-                          {generateOptions(19)}
+                          {generateNumberOptions(19)}
                         </select>
                       </div>
                     </div>
