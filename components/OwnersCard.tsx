@@ -1,5 +1,4 @@
 import { Plus, Trash2, Users } from "lucide-react";
-import { FULL_UNIT_TIL } from "@/lib/constants";
 import { toBn } from "@/lib/utils";
 
 export default function OwnersCard({
@@ -8,6 +7,16 @@ export default function OwnersCard({
   onRemoveOwner,
   onUpdateOwner,
 }: any) {
+
+  // সিলেক্ট অপশনের জন্য ০ থেকে নির্দিষ্ট সংখ্যা পর্যন্ত লিস্ট তৈরির ফাংশন
+  const generateOptions = (max: number) => {
+    return Array.from({ length: max + 1 }, (_, i) => (
+      <option key={i} value={i}>
+        {toBn(i)}
+      </option>
+    ));
+  };
+
   return (
     <div className="col-lg-6">
       <div className="card h-100 shadow-sm border-primary">
@@ -42,73 +51,89 @@ export default function OwnersCard({
                     <input
                       type="text"
                       className="form-control"
-                      value={owner.name || ""}
-                      onChange={(e) => onUpdateOwner(owner.id, "name", e.target.value)}
+                      value={owner.n || ""}
+                      onChange={(e) => onUpdateOwner(owner.id, "n", e.target.value)}
                       placeholder={`অংশীদার ${toBn(index + 1)}`}
                     />
                   </div>
-                  <div className="col-12">
-                    <label className="form-label small fw-bold text-secondary">সম্পর্কের ধরন</label>
+                  
+                  <div className="col-md-4">
+                    <label className="form-label small fw-bold text-secondary">সম্পর্ক</label>
+                    <select
+                      className="form-select"
+                      value={owner.rType || "পিতা"}
+                      onChange={(e) => onUpdateOwner(owner.id, "rType", e.target.value)}
+                    >
+                      <option value="পিতা">পিতা</option>
+                      <option value="মাতা">মাতা</option>
+                      <option value="স্বামী">স্বামী</option>
+                      <option value="স্ত্রী">স্ত্রী</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-8">
+                    <label className="form-label small fw-bold text-secondary">পিতা/স্বামীর নাম</label>
                     <input
                       type="text"
                       className="form-control"
-                      value={owner.relation || ""}
-                      onChange={(e) => onUpdateOwner(owner.id, "relation", e.target.value)}
-                      placeholder="যেমন: পিতা/মাতা/ভাই/বোন"
+                      value={owner.rName || ""}
+                      onChange={(e) => onUpdateOwner(owner.id, "rName", e.target.value)}
+                      placeholder="নাম লিখুন"
                     />
                   </div>
+
                   <div className="col-12 mt-4">
                     <h6 className="fw-bold text-dark mb-3 border-bottom pb-2">খতিয়ানের হিস্যা (অংশ)</h6>
                     <div className="row g-2">
-                      <div className="col-3">
+                      <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">আনা</label>
-                        <input
-                          type="number"
-                          className="form-control text-center"
-                          value={owner.share?.ana || ""}
-                          onChange={(e) => onUpdateOwner(owner.id, "ana", e.target.value)}
-                          min="0" max="16" placeholder="0"
-                        />
+                        <select
+                          className="form-select text-center px-1"
+                          value={owner.a || 0}
+                          onChange={(e) => onUpdateOwner(owner.id, "a", Number(e.target.value))}
+                        >
+                          {generateOptions(16)}
+                        </select>
                       </div>
-                      <div className="col-3">
+                      <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">গন্ডা</label>
-                        <input
-                          type="number"
-                          className="form-control text-center"
-                          value={owner.share?.gonda || ""}
-                          onChange={(e) => onUpdateOwner(owner.id, "gonda", e.target.value)}
-                          min="0" max="19" placeholder="0"
-                        />
+                        <select
+                          className="form-select text-center px-1"
+                          value={owner.g || 0}
+                          onChange={(e) => onUpdateOwner(owner.id, "g", Number(e.target.value))}
+                        >
+                          {generateOptions(19)}
+                        </select>
                       </div>
-                      <div className="col-3">
+                      <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">কড়া</label>
-                        <input
-                          type="number"
-                          className="form-control text-center"
-                          value={owner.share?.kora || ""}
-                          onChange={(e) => onUpdateOwner(owner.id, "kora", e.target.value)}
-                          min="0" max="3" placeholder="0"
-                        />
+                        <select
+                          className="form-select text-center px-1"
+                          value={owner.k || 0}
+                          onChange={(e) => onUpdateOwner(owner.id, "k", Number(e.target.value))}
+                        >
+                          {generateOptions(3)}
+                        </select>
                       </div>
-                      <div className="col-3">
+                      <div className="col-6 col-md-3">
                         <label className="form-label small text-muted">ক্রান্তি</label>
-                        <input
-                          type="number"
-                          className="form-control text-center"
-                          value={owner.share?.kranti || ""}
-                          onChange={(e) => onUpdateOwner(owner.id, "kranti", e.target.value)}
-                          min="0" max="2" placeholder="0"
-                        />
+                        <select
+                          className="form-select text-center px-1"
+                          value={owner.kr || 0}
+                          onChange={(e) => onUpdateOwner(owner.id, "kr", Number(e.target.value))}
+                        >
+                          {generateOptions(2)}
+                        </select>
                       </div>
-                      <div className="col-12 mt-2">
+                      <div className="col-6 col-md-3">
                         <label className="form-label small text-muted">তিল</label>
-                        <input
-                          type="number"
-                          className="form-control text-center w-50"
-                          value={owner.share?.til || ""}
-                          onChange={(e) => onUpdateOwner(owner.id, "til", e.target.value)}
-                          min="0" max="19" placeholder="0"
-                        />
+                        <select
+                          className="form-select text-center px-1"
+                          value={owner.ti || 0}
+                          onChange={(e) => onUpdateOwner(owner.id, "ti", Number(e.target.value))}
+                        >
+                          {generateOptions(19)}
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -121,3 +146,4 @@ export default function OwnersCard({
     </div>
   );
 }
+
