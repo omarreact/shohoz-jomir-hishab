@@ -1,10 +1,7 @@
 import { Plus, Trash2, Users } from "lucide-react";
 import { toBn } from "@/lib/utils";
-
-// খতিয়ানের ঐতিহ্যবাহী চিহ্নসমূহ
-const anaSymbols = ["০", "১ ( / )", "২ ( // )", "৩ ( /// )", "৪ ( । )", "৫ ( ।/ )", "৬ ( ।// )", "৭ ( ।/// )", "৮ ( ॥ )", "৯ ( ॥/ )", "১০ ( ॥// )", "১১ ( ॥/// )", "১২ ( ৲ )", "১৩ ( ৲/ )", "১৪ ( ৲// )", "১৫ ( ৲/// )", "১৬ ( ১ )"];
-const koraSymbols = ["০", "১ ( / )", "২ ( // )", "৩ ( /// )"];
-const krantiSymbols = ["০", "১ ( ৴ )", "২ ( ৵ )"];
+// আপনার তৈরি করা অপশনগুলো এখানে ইমপোর্ট করা হলো
+import { anaOptions, gondaOptions, koraOptions, krantiOptions, tilOptions } from "@/lib/options";
 
 export default function OwnersCard({
   owners,
@@ -12,15 +9,6 @@ export default function OwnersCard({
   onRemoveOwner,
   onUpdateOwner,
 }: any) {
-
-  // গণ্ডা এবং তিলের জন্য সাধারণ নাম্বার জেনারেট করার ফাংশন
-  const generateNumberOptions = (max: number) => {
-    return Array.from({ length: max + 1 }, (_, i) => (
-      <option key={i} value={i}>
-        {toBn(i)}
-      </option>
-    ));
-  };
 
   return (
     <div className="col-lg-6">
@@ -98,17 +86,22 @@ export default function OwnersCard({
                           value={owner.a || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "a", Number(e.target.value))}
                         >
-                          {anaSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
+                          {anaOptions.map((opt) => (
+                            <option key={opt.v} value={opt.v}>{opt.t}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-4 col-md-2">
                         <label className="form-label small text-muted">গন্ডা</label>
                         <select
                           className="form-select text-center px-1"
+                          style={{fontSize: '14px'}}
                           value={owner.g || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "g", Number(e.target.value))}
                         >
-                          {generateNumberOptions(19)}
+                          {gondaOptions.map((opt) => (
+                            <option key={opt.v} value={opt.v}>{opt.t}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-4 col-md-2">
@@ -119,7 +112,9 @@ export default function OwnersCard({
                           value={owner.k || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "k", Number(e.target.value))}
                         >
-                          {koraSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
+                          {koraOptions.map((opt) => (
+                            <option key={opt.v} value={opt.v}>{opt.t}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-6 col-md-3">
@@ -130,17 +125,22 @@ export default function OwnersCard({
                           value={owner.kr || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "kr", Number(e.target.value))}
                         >
-                          {krantiSymbols.map((sym, i) => <option key={i} value={i}>{sym}</option>)}
+                          {krantiOptions.map((opt) => (
+                            <option key={opt.v} value={opt.v}>{opt.t}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-6 col-md-3">
                         <label className="form-label small text-muted">তিল</label>
                         <select
                           className="form-select text-center px-1"
+                          style={{fontSize: '14px'}}
                           value={owner.ti || 0}
                           onChange={(e) => onUpdateOwner(owner.id, "ti", Number(e.target.value))}
                         >
-                          {generateNumberOptions(19)}
+                          {tilOptions.map((opt) => (
+                            <option key={opt.v} value={opt.v}>{opt.t}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
