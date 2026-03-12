@@ -7,11 +7,12 @@ import AssetInput from "@/components/faraez/AssetInput";
 import FamilyTreeInput from "@/components/faraez/FamilyTreeInput";
 import { Religion, DeceasedGender, HeirsInput, HeirResult, AssetsInput } from "@/lib/faraez/types";
 import { calculateMuslimFaraez } from "@/lib/faraez/muslim-law";
+// হিন্দু আইনের ফাইলটি ইমপোর্ট করা হলো
+import { calculateHinduDayabhaga } from "@/lib/faraez/hindu-law";
 import { Calculator, HelpCircle } from "lucide-react";
 import LatestBlogs from "../../components/shared/LatestBlogs";
 import dynamic from "next/dynamic";
 
-// FaraezResult কে Lazy Load করা হচ্ছে
 const FaraezResult = dynamic(() => import("@/components/faraez/FaraezResult"), {
   ssr: false,
   loading: () => (
@@ -42,54 +43,45 @@ export default function FaraezPage() {
   const [results, setResults] = useState<HeirResult[]>([]);
 
   const handleCalculate = () => {
+    // ধর্ম অনুযায়ী আলাদা হিসাবের লজিক চালু হবে
     if (religion === "muslim") {
       setResults(calculateMuslimFaraez(heirs, gender, assets));
-      setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 100);
     } else {
-      alert("হিন্দু আইন বর্তমানে আপডেটের কাজ চলছে।");
+      setResults(calculateHinduDayabhaga(heirs, gender, assets));
     }
+    setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 100);
   };
-
 
   const downloadMultiPagePDF = async () => {
     if (!exportRef.current) return;
+    const element = exportRef.current;
     
+    // ম্যাজিক: পিডিএফ বানানোর আগে সাইটকে ডেস্কটপ মোডে (800px) নিয়ে যাওয়া হচ্ছে
+    const originalWidth = element.style.width;
+    element.style.width = "800px";
+
     try {
       // @ts-ignore
       const html2pdf = (await import("html2pdf.js")).default;
       
       const opt = {
-        margin:       [10, -10, 10, -10] as [number, number, number, number], 
+        margin:       [15, 10, 15, 10] as [number, number, number, number], 
         filename:     'Faraez_Result.pdf',
         image:        { type: 'jpeg' as 'jpeg', quality: 0.98 }, 
-        html2canvas:  { scale: 2, useCORS: true },
-        // এখানে orientation-এ as 'portrait' যুক্ত করে এরর ফিক্স করা হলো
+        html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 }, // windowWidth 800px ফিক্স করা হলো
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as 'portrait' }, 
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
       
-      html2pdf().set(opt).from(exportRef.current).save();
+      await html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error(err);
       alert("PDF তৈরিতে সমস্যা হয়েছে।");
+    } finally {
+      // পিডিএফ নামানো শেষ হলে আবার ফোনের রেগুলার ভিউতে ফিরিয়ে আনা
+      element.style.width = originalWidth;
     }
   };
-
-
-  // const downloadImage = async () => {
-  //   if (!exportRef.current) return;
-  //   try {
-  //     const html2canvas = (await import("html2canvas")).default;
-  //     const canvas = await html2canvas(exportRef.current, { scale: 2, backgroundColor: "#ffffff" });
-  //     const link = document.createElement("a");
-  //     link.download = "Faraez_Result.jpg";
-  //     link.href = canvas.toDataURL("image/jpeg");
-  //     link.click();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("ইমেজ তৈরিতে সমস্যা হয়েছে।");
-  //   }
-  // };
 
   const downloadExcel = () => {
     if (!results || results.length === 0) return;
@@ -124,7 +116,6 @@ export default function FaraezPage() {
       <div className="row justify-content-center mb-4">
         <div className="col-lg-10">
           
-          {/* ইউজার ম্যানুয়াল (Faraez) */}
           <div className="accordion mb-4 shadow-sm rounded-4" id="manualFaraez">
             <div className="accordion-item border-0 rounded-4 overflow-hidden">
               <h2 className="accordion-header">
@@ -135,10 +126,10 @@ export default function FaraezPage() {
               <div id="collapseFaraez" className="accordion-collapse collapse" data-bs-parent="#manualFaraez">
                 <div className="accordion-body bg-light text-secondary lh-lg pt-2 pb-4">
                   <ol className="mb-0 ps-3">
-                    <li className="mb-1">প্রথমে <strong>মৃত ব্যক্তির লিঙ্গ</strong> (পুরুষ বা মহিলা) নির্বাচন করুন।</li>
+                    <li className="mb-1">প্রথমে <strong>ধর্ম এবং মৃত ব্যক্তির লিঙ্গ</strong> নির্বাচন করুন।</li>
                     <li className="mb-1"><strong>সম্পত্তির বিবরণ</strong> অংশে মোট জমি, স্বর্ণ বা নগদ অর্থ দিন (এটি না দিলেও শুধু অংশের হার দেখা যাবে)।</li>
                     <li className="mb-1">নিচের তালিকা থেকে মৃত ব্যক্তির <strong>জীবিত ওয়ারিশদের সংখ্যা</strong> (+ বা -) বাটনে চেপে নির্ধারণ করুন।</li>
-                    <li>সবশেষে <strong>সম্পত্তি বন্টন করুন</strong> বাটনে ক্লিক করলে প্রত্যেকের প্রাপ্ত অংশ এবং কোরআন/আইনের ব্যাখ্যা দেখতে পাবেন।</li>
+                    <li>সবশেষে <strong>সম্পত্তি বন্টন করুন</strong> বাটনে ক্লিক করলে প্রত্যেকের প্রাপ্ত অংশ দেখতে পাবেন।</li>
                   </ol>
                 </div>
               </div>
@@ -146,7 +137,15 @@ export default function FaraezPage() {
           </div>
 
           <div className="card border shadow-sm rounded-4 mb-4">
-            <div className="card-body p-4 d-flex justify-content-between">
+            <div className="card-body p-4 d-flex flex-wrap justify-content-between gap-3">
+              {/* ধর্ম নির্বাচনের অপশন যুক্ত করা হলো */}
+              <div>
+                <label className="fw-bold text-muted small d-block mb-2">ধর্ম (আইন)</label>
+                <div className="btn-group" role="group">
+                  <button onClick={() => setReligion("muslim")} className={`btn ${religion === "muslim" ? "btn-success" : "btn-outline-secondary"}`}>মুসলিম</button>
+                  <button onClick={() => setReligion("hindu")} className={`btn ${religion === "hindu" ? "btn-success" : "btn-outline-secondary"}`}>হিন্দু (দায়ভাগ)</button>
+                </div>
+              </div>
               <div>
                 <label className="fw-bold text-muted small d-block mb-2">মৃত ব্যক্তির লিঙ্গ</label>
                 <div className="btn-group" role="group">
@@ -172,6 +171,7 @@ export default function FaraezPage() {
             exportRef={exportRef}
             onDownloadPDF={downloadMultiPagePDF}
             onDownloadExcel={downloadExcel}
+            religion={religion} // <--- এই নতুন লাইনটি যুক্ত হলো
           />
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { HeirResult } from "@/lib/faraez/types";
+import { HeirResult, Religion } from "@/lib/faraez/types"; 
 import { toBn } from "@/lib/utils";
 import { Scale, Info, FileDown, FileSpreadsheet, PieChart as PieChartIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -10,25 +10,26 @@ interface Props {
   exportRef: React.RefObject<HTMLDivElement | null>;
   onDownloadPDF: () => void;
   onDownloadExcel: () => void;
+  religion: Religion; 
 }
 
-// পাই চার্টের জন্য কিছু সুন্দর রঙের তালিকা
 const COLORS = ['#198754', '#0d6efd', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#0dcaf0', '#adb5bd'];
 
 export default function FaraezResult({ 
-  results, exportRef, onDownloadPDF, onDownloadExcel
+  results, exportRef, onDownloadPDF, onDownloadExcel, religion 
 }: Props) {
   if (!results || results.length === 0) return null;
 
   const validResults = results.filter((r) => r.count > 0);
   
-  // পাই চার্টের জন্য ডাটা প্রস্তুত করা (যারা শুধু সম্পত্তি পেয়েছে তাদের জন্য)
   const pieData = validResults
     .filter((r) => r.fraction > 0)
     .map((r) => ({
       name: r.count > 1 ? `${r.heirType} (${toBn(r.count)} জন)` : r.heirType,
       value: Number((r.fraction * 100).toFixed(2)),
     }));
+
+  const today = toBn(new Date().toLocaleDateString("en-GB"));
 
   return (
     <div id="resultSection" className="container pb-5 fade-in mt-4">
@@ -39,19 +40,16 @@ export default function FaraezResult({
           </h5>
         </div>
         
-        {/* এই অংশটুকু PDF বা ইমেজে ডাউনলোড হবে */}
         <div ref={exportRef} className="bg-white p-4 p-md-5">
-          {/* লিগ্যাল দলিলের মতো হেডার */}
           <div className="text-center border-bottom border-success border-2 pb-4 mb-5">
             <h2 className="fw-bold text-success mb-2">
               সম্পত্তি বন্টন (ফারায়েজ) বিবরণী
             </h2>
             <p className="text-muted mb-0 fw-semibold">
-              তারিখ: {new Date().toLocaleDateString("bn-BD")} | ইসলামী শরীয়ত মোতাবেক প্রস্তুতকৃত
+              তারিখ: {today} | {religion === "muslim" ? "ইসলামী শরীয়ত" : "হিন্দু দায়ভাগ আইন"} মোতাবেক প্রস্তুতকৃত
             </p>
           </div>
 
-          {/* পাই চার্ট সেকশন */}
           {pieData.length > 0 && (
             <div className="row justify-content-center mb-5 align-items-center bg-light rounded-4 p-4 mx-0 shadow-sm">
               <div className="col-md-5 text-center mb-4 mb-md-0">
@@ -60,15 +58,16 @@ export default function FaraezResult({
                 </h5>
                 <p className="text-muted small">নিচের চার্টে ওয়ারিশদের অংশের হার দেখানো হলো</p>
               </div>
-              <div className="col-md-7" style={{ height: "250px" }}>
+              {/* চার্টের উচ্চতা বাড়িয়ে ৩০০px করা হলো এবং মার্জিন দেয়া হলো যাতে না কাটে */}
+              <div className="col-md-7" style={{ height: "300px", minHeight: "300px", width: "100%" }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={55}
+                      outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
                       label={({ name, value }) => `${toBn(value)}%`}
@@ -85,7 +84,6 @@ export default function FaraezResult({
             </div>
           )}
 
-          {/* বিস্তারিত টেবিল */}
           <div className="table-responsive shadow-sm rounded-3">
             <table className="table table-hover table-bordered mb-0 align-middle border-secondary">
               <thead className="table-success text-center align-middle border-success">
@@ -141,7 +139,6 @@ export default function FaraezResult({
           </div>
         </div>
         
-        {/* ডাউনলোড বাটনসমূহ (এগুলো প্রিন্ট বা পিডিএফ এ আসবে না) */}
         <div className="card-footer bg-light p-4 no-print d-flex flex-wrap justify-content-center gap-3 border-top border-success">
           <button onClick={onDownloadPDF} className="btn btn-danger px-4 fw-bold shadow-sm d-flex align-items-center rounded-pill">
             <FileDown size={18} className="me-2" /> PDF ডাউনলোড
