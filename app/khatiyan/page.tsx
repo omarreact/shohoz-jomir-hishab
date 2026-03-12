@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { List, Zap, HelpCircle } from "lucide-react";
+import { List, Zap, HelpCircle, Calculator, Trash2 } from "lucide-react";
 import { FULL_UNIT_TIL } from "@/lib/constants";
 import { toBn, toEn, makeBanglaStr } from "@/lib/utils";
 import {
@@ -14,9 +14,7 @@ import {
 import PrintStyles from "@/components/PrintStyles";
 import DetailedCalculator from "@/components/DetailedCalculator";
 import QuickCalculator from "@/components/QuickCalculator";
-import FixedActionBar from "@/components/FixedActionBar";
 import LatestBlogs from "../../components/shared/LatestBlogs";
-
 
 // ResultSection কে Lazy Load করা হচ্ছে
 const ResultSection = dynamic(() => import("@/components/ResultSection"), {
@@ -221,16 +219,6 @@ export default function SmartKhatiyanApp() {
     }
   };
 
-  const handleQuickDataChange = (newData: Partial<QuickData>) => {
-    setQuickData((prev) => ({
-      ...prev,
-      ...newData,
-      ...(newData.totalLand !== undefined && {
-        totalLand: makeBanglaStr(newData.totalLand),
-      }),
-    }));
-  };
-
   const downloadMultiPagePDF = async () => {
     if (!exportRef.current) return;
     const element = exportRef.current;
@@ -263,22 +251,6 @@ export default function SmartKhatiyanApp() {
       alert("PDF তৈরিতে সমস্যা হয়েছে।");
     } finally {
       element.style.width = originalWidth;
-    }
-  };
-
-  const downloadImage = async () => {
-    if (!exportRef.current) return;
-    try {
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-      });
-      const link = document.createElement("a");
-      link.download = "Khatiyan_Calculation.jpg";
-      link.href = canvas.toDataURL("image/jpeg");
-      link.click();
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -324,7 +296,7 @@ export default function SmartKhatiyanApp() {
           </div>
         </div>
 
-        {/* ইউজার ম্যানুয়াল (Khatiyan) */}
+        {/* ইউজার ম্যানুয়াল */}
         <div className="row justify-content-center mb-4">
           <div className="col-lg-12">
             <div className="accordion shadow-sm rounded-4" id="manualKhatiyan">
@@ -346,22 +318,37 @@ export default function SmartKhatiyanApp() {
               </div>
             </div>
           </div>
-          
         </div>
         
-
         {activeTab === "detailed" && (
-          <DetailedCalculator
-            plots={plots}
-            owners={owners}
-            totalOwnerTil={totalOwnerTil}
-            onAddPlot={addPlot}
-            onRemovePlot={removePlot}
-            onUpdatePlot={updatePlot}
-            onAddOwner={addOwner}
-            onRemoveOwner={removeOwner}
-            onUpdateOwner={updateOwner}
-          />
+          <>
+            <DetailedCalculator
+              plots={plots}
+              owners={owners}
+              totalOwnerTil={totalOwnerTil}
+              onAddPlot={addPlot}
+              onRemovePlot={removePlot}
+              onUpdatePlot={updatePlot}
+              onAddOwner={addOwner}
+              onRemoveOwner={removeOwner}
+              onUpdateOwner={updateOwner}
+            />
+            {/* নতুন যোগ করা বাটনগুলো এখানে থাকবে */}
+            <div className="d-flex justify-content-center gap-3 mt-4 mb-5">
+              <button 
+                onClick={clearAll} 
+                className="btn btn-outline-danger px-4 py-2 fw-bold rounded-pill shadow-sm d-flex align-items-center"
+              >
+                <Trash2 size={18} className="me-2" /> মুছে ফেলুন
+              </button>
+              <button 
+                onClick={calculateDetailed} 
+                className="btn btn-success px-5 py-2 fw-bold rounded-pill shadow-lg d-flex align-items-center"
+              >
+                <Calculator size={18} className="me-2" /> হিসাব করুন
+              </button>
+            </div>
+          </>
         )}
 
         {activeTab === "quick" && (
@@ -373,20 +360,15 @@ export default function SmartKhatiyanApp() {
           />
         )}
         
-    
-
         <ResultSection 
-              detailedResults={detailedResults}
-              exportRef={exportRef}
-              onDownloadPDF={downloadMultiPagePDF}
-              onDownloadExcel={downloadExcel}
-            />
-      <LatestBlogs />
+          detailedResults={detailedResults}
+          exportRef={exportRef}
+          onDownloadPDF={downloadMultiPagePDF}
+          onDownloadExcel={downloadExcel}
+        />
+        <LatestBlogs />
       </div>
-      {activeTab === "detailed" && (
-        <FixedActionBar onCalculate={calculateDetailed} onClear={clearAll} />
-      )}
-     
     </>
   );
-}
+    }
+    
