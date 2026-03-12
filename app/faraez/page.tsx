@@ -59,7 +59,7 @@ export default function FaraezPage() {
       const html2pdf = (await import("html2pdf.js")).default;
       
       const opt = {
-        margin:       [15, 10, 15, 10] as [number, number, number, number], 
+        margin:       [10, -10, 10, -10] as [number, number, number, number], 
         filename:     'Faraez_Result.pdf',
         image:        { type: 'jpeg' as 'jpeg', quality: 0.98 }, 
         html2canvas:  { scale: 2, useCORS: true },
