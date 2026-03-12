@@ -219,6 +219,17 @@ export default function SmartKhatiyanApp() {
     }
   };
 
+  // এই ফাংশনটি আগেরবার বাদ পড়ে গিয়েছিল
+  const handleQuickDataChange = (newData: Partial<QuickData>) => {
+    setQuickData((prev) => ({
+      ...prev,
+      ...newData,
+      ...(newData.totalLand !== undefined && {
+        totalLand: makeBanglaStr(newData.totalLand),
+      }),
+    }));
+  };
+
   const downloadMultiPagePDF = async () => {
     if (!exportRef.current) return;
     const element = exportRef.current;
@@ -333,7 +344,7 @@ export default function SmartKhatiyanApp() {
               onRemoveOwner={removeOwner}
               onUpdateOwner={updateOwner}
             />
-            {/* নতুন যোগ করা বাটনগুলো এখানে থাকবে */}
+            {/* বাটনগুলো এখানে থাকবে */}
             <div className="d-flex justify-content-center gap-3 mt-4 mb-5">
               <button 
                 onClick={clearAll} 
@@ -370,5 +381,5 @@ export default function SmartKhatiyanApp() {
       </div>
     </>
   );
-    }
+        }
     
