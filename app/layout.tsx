@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Tiro_Bangla } from "next/font/google";
-import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/css/bootstrap.min.css"; // <-- make sure this is an import
 import "./globals.css";
 import Navbar from "@/components/shared/Navbar";
 
@@ -8,7 +8,6 @@ import ThemeToggle from "@/components/shared/ThemeToggle";
 import Footer from "@/components/shared/Footer";
 
 import { LanguageProvider } from "@/components/shared/LanguageContext";
-
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,13 +28,24 @@ const tiroBangla = Tiro_Bangla({
 
 export const metadata: Metadata = {
   title: "সহজ জমির হিসাব | Shohoz Jomir Hishab",
-  description: "বাংলাদেশের সবচেয়ে নির্ভুল ডিজিটাল ভূমি পরিমাপ, খতিয়ানের আনা-গন্ডা হিসাব এবং মুসলিম ও হিন্দু ফারায়েজ (উত্তরাধিকার) ক্যালকুলেটর।",
-  keywords: ["খতিয়ান ক্যালকুলেটর", "ফারায়েজ ক্যালকুলেটর", "জমি মাপার ক্যালকুলেটর", "উত্তরাধিকার আইন", "khatiyan calculator", "faraez calculator bangladesh", "vumi jorip", "shohoz jomir hishab"],
+  description:
+    "বাংলাদেশের সবচেয়ে নির্ভুল ডিজিটাল ভূমি পরিমাপ, খতিয়ানের আনা-গন্ডা হিসাব এবং মুসলিম ও হিন্দু ফারায়েজ (উত্তরাধিকার) ক্যালকুলেটর।",
+  keywords: [
+    "খতিয়ান ক্যালকুলেটর",
+    "ফারায়েজ ক্যালকুলেটর",
+    "জমি মাপার ক্যালকুলেটর",
+    "উত্তরাধিকার আইন",
+    "khatiyan calculator",
+    "faraez calculator bangladesh",
+    "vumi jorip",
+    "shohoz jomir hishab",
+  ],
   authors: [{ name: "Md. Omar Faruk Khan" }],
   openGraph: {
     title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
-    description: "খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট সমাধান।",
-    url: "https://shohozjomirhishab.com", // আপনার আসল ডোমেইন দিন
+    description:
+      "খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট সমাধান।",
+    url: "https://shohoz-jomir-hishab.vercel.app/", // আপনার আসল ডোমেইন দিন
     siteName: "Shohoz Jomir Hishab",
     locale: "bn_BD",
     type: "website",
@@ -49,20 +59,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn">
-      <body className={tiroBangla.variable} style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <LanguageProvider>
-        <Navbar />
-        
-        {/* মেইন কন্টেন্ট */}
-        <main className="flex-grow-1">
-          {children}
-        </main>
-        
-        {/* গ্লোবাল ফুটার */}
-        <Footer />
+      <body
+        className={tiroBangla.variable}
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
+        <LanguageProvider>
+          <Navbar />
 
-        {/* ভাসমান থিম চেঞ্জার */}
-        <ThemeToggle />
+          {/* মেইন কন্টেন্ট */}
+          <main className="flex-grow-1">{children}</main>
+
+          {/* গ্লোবাল ফুটার */}
+          <Footer />
+
+          {/* ভাসমান থিম চেঞ্জার */}
+          <ThemeToggle />
         </LanguageProvider>
       </body>
     </html>
