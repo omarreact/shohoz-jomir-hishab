@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
+    "bwip-js": "^4.9.2",
     "firebase": "^12.10.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
