@@ -22,28 +22,27 @@ export default function PorchaPage() {
 
   // ইউজারের সার্চ অনুযায়ী API থেকে সরাসরি সিকিউর ডাটা নিয়ে আসা (Debounce System)
   useEffect(() => {
-    setLoading(true);
+    fetch("/porcha.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("porcha.json ফাইলটি পাওয়া যায়নি!");
+        return res.json();
+      })
+      .then((data) => {
+        setPorchaList(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading porcha data:", err);
+        setPorchaList([]);
+        setLoading(false);
+      });
+  }, []);
 
-    // ইউজার টাইপ করার আধা-সেকেন্ড (500ms) পর সার্চ হবে, যেন সার্ভারে চাপ না পড়ে
-    const delayDebounceFn = setTimeout(() => {
-      fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Network response was not ok");
-          return res.json();
-        })
-        .then((data) => {
-          setFilteredData(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error loading porcha data:", err);
-          setFilteredData([]);
-          setLoading(false);
-        });
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  const filteredData = porchaList.filter(
+    (item) =>
+      item.JOMIHUB.toString().includes(searchQuery) ||
+      (item.Column2 && item.Column2.includes(searchQuery)),
+  );
 
   const downloadPDF = async () => {
     if (!exportRef.current) return;
@@ -55,12 +54,12 @@ export default function PorchaPage() {
       const opt = {
         margin: [15, 15, 15, 15] as [number, number, number, number],
         filename: `Khotiyan_${selectedPorcha?.JOMIHUB}.pdf`,
-        image: { type: "jpeg" as `jpeg`, quality: 0.98 },
+        image: { type: "jpeg" as "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: {
           unit: "mm",
           format: "a4",
-          orientation: "portrait" as `portrait`,
+          orientation: "portrait" as "portrait",
         },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
@@ -83,15 +82,16 @@ export default function PorchaPage() {
             সংগ্রহ
           </h2>
           <p className="text-muted">
-            আপনার কাঙ্ক্ষিত খতিয়ান, দাগ নম্বর বা মালিকের নাম লিখে সার্চ করুন
-            এবং ডাউনলোড করুন।
+            আপনার কাঙ্ক্ষিত খতিয়ান বা মালিকের নাম লিখে সার্চ করুন এবং ডাউনলোড
+            করুন।
           </p>
 
+          {/* Search Box */}
           <div className="position-relative mt-4 shadow-sm rounded-pill">
             <input
               type="text"
               className="form-control form-control-lg border-success rounded-pill ps-5"
-              placeholder="খতিয়ান নং, দাগ নং বা মালিকের নাম খুঁজুন..."
+              placeholder="খতিয়ান নম্বর বা মালিকের নাম খুঁজুন..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -151,7 +151,7 @@ export default function PorchaPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal - এখন এটি সবসময় DOM এ থাকবে, শুধু ডাটা ক্লিক করলে লোড হবে */}
       <div
         className="modal fade"
         id="khotiyanModal"
@@ -170,6 +170,7 @@ export default function PorchaPage() {
               ></button>
             </div>
             <div className="modal-body p-0">
+              {/* ডাটা থাকলেই কেবল ভেতরের টেবিল দেখাবে */}
               {selectedPorcha ? (
                 <div ref={exportRef} className="bg-white p-5">
                   <div className="text-center mb-5 border-bottom border-success border-2 pb-3">
@@ -180,6 +181,7 @@ export default function PorchaPage() {
                       ডিজিটাল রেকর্ড রুম | সহজ জমির হিসাব
                     </p>
                   </div>
+
                   <div className="table-responsive">
                     <table className="table table-bordered border-secondary align-middle">
                       <tbody>
