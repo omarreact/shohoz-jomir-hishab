@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const query = searchParams.get("q")?.toLowerCase().trim() || "";
 
   // সিকিউরিটি চেক ১: সার্চ কিউরি ফাঁকা থাকলে বা ২ অক্ষরের কম হলে কোনো ডাটা দেওয়া হবে না!
-  if (!query || query.length < 2) {
+  if (!query || query.length < 1) {
     return NextResponse.json([]); // একদম খালি লিস্ট রিটার্ন করবে
   }
 
