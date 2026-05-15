@@ -18,21 +18,30 @@ export default function PorchaPage() {
   const [selectedPorcha, setSelectedPorcha] = useState<PorchaData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // পেজিনেশনের জন্য নতুন স্টেট
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  // ইউজারের সার্চ অনুযায়ী API থেকে সরাসরি সিকিউর ডাটা নিয়ে আসা (Debounce System)
+  // ইউজারের সার্চ অনুযায়ী API থেকে ডাটা নিয়ে আসা
   useEffect(() => {
     setLoading(true);
 
-    // ইউজার টাইপ করার আধা-সেকেন্ড (500ms) পর সার্চ হবে, যেন সার্ভারে চাপ না পড়ে
     const delayDebounceFn = setTimeout(() => {
-      fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}`)
+      setPage(1); // নতুন করে সার্চ দিলে পেজ নম্বর ১ হয়ে যাবে
+
+      fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}&page=1`)
         .then((res) => {
           if (!res.ok) throw new Error("Network response was not ok");
           return res.json();
         })
         .then((data) => {
-          setFilteredData(data);
+          // এখানেই মূল সমাধান: data.results সেভ করা হচ্ছে
+          setFilteredData(data.results || []);
+          setHasMore(data.hasMore || false);
           setLoading(false);
         })
         .catch((err) => {
@@ -44,6 +53,26 @@ export default function PorchaPage() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
+
+  // Load More বাটনে ক্লিক করলে আরও ডাটা আনার ফাংশন
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setIsLoadingMore(true);
+
+    fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}&page=${nextPage}`)
+      .then((res) => res.json())
+      .then((data) => {
+        // আগের ডাটার সাথে নতুন ডাটা যুক্ত করা হচ্ছে
+        setFilteredData((prev) => [...prev, ...(data.results || [])]);
+        setHasMore(data.hasMore || false);
+        setPage(nextPage);
+        setIsLoadingMore(false);
+      })
+      .catch((err) => {
+        console.error("Error loading more data:", err);
+        setIsLoadingMore(false);
+      });
+  };
 
   const downloadPDF = async () => {
     if (!exportRef.current) return;
@@ -112,43 +141,70 @@ export default function PorchaPage() {
           </p>
         </div>
       ) : (
-        <div className="row g-4">
-          {filteredData.map((item, index) => (
-            <div key={index} className="col-md-6 col-lg-4">
-              <div className="card shadow-sm border-0 rounded-4 h-100 hover-shadow transition-all">
-                <div className="card-body p-4">
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <span className="badge bg-success bg-opacity-10 text-success fs-6 rounded-pill px-3 py-2">
-                      খতিয়ান নং: {item.JOMIHUB ? toBn(item.JOMIHUB) : "-"}
-                    </span>
+        <>
+          <div className="row g-4">
+            {filteredData?.map((item, index) => (
+              <div key={index} className="col-md-6 col-lg-4">
+                <div className="card shadow-sm border-0 rounded-4 h-100 hover-shadow transition-all">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <span className="badge bg-success bg-opacity-10 text-success fs-6 rounded-pill px-3 py-2">
+                        খতিয়ান নং: {item.JOMIHUB ? toBn(item.JOMIHUB) : "-"}
+                      </span>
+                    </div>
+                    <h6 className="fw-bold text-dark mb-1">
+                      মালিক: {item.Column2 || "অজ্ঞাত"}
+                    </h6>
+                    <p className="text-muted small mb-0 mt-2 text-truncate">
+                      <strong>দাগ নং:</strong>{" "}
+                      {item.Column4 ? toBn(item.Column4) : "অজ্ঞাত"}
+                    </p>
                   </div>
-                  <h6 className="fw-bold text-dark mb-1">
-                    মালিক: {item.Column2 || "অজ্ঞাত"}
-                  </h6>
-                  <p className="text-muted small mb-0 mt-2 text-truncate">
-                    <strong>দাগ নং:</strong>{" "}
-                    {item.Column4 ? toBn(item.Column4) : "অজ্ঞাত"}
-                  </p>
-                </div>
-                <div className="card-footer bg-transparent border-top p-3 text-center">
-                  <button
-                    onClick={() => setSelectedPorcha(item)}
-                    className="btn btn-outline-success fw-bold rounded-pill w-100 d-flex align-items-center justify-content-center"
-                    data-bs-toggle="modal"
-                    data-bs-target="#khotiyanModal"
-                  >
-                    <Download size={16} className="me-2" /> ভিউ ও ডাউনলোড
-                  </button>
+                  <div className="card-footer bg-transparent border-top p-3 text-center">
+                    <button
+                      onClick={() => setSelectedPorcha(item)}
+                      className="btn btn-outline-success fw-bold rounded-pill w-100 d-flex align-items-center justify-content-center"
+                      data-bs-toggle="modal"
+                      data-bs-target="#khotiyanModal"
+                    >
+                      <Download size={16} className="me-2" /> ভিউ ও ডাউনলোড
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          {filteredData.length === 0 && (
-            <div className="col-12 text-center py-5">
-              <p className="text-muted fs-5">কোনো খতিয়ান পাওয়া যায়নি!</p>
+            ))}
+
+            {filteredData?.length === 0 && (
+              <div className="col-12 text-center py-5">
+                <p className="text-muted fs-5">কোনো খতিয়ান পাওয়া যায়নি!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Load More বাটন */}
+          {hasMore && (
+            <div className="text-center mt-5">
+              <button
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                className="btn btn-success px-5 py-2 rounded-pill fw-bold shadow-sm"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    লোড হচ্ছে...
+                  </>
+                ) : (
+                  "আরও দেখুন"
+                )}
+              </button>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Modal */}
