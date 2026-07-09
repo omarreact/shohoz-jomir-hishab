@@ -1,17 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppHeader from "@/components/shared/AppHeader";
 import AdBanner from "@/components/shared/AdBanner";
-import { Ruler, Map, TriangleRight, CheckCircle2, AlertTriangle, Calculator, Square, Triangle, Circle, Box, HelpCircle, Info } from "lucide-react";
-import { calcRectangle, calcTriangle, calcQuadrilateral, calcPentagon, calcCircle, MeasurementResult } from "@/lib/land/geometry";
+import {
+  Ruler,
+  Map,
+  TriangleRight,
+  CheckCircle2,
+  AlertTriangle,
+  Calculator,
+  Square,
+  Triangle,
+  Circle,
+  Box,
+  Info,
+  Database,
+} from "lucide-react";
+import {
+  calcRectangle,
+  calcTriangle,
+  calcQuadrilateral,
+  calcPentagon,
+  calcCircle,
+  MeasurementResult,
+} from "@/lib/land/geometry";
 import { toBn } from "@/lib/utils";
 import LatestBlogs from "../../components/shared/LatestBlogs";
 
 type ShapeType = "rect" | "triangle" | "quad" | "pentagon" | "circle";
 
+const SERVICES = {
+  LOCATION: "rajuk_db/Rajuk_dap_db/FeatureServer/1",
+  RS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/0",
+  MS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/2",
+};
+
+const LAYER1_FIELDS = {
+  DIST: "m_district",
+  THANA: "upazila_ps",
+  MOUZA: "mauza",
+};
+
 export default function LandMeasurementPage() {
-  const [shape, setShape] = useState<ShapeType>("quad"); 
+  const [mode, setMode] = useState<"manual" | "rajuk">("manual");
+  const [shape, setShape] = useState<ShapeType>("quad");
   const [result, setResult] = useState<MeasurementResult | null>(null);
 
   const [inputs, setInputs] = useState({
@@ -25,45 +58,324 @@ export default function LandMeasurementPage() {
     diameter: { feet: "", inches: "" },
   });
 
-  const handleInputChange = (side: keyof typeof inputs, field: "feet" | "inches", value: string) => {
-    setInputs(prev => ({ ...prev, [side]: { ...prev[side], [field]: value } }));
+  const [rDistricts, setRDistricts] = useState<string[]>([]);
+  const [rThanas, setRThanas] = useState<string[]>([]);
+  const [rMouzas, setRMouzas] = useState<string[]>([]);
+  const [rDags, setRDags] = useState<string[]>([]);
+  const [rSelectedDist, setRSelectedDist] = useState("");
+  const [rSelectedThana, setRSelectedThana] = useState("");
+  const [rSelectedMouza, setRSelectedMouza] = useState("");
+  const [rSelectedType, setRSelectedType] = useState("");
+  const [rLoading, setRLoading] = useState(false);
+
+  useEffect(() => {
+    initRajuk();
+  }, []);
+
+  const fetchLocationData = async (where: string, outField: string) => {
+    const url = new URL("/api/rajuk-proxy", window.location.origin);
+    url.searchParams.append("where", where);
+    url.searchParams.append("outFields", outField);
+    url.searchParams.append("servicePath", SERVICES.LOCATION);
+    try {
+      const res = await fetch(url.toString());
+      const data = await res.json();
+      if (data.error) throw new Error();
+      const results = data.features
+        .map((f: any) => f.attributes[outField])
+        .filter((v: any) => v);
+      return [...new Set(results)].sort() as string[];
+    } catch (e) {
+      return [];
+    }
   };
 
+  const initRajuk = async () => {
+    try {
+      setRDistricts(await fetchLocationData("1=1", LAYER1_FIELDS.DIST));
+    } catch (e) {}
+  };
+
+  const onRDistChange = async (val: string) => {
+    setRSelectedDist(val);
+    setRThanas([]);
+    setRMouzas([]);
+    setRDags([]);
+    setRSelectedType("");
+    setResult(null);
+    if (!val) return;
+    setRLoading(true);
+    setRThanas(
+      await fetchLocationData(
+        `${LAYER1_FIELDS.DIST}='${val}'`,
+        LAYER1_FIELDS.THANA,
+      ),
+    );
+    setRLoading(false);
+  };
+
+  const onRThanaChange = async (val: string) => {
+    setRSelectedThana(val);
+    setRMouzas([]);
+    setRDags([]);
+    setRSelectedType("");
+    setResult(null);
+    if (!val) return;
+    setRLoading(true);
+    setRMouzas(
+      await fetchLocationData(
+        `${LAYER1_FIELDS.DIST}='${rSelectedDist}' AND ${LAYER1_FIELDS.THANA}='${val}'`,
+        LAYER1_FIELDS.MOUZA,
+      ),
+    );
+    setRLoading(false);
+  };
+
+  const onRTypeChange = async (val: string) => {
+    setRSelectedType(val);
+    setRDags([]);
+    setResult(null);
+    if (!val) return;
+    setRLoading(true);
+
+    const clean = (str: string) => str.trim().toUpperCase().replace(/'/g, "''");
+    const coreThana = clean(rSelectedThana.split(" ")[0]);
+    const coreMouza = clean(rSelectedMouza.split(" ")[0]);
+    let where = "",
+      field = "",
+      servicePath = "";
+
+    if (val === "ms_plot_no") {
+      servicePath = SERVICES.MS_BASE;
+      field = "plot_no";
+      where = `UPPER(thana_ms) LIKE '%${coreThana}%' AND UPPER(mauza) LIKE '%${coreMouza}%'`;
+    } else {
+      servicePath = SERVICES.RS_BASE;
+      field = val === "rs_plot_no" ? "rs_plot_no" : "plot_no";
+      where = `UPPER(address_search) LIKE '%${coreMouza}%' AND UPPER(address_search) LIKE '%${coreThana}%'`;
+    }
+
+    const url = new URL("/api/rajuk-proxy", window.location.origin);
+    url.searchParams.append("where", where);
+    url.searchParams.append("outFields", field);
+    url.searchParams.append("servicePath", servicePath);
+
+    try {
+      const res = await fetch(url.toString());
+      const data = await res.json();
+      if (!data.error && data.features) {
+        const results = data.features
+          .map((f: any) => f.attributes[field])
+          .filter((v: any) => v);
+        setRDags([...new Set(results)].sort() as string[]);
+      }
+    } catch (e) {}
+    setRLoading(false);
+  };
+
+  const onRDagSelect = async (val: string) => {
+    if (!val) return;
+    setRLoading(true);
+
+    const clean = (str: string) => str.trim().toUpperCase().replace(/'/g, "''");
+    const coreMouza = clean(rSelectedMouza.split(" ")[0]);
+    const safePlotValue = clean(val.replace(/^RS[-\s]?/, ""));
+    const isNum = !isNaN(Number(safePlotValue));
+
+    const queries: string[] = [];
+    let servicePath = "";
+
+    if (rSelectedType === "ms_plot_no") {
+      servicePath = SERVICES.MS_BASE;
+      queries.push(
+        `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safePlotValue}'`,
+      );
+      if (isNum)
+        queries.push(
+          `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safePlotValue}`,
+        );
+      queries.push(`plot_no='${safePlotValue}'`);
+    } else {
+      servicePath = SERVICES.RS_BASE;
+      queries.push(
+        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safePlotValue}'`,
+      );
+      queries.push(
+        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safePlotValue}'`,
+      );
+      if (isNum)
+        queries.push(
+          `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safePlotValue}`,
+        );
+    }
+
+    const executeQueries = async (targetLayer: string, qList: string[]) => {
+      for (const q of qList) {
+        const url = new URL("/api/rajuk-proxy", window.location.origin);
+        url.searchParams.append("where", q);
+        url.searchParams.append("outFields", "*");
+        url.searchParams.append("servicePath", targetLayer);
+        try {
+          const res = await fetch(url.toString());
+          const data = await res.json();
+          if (!data.error && data.features && data.features.length > 0)
+            return data.features[0].attributes;
+        } catch (e) {}
+      }
+      return null;
+    };
+
+    const details = await executeQueries(servicePath, queries);
+
+    if (details) {
+      const rawArea =
+        rSelectedType === "ms_plot_no"
+          ? details.area_katha || 0
+          : details.shape__area || details.Shape__Area || 0;
+
+      if (rawArea === 0) {
+        setResult({
+          isValid: false,
+          errorMsg: "সার্ভারে এই দাগের কোনো পরিমাপ দেওয়া নেই!",
+          shotok: 0,
+          katha: 0,
+          sqFt: 0,
+          ojutangsho: 0,
+          bigha: 0,
+          isAverage: false,
+        });
+      } else {
+        const decimal =
+          rSelectedType === "ms_plot_no" ? rawArea * 1.65 : rawArea * 0.0247105;
+        setResult({
+          isValid: true,
+          shotok: decimal,
+          katha: decimal / 1.65,
+          sqFt: decimal * 435.6,
+          ojutangsho: decimal * 100,
+          bigha: decimal / 33,
+          isAverage: false,
+        });
+      }
+      setTimeout(
+        () =>
+          document
+            .getElementById("landResultSection")
+            ?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
+    }
+    setRLoading(false);
+  };
+
+  const handleInputChange = (
+    side: keyof typeof inputs,
+    field: "feet" | "inches",
+    value: string,
+  ) =>
+    setInputs((prev) => ({
+      ...prev,
+      [side]: { ...prev[side], [field]: value },
+    }));
   const handleShapeChange = (newShape: ShapeType) => {
     setShape(newShape);
-    setResult(null); 
+    setResult(null);
   };
 
   const handleCalculate = () => {
     let res: MeasurementResult | null = null;
-    
     if (shape === "rect") res = calcRectangle(inputs.side1, inputs.side2);
-    else if (shape === "triangle") res = calcTriangle(inputs.side1, inputs.side2, inputs.side3);
-    else if (shape === "quad") res = calcQuadrilateral(inputs.side1, inputs.side2, inputs.side3, inputs.side4, inputs.diag1);
-    else if (shape === "pentagon") res = calcPentagon(inputs.side1, inputs.side2, inputs.side3, inputs.side4, inputs.side5, inputs.diag1, inputs.diag2);
+    else if (shape === "triangle")
+      res = calcTriangle(inputs.side1, inputs.side2, inputs.side3);
+    else if (shape === "quad")
+      res = calcQuadrilateral(
+        inputs.side1,
+        inputs.side2,
+        inputs.side3,
+        inputs.side4,
+        inputs.diag1,
+      );
+    else if (shape === "pentagon")
+      res = calcPentagon(
+        inputs.side1,
+        inputs.side2,
+        inputs.side3,
+        inputs.side4,
+        inputs.side5,
+        inputs.diag1,
+        inputs.diag2,
+      );
     else if (shape === "circle") res = calcCircle(inputs.diameter);
-
     if (res) {
       setResult(res);
-      setTimeout(() => document.getElementById("landResultSection")?.scrollIntoView({ behavior: "smooth" }), 100);
+      setTimeout(
+        () =>
+          document
+            .getElementById("landResultSection")
+            ?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
     }
   };
 
-  const InputRow = ({ label, sideKey, icon: Icon, colorClass, subLabel }: any) => (
-    <div className={`d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 rounded-4 mb-3 border ${colorClass} bg-opacity-10`}>
+  const InputRow = ({
+    label,
+    sideKey,
+    icon: Icon,
+    colorClass,
+    subLabel,
+  }: any) => (
+    <div
+      className={`d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 rounded-4 mb-3 border ${colorClass} bg-opacity-10`}
+    >
       <div className="mb-2 mb-md-0">
         <div className="d-flex align-items-center fw-bold text-dark">
           <Icon size={18} className="me-2" /> {label}
         </div>
-        {subLabel && <small className="text-muted" style={{ fontSize: "11px" }}>{subLabel}</small>}
+        {subLabel && (
+          <small className="text-muted" style={{ fontSize: "11px" }}>
+            {subLabel}
+          </small>
+        )}
       </div>
       <div className="d-flex gap-2">
-        <div className="input-group input-group-sm" style={{ maxWidth: "130px" }}>
-          <input type="number" className="form-control text-center fw-bold" placeholder="০" value={inputs[sideKey as keyof typeof inputs].feet} onChange={(e) => handleInputChange(sideKey as keyof typeof inputs, "feet", e.target.value)} />
+        <div
+          className="input-group input-group-sm"
+          style={{ maxWidth: "130px" }}
+        >
+          <input
+            type="number"
+            className="form-control text-center fw-bold"
+            placeholder="০"
+            value={inputs[sideKey as keyof typeof inputs].feet}
+            onChange={(e) =>
+              handleInputChange(
+                sideKey as keyof typeof inputs,
+                "feet",
+                e.target.value,
+              )
+            }
+          />
           <span className="input-group-text bg-white">ফুট</span>
         </div>
-        <div className="input-group input-group-sm" style={{ maxWidth: "130px" }}>
-          <input type="number" className="form-control text-center fw-bold" placeholder="০" max="11" value={inputs[sideKey as keyof typeof inputs].inches} onChange={(e) => handleInputChange(sideKey as keyof typeof inputs, "inches", e.target.value)} />
+        <div
+          className="input-group input-group-sm"
+          style={{ maxWidth: "130px" }}
+        >
+          <input
+            type="number"
+            className="form-control text-center fw-bold"
+            placeholder="০"
+            max="11"
+            value={inputs[sideKey as keyof typeof inputs].inches}
+            onChange={(e) =>
+              handleInputChange(
+                sideKey as keyof typeof inputs,
+                "inches",
+                e.target.value,
+              )
+            }
+          />
           <span className="input-group-text bg-white">ইঞ্চি</span>
         </div>
       </div>
@@ -74,111 +386,315 @@ export default function LandMeasurementPage() {
     <div className="container py-5 fade-in">
       <div className="row justify-content-center mb-5">
         <div className="col-lg-8">
-          
-          {/* ইউজার ম্যানুয়াল (Land) */}
-          <div className="accordion mb-4 shadow-sm rounded-4" id="manualLand">
-            <div className="accordion-item border-0 rounded-4 overflow-hidden">
-              <h2 className="accordion-header">
-                <button className="accordion-button collapsed bg-white text-primary fw-bold p-3 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLand">
-                  <HelpCircle size={20} className="me-2" /> কীভাবে ব্যবহার করবেন? (নির্দেশিকা)
-                </button>
-              </h2>
-              <div id="collapseLand" className="accordion-collapse collapse" data-bs-parent="#manualLand">
-                <div className="accordion-body bg-light text-secondary lh-lg pt-2 pb-4">
-                  <ol className="mb-0 ps-3">
-                    <li className="mb-1">ওপরের ট্যাব থেকে আপনার জমির সঠিক <strong>আকৃতি</strong> বেছে নিন।</li>
-                    <li className="mb-1">জমির প্রতিটি আইলের মাপ <strong>ফুট এবং ইঞ্চি</strong> আলাদা বক্সে ইনপুট দিন।</li>
-                    <li className="mb-1">চতুর্ভুজের ক্ষেত্রে কর্ণ না দিলেও <strong>গড় পদ্ধতিতে</strong> হিসাব হবে। তবে ১০০% নিখুঁত মাপ পেতে কর্ণ ইনপুট দেওয়া উত্তম।</li>
-                    <li><strong>ক্ষেত্রফল হিসাব করুন</strong> বাটনে ক্লিক করে ফলাফল দেখুন।</li>
-                  </ol>
-                </div>
-              </div>
+          <div className="d-flex justify-content-center mb-4">
+            <div className="bg-white p-1 rounded-pill shadow-sm border d-inline-flex">
+              <button
+                onClick={() => setMode("manual")}
+                className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ${mode === "manual" ? "btn-success shadow-sm" : "btn-light text-secondary"}`}
+              >
+                <Ruler size={18} className="me-2" /> ম্যানুয়াল পরিমাপ
+              </button>
+              <button
+                onClick={() => setMode("rajuk")}
+                className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ms-2 ${mode === "rajuk" ? "btn-dark shadow-sm" : "btn-light text-secondary"}`}
+              >
+                <Database size={18} className="me-2 text-warning" /> রাজউক অটো
+                পরিমাপ
+              </button>
             </div>
-          </div>
-
-          <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-            <button onClick={() => handleShapeChange("rect")} className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "rect" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}>
-              <Square size={16} className="me-2"/> আয়তক্ষেত্র
-            </button>
-            <button onClick={() => handleShapeChange("triangle")} className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "triangle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}>
-              <Triangle size={16} className="me-2"/> ত্রিভুজ
-            </button>
-            <button onClick={() => handleShapeChange("quad")} className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "quad" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}>
-              <Box size={16} className="me-2"/> চতুর্ভুজ (৪ আইল)
-            </button>
-            <button onClick={() => handleShapeChange("pentagon")} className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "pentagon" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}>
-              <Map size={16} className="me-2"/> পঞ্চভুজ (৫ আইল)
-            </button>
-            <button onClick={() => handleShapeChange("circle")} className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "circle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}>
-              <Circle size={16} className="me-2"/> বৃত্তাকার
-            </button>
           </div>
 
           <div className="card shadow border-0 rounded-4 overflow-hidden">
             <div className="card-header bg-dark text-white p-3 text-center">
               <h5 className="fw-bold mb-0">জমি পরিমাপ ক্যালকুলেটর</h5>
             </div>
-            
+
             <div className="card-body p-4 bg-light">
-              <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm border">
-                
-                {shape === "rect" && (
-                  <>
-                    <InputRow label="দৈর্ঘ্য (Length)" sideKey="side1" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="প্রস্থ (Width)" sideKey="side2" icon={Ruler} colorClass="border-warning" />
-                  </>
-                )}
-
-                {shape === "triangle" && (
-                  <>
-                    <InputRow label="১ম বাহু" sideKey="side1" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="২য় বাহু" sideKey="side2" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="৩য় বাহু" sideKey="side3" icon={Ruler} colorClass="border-primary" />
-                  </>
-                )}
-
-                {shape === "quad" && (
-                  <>
-                    <InputRow label="উত্তর আইল" sideKey="side1" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="দক্ষিণ আইল" sideKey="side2" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="পূর্ব আইল" sideKey="side3" icon={Ruler} colorClass="border-warning" />
-                    <InputRow label="পশ্চিম আইল" sideKey="side4" icon={Ruler} colorClass="border-warning" />
-                    <InputRow label="কর্ণ (Diagonal) - ঐচ্ছিক" sideKey="diag1" icon={TriangleRight} colorClass="border-success bg-success" subLabel="কর্ণ না দিলে গড় পদ্ধতিতে হিসাব হবে" />
-                  </>
-                )}
-
-                {shape === "pentagon" && (
-                  <>
-                    <InputRow label="১ম বাহু" sideKey="side1" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="২য় বাহু" sideKey="side2" icon={Ruler} colorClass="border-primary" />
-                    <InputRow label="৩য় বাহু" sideKey="side3" icon={Ruler} colorClass="border-warning" />
-                    <InputRow label="৪র্থ বাহু" sideKey="side4" icon={Ruler} colorClass="border-warning" />
-                    <InputRow label="৫ম বাহু" sideKey="side5" icon={Ruler} colorClass="border-warning" />
-                    <div className="mt-3 pt-3 border-top">
-                      <InputRow label="১ম কর্ণ" sideKey="diag1" icon={TriangleRight} colorClass="border-success bg-success" subLabel="১ম ও ৩য় কোণার সংযোগ" />
-                      <InputRow label="২য় কর্ণ" sideKey="diag2" icon={TriangleRight} colorClass="border-success bg-success" subLabel="১ম ও ৪র্থ কোণার সংযোগ" />
+              {mode === "rajuk" ? (
+                <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm border fade-in">
+                  <h6 className="fw-bold text-success mb-3 text-center">
+                    রাজউকের ম্যাপ থেকে সরাসরি দাগের মাপ বের করুন
+                  </h6>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <select
+                        className="form-select rounded-pill"
+                        value={rSelectedDist}
+                        onChange={(e) => onRDistChange(e.target.value)}
+                        disabled={rDistricts.length === 0}
+                      >
+                        <option value="">১. জেলা...</option>
+                        {rDistricts.map((d) => (
+                          <option key={d} value={d}>
+                            {toBn(d)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </>
-                )}
+                    <div className="col-md-6">
+                      <select
+                        className="form-select rounded-pill"
+                        value={rSelectedThana}
+                        onChange={(e) => onRThanaChange(e.target.value)}
+                        disabled={rThanas.length === 0 || rLoading}
+                      >
+                        <option value="">২. থানা...</option>
+                        {rThanas.map((t) => (
+                          <option key={t} value={t}>
+                            {toBn(t)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <select
+                        className="form-select rounded-pill"
+                        value={rSelectedMouza}
+                        onChange={(e) => {
+                          setRSelectedMouza(e.target.value);
+                          setRSelectedType("");
+                          setRDags([]);
+                          setResult(null);
+                        }}
+                        disabled={rMouzas.length === 0 || rLoading}
+                      >
+                        <option value="">৩. মৌজা...</option>
+                        {rMouzas.map((m) => (
+                          <option key={m} value={m}>
+                            {toBn(m)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <select
+                        className="form-select rounded-pill text-success fw-bold"
+                        value={rSelectedType}
+                        onChange={(e) => onRTypeChange(e.target.value)}
+                        disabled={!rSelectedMouza || rLoading}
+                      >
+                        <option value="">৪. দাগের ধরন...</option>
+                        <option value="rs_plot_no">RS দাগ</option>
+                        <option value="ms_plot_no">MS দাগ</option>
+                      </select>
+                    </div>
 
-                {shape === "circle" && (
-                  <InputRow label="জমির ব্যাস (Diameter)" sideKey="diameter" icon={Circle} colorClass="border-primary" subLabel="বৃত্তের একপ্রান্ত থেকে কেন্দ্র হয়ে অন্যপ্রান্তের দূরত্ব" />
-                )}
-
-              </div>
-
-              <div className="text-center mt-4 pt-2">
-                <button onClick={handleCalculate} className="btn btn-success btn-lg px-5 rounded-pill shadow fw-bold d-inline-flex align-items-center">
-                  <Calculator size={20} className="me-2" /> ক্ষেত্রফল হিসাব করুন
-                </button>
-              </div>
+                    {rDags.length > 0 && (
+                      <div className="col-12 mt-3 fade-in">
+                        <label className="fw-bold text-dark mb-2 text-center w-100">
+                          ৫. আপনার দাগটি সিলেক্ট করুন:
+                        </label>
+                        <select
+                          className="form-select form-select-lg rounded-pill border-dark text-center fw-bold"
+                          onChange={(e) => onRDagSelect(e.target.value)}
+                          disabled={rLoading}
+                        >
+                          <option value="">দাগ নম্বর খুঁজুন...</option>
+                          {rDags.map((d) => (
+                            <option key={d} value={d}>
+                              {toBn(d)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  {rLoading && (
+                    <div className="text-center text-success fw-bold mt-3">
+                      <span className="spinner-border spinner-border-sm me-2"></span>{" "}
+                      ডাটা আনা হচ্ছে...
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                    <button
+                      onClick={() => handleShapeChange("rect")}
+                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "rect" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                    >
+                      <Square size={16} className="me-2" /> আয়তক্ষেত্র
+                    </button>
+                    <button
+                      onClick={() => handleShapeChange("triangle")}
+                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "triangle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                    >
+                      <Triangle size={16} className="me-2" /> ত্রিভুজ
+                    </button>
+                    <button
+                      onClick={() => handleShapeChange("quad")}
+                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "quad" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                    >
+                      <Box size={16} className="me-2" /> চতুর্ভুজ
+                    </button>
+                    <button
+                      onClick={() => handleShapeChange("pentagon")}
+                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "pentagon" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                    >
+                      <Map size={16} className="me-2" /> পঞ্চভুজ
+                    </button>
+                    <button
+                      onClick={() => handleShapeChange("circle")}
+                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "circle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                    >
+                      <Circle size={16} className="me-2" /> বৃত্তাকার
+                    </button>
+                  </div>
+                  <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm border">
+                    {shape === "rect" && (
+                      <>
+                        <InputRow
+                          label="দৈর্ঘ্য"
+                          sideKey="side1"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="প্রস্থ"
+                          sideKey="side2"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                      </>
+                    )}
+                    {shape === "triangle" && (
+                      <>
+                        <InputRow
+                          label="১ম বাহু"
+                          sideKey="side1"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="২য় বাহু"
+                          sideKey="side2"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="৩য় বাহু"
+                          sideKey="side3"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                      </>
+                    )}
+                    {shape === "quad" && (
+                      <>
+                        <InputRow
+                          label="উত্তর আইল"
+                          sideKey="side1"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="দক্ষিণ আইল"
+                          sideKey="side2"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="পূর্ব আইল"
+                          sideKey="side3"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                        <InputRow
+                          label="পশ্চিম আইল"
+                          sideKey="side4"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                        <InputRow
+                          label="কর্ণ (ঐচ্ছিক)"
+                          sideKey="diag1"
+                          icon={TriangleRight}
+                          colorClass="border-success bg-success"
+                          subLabel="কর্ণ না দিলে গড় পদ্ধতিতে হিসাব হবে"
+                        />
+                      </>
+                    )}
+                    {shape === "pentagon" && (
+                      <>
+                        <InputRow
+                          label="১ম বাহু"
+                          sideKey="side1"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="২য় বাহু"
+                          sideKey="side2"
+                          icon={Ruler}
+                          colorClass="border-primary"
+                        />
+                        <InputRow
+                          label="৩য় বাহু"
+                          sideKey="side3"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                        <InputRow
+                          label="৪র্থ বাহু"
+                          sideKey="side4"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                        <InputRow
+                          label="৫ম বাহু"
+                          sideKey="side5"
+                          icon={Ruler}
+                          colorClass="border-warning"
+                        />
+                        <div className="mt-3 pt-3 border-top">
+                          <InputRow
+                            label="১ম কর্ণ"
+                            sideKey="diag1"
+                            icon={TriangleRight}
+                            colorClass="border-success bg-success"
+                            subLabel="১ম ও ৩য় কোণার সংযোগ"
+                          />
+                          <InputRow
+                            label="২য় কর্ণ"
+                            sideKey="diag2"
+                            icon={TriangleRight}
+                            colorClass="border-success bg-success"
+                            subLabel="১ম ও ৪র্থ কোণার সংযোগ"
+                          />
+                        </div>
+                      </>
+                    )}
+                    {shape === "circle" && (
+                      <InputRow
+                        label="ব্যাস (Diameter)"
+                        sideKey="diameter"
+                        icon={Circle}
+                        colorClass="border-primary"
+                        subLabel="একপ্রান্ত থেকে অন্যপ্রান্তের দূরত্ব"
+                      />
+                    )}
+                  </div>
+                  <div className="text-center mt-4 pt-2">
+                    <button
+                      onClick={handleCalculate}
+                      className="btn btn-success btn-lg px-5 rounded-pill shadow fw-bold d-inline-flex align-items-center"
+                    >
+                      <Calculator size={20} className="me-2" /> ক্ষেত্রফল হিসাব
+                      করুন
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {result && (
-        <div id="landResultSection" className="row justify-content-center pb-5 fade-in">
+        <div
+          id="landResultSection"
+          className="row justify-content-center pb-5 fade-in"
+        >
           <div className="col-lg-8">
             {!result.isValid ? (
               <div className="alert alert-danger d-flex align-items-center p-4 rounded-4 shadow-sm">
@@ -192,36 +708,36 @@ export default function LandMeasurementPage() {
                     <CheckCircle2 className="me-2" /> পরিমাপের ফলাফল
                   </h5>
                 </div>
-
-                {/* গড় পদ্ধতির সতর্কবার্তা */}
                 {result.isAverage && (
                   <div className="bg-warning bg-opacity-10 border-bottom border-warning px-4 py-2 text-center text-dark small fw-bold d-flex align-items-center justify-content-center">
-                    <Info size={16} className="me-2 text-warning" /> 
-                    কর্ণ না দেওয়ায় এটি গড় পদ্ধতিতে হিসাব করা হয়েছে (আনুমানিক)। নিখুঁত হিসাবের জন্য কর্ণের মাপ দিন।
+                    <Info size={16} className="me-2 text-warning" /> কর্ণ না
+                    দেওয়ায় এটি গড় পদ্ধতিতে হিসাব করা হয়েছে (আনুমানিক)। নিখুঁত
+                    হিসাবের জন্য কর্ণের মাপ দিন।
                   </div>
                 )}
-
                 <div className="card-body p-0">
                   <div className="row g-0 text-center">
                     <div className="col-6 col-md-4 border-end border-bottom p-4 bg-light">
-                      <p className="text-muted small fw-bold mb-1">মোট শতাংশ (ডেসিমেল)</p>
-                      <h3 className="text-success fw-bold mb-0">{toBn(result.shotok.toFixed(3))}</h3>
+                      <p className="text-muted small fw-bold mb-1">
+                        মোট শতাংশ (ডেসিমেল)
+                      </p>
+                      <h3 className="text-success fw-bold mb-0">
+                        {toBn(result.shotok.toFixed(3))}
+                      </h3>
                     </div>
                     <div className="col-6 col-md-4 border-end border-bottom p-4">
                       <p className="text-muted small fw-bold mb-1">মোট কাঠা</p>
-                      <h3 className="text-primary fw-bold mb-0">{toBn(result.katha.toFixed(3))}</h3>
+                      <h3 className="text-primary fw-bold mb-0">
+                        {toBn(result.katha.toFixed(3))}
+                      </h3>
                     </div>
                     <div className="col-12 col-md-4 border-bottom p-4 bg-light">
-                      <p className="text-muted small fw-bold mb-1">মোট বর্গফুট (Sq. Ft)</p>
-                      <h3 className="text-dark fw-bold mb-0">{toBn(result.sqFt.toFixed(2))}</h3>
-                    </div>
-                    <div className="col-6 border-end p-4">
-                      <p className="text-muted small fw-bold mb-1">অযুতাংশ (Ojutangsho)</p>
-                      <h4 className="text-warning fw-bold mb-0">{toBn(result.ojutangsho.toFixed(2))}</h4>
-                    </div>
-                    <div className="col-6 p-4 bg-light">
-                      <p className="text-muted small fw-bold mb-1">বিঘা</p>
-                      <h4 className="text-secondary fw-bold mb-0">{toBn(result.bigha.toFixed(3))}</h4>
+                      <p className="text-muted small fw-bold mb-1">
+                        মোট বর্গফুট (Sq. Ft)
+                      </p>
+                      <h3 className="text-dark fw-bold mb-0">
+                        {toBn(result.sqFt.toFixed(2))}
+                      </h3>
                     </div>
                   </div>
                 </div>

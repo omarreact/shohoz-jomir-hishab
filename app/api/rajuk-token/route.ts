@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server";
+
+// রাজউক পোর্টাল থেকে সরাসরি নতুন টোকেন পাওয়ার API
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { username, password } = body;
+
+    const targetUrl =
+      "https://masterplan.rajuk.gov.bd/portal/sharing/rest/generateToken";
+
+    // ফর্ম ডাটা তৈরি
+    const formData = new URLSearchParams();
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("referer", "https://masterplan.rajuk.gov.bd");
+    formData.append("f", "json");
+
+    const response = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      return NextResponse.json({ error: data.error }, { status: 401 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Token generation failed" },
+      { status: 500 },
+    );
+  }
+}
