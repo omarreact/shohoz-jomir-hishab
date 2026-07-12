@@ -20,13 +20,16 @@ export interface BlogPost {
   title: string;
   content: string;
   date: string;
+  category?: string;
+  author?: string;
+  coverImage?: string;
   createdAt?: any;
 }
 
 export default function BlogList() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newPost, setNewPost] = useState({ title: "", content: "" });
+  const [newPost, setNewPost] = useState({ title: "", content: "", category: "সাধারণ", author: "", coverImage: "" });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -68,6 +71,9 @@ export default function BlogList() {
       const docRef = await addDoc(collection(db, "posts"), {
         title: newPost.title,
         content: newPost.content,
+        category: newPost.category,
+        author: newPost.author,
+        coverImage: newPost.coverImage,
         date: new Date().toLocaleDateString("bn-BD"),
         createdAt: serverTimestamp()
       });
@@ -75,11 +81,14 @@ export default function BlogList() {
       setPosts([{ 
         id: docRef.id, 
         title: newPost.title, 
-        content: newPost.content, 
+        content: newPost.content,
+        category: newPost.category,
+        author: newPost.author,
+        coverImage: newPost.coverImage, 
         date: new Date().toLocaleDateString("bn-BD") 
       }, ...posts]);
       
-      setNewPost({ title: "", content: "" });
+      setNewPost({ title: "", content: "", category: "সাধারণ", author: "", coverImage: "" });
       setShowForm(false);
     } catch (error) {
       console.error("Error adding post: ", error);
@@ -141,11 +150,36 @@ export default function BlogList() {
         <div className="card shadow-sm border-0 rounded-4 p-4 mb-5 bg-light fade-in">
           <h5 className="fw-bold mb-3 text-dark">নতুন পোস্ট লিখুন</h5>
           <form onSubmit={handleAddPost}>
-            <input 
-              type="text" className="form-control bg-white mb-3 fw-bold" placeholder="পোস্টের শিরোনাম"
-              value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})}
-              required
-            />
+            <div className="row g-3 mb-3">
+              <div className="col-md-12">
+                <input 
+                  type="text" className="form-control form-control-lg bg-white fw-bold" placeholder="পোস্টের শিরোনাম"
+                  value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="col-md-4">
+                <select className="form-select bg-white" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                  <option value="সাধারণ">সাধারণ</option>
+                  <option value="আইন বিষয়ক">আইন বিষয়ক</option>
+                  <option value="ভূমি পরিমাপ">ভূমি পরিমাপ</option>
+                  <option value="ফারায়েজ">ফারায়েজ</option>
+                  <option value="অন্যান্য">অন্যান্য</option>
+                </select>
+              </div>
+              <div className="col-md-4">
+                <input 
+                  type="text" className="form-control bg-white" placeholder="লেখকের নাম (ঐচ্ছিক)"
+                  value={newPost.author} onChange={e => setNewPost({...newPost, author: e.target.value})}
+                />
+              </div>
+              <div className="col-md-4">
+                <input 
+                  type="url" className="form-control bg-white" placeholder="কভার ইমেজের URL (ঐচ্ছিক)"
+                  value={newPost.coverImage} onChange={e => setNewPost({...newPost, coverImage: e.target.value})}
+                />
+              </div>
+            </div>
             {/* Textarea এর বদলে ReactQuill */}
             <div className="bg-white rounded mb-4" style={{ minHeight: "350px", paddingBottom: "40px" }}>
               <ReactQuill 
@@ -177,10 +211,23 @@ export default function BlogList() {
           ) : (
             posts.map(post => (
               <div key={post.id} className="col-md-6 col-lg-4">
-                <div className="card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-shadow transition-all">
-                  <div className="card-body p-4">
-                    <small className="text-success fw-bold mb-2 d-inline-block bg-success bg-opacity-10 px-2 py-1 rounded">{post.date}</small>
-                    <h5 className="fw-bold mb-3 text-dark mt-2">{post.title}</h5>
+                <div className="card h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-shadow transition-all d-flex flex-column bg-white">
+                  {post.coverImage ? (
+                    <div style={{ height: "200px", backgroundImage: `url(${post.coverImage})`, backgroundSize: "cover", backgroundPosition: "center", position: "relative" }}>
+                      <span className="badge bg-success position-absolute top-0 end-0 m-3 rounded-pill px-3 py-2 shadow-sm">{post.category || "সাধারণ"}</span>
+                    </div>
+                  ) : (
+                    <div className="bg-light d-flex align-items-center justify-content-center position-relative" style={{ height: "200px" }}>
+                      <span className="text-muted fw-bold opacity-50">কোনো ছবি নেই</span>
+                      <span className="badge bg-success position-absolute top-0 end-0 m-3 rounded-pill px-3 py-2 shadow-sm">{post.category || "সাধারণ"}</span>
+                    </div>
+                  )}
+                  <div className="card-body p-4 flex-grow-1">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <small className="text-success fw-bold bg-success bg-opacity-10 px-2 py-1 rounded">{post.date}</small>
+                      {post.author && <small className="text-muted fw-medium border px-2 py-1 rounded-pill">{post.author}</small>}
+                    </div>
+                    <h5 className="fw-bold mb-3 text-dark mt-2 lh-base">{post.title}</h5>
                     <p className="text-muted small mb-0" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {/* HTML ট্যাগ রিমুভ করে শুধু নরমাল টেক্সট দেখানো হচ্ছে */}
                       {stripHtml(post.content)}

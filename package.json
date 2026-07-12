@@ -9,20 +9,26 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "bootstrap": "^5.3.8",
     "bwip-js": "^4.9.2",
     "firebase": "^12.10.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.0",
+    "leaflet": "^1.9.4",
+    "leaflet-defaulticon-compatibility": "^0.1.2",
     "lucide-react": "^1.23.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-leaflet": "^5.0.0",
     "react-quill-new": "^3.8.3",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@types/node": "25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19",

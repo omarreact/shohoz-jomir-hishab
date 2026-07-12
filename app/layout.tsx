@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Tiro_Bangla } from "next/font/google";
-import "bootstrap/dist/css/bootstrap.min.css"; // <-- make sure this is an import
+import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
-import Navbar from "@/components/shared/Navbar";
-
-import ThemeToggle from "@/components/shared/ThemeToggle";
-import Footer from "@/components/shared/Footer";
-
-import { LanguageProvider } from "@/components/shared/LanguageContext";
+import ConditionalShell from "@/components/shared/ConditionalShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,23 +53,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn">
+    <html lang="bn" data-scroll-behavior="smooth">
       <body
         className={tiroBangla.variable}
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh", overflowX: "hidden" }}
       >
-        <LanguageProvider>
-          <Navbar />
-
-          {/* মেইন কন্টেন্ট */}
-          <main className="flex-grow-1">{children}</main>
-
-          {/* গ্লোবাল ফুটার */}
-          <Footer />
-
-          {/* ভাসমান থিম চেঞ্জার */}
-          <ThemeToggle />
-        </LanguageProvider>
+        <ConditionalShell>{children}</ConditionalShell>
       </body>
     </html>
   );

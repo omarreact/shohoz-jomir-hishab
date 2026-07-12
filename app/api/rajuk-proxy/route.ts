@@ -14,16 +14,24 @@ export async function GET(request: Request) {
     return NextResponse.json(cached.data);
   }
 
-  // নতুন প্যারামিটার: servicePath (নির্দিষ্ট সার্ভার টার্গেট করার জন্য)
   const servicePath = searchParams.get("servicePath");
   const layer = searchParams.get("layer"); // Fallback
   const where = searchParams.get("where");
   const outFields = searchParams.get("outFields") || "*";
   const offset = searchParams.get("offset") || "0";
+  const operation = searchParams.get("operation") !== null ? searchParams.get("operation") : "query";
+  
+  // New Spatial Parameters
+  const geometry = searchParams.get("geometry");
+  const geometryType = searchParams.get("geometryType");
+  const spatialRel = searchParams.get("spatialRel");
+  const returnGeometry = searchParams.get("returnGeometry") || "false";
+  const inSR = searchParams.get("inSR");
+  const outSR = searchParams.get("outSR");
 
-  if (!where) {
+  if (!where && !geometry && operation === "query") {
     return NextResponse.json(
-      { error: "Missing 'where' parameter" },
+      { error: "Missing 'where' or 'geometry' parameter" },
       { status: 400 },
     );
   }
@@ -31,17 +39,38 @@ export async function GET(request: Request) {
   // ডাইনামিক বেস ইউআরএল নির্ধারণ
   const targetPath =
     servicePath || `rajuk_db/Rajuk_dap_db/FeatureServer/${layer || "1"}`;
-  const baseUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${targetPath}/query`;
+  
+  // Append operation only if provided
+  const baseUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${targetPath}${operation ? `/${operation}` : ""}`;
+
+  let activeToken = process.env.RAJUK_MAP_TOKEN || "";
+  try {
+    const { doc, getDoc } = await import("firebase/firestore");
+    const { db } = await import("@/lib/firebase");
+    const docRef = doc(db, "config", "rajuk_api");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists() && docSnap.data().token) {
+      activeToken = docSnap.data().token;
+    }
+  } catch (err) {
+    console.error("Failed to load Rajuk token from Firebase:", err);
+  }
 
   const params = new URLSearchParams({
     f: "json",
-    where: where,
+    where: where || "1=1",
     outFields: outFields,
-    returnGeometry: "false",
+    returnGeometry: returnGeometry,
     resultRecordCount: "100",
     resultOffset: offset,
-    token: process.env.RAJUK_MAP_TOKEN || "",
+    token: activeToken,
   });
+
+  if (geometry) params.append("geometry", geometry);
+  if (geometryType) params.append("geometryType", geometryType);
+  if (spatialRel) params.append("spatialRel", spatialRel);
+  if (inSR) params.append("inSR", inSR);
+  if (outSR) params.append("outSR", outSR);
 
   try {
     const finalUrl = `${baseUrl}?${params.toString()}`;

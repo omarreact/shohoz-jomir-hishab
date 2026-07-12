@@ -11,6 +11,8 @@ import {
   Info,
   Loader,
 } from "lucide-react";
+import RajukIntelligenceReport from "./RajukIntelligenceReport";
+import DapMiniMap from "./DapMiniMap";
 
 // ── API Service Paths ──────────────────────────────────────────────────────────
 const SERVICES = {
@@ -29,60 +31,74 @@ const LAYER1_FIELDS = {
 const engToBdNum = (str: any): string => {
   if (str === null || str === undefined || str === "") return "-";
   const map: Record<string, string> = {
-    "0": "০", "1": "১", "2": "২", "3": "৩", "4": "৪",
-    "5": "৫", "6": "৬", "7": "৭", "8": "৮", "9": "৯",
+    "0": "০",
+    "1": "১",
+    "2": "২",
+    "3": "৩",
+    "4": "৪",
+    "5": "৫",
+    "6": "৬",
+    "7": "৭",
+    "8": "৮",
+    "9": "৯",
   };
   return String(str).replace(/[0-9]/g, (d) => map[d] || d);
 };
 
 const keyTranslations: Record<string, string> = {
-  m_district: "জেলা",
-  upazila_ps: "থানা",
+  mDistrict: "জেলা",
+  upazilaPs: "থানা",
   mauza: "মৌজা",
-  plot_type_custom: "দাগের ধরন",
+  plotTypeCustom: "দাগের ধরন",
   landuse: "ভূমি ব্যবহার (Landuse)",
-  area_katha: "প্লট এরিয়া (কাঠা)",
-  area_acre: "আয়তন (একর)",
+  areaKatha: "প্লট এরিয়া (কাঠা)",
+  areaAcre: "আয়তন (একর)",
   remarks: "মন্তব্য",
   zone: "জোন",
-  dap_zone: "ড্যাপ জোন",
-  shape__area: "ভূমির পরিমাণ (Shape Area)",
-  address_search: "ঠিকানা (Address)",
-  rs_plot_no: "আরএস (RS) দাগ",
-  ms_plot_no: "এমএস (MS) দাগ",
-  plot_no: "দাগ নম্বর",
-  dist_ms: "জেলা (MS)",
-  thana_ms: "থানা (MS)",
+  subzone: "সাবজোন",
+  dapZone: "ড্যাপ জোন",
+  area: "ভূমির পরিমাণ (Shape Area)",
+  address: "ঠিকানা (Address)",
+  rsPlotNumber: "আরএস (RS) দাগ",
+  msPlotNumber: "এমএস (MS) দাগ",
+  plotNumber: "দাগ নম্বর",
+  distMs: "জেলা (MS)",
+  thanaMs: "থানা (MS)",
   thana: "থানা",
-  jl_no: "জেএল (JL) নম্বর",
-  sheet_no: "শীট নম্বর",
-  plot_type: "প্লট টাইপ",
-  maximum_he: "সর্বোচ্চ উচ্চতা",
+  jlNo: "জেএল (JL) নম্বর",
+  sheetNo: "শীট নম্বর",
+  plotType: "প্লট টাইপ",
+  maximumHe: "সর্বোচ্চ উচ্চতা",
   far: "ফার (FAR)",
-  rajuk_zone: "রাজউক জোন",
-  rajuk_subzone: "রাজউক সাবজোন",
-  region_name_en: "অঞ্চলের নাম (ইংরেজি)",
-  region_name_bn: "অঞ্চলের নাম (বাংলা)",
+  rajukZone: "রাজউক জোন",
+  rajukSubzone: "রাজউক সাবজোন",
+  regionNameEn: "অঞ্চলের নাম (ইংরেজি)",
+  regionNameBn: "অঞ্চলের নাম (বাংলা)",
+  length: "সীমানার দৈর্ঘ্য",
 };
 
 const IGNORED_KEYS = [
-  "objectid", "globalid", "shape", "st_area(shape)", "st_length(shape)",
-  "shape.starea()", "shape.stlength()",
+  "id",
+  "objectid",
+  "globalid",
+  "shape",
 ];
 
 const formatKeyName = (key: string): string => {
-  const lowerKey = key.toLowerCase();
-  return keyTranslations[lowerKey] || key.replace(/_/g, " ").toUpperCase();
+  return keyTranslations[key] || key.replace(/([A-Z])/g, " $1").toUpperCase();
 };
 
 const formatValue = (key: string, value: any): string => {
   if (value === null || value === undefined || value === "") return "-";
   let strVal = String(value);
-  const lowerKey = key.toLowerCase();
-  if (["m_district", "upazila_ps", "mauza", "plot_type_custom"].includes(lowerKey)) {
+  if (
+    ["mDistrict", "upazilaPs", "mauza", "plotTypeCustom"].includes(key)
+  ) {
     return strVal;
   }
-  if (["area_acre", "shape__area", "shape__length", "far", "area_katha"].includes(lowerKey)) {
+  if (
+    ["areaAcre", "area", "length", "far", "areaKatha"].includes(key)
+  ) {
     const num = parseFloat(strVal);
     if (!isNaN(num)) strVal = num.toFixed(4);
   }
@@ -115,26 +131,34 @@ export default function SmartRajukSearch({
   const [dagNo, setDagNo] = useState("");
 
   const [plotData, setPlotData] = useState<any | null>(null);
-  const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "found" | "not_found" | "error">("idle");
+  const [searchStatus, setSearchStatus] = useState<
+    "idle" | "loading" | "found" | "not_found" | "error"
+  >("idle");
 
   // ── Fetch helpers ────────────────────────────────────────────────────────────
   const fetchLocation = useCallback(
     async (where: string, outField: string): Promise<string[]> => {
-      const cacheKey = `${SERVICES.LOCATION}-${where}-${outField}`;
+      const cacheKey = `location-${where}-${outField}`;
       if (localCache[cacheKey]) return localCache[cacheKey];
 
-      const url = new URL("/api/rajuk-proxy", window.location.origin);
-      url.searchParams.append("where", where);
-      url.searchParams.append("outFields", outField);
-      url.searchParams.append("servicePath", SERVICES.LOCATION);
-
       try {
+        const url = new URL("/api/unified", window.location.origin);
+        url.searchParams.append("include", "location");
+        url.searchParams.append("where", where);
+        url.searchParams.append("outFields", outField);
+        url.searchParams.append("returnGeometry", "false");
+        url.searchParams.append("limit", "2000");
+
         const res = await fetch(url.toString());
-        const data = await res.json();
-        if (data.error) throw new Error();
-        const results = data.features
-          .map((f: any) => f.attributes[outField])
+        const json = await res.json();
+        
+        if (!json.success || !json.data.location) throw new Error();
+        
+        const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
+        const results = json.data.location
+          .map((f: any) => f.properties[camelOutField] || f.properties[outField])
           .filter(Boolean);
+        
         const unique = [...new Set(results)].sort() as string[];
         setLocalCache((prev) => ({ ...prev, [cacheKey]: unique }));
         return unique;
@@ -142,22 +166,33 @@ export default function SmartRajukSearch({
         return [];
       }
     },
-    [localCache]
+    [localCache],
   );
 
-  const smartSearch = async (servicePath: string, queries: string[]): Promise<any | null> => {
+  const smartSearch = async (
+    targetLayer: "msPlots" | "plots",
+    queries: string[],
+  ): Promise<any | null> => {
     for (const q of queries) {
-      const url = new URL("/api/rajuk-proxy", window.location.origin);
+      const url = new URL("/api/unified", window.location.origin);
+      url.searchParams.append("include", targetLayer);
       url.searchParams.append("where", q);
-      url.searchParams.append("outFields", "*");
-      url.searchParams.append("servicePath", servicePath);
+      url.searchParams.append("limit", "1");
+      
       try {
         const res = await fetch(url.toString());
-        const data = await res.json();
-        if (!data.error && data.features && data.features.length > 0) {
-          return data.features[0].attributes;
+        const json = await res.json();
+        
+        if (json.success && json.data[targetLayer] && json.data[targetLayer].length > 0) {
+          const feature = json.data[targetLayer][0];
+          return {
+            attributes: feature.properties,
+            geometry: feature.geometry
+          };
         }
-      } catch { /* try next query */ }
+      } catch {
+        /* try next query */
+      }
     }
     return null;
   };
@@ -174,27 +209,40 @@ export default function SmartRajukSearch({
   // ── Cascade handlers ─────────────────────────────────────────────────────────
   const handleDistChange = async (val: string) => {
     setSelectedDist(val);
-    setThanas([]); setMouzas([]);
-    setSelectedThana(""); setSelectedMouza(""); setSelectedType(""); setDagNo("");
-    setPlotData(null); setSearchStatus("idle");
+    setThanas([]);
+    setMouzas([]);
+    setSelectedThana("");
+    setSelectedMouza("");
+    setSelectedType("");
+    setDagNo("");
+    setPlotData(null);
+    setSearchStatus("idle");
     if (!val) return;
     setSearchStatus("loading");
-    setThanas(await fetchLocation(`${LAYER1_FIELDS.DIST}='${val}'`, LAYER1_FIELDS.THANA));
+    setThanas(
+      await fetchLocation(
+        `${LAYER1_FIELDS.DIST}='${val}'`,
+        LAYER1_FIELDS.THANA,
+      ),
+    );
     setSearchStatus("idle");
   };
 
   const handleThanaChange = async (val: string) => {
     setSelectedThana(val);
     setMouzas([]);
-    setSelectedMouza(""); setSelectedType(""); setDagNo("");
-    setPlotData(null); setSearchStatus("idle");
+    setSelectedMouza("");
+    setSelectedType("");
+    setDagNo("");
+    setPlotData(null);
+    setSearchStatus("idle");
     if (!val) return;
     setSearchStatus("loading");
     setMouzas(
       await fetchLocation(
         `${LAYER1_FIELDS.DIST}='${selectedDist}' AND ${LAYER1_FIELDS.THANA}='${val}'`,
-        LAYER1_FIELDS.MOUZA
-      )
+        LAYER1_FIELDS.MOUZA,
+      ),
     );
     setSearchStatus("idle");
   };
@@ -212,36 +260,57 @@ export default function SmartRajukSearch({
     const isNum = /^\d+$/.test(safeDag);
 
     const queries: string[] = [];
-    let servicePath = "";
+    let targetLayer: "msPlots" | "plots" = "plots";
 
     if (selectedType === "ms_plot_no") {
-      servicePath = SERVICES.MS_BASE;
-      queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`);
-      if (isNum) queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`);
+      targetLayer = "msPlots";
+      queries.push(
+        `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`,
+      );
+      if (isNum)
+        queries.push(
+          `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`,
+        );
       queries.push(`plot_no='${safeDag}'`);
     } else {
-      servicePath = SERVICES.RS_BASE;
-      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`);
-      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`);
-      if (isNum) queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`);
+      targetLayer = "plots";
+      queries.push(
+        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`,
+      );
+      queries.push(
+        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`,
+      );
+      if (isNum)
+        queries.push(
+          `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`,
+        );
     }
 
-    const result = await smartSearch(servicePath, queries);
+    const result = await smartSearch(targetLayer, queries);
 
     if (result) {
       // Inject selected location values (override API's raw location fields)
+      // Inject selected location values (override API's raw location fields)
       const {
-        m_district, upazila_ps, mauza, district,
-        dist_ms, thana_ms, thana, plot_type,
+        mDistrict,
+        upazilaPs,
+        mauza,
+        district,
+        distMs,
+        thanaMs,
+        thana,
+        plotType,
         ...rest
-      } = result;
+      } = result.attributes;
 
       const enhanced = {
-        m_district: selectedDist,
-        upazila_ps: selectedThana,
+        mDistrict: selectedDist,
+        upazilaPs: selectedThana,
         mauza: selectedMouza,
-        plot_type_custom: selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
+        plotTypeCustom:
+          selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
         ...rest,
+        geometry: result.geometry, // Keep the geometry for advanced features
       };
 
       setPlotData(enhanced);
@@ -257,10 +326,10 @@ export default function SmartRajukSearch({
 
     let decimalArea = 0;
     if (selectedType === "ms_plot_no") {
-      decimalArea = (plotData.area_katha || 0) * 1.65;
+      decimalArea = (plotData.areaKatha || 0) * 1.65;
     } else {
       decimalArea =
-        (plotData.shape__area || plotData.Shape__Area || 0) * 0.0247105;
+        (plotData.area || 0) * 0.0247105;
     }
 
     if (decimalArea === 0) {
@@ -275,11 +344,13 @@ export default function SmartRajukSearch({
   const getAreaDisplay = (): string => {
     if (!plotData) return "-";
     if (selectedType === "ms_plot_no") {
-      return engToBdNum((plotData.area_katha || 0).toFixed(2)) + " কাঠা";
+      return engToBdNum((plotData.areaKatha || 0).toFixed(2)) + " কাঠা";
     }
     return (
       engToBdNum(
-        ((plotData.shape__area || plotData.Shape__Area || 0) * 0.0247105).toFixed(2)
+        (
+          (plotData.area || 0) * 0.0247105
+        ).toFixed(2),
       ) + " শতাংশ"
     );
   };
@@ -295,7 +366,9 @@ export default function SmartRajukSearch({
           <Database size={20} className="me-2 text-warning" />
           রাজউক মাস্টারপ্ল্যান (DAP) ডাটাবেস
         </h5>
-        <small className="text-white-50">সরাসরি রাজউক সার্ভার থেকে রিয়েল-টাইম ডাটা</small>
+        <small className="text-white-50">
+          সরাসরি রাজউক সার্ভার থেকে রিয়েল-টাইম ডাটা
+        </small>
       </div>
 
       <div className="card-body p-4 bg-light">
@@ -303,7 +376,9 @@ export default function SmartRajukSearch({
         <div className="row g-3 mb-3">
           {/* District */}
           <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">১. জেলা</label>
+            <label className="form-label small fw-bold text-muted mb-1">
+              ১. জেলা
+            </label>
             <select
               className="form-select rounded-3 shadow-sm"
               value={selectedDist}
@@ -314,14 +389,18 @@ export default function SmartRajukSearch({
                 {districts.length === 0 ? "লোড হচ্ছে..." : "নির্বাচন করুন..."}
               </option>
               {districts.map((d) => (
-                <option key={d} value={d}>{engToBdNum(d)}</option>
+                <option key={d} value={d}>
+                  {engToBdNum(d)}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Thana */}
           <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">২. থানা</label>
+            <label className="form-label small fw-bold text-muted mb-1">
+              ২. থানা
+            </label>
             <select
               className="form-select rounded-3 shadow-sm"
               value={selectedThana}
@@ -330,40 +409,52 @@ export default function SmartRajukSearch({
             >
               <option value="">নির্বাচন করুন...</option>
               {thanas.map((t) => (
-                <option key={t} value={t}>{engToBdNum(t)}</option>
+                <option key={t} value={t}>
+                  {engToBdNum(t)}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Mouza */}
           <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">৩. মৌজা</label>
+            <label className="form-label small fw-bold text-muted mb-1">
+              ৩. মৌজা
+            </label>
             <select
               className="form-select rounded-3 shadow-sm"
               value={selectedMouza}
               onChange={(e) => {
                 setSelectedMouza(e.target.value);
-                setSelectedType(""); setDagNo("");
-                setPlotData(null); setSearchStatus("idle");
+                setSelectedType("");
+                setDagNo("");
+                setPlotData(null);
+                setSearchStatus("idle");
               }}
               disabled={mouzas.length === 0 || isDropdownLoading}
             >
               <option value="">নির্বাচন করুন...</option>
               {mouzas.map((m) => (
-                <option key={m} value={m}>{engToBdNum(m)}</option>
+                <option key={m} value={m}>
+                  {engToBdNum(m)}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Plot Type */}
           <div className="col-md-6">
-            <label className="form-label small fw-bold text-success mb-1">৪. দাগের ধরন</label>
+            <label className="form-label small fw-bold text-success mb-1">
+              ৪. দাগের ধরন
+            </label>
             <select
               className="form-select rounded-3 border-success text-success fw-bold shadow-sm"
               value={selectedType}
               onChange={(e) => {
                 setSelectedType(e.target.value);
-                setDagNo(""); setPlotData(null); setSearchStatus("idle");
+                setDagNo("");
+                setPlotData(null);
+                setSearchStatus("idle");
               }}
               disabled={!selectedMouza || isDropdownLoading}
             >
@@ -391,9 +482,12 @@ export default function SmartRajukSearch({
                 value={dagNo}
                 onChange={(e) => {
                   setDagNo(e.target.value);
-                  setPlotData(null); setSearchStatus("idle");
+                  setPlotData(null);
+                  setSearchStatus("idle");
                 }}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
                 disabled={searchStatus === "loading"}
               />
               <button
@@ -404,7 +498,9 @@ export default function SmartRajukSearch({
                 {searchStatus === "loading" ? (
                   <span className="spinner-border spinner-border-sm" />
                 ) : (
-                  <><Search size={18} className="me-1" /> সার্চ</>
+                  <>
+                    <Search size={18} className="me-1" /> সার্চ
+                  </>
                 )}
               </button>
             </div>
@@ -422,11 +518,15 @@ export default function SmartRajukSearch({
         {/* Not Found */}
         {searchStatus === "not_found" && (
           <div className="alert alert-danger shadow-sm border-0 rounded-4 d-flex align-items-center p-3 mt-4 fade-in">
-            <AlertTriangle size={24} className="me-3 text-danger flex-shrink-0" />
+            <AlertTriangle
+              size={24}
+              className="me-3 text-danger flex-shrink-0"
+            />
             <div>
               <strong>দাগটি পাওয়া যায়নি!</strong>
               <div className="small text-dark mt-1">
-                এই মৌজায় <strong>{engToBdNum(dagNo)}</strong> নম্বরের কোনো দাগ পাওয়া যায়নি। নম্বরটি সঠিক কিনা যাচাই করুন।
+                এই মৌজায় <strong>{engToBdNum(dagNo)}</strong> নম্বরের কোনো দাগ
+                পাওয়া যায়নি। নম্বরটি সঠিক কিনা যাচাই করুন।
               </div>
             </div>
           </div>
@@ -442,7 +542,9 @@ export default function SmartRajukSearch({
                   <MapPin size={20} className="me-2" />
                   দাগ নং {engToBdNum(dagNo)} — বিস্তারিত তথ্য
                 </h5>
-                <small className="text-white-50">সরাসরি রাজউক DAP ডাটাবেস থেকে প্রাপ্ত</small>
+                <small className="text-white-50">
+                  সরাসরি রাজউক DAP ডাটাবেস থেকে প্রাপ্ত
+                </small>
               </div>
 
               <div className="card-body bg-white p-3 p-md-4">
@@ -450,12 +552,16 @@ export default function SmartRajukSearch({
                 <div className="row g-3 text-center mb-4">
                   <div className="col-6 border-end">
                     <p className="text-muted small mb-1">মোট জমির পরিমাণ</p>
-                    <h4 className="text-success fw-bold mb-0">{getAreaDisplay()}</h4>
+                    <h4 className="text-success fw-bold mb-0">
+                      {getAreaDisplay()}
+                    </h4>
                   </div>
                   <div className="col-6">
                     <p className="text-muted small mb-1">দাগের ধরন</p>
                     <h6 className="fw-bold mb-0 text-dark">
-                      {selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ"}
+                      {selectedType === "rs_plot_no"
+                        ? "RS / সাধারণ দাগ"
+                        : "MS দাগ"}
                     </h6>
                   </div>
                 </div>
@@ -482,32 +588,62 @@ export default function SmartRajukSearch({
                               value !== null &&
                               value !== "" &&
                               value !== " " &&
-                              !IGNORED_KEYS.includes(key.toLowerCase())
+                              !IGNORED_KEYS.includes(key.toLowerCase()) &&
+                              key !== "geometry",
                           )
-                          .map(([key, value]) => (
-                            <tr key={key}>
-                              <th
-                                className="bg-light text-secondary px-3 py-2 align-middle text-uppercase"
-                                style={{ width: "38%", fontSize: "13px" }}
-                              >
-                                {formatKeyName(key)}
-                              </th>
-                              <td
-                                className="text-dark fw-bold px-3 py-2 align-middle"
-                                style={{ fontSize: "14px", wordBreak: "break-word" }}
-                              >
-                                {formatValue(key, value)}
-                              </td>
-                            </tr>
-                          ))}
+                          .map(([key, value]) => {
+                            // Safely handle nested objects (fixes [object Object] bug)
+                            let displayValue = value;
+                            if (typeof value === "object") {
+                              displayValue = JSON.stringify(value);
+                            }
+                            return (
+                              <tr key={key}>
+                                <th
+                                  className="bg-light text-secondary px-3 py-2 align-middle text-uppercase"
+                                  style={{ width: "38%", fontSize: "13px" }}
+                                >
+                                  {formatKeyName(key)}
+                                </th>
+                                <td
+                                  className="text-dark fw-bold px-3 py-2 align-middle"
+                                  style={{
+                                    fontSize: "14px",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {formatValue(key, displayValue)}
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
+                    
+                    {/* Explanation for why MS has fewer details */}
+                    {selectedType === "ms_plot_no" && (
+                      <div className="p-3 bg-light border-top text-muted small">
+                        <Info size={14} className="me-1 mb-1 text-warning" />
+                        <strong>বিশেষ দ্রষ্টব্য:</strong> রাজউকের ডাটাবেসে MS দাগের জ্যামিতিক সীমানা (Geometry) বা ম্যাপ লাইন সংযুক্ত নেই। জ্যামিতিক সীমানা না থাকায় এই দাগটি কোন ড্যাপ জোন (Landuse), ফার (FAR) বা উচ্চতা (Height) সীমার মধ্যে পড়েছে, তা স্বয়ংক্রিয়ভাবে নির্ণয় করা সম্ভব নয়। পূর্ণাঙ্গ ড্যাপ তথ্য পেতে অনুগ্রহ করে জমিটির <strong>RS দাগ</strong> নম্বর দিয়ে সার্চ করুন।
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div className="text-center text-muted small mt-3 pt-2 border-top">
+                {/* Intelligence Report and Map Integration */}
+                <div className="row mt-4 g-3 align-items-stretch">
+                  <div className="col-12 col-xl-6">
+                    <RajukIntelligenceReport plotData={plotData} />
+                  </div>
+                  <div className="col-12 col-xl-6">
+                    <DapMiniMap plotData={plotData} />
+                  </div>
+                </div>
+
+                <div className="text-center text-muted small mt-4 pt-2 border-top">
                   <Info size={13} className="me-1 mb-1" />
-                  তথ্যটি ডিজিটাল প্রক্রিয়ায় সরাসরি রাজউক DAP ডাটাবেস থেকে সংগৃহীত।
+                  তথ্যটি ডিজিটাল প্রক্রিয়ায় সরাসরি রাজউক DAP ডাটাবেস থেকে
+                  সংগৃহীত।
                 </div>
               </div>
             </div>

@@ -90,23 +90,95 @@ html[data-theme="dark"] .bg-dark {
   background-color: #050807 !important; /* ডার্ক মোডের জন্য পিওর ডার্ক */
 }
 
-/* টেক্সট ও ফন্ট কালার ফিক্স */
+/* =========================================
+   টেক্সট ও ফন্ট কালার ফিক্স
+   ========================================= */
 html[data-theme="dark"] .text-dark,
 html[data-theme="dark"] h1,
 html[data-theme="dark"] h2,
 html[data-theme="dark"] h3,
 html[data-theme="dark"] h4,
 html[data-theme="dark"] h5,
-html[data-theme="dark"] h6 {
-  color: #f8fafc !important; /* ডার্ক মোডে সব টেক্সট সাদা হয়ে যাবে */
+html[data-theme="dark"] h6,
+html[data-theme="dark"] p,
+html[data-theme="dark"] span:not(.badge),
+html[data-theme="dark"] label,
+html[data-theme="dark"] td,
+html[data-theme="dark"] th,
+html[data-theme="dark"] li {
+  color: #f8fafc !important;
+}
+
+/* Fix ReactQuill inline colors on dark mode */
+html[data-theme="dark"] .blog-content * {
+  color: #e2e8f0 !important;
+  background-color: transparent !important;
 }
 
 html[data-theme="dark"] .text-secondary,
 html[data-theme="dark"] .text-muted {
-  color: #94a3b8 !important; /* ডার্ক মোডে হালকা ধূসর রং */
+  color: #94a3b8 !important;
 }
 
-/* বর্ডার কালার ফিক্স */
+html[data-theme="dark"] .text-body {
+  color: #e2e8f0 !important;
+}
+
+/* Navbar dark mode fix */
+html[data-theme="dark"] .navbar-light .navbar-brand,
+html[data-theme="dark"] .navbar-light .nav-link,
+html[data-theme="dark"] .navbar-light .navbar-text {
+  color: #f8fafc !important;
+}
+
+/* Card body text visibility */
+html[data-theme="dark"] .card-body,
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-footer {
+  color: #e2e8f0;
+}
+
+/* Alert text visibility */
+html[data-theme="dark"] .alert {
+  background-color: #1a2521 !important;
+  border-color: var(--border-color) !important;
+  color: #e2e8f0 !important;
+}
+html[data-theme="dark"] .alert-success {
+  background-color: rgba(0, 196, 144, 0.15) !important;
+  border-color: rgba(0, 196, 144, 0.3) !important;
+  color: #00c490 !important;
+}
+html[data-theme="dark"] .alert-danger {
+  background-color: rgba(255, 90, 110, 0.15) !important;
+  border-color: rgba(255, 90, 110, 0.3) !important;
+  color: #ff5a6e !important;
+}
+
+/* Input placeholder dark mode */
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* ✅ ADMIN PANEL ISOLATION
+   Admin panel uses its own fixed dark theme.
+   Prevent global dark mode overrides from conflicting. */
+html[data-theme="dark"] [data-admin-panel] h1,
+html[data-theme="dark"] [data-admin-panel] h2,
+html[data-theme="dark"] [data-admin-panel] h3,
+html[data-theme="dark"] [data-admin-panel] h4,
+html[data-theme="dark"] [data-admin-panel] h5,
+html[data-theme="dark"] [data-admin-panel] p,
+html[data-theme="dark"] [data-admin-panel] span,
+html[data-theme="dark"] [data-admin-panel] td,
+html[data-theme="dark"] [data-admin-panel] th {
+  color: inherit;
+}
+
+/* =========================================
+   বর্ডার কালার ফিক্স
+   ========================================= */
 html[data-theme="dark"] .border, 
 html[data-theme="dark"] .border-top, 
 html[data-theme="dark"] .border-bottom, 
@@ -226,6 +298,7 @@ html[data-theme="dark"] .accordion-button:not(.collapsed) {
 html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
 ::-webkit-scrollbar-thumb:hover { background: var(--bs-success); }
 
+
 /* =========================================
    Animations & Effects
    ========================================= */
@@ -299,4 +372,8 @@ html[data-theme="dark"] .blur-effect {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+
+.label-text-shadow {
+  text-shadow: 2px 2px 0px white, -2px -2px 0px white, 2px -2px 0px white, -2px 2px 0px white;
 }

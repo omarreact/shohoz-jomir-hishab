@@ -17,7 +17,11 @@ export default function PorchaPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPorcha, setSelectedPorcha] = useState<PorchaData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  // Auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
 
   // পেজিনেশনের জন্য নতুন স্টেট
   const [page, setPage] = useState(1);
@@ -26,8 +30,30 @@ export default function PorchaPage() {
 
   const exportRef = useRef<HTMLDivElement | null>(null);
 
+  // Auth Check Effect
+  useEffect(() => {
+    import("@/lib/firebase").then(({ auth }) => {
+      import("firebase/auth").then(({ onAuthStateChanged }) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          setIsLoggedIn(!!user);
+          setAuthChecking(false);
+        });
+        return () => unsubscribe();
+      });
+    });
+  }, []);
+
   // ইউজারের সার্চ অনুযায়ী API থেকে ডাটা নিয়ে আসা
   useEffect(() => {
+    if (!isLoggedIn) return; // Don't fetch if not logged in
+
+    if (!searchQuery.trim()) {
+      setFilteredData([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     const delayDebounceFn = setTimeout(() => {
@@ -102,6 +128,41 @@ export default function PorchaPage() {
       setIsDownloading(false);
     }
   };
+
+  if (authChecking) {
+    return (
+      <div className="container py-5 text-center mt-5">
+        <div className="spinner-border text-success" role="status"></div>
+        <p className="mt-3 text-muted fw-bold">যাচাই করা হচ্ছে...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="container py-5 mt-5 fade-in">
+        <div className="row justify-content-center">
+          <div className="col-md-6 col-lg-5 text-center">
+            <div className="card shadow-lg border-0 rounded-4">
+              <div className="card-body p-5">
+                <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex p-3 mb-4">
+                  <Search size={40} />
+                </div>
+                <h3 className="fw-bold text-dark mb-3">অ্যাক্সেস ডিনাইড</h3>
+                <p className="text-muted mb-4">
+                  এই পেজটি শুধুমাত্র অ্যাডমিনদের জন্য। পর্চা খুঁজতে অনুগ্রহ করে
+                  লগিন করুন।
+                </p>
+                <a href="/login" className="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm">
+                  লগিন করুন
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-5 fade-in">
@@ -212,7 +273,6 @@ export default function PorchaPage() {
         className="modal fade"
         id="khotiyanModal"
         tabIndex={-1}
-        aria-hidden="true"
       >
         <div className="modal-dialog modal-lg modal-dialog-centered">
           <div className="modal-content rounded-4 border-0 shadow-lg">

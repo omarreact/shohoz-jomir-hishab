@@ -61,11 +61,11 @@ export default function LandMeasurementPage() {
   const [rDistricts, setRDistricts] = useState<string[]>([]);
   const [rThanas, setRThanas] = useState<string[]>([]);
   const [rMouzas, setRMouzas] = useState<string[]>([]);
-  const [rDags, setRDags] = useState<string[]>([]);
   const [rSelectedDist, setRSelectedDist] = useState("");
   const [rSelectedThana, setRSelectedThana] = useState("");
   const [rSelectedMouza, setRSelectedMouza] = useState("");
   const [rSelectedType, setRSelectedType] = useState("");
+  const [rDagInput, setRDagInput] = useState("");
   const [rLoading, setRLoading] = useState(false);
 
   useEffect(() => {
@@ -73,17 +73,21 @@ export default function LandMeasurementPage() {
   }, []);
 
   const fetchLocationData = async (where: string, outField: string) => {
-    const url = new URL("/api/rajuk-proxy", window.location.origin);
-    url.searchParams.append("where", where);
-    url.searchParams.append("outFields", outField);
-    url.searchParams.append("servicePath", SERVICES.LOCATION);
     try {
+      const url = new URL("/api/unified", window.location.origin);
+      url.searchParams.append("include", "location");
+      url.searchParams.append("where", where);
+      url.searchParams.append("outFields", outField);
+      url.searchParams.append("returnGeometry", "false");
+      url.searchParams.append("limit", "2000");
+
       const res = await fetch(url.toString());
-      const data = await res.json();
-      if (data.error) throw new Error();
-      const results = data.features
-        .map((f: any) => f.attributes[outField])
-        .filter((v: any) => v);
+      const json = await res.json();
+      if (!json.success || !json.data.location) throw new Error();
+      const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
+      const results = json.data.location
+        .map((f: any) => f.properties[camelOutField] || f.properties[outField])
+        .filter(Boolean);
       return [...new Set(results)].sort() as string[];
     } catch (e) {
       return [];
@@ -100,8 +104,8 @@ export default function LandMeasurementPage() {
     setRSelectedDist(val);
     setRThanas([]);
     setRMouzas([]);
-    setRDags([]);
     setRSelectedType("");
+    setRDagInput("");
     setResult(null);
     if (!val) return;
     setRLoading(true);
@@ -117,8 +121,8 @@ export default function LandMeasurementPage() {
   const onRThanaChange = async (val: string) => {
     setRSelectedThana(val);
     setRMouzas([]);
-    setRDags([]);
     setRSelectedType("");
+    setRDagInput("");
     setResult(null);
     if (!val) return;
     setRLoading(true);
@@ -131,62 +135,28 @@ export default function LandMeasurementPage() {
     setRLoading(false);
   };
 
-  const onRTypeChange = async (val: string) => {
+  const onRTypeChange = (val: string) => {
     setRSelectedType(val);
-    setRDags([]);
+    setRDagInput("");
     setResult(null);
-    if (!val) return;
-    setRLoading(true);
-
-    const clean = (str: string) => str.trim().toUpperCase().replace(/'/g, "''");
-    const coreThana = clean(rSelectedThana.split(" ")[0]);
-    const coreMouza = clean(rSelectedMouza.split(" ")[0]);
-    let where = "",
-      field = "",
-      servicePath = "";
-
-    if (val === "ms_plot_no") {
-      servicePath = SERVICES.MS_BASE;
-      field = "plot_no";
-      where = `UPPER(thana_ms) LIKE '%${coreThana}%' AND UPPER(mauza) LIKE '%${coreMouza}%'`;
-    } else {
-      servicePath = SERVICES.RS_BASE;
-      field = val === "rs_plot_no" ? "rs_plot_no" : "plot_no";
-      where = `UPPER(address_search) LIKE '%${coreMouza}%' AND UPPER(address_search) LIKE '%${coreThana}%'`;
-    }
-
-    const url = new URL("/api/rajuk-proxy", window.location.origin);
-    url.searchParams.append("where", where);
-    url.searchParams.append("outFields", field);
-    url.searchParams.append("servicePath", servicePath);
-
-    try {
-      const res = await fetch(url.toString());
-      const data = await res.json();
-      if (!data.error && data.features) {
-        const results = data.features
-          .map((f: any) => f.attributes[field])
-          .filter((v: any) => v);
-        setRDags([...new Set(results)].sort() as string[]);
-      }
-    } catch (e) {}
-    setRLoading(false);
   };
 
-  const onRDagSelect = async (val: string) => {
-    if (!val) return;
+  const handleDagSearch = async () => {
+    const val = rDagInput.trim();
+    if (!val || !rSelectedType || !rSelectedMouza) return;
     setRLoading(true);
+    setResult(null);
 
     const clean = (str: string) => str.trim().toUpperCase().replace(/'/g, "''");
     const coreMouza = clean(rSelectedMouza.split(" ")[0]);
     const safePlotValue = clean(val.replace(/^RS[-\s]?/, ""));
-    const isNum = !isNaN(Number(safePlotValue));
+    const isNum = /^\d+$/.test(safePlotValue);
 
     const queries: string[] = [];
-    let servicePath = "";
+    let targetLayer: "msPlots" | "plots" = "plots";
 
     if (rSelectedType === "ms_plot_no") {
-      servicePath = SERVICES.MS_BASE;
+      targetLayer = "msPlots";
       queries.push(
         `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safePlotValue}'`,
       );
@@ -196,7 +166,7 @@ export default function LandMeasurementPage() {
         );
       queries.push(`plot_no='${safePlotValue}'`);
     } else {
-      servicePath = SERVICES.RS_BASE;
+      targetLayer = "plots";
       queries.push(
         `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safePlotValue}'`,
       );
@@ -209,31 +179,39 @@ export default function LandMeasurementPage() {
         );
     }
 
-    const executeQueries = async (targetLayer: string, qList: string[]) => {
+    const executeQueries = async (layer: "msPlots" | "plots", qList: string[]) => {
       for (const q of qList) {
-        const url = new URL("/api/rajuk-proxy", window.location.origin);
+        const url = new URL("/api/unified", window.location.origin);
+        url.searchParams.append("include", layer);
         url.searchParams.append("where", q);
-        url.searchParams.append("outFields", "*");
-        url.searchParams.append("servicePath", targetLayer);
+        url.searchParams.append("limit", "1");
         try {
           const res = await fetch(url.toString());
-          const data = await res.json();
-          if (!data.error && data.features && data.features.length > 0)
-            return data.features[0].attributes;
+          const json = await res.json();
+          if (json.success && json.data[layer] && json.data[layer].length > 0)
+            return json.data[layer][0].properties;
         } catch (e) {}
       }
       return null;
     };
 
-    const details = await executeQueries(servicePath, queries);
+    const details = await executeQueries(targetLayer, queries);
 
     if (details) {
       const rawArea =
         rSelectedType === "ms_plot_no"
-          ? details.area_katha || 0
-          : details.shape__area || details.Shape__Area || 0;
+          ? details.areaKatha || 0
+          : details.area || 0;
 
-      if (rawArea === 0) {
+      let sqft = 0;
+      if (rSelectedType === "ms_plot_no") {
+        sqft = rawArea * 720;
+      } else {
+        const sqMeters = rawArea;
+        sqft = sqMeters * 10.7639;
+      }
+      
+      if (sqft === 0) {
         setResult({
           isValid: false,
           errorMsg: "সার্ভারে এই দাগের কোনো পরিমাপ দেওয়া নেই!",
@@ -242,6 +220,7 @@ export default function LandMeasurementPage() {
           sqFt: 0,
           ojutangsho: 0,
           bigha: 0,
+          acre: 0,
           isAverage: false,
         });
       } else {
@@ -254,6 +233,7 @@ export default function LandMeasurementPage() {
           sqFt: decimal * 435.6,
           ojutangsho: decimal * 100,
           bigha: decimal / 33,
+          acre: (decimal * 435.6) / 43560,
           isAverage: false,
         });
       }
@@ -453,7 +433,7 @@ export default function LandMeasurementPage() {
                         onChange={(e) => {
                           setRSelectedMouza(e.target.value);
                           setRSelectedType("");
-                          setRDags([]);
+                          setRDagInput("");
                           setResult(null);
                         }}
                         disabled={rMouzas.length === 0 || rLoading}
@@ -479,23 +459,31 @@ export default function LandMeasurementPage() {
                       </select>
                     </div>
 
-                    {rDags.length > 0 && (
+                    {rSelectedType && (
                       <div className="col-12 mt-3 fade-in">
                         <label className="fw-bold text-dark mb-2 text-center w-100">
-                          ৫. আপনার দাগটি সিলেক্ট করুন:
+                          ৫. দাগ নম্বর লিখুন:
                         </label>
-                        <select
-                          className="form-select form-select-lg rounded-pill border-dark text-center fw-bold"
-                          onChange={(e) => onRDagSelect(e.target.value)}
-                          disabled={rLoading}
-                        >
-                          <option value="">দাগ নম্বর খুঁজুন...</option>
-                          {rDags.map((d) => (
-                            <option key={d} value={d}>
-                              {toBn(d)}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                          <input
+                            type="text"
+                            className="form-control border-dark border-opacity-25 text-center fw-bold"
+                            placeholder="যেমন: ১২৩ বা 123"
+                            value={rDagInput}
+                            onChange={(e) => { setRDagInput(e.target.value); setResult(null); }}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleDagSearch(); }}
+                            disabled={rLoading}
+                          />
+                          <button
+                            className="btn btn-success fw-bold px-4"
+                            onClick={handleDagSearch}
+                            disabled={!rDagInput.trim() || rLoading}
+                          >
+                            {rLoading
+                              ? <span className="spinner-border spinner-border-sm" />
+                              : "সার্চ"}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

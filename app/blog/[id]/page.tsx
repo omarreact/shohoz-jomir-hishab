@@ -28,7 +28,7 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
   const [post, setPost] = useState<BlogPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({ title: "", content: "" });
+  const [editData, setEditData] = useState({ title: "", content: "", category: "সাধারণ", author: "", coverImage: "" });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -58,7 +58,13 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
       if (docSnap.exists()) {
         const data = docSnap.data() as BlogPost;
         setPost({ ...data, id: docSnap.id }); 
-        setEditData({ title: data.title, content: data.content });
+        setEditData({ 
+          title: data.title || "", 
+          content: data.content || "",
+          category: data.category || "সাধারণ",
+          author: data.author || "",
+          coverImage: data.coverImage || ""
+        });
       }
 
       const q = query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "asc"));
@@ -78,8 +84,21 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
     setIsSaving(true);
     try {
       const docRef = doc(db, "posts", postId);
-      await updateDoc(docRef, { title: editData.title, content: editData.content });
-      setPost({ ...post!, title: editData.title, content: editData.content });
+      await updateDoc(docRef, { 
+        title: editData.title, 
+        content: editData.content,
+        category: editData.category,
+        author: editData.author,
+        coverImage: editData.coverImage
+      });
+      setPost({ 
+        ...post!, 
+        title: editData.title, 
+        content: editData.content,
+        category: editData.category,
+        author: editData.author,
+        coverImage: editData.coverImage
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating post:", error);
@@ -147,8 +166,26 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
           <div className="card shadow-sm border-0 rounded-4 p-4 p-md-5 mb-4">
             {isEditing ? (
               <>
-                <input type="text" className="form-control form-control-lg mb-4 fw-bold" value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
+                <input type="text" className="form-control form-control-lg mb-3 fw-bold" placeholder="পোস্টের শিরোনাম" value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
                 
+                <div className="row g-3 mb-4">
+                  <div className="col-md-4">
+                    <select className="form-select bg-white" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
+                      <option value="সাধারণ">সাধারণ</option>
+                      <option value="আইন বিষয়ক">আইন বিষয়ক</option>
+                      <option value="ভূমি পরিমাপ">ভূমি পরিমাপ</option>
+                      <option value="ফারায়েজ">ফারায়েজ</option>
+                      <option value="অন্যান্য">অন্যান্য</option>
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    <input type="text" className="form-control bg-white" placeholder="লেখকের নাম (ঐচ্ছিক)" value={editData.author} onChange={e => setEditData({...editData, author: e.target.value})} />
+                  </div>
+                  <div className="col-md-4">
+                    <input type="url" className="form-control bg-white" placeholder="কভার ইমেজের URL (ঐচ্ছিক)" value={editData.coverImage} onChange={e => setEditData({...editData, coverImage: e.target.value})} />
+                  </div>
+                </div>
+
                 <div className="bg-white rounded mb-4 border" style={{ minHeight: "350px", paddingBottom: "40px" }}>
                   <ReactQuill 
                     theme="snow" 
@@ -169,8 +206,17 @@ export default function SingleBlogPage({ params }: { params: Promise<{ id: strin
               </>
             ) : (
               <>
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <small className="text-success fw-bold bg-success bg-opacity-10 px-3 py-1 rounded-pill">{post.date}</small>
+                {post.coverImage && (
+                  <div className="mb-4 rounded-4 overflow-hidden" style={{ height: "400px", backgroundImage: `url(${post.coverImage})`, backgroundSize: "cover", backgroundPosition: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.1)" }}>
+                  </div>
+                )}
+                
+                <div className="d-flex justify-content-between align-items-start mb-4">
+                  <div className="d-flex align-items-center flex-wrap gap-2">
+                    <span className="badge bg-success rounded-pill px-3 py-2 shadow-sm">{post.category || "সাধারণ"}</span>
+                    <small className="text-success fw-bold bg-success bg-opacity-10 px-3 py-2 rounded-pill">{post.date}</small>
+                    {post.author && <small className="text-muted fw-medium border px-3 py-2 rounded-pill">লেখক: {post.author}</small>}
+                  </div>
                   {isLoggedIn && (
                     <div className="d-flex gap-2">
                       <button onClick={() => setIsEditing(true)} className="btn btn-sm btn-outline-primary rounded-circle p-2" title="এডিট করুন">

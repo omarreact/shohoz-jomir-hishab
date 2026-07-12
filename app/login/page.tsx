@@ -1,31 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, LogIn } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-export default function LoginPage() {
+function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'not_admin') {
+      setError("অ্যাক্সেস ডিনাইড: আপনি এই সিস্টেমের অ্যাডমিন নন।");
+    } else if (errorParam === 'suspended') {
+      setError("আপনার একাউন্টটি সাময়িকভাবে বন্ধ (Suspended) করা হয়েছে।");
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     
-    // 유জারনেমকে ইমেইলে কনভার্ট করা হচ্ছে (যেহেতু ফায়ারবেস ইমেইল সাপোর্ট করে)
-    const email = `${username.toLowerCase()}@smartkhatiyan.com`;
+    const emailToUse = username.includes('@') 
+      ? username.toLowerCase().trim() 
+      : `${username.toLowerCase().trim()}@smartkhatiyan.com`;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/blog");
-    } catch (err) {
-      setError("ভুল ইউজারনেম বা পাসওয়ার্ড!");
+      // Step 1: Authenticate with Firebase
+      await signInWithEmailAndPassword(auth, emailToUse, password);
+      
+      // Set a cookie so the Next.js middleware knows we are logged in
+      document.cookie = "__session=1; path=/; max-age=86400; SameSite=Lax";
+
+      // Step 2: Redirect to admin — the admin layout handles role verification
+      router.push("/admin");
+    } catch (err: any) {
+      if (
+        err.code === 'auth/invalid-credential' || 
+        err.code === 'auth/wrong-password' || 
+        err.code === 'auth/user-not-found'
+      ) {
+        setError("ভুল ইমেইল বা পাসওয়ার্ড!");
+      } else {
+        setError("লগিন করতে সমস্যা হয়েছে: " + err.message);
+      }
       setLoading(false);
     }
   };
@@ -47,8 +72,8 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin}>
               <div className="mb-3">
-                <label className="form-label text-muted fw-bold small">ইউজারনেম</label>
-                <input type="text" className="form-control" placeholder="যেমন: admin" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                <label className="form-label text-muted fw-bold small">ইমেইল বা ইউজারনেম</label>
+                <input type="text" className="form-control" placeholder="যেমন: admin@smartkhatiyan.com" value={username} onChange={(e) => setUsername(e.target.value)} required />
               </div>
               <div className="mb-4">
                 <label className="form-label text-muted fw-bold small">পাসওয়ার্ড</label>
@@ -62,5 +87,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-center mt-5"><div className="spinner-border text-success"></div></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

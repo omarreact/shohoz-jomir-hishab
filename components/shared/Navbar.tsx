@@ -13,13 +13,14 @@ import {
   Menu,
   MoonStar,
   MapPin,
+  Map,
+  FileText,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import ThemeToggle from "./ThemeToggle";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-// import LanguageToggle from "./LanguageToggle";
 
 function DesktopNavItem({
   href,
@@ -36,9 +37,9 @@ function DesktopNavItem({
     <li className="nav-item mx-1 mb-2 mb-lg-0">
       <Link
         href={href}
-        className={`nav-link d-flex align-items-center px-3 py-2 rounded-pill transition-all ${active ? "active bg-success bg-opacity-10 text-success fw-bold" : "text-secondary"}`}
+        className={`nav-link d-flex align-items-center px-3 py-2 rounded-pill text-nowrap transition-all ${active ? "active bg-success bg-opacity-10 text-success fw-bold" : "text-secondary"}`}
       >
-        <Icon size={18} className={`me-2 ${active ? "text-success" : ""}`} />{" "}
+        <Icon size={18} className={`me-2 flex-shrink-0 ${active ? "text-success" : ""}`} />{" "}
         {label}
       </Link>
     </li>
@@ -111,7 +112,7 @@ export default function Navbar() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
     });
-    void import("bootstrap/dist/js/bootstrap.bundle.min.js");
+    import("bootstrap/dist/js/bootstrap.bundle.min.js").catch(console.error);
     return () => unsubscribe();
   }, []);
 
@@ -169,25 +170,9 @@ export default function Navbar() {
           <div className="d-none d-lg-flex align-items-center gap-3 w-100 justify-content-end">
             <ul className="navbar-nav mx-auto">
               <DesktopNavItem href="/" label="হোম" Icon={Home} />
-              <DesktopNavItem
-                href="/khatiyan"
-                label="খতিয়ান"
-                Icon={Calculator}
-              />
-              <DesktopNavItem
-                href="/land-measurement"
-                label="জমি মাপ"
-                Icon={Ruler}
-              />
-              <DesktopNavItem href="/faraez" label="ফারায়েজ" Icon={Users} />
-              <DesktopNavItem
-                href="/rajuk-test"
-                label="রাজউক ম্যাপ (DAP)"
-                Icon={MapPin}
-              />
-              <DesktopNavItem href="/blog" label="ব্লগ" Icon={BookOpen} />
+              <DesktopNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
+              <DesktopNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
             </ul>
-            {/* <LanguageToggle /> */}
             {isLoggedIn ? (
               <>
                 <Link
@@ -211,13 +196,20 @@ export default function Navbar() {
                 <LogIn size={16} className="me-1" /> লগিন
               </Link>
             )}
-
-            {/* <ThemeToggle /> */}
+            <button
+              className="btn btn-light rounded-circle p-2 ms-2 shadow-sm border"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#sidebarOffcanvas"
+              aria-controls="sidebarOffcanvas"
+            >
+              <Menu size={20} className="text-secondary" />
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - 5 Main Items Only */}
       <div
         className="d-lg-none fixed-bottom shadow-lg border-top d-flex justify-content-around align-items-center pb-2 pt-1 px-2"
         style={{ backgroundColor: "var(--card-bg)", zIndex: 1040 }}
@@ -225,17 +217,12 @@ export default function Navbar() {
         <BottomNavItem href="/" label="হোম" Icon={Home} />
         <BottomNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
         <BottomNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
-        <BottomNavItem href="/faraez" label="ফারায়েজ" Icon={Users} />
-        <BottomNavItem
-          href="/rajuk-test"
-          label="রাজউক ম্যাপ (DAP)"
-          Icon={MapPin}
-        />
+        {isLoggedIn && <BottomNavItem href="/porcha" label="পর্চা" Icon={FileText} />}
         <button
           className="btn btn-link text-decoration-none d-flex flex-column align-items-center p-2 text-secondary border-0 bg-transparent shadow-none"
           data-bs-toggle="offcanvas"
-          data-bs-target="#mobileOffcanvas"
-          aria-controls="mobileOffcanvas"
+          data-bs-target="#sidebarOffcanvas"
+          aria-controls="sidebarOffcanvas"
         >
           <div className="p-1">
             <Menu size={22} />
@@ -248,11 +235,11 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Offcanvas Menu */}
+      {/* Offcanvas Menu - For Extra and Less Important Items */}
       <div
         className="offcanvas offcanvas-start border-end-0 shadow"
         tabIndex={-1}
-        id="mobileOffcanvas"
+        id="sidebarOffcanvas"
         style={{ backgroundColor: "var(--card-bg)", width: "280px" }}
       >
         <div className="offcanvas-header border-bottom py-3">
@@ -276,33 +263,20 @@ export default function Navbar() {
         </div>
 
         <div className="offcanvas-body d-flex flex-column px-3 py-4">
-          <ul className="navbar-nav mb-auto">
+          <h6 className="text-muted fw-bold small mb-3">প্রধান মেনু</h6>
+          <ul className="navbar-nav mb-4">
             <OffcanvasNavItem href="/" label="হোম" Icon={Home} />
-            <OffcanvasNavItem
-              href="/khatiyan"
-              label="খতিয়ান ক্যালকুলেটর"
-              Icon={Calculator}
-            />
-            <OffcanvasNavItem
-              href="/land-measurement"
-              label="জমি মাপ ক্যালকুলেটর"
-              Icon={Ruler}
-            />
-            <OffcanvasNavItem
-              href="/faraez"
-              label="ফারায়েজ (উত্তরাধিকার)"
-              Icon={Users}
-            />
-            <OffcanvasNavItem
-              href="/rajuk-test"
-              label="রাজউক ম্যাপ (DAP)"
-              Icon={MapPin}
-            />
-            <OffcanvasNavItem
-              href="/blog"
-              label="আইন বিষয়ক ব্লগ"
-              Icon={BookOpen}
-            />
+            <OffcanvasNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
+            <OffcanvasNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
+            {isLoggedIn && <OffcanvasNavItem href="/porcha" label="পর্চা" Icon={FileText} />}
+          </ul>
+
+          <h6 className="text-muted fw-bold small mb-3">অন্যান্য সেবা</h6>
+          <ul className="navbar-nav mb-auto">
+            <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} />
+            <OffcanvasNavItem href="/rajuk-test" label="রাজউক ম্যাপ" Icon={MapPin} />
+            <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} />
+            <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} />
           </ul>
 
           <div className="mt-auto pt-4 border-top">

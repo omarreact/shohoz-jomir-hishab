@@ -38,3 +38,20 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  let activeToken = process.env.RAJUK_MAP_TOKEN || "";
+  try {
+    const { doc, getDoc } = await import("firebase/firestore");
+    const { db } = await import("@/lib/firebase");
+    const docRef = doc(db, "config", "rajuk_api");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists() && docSnap.data().token) {
+      activeToken = docSnap.data().token;
+    }
+  } catch (err) {
+    console.error("Failed to load Rajuk token from Firebase:", err);
+  }
+  
+  return NextResponse.json({ token: activeToken });
+}

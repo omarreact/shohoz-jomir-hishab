@@ -24,24 +24,71 @@ export default function ResultSection({
           </div>
 
           {detailedResults.map((res: any, i: number) => (
-            <div key={i} className="mb-5">
-              <h6 className="fw-bold text-primary mb-3">
-                হিস্যা বিবরণী - {toBn(i + 1)}
-              </h6>
-              <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                  <thead className="table-light">
+            <div
+              key={i}
+              className="card owner-result-card border-secondary mb-4 shadow-sm"
+            >
+              <div className="card-header bg-light d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 gap-2">
+                <div>
+                  <h5 className="fw-bold text-dark mb-0">{res.name}</h5>
+                  <small className="text-muted">{res.rel}</small>
+                </div>
+                <span className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 p-2 text-start text-md-center">
+                  {res.shareText}
+                </span>
+              </div>
+              <div className="card-body p-0 table-responsive">
+                <table className="table table-bordered mb-0">
+                  <thead className="table-light text-muted small text-center align-middle">
                     <tr>
-                      <th>মালিকের নাম</th>
-                      <th className="text-end">জমির পরিমাণ</th>
+                      <th>দাগ নং</th>
+                      <th>শ্রেণী</th>
+                      <th>মোট জমি</th>
+                      <th className="text-end">প্রাপ্ত (শতাংশ)</th>
+                      <th className="text-end">বর্গফুট</th>
                     </tr>
                   </thead>
-                  <tbody>{/* ডাটা রেন্ডার */}</tbody>
-                  <tfoot className="table-success">
+                  <tbody className="text-center align-middle">
+                    {res.ownerPlots.map((p: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="text-start">
+                          {p.dagText.map((dt: string, didx: number) => (
+                            <span
+                              key={didx}
+                              className="badge bg-light text-dark border me-1 mb-1 fw-normal"
+                            >
+                              {dt}
+                            </span>
+                          ))}
+                        </td>
+                        <td>
+                          <span className="text-muted small">
+                            {p.plotClass}
+                          </span>
+                        </td>
+                        <td>{toBn(p.totalArea)}</td>
+                        <td className="text-end fw-bold text-success">
+                          {toBn(p.gotArea.toFixed(4))}
+                        </td>
+                        <td className="text-end text-muted small">
+                          {toBn((p.gotArea * 435.6).toFixed(1))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-warning bg-opacity-10">
                     <tr>
-                      <td className="fw-bold py-3">মোট প্রাপ্ত:</td>
-                      <td className="text-end fw-bold py-3">
-                        {toBn(res.totalLand.toFixed(2))} শতাংশ
+                      <td
+                        colSpan={3}
+                        className="text-end fw-bold text-secondary py-3"
+                      >
+                        মোট প্রাপ্ত:
+                      </td>
+                      <td className="text-end fw-bold fs-5 text-success py-3">
+                        {toBn(res.totalLand.toFixed(3))}
+                      </td>
+                      <td className="text-end text-secondary py-3">
+                        {toBn((res.totalLand / 1.65).toFixed(2))} কাঠা
                       </td>
                     </tr>
                   </tfoot>

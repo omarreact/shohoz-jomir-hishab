@@ -44,6 +44,51 @@ export default function PlotsCard({
                   <X size={14} />
                 </button>
               </div>
+              {/* Dag number inputs row */}
+              <div className="row g-2 mb-2">
+                <div className="col-6">
+                  <label className="form-label small fw-bold">সিএস/এসএ দাগ</label>
+                  <input
+                    type="text"
+                    value={p.cs}
+                    onChange={(e) => onUpdatePlot(p.id, "cs", e.target.value)}
+                    className="form-control form-control-sm"
+                    placeholder="১০১"
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label small fw-bold">আরএস দাগ</label>
+                  <input
+                    type="text"
+                    value={p.rs}
+                    onChange={(e) => onUpdatePlot(p.id, "rs", e.target.value)}
+                    className="form-control form-control-sm"
+                    placeholder="১০২"
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label small fw-bold">সিটি দাগ</label>
+                  <input
+                    type="text"
+                    value={p.city}
+                    onChange={(e) => onUpdatePlot(p.id, "city", e.target.value)}
+                    className="form-control form-control-sm"
+                    placeholder="১০৩"
+                  />
+                </div>
+                <div className="col-6">
+                  <label className="form-label small fw-bold">বিডিএস দাগ</label>
+                  <input
+                    type="text"
+                    value={p.bds}
+                    onChange={(e) => onUpdatePlot(p.id, "bds", e.target.value)}
+                    className="form-control form-control-sm"
+                    placeholder="১০৪"
+                  />
+                </div>
+              </div>
+
+              {/* শ্রেণী and জমি row */}
               <div className="row g-2">
                 <div className="col-6">
                   <label className="form-label small fw-bold">শ্রেণী</label>
@@ -62,7 +107,7 @@ export default function PlotsCard({
                 </div>
                 <div className="col-6">
                   <label className="form-label small fw-bold">
-                    জমি (শতাংশ)
+                    দাগের মোট জমি (শতাংশ)
                   </label>
                   <input
                     type="text"
