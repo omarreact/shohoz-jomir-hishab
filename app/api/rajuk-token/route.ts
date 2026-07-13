@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-// রাজউক পোর্টাল থেকে সরাসরি নতুন টোকেন পাওয়ার API
+export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
     const body = await request.json();

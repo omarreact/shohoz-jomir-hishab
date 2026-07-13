@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { UnifiedGateway } from "@/lib/unified-api/core/UnifiedGateway";
 import { ProviderQuery } from "@/lib/unified-api/types";
 
+export const maxDuration = 60; // Prevent Vercel from timing out on Rajuk API calls
+
 // Singleton instance to share cache across requests if running in a stateful environment
 const gateway = new UnifiedGateway();
 
