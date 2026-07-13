@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -15,7 +17,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const rajukUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${service}/MapServer/tile/${z}/${y}/${x}${token ? `?token=${token}` : ''}`;
+    const rajukUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${service}/MapServer/tile/${z}/${y}/${x}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
     const response = await fetch(rajukUrl, {
       method: 'GET',

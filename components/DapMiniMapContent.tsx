@@ -84,28 +84,28 @@ export default function DapMiniMapContent({ plotData }: DapMiniMapContentProps) 
             <>
               <LayersControl.Overlay checked={isMS} name="MS Mauza (Rajuk)">
                 <TileLayer
-                  url={`/api/tiles?service=Hosted/MS_Mauza_Tiles_Final&z={z}&y={y}&x={x}&token=${token}`}
+                  url={`/api/tiles?service=Hosted/MS_Mauza_Tiles_Final&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`}
                   opacity={0.8}
                 />
               </LayersControl.Overlay>
               
               <LayersControl.Overlay checked={!isMS} name="RS Mauza (Rajuk)">
                 <TileLayer
-                  url={`/api/tiles?service=Hosted/RS_Mauza_Tiles_Final&z={z}&y={y}&x={x}&token=${token}`}
+                  url={`/api/tiles?service=Hosted/RS_Mauza_Tiles_Final&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`}
                   opacity={0.8}
                 />
               </LayersControl.Overlay>
 
               <LayersControl.Overlay name="DAP Proposed Landuse">
                 <TileLayer
-                  url={`/api/tiles?service=Hosted/DAP_proposed_landuse&z={z}&y={y}&x={x}&token=${token}`}
+                  url={`/api/tiles?service=Hosted/DAP_proposed_landuse&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`}
                   opacity={0.6}
                 />
               </LayersControl.Overlay>
               
               <LayersControl.Overlay name="Transport Network">
                 <TileLayer
-                  url={`/api/tiles?service=Hosted/Transport_Network_Tiles&z={z}&y={y}&x={x}&token=${token}`}
+                  url={`/api/tiles?service=Hosted/Transport_Network_Tiles&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`}
                   opacity={0.9}
                 />
               </LayersControl.Overlay>

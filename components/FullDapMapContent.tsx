@@ -254,7 +254,7 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
   };
 
   const getTileUrl = (servicePath: string) =>
-    `/api/tiles?service=${servicePath}&z={z}&y={y}&x={x}&token=${token}`;
+    `/api/tiles?service=${servicePath}&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`;
 
   if (loading) {
     return (
