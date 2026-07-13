@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Tiro_Bangla } from "next/font/google";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,6 +60,7 @@ export default function RootLayout({
         style={{ display: "flex", flexDirection: "column", minHeight: "100vh", overflowX: "hidden" }}
       >
         <ConditionalShell>{children}</ConditionalShell>
+        <Analytics />
       </body>
     </html>
   );
