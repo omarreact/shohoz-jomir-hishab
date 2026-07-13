@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,7 @@ export default function RootLayout({
       >
         <ConditionalShell>{children}</ConditionalShell>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
