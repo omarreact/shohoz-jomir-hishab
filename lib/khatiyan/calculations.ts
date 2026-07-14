@@ -1,8 +1,19 @@
 
 
-export function buildDetailedResults(owners: any, plots: any, FULL_UNIT_TIL: any, toEn: any, toBn: any) {
+import type { KhatiyanOwner, KhatiyanOwnerResult, KhatiyanPlot } from "@/lib/types";
+
+type NumberFormatter = (value: number | string) => string;
+type NumberParser = (value: string | number) => number;
+
+export function buildDetailedResults(
+  owners: KhatiyanOwner[],
+  plots: KhatiyanPlot[],
+  fullUnitTil: number,
+  toEn: NumberParser,
+  toBn: NumberFormatter,
+) {
   let hasData = false;
-  const computedResults: any[] = [];
+  const computedResults: KhatiyanOwnerResult[] = [];
 
   owners.forEach((o:any) => {
     const shareTil =
@@ -11,7 +22,7 @@ export function buildDetailedResults(owners: any, plots: any, FULL_UNIT_TIL: any
       Number(o.k) * 60 +
       Number(o.kr) * 20 +
       Number(o.ti);
-    const share = shareTil / FULL_UNIT_TIL;
+    const share = shareTil / fullUnitTil;
 
     if (share > 0) {
       hasData = true;
@@ -61,7 +72,10 @@ export function buildDetailedResults(owners: any, plots: any, FULL_UNIT_TIL: any
   return { hasData, computedResults };
 }
 
-export function generateCSVFromResults(detailedResults:any, toBn:any) {
+export function generateCSVFromResults(
+  detailedResults: KhatiyanOwnerResult[],
+  toBn: NumberFormatter,
+) {
   const ws_data = [];
   ws_data.push(["জমির পরিমাপ ও বন্টন বিবরণী"]);
   ws_data.push(["তারিখ: " + new Date().toLocaleDateString("bn-BD")]);

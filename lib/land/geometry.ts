@@ -13,6 +13,7 @@ export interface MeasurementResult {
   bigha: number;
   acre: number;
   ojutangsho: number;
+  plotData?: any;
 }
 
 // ফুট এবং ইঞ্চি থেকে মোট ডেসিমাল ফুটে রূপান্তর

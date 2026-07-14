@@ -27,6 +27,7 @@ import {
 } from "@/lib/land/geometry";
 import { toBn } from "@/lib/utils";
 import LatestBlogs from "../../components/shared/LatestBlogs";
+import DapMiniMap from "@/components/DapMiniMap";
 
 type ShapeType = "rect" | "triangle" | "quad" | "pentagon" | "circle";
 
@@ -188,14 +189,20 @@ export default function LandMeasurementPage() {
         try {
           const res = await fetch(url.toString());
           const json = await res.json();
-          if (json.success && json.data[layer] && json.data[layer].length > 0)
-            return json.data[layer][0].properties;
+          if (json.success && json.data[layer] && json.data[layer].length > 0) {
+            const feature = json.data[layer][0];
+            return {
+              attributes: feature.properties,
+              geometry: feature.geometry
+            };
+          }
         } catch (e) {}
       }
       return null;
     };
 
-    const details = await executeQueries(targetLayer, queries);
+    const fullFeature = await executeQueries(targetLayer, queries);
+    const details = fullFeature?.attributes;
 
     if (details) {
       const rawArea =
@@ -211,6 +218,15 @@ export default function LandMeasurementPage() {
         sqft = sqMeters * 10.7639;
       }
       
+      const enhancedPlotData = {
+         ...details,
+         plotTypeCustom: rSelectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
+         mDistrict: rSelectedDist,
+         upazilaPs: rSelectedThana,
+         mauza: rSelectedMouza,
+         geometry: fullFeature?.geometry
+      };
+
       if (sqft === 0) {
         setResult({
           isValid: false,
@@ -222,6 +238,7 @@ export default function LandMeasurementPage() {
           bigha: 0,
           acre: 0,
           isAverage: false,
+          plotData: enhancedPlotData,
         });
       } else {
         const decimal =
@@ -235,6 +252,7 @@ export default function LandMeasurementPage() {
           bigha: decimal / 33,
           acre: (decimal * 435.6) / 43560,
           isAverage: false,
+          plotData: enhancedPlotData,
         });
       }
       setTimeout(
@@ -729,6 +747,12 @@ export default function LandMeasurementPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {result?.plotData && (
+              <div className="mt-4 fade-in">
+                <DapMiniMap plotData={result.plotData} />
               </div>
             )}
           </div>

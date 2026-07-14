@@ -15,7 +15,19 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-import { Loader, MapPin, BrainCircuit, Waves, Layers, X, Info, Maximize2, Minimize2, Search } from "lucide-react";
+import {
+  Loader,
+  MapPin,
+  BrainCircuit,
+  Waves,
+  Layers,
+  X,
+  Info,
+  Maximize2,
+  Minimize2,
+  Search,
+} from "lucide-react";
+import { buildRajukTileProxyUrl } from "@/lib/api/rajukTiles";
 
 const BASE_URL = "https://masterplan.rajuk.gov.bd/server/rest/services";
 
@@ -63,7 +75,7 @@ function ViewportPolygonFetcher({
         setIsFetching(false);
       }
     },
-    [onPolygonsLoaded, isFetching]
+    [onPolygonsLoaded, isFetching],
   );
 
   useMapEvents({
@@ -95,7 +107,6 @@ function MapClickHandler({
   return null;
 }
 
-
 // ── Initial View Setter ──────────────────────────────────────────────────
 function InitialViewSetter({ initialData }: { initialData?: any }) {
   const map = useMapEvents({});
@@ -113,7 +124,7 @@ function InitialViewSetter({ initialData }: { initialData?: any }) {
       };
 
       if (Array.isArray(initialData) && initialData.length > 0) {
-        initialData.forEach(f => processGeometry(f.geometry));
+        initialData.forEach((f) => processGeometry(f.geometry));
       } else if (initialData.geometry) {
         processGeometry(initialData.geometry);
       }
@@ -129,13 +140,20 @@ function InitialViewSetter({ initialData }: { initialData?: any }) {
 }
 
 // ── Main Component ────────────────────────────────────────────────────
-export default function FullDapMapContent({ initialData }: { initialData?: any }) {
+export default function FullDapMapContent({
+  initialData,
+}: {
+  initialData?: any;
+}) {
   const [token, setToken] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Intelligence panel
-  const [clickedPos, setClickedPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [clickedPos, setClickedPos] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [isInferring, setIsInferring] = useState(false);
   const [elevation, setElevation] = useState<number | null>(null);
   const [inferredData, setInferredData] = useState<any>({
@@ -145,9 +163,17 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
   });
 
   // RS vector polygons loaded from viewport or initialData
-  const [rsPolygons, setRsPolygons] = useState<any[]>(Array.isArray(initialData) ? initialData : (initialData?.geometry ? [initialData] : []));
+  const [rsPolygons, setRsPolygons] = useState<any[]>(
+    Array.isArray(initialData)
+      ? initialData
+      : initialData?.geometry
+        ? [initialData]
+        : [],
+  );
   // The specific RS polygon that was clicked / highlighted
-  const [selectedRsId, setSelectedRsId] = useState<number | null>(initialData?.objectid || null);
+  const [selectedRsId, setSelectedRsId] = useState<number | null>(
+    initialData?.objectid || null,
+  );
 
   // If initialData changes, update state
   useEffect(() => {
@@ -158,7 +184,9 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
       } else {
         setRsPolygons((prev) => {
           // If we already have it in polygons, just select it
-          const exists = prev.find((p) => p.attributes?.objectid === initialData.objectid);
+          const exists = prev.find(
+            (p) => p.attributes?.objectid === initialData.objectid,
+          );
           return exists ? prev : [...prev, initialData];
         });
         setSelectedRsId(initialData.objectid || null);
@@ -166,7 +194,11 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         if (initialData.geometry?.rings?.[0]?.[0]) {
           const [lng, lat] = initialData.geometry.rings[0][0];
           setClickedPos({ lat, lng });
-          setInferredData({ rsData: initialData, landuseData: null, floodData: null });
+          setInferredData({
+            rsData: initialData,
+            landuseData: null,
+            floodData: null,
+          });
         }
       }
     }
@@ -202,7 +234,7 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         else throw new Error("No token");
       })
       .catch(() =>
-        setError("ম্যাপ লোড করতে সমস্যা হচ্ছে। রাজউক সার্ভার সংযোগ বিচ্ছিন্ন।")
+        setError("ম্যাপ লোড করতে সমস্যা হচ্ছে। রাজউক সার্ভার সংযোগ বিচ্ছিন্ন।"),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -217,7 +249,9 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
 
     try {
       // 1. Elevation
-      fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`)
+      fetch(
+        `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`,
+      )
         .then((r) => r.json())
         .then((d) => {
           if (d.elevation?.[0] !== undefined) setElevation(d.elevation[0]);
@@ -230,16 +264,16 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         y: lat,
         spatialReference: { wkid: 4326 },
       });
-      
+
       const url = new URL("/api/unified", window.location.origin);
       url.searchParams.append("include", "plots,landuse,flood");
       url.searchParams.append("geometry", pointGeom);
       url.searchParams.append("geometryType", "esriGeometryPoint");
       url.searchParams.append("spatialRel", "esriSpatialRelIntersects");
-      
+
       const res = await fetch(url.toString());
       const json = await res.json();
-      
+
       const rs = json.data?.plots?.[0]?.properties || null;
       const landuse = json.data?.landuse?.[0]?.properties || null;
       const flood = json.data?.flood?.[0]?.properties || null;
@@ -253,8 +287,15 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
     }
   };
 
-  const getTileUrl = (servicePath: string) =>
-    `/api/tiles?service=${servicePath}&z={z}&y={y}&x={x}&token=${encodeURIComponent(token)}`;
+  const getTileUrl = (servicePath: string) => {
+    const url = buildRajukTileProxyUrl(servicePath, {
+      z: "{z}",
+      y: "{y}",
+      x: "{x}",
+      token,
+    });
+    return decodeURIComponent(url);
+  };
 
   if (loading) {
     return (
@@ -266,7 +307,9 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
           className="spinner-border text-success mb-3"
           style={{ width: "3rem", height: "3rem" }}
         />
-        <h5 className="text-secondary fw-bold">সার্ভার থেকে টোকেন সংগ্রহ করা হচ্ছে...</h5>
+        <h5 className="text-secondary fw-bold">
+          সার্ভার থেকে টোকেন সংগ্রহ করা হচ্ছে...
+        </h5>
       </div>
     );
   }
@@ -281,7 +324,15 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
   }
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "100%", position: "relative", background: "#1e293b" }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        background: "#1e293b",
+      }}
+    >
       {/* ── Fullscreen Button ──────────────────────────────────────── */}
       <button
         onClick={toggleFullscreen}
@@ -302,9 +353,13 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         }}
       >
         {isFullscreen ? (
-          <><Minimize2 size={15} /> <span>সাধারণ দৃশ্য</span></>
+          <>
+            <Minimize2 size={15} /> <span>সাধারণ দৃশ্য</span>
+          </>
         ) : (
-          <><Maximize2 size={15} /> <span>পূর্ণ স্ক্রিন</span></>
+          <>
+            <Maximize2 size={15} /> <span>পূর্ণ স্ক্রিন</span>
+          </>
         )}
       </button>
 
@@ -427,26 +482,43 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
               <div className="d-flex flex-column gap-2">
                 {/* RS Plot */}
                 {inferredData.rsData && (
-                  <div className="p-2 border rounded-3" style={{ borderColor: "#3b82f6 !important", background: "#eff6ff" }}>
-                    <div className="small fw-bold mb-1" style={{ color: "#2563eb" }}>
+                  <div
+                    className="p-2 border rounded-3"
+                    style={{
+                      borderColor: "#3b82f6 !important",
+                      background: "#eff6ff",
+                    }}
+                  >
+                    <div
+                      className="small fw-bold mb-1"
+                      style={{ color: "#2563eb" }}
+                    >
                       🔵 RS দাগ (নীল পলিগন)
                     </div>
                     <div className="fw-bold fs-6">
-                      {inferredData.rsData.rs_plot_no || inferredData.rsData.plot_no}
+                      {inferredData.rsData.rs_plot_no ||
+                        inferredData.rsData.plot_no}
                     </div>
-                    <div className="small text-muted">{inferredData.rsData.address_search}</div>
+                    <div className="small text-muted">
+                      {inferredData.rsData.address_search}
+                    </div>
                   </div>
                 )}
 
                 {/* Landuse */}
                 {inferredData.landuseData && (
                   <div className="p-2 border rounded-3 bg-success bg-opacity-10">
-                    <div className="small text-muted mb-1">ড্যাপ ভূমি ব্যবহার</div>
+                    <div className="small text-muted mb-1">
+                      ড্যাপ ভূমি ব্যবহার
+                    </div>
                     <div className="fw-bold text-success">
-                      {inferredData.landuseData.Landuse || inferredData.landuseData.LANDUSE}
+                      {inferredData.landuseData.Landuse ||
+                        inferredData.landuseData.LANDUSE}
                     </div>
                     {inferredData.landuseData.zone && (
-                      <div className="small">জোন: {inferredData.landuseData.zone}</div>
+                      <div className="small">
+                        জোন: {inferredData.landuseData.zone}
+                      </div>
                     )}
                     {inferredData.landuseData.maximum_he && (
                       <div className="small">
@@ -468,11 +540,13 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
                   </div>
                 )}
 
-                {!inferredData.rsData && !inferredData.landuseData && !inferredData.floodData && (
-                  <div className="text-center py-3 text-muted small">
-                    এই স্থানে কোনো ড্যাপ ডেটা পাওয়া যায়নি।
-                  </div>
-                )}
+                {!inferredData.rsData &&
+                  !inferredData.landuseData &&
+                  !inferredData.floodData && (
+                    <div className="text-center py-3 text-muted small">
+                      এই স্থানে কোনো ড্যাপ ডেটা পাওয়া যায়নি।
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -494,7 +568,25 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         {/* Marker at clicked point */}
         {clickedPos && (
           <Marker position={[clickedPos.lat, clickedPos.lng]}>
-            <Popup>বিশ্লেষণ বিন্দু</Popup>
+            <Popup>
+              {isInferring ? (
+                 <div className="text-center text-success small">বিশ্লেষণ চলছে...</div>
+              ) : inferredData.rsData ? (
+                 <div className="small">
+                   <strong style={{ color: "#2563eb" }}>
+                     {inferredData.rsData.rs_plot_no || inferredData.rsData.plot_no}
+                   </strong>
+                   <br/>
+                   <span className="text-muted">{inferredData.rsData.address_search}</span>
+                 </div>
+              ) : inferredData.landuseData ? (
+                 <div className="small">
+                   <strong className="text-success">{inferredData.landuseData.Landuse || inferredData.landuseData.LANDUSE}</strong>
+                 </div>
+              ) : (
+                 <div className="small text-muted">কোনো ডেটা পাওয়া যায়নি</div>
+              )}
+            </Popup>
           </Marker>
         )}
 
@@ -502,7 +594,10 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         {rsPolygons.map((feature: any, idx: number) => {
           if (!feature.geometry?.rings) return null;
           const ring = feature.geometry.rings[0];
-          const coords: [number, number][] = ring.map((pt: number[]) => [pt[1], pt[0]]);
+          const coords: [number, number][] = ring.map((pt: number[]) => [
+            pt[1],
+            pt[0],
+          ]);
           const attrs = feature.attributes || {};
           const label = attrs.rs_plot_no || attrs.plot_no;
           const isSelected = attrs.objectid === selectedRsId;
@@ -513,8 +608,18 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
               positions={coords}
               pathOptions={
                 isSelected
-                  ? { color: "#16a34a", fillColor: "#22c55e", fillOpacity: 0.35, weight: 3 }
-                  : { color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.08, weight: 1.8 }
+                  ? {
+                      color: "#16a34a",
+                      fillColor: "#22c55e",
+                      fillOpacity: 0.35,
+                      weight: 3,
+                    }
+                  : {
+                      color: "#3b82f6",
+                      fillColor: "#3b82f6",
+                      fillOpacity: 0.08,
+                      weight: 1.8,
+                    }
               }
             >
               <Tooltip
@@ -526,7 +631,8 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
                   style={{
                     color: isSelected ? "#16a34a" : "#2563eb",
                     fontSize: "11px",
-                    textShadow: "1px 1px 0 white,-1px 1px 0 white,1px -1px 0 white,-1px -1px 0 white",
+                    textShadow:
+                      "1px 1px 0 white,-1px 1px 0 white,1px -1px 0 white,-1px -1px 0 white",
                     background: "transparent",
                     boxShadow: "none",
                     border: "none",
@@ -543,48 +649,98 @@ export default function FullDapMapContent({ initialData }: { initialData?: any }
         <LayersControl position="topright">
           {/* Base Layers */}
           <LayersControl.BaseLayer name="গুগল ম্যাপ (Standard)">
-            <TileLayer url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" maxZoom={22} maxNativeZoom={20} />
+            <TileLayer
+              url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              maxZoom={22}
+              maxNativeZoom={20}
+            />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="গুগল স্যাটেলাইট (Satellite)" checked>
-            <TileLayer url="https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}" maxZoom={22} maxNativeZoom={20} />
+            <TileLayer
+              url="https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+              maxZoom={22}
+              maxNativeZoom={20}
+            />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Esri স্যাটেলাইট (Esri Imagery)">
-            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxZoom={22} maxNativeZoom={19} />
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={22}
+              maxNativeZoom={19}
+            />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="OpenStreetMap">
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={22} maxNativeZoom={19} />
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={22}
+              maxNativeZoom={19}
+            />
           </LayersControl.BaseLayer>
 
           {/* Raster Overlays */}
           <LayersControl.Overlay name="রাজউক সীমানা (Boundary)" checked>
-            <TileLayer url={getTileUrl("Hosted/Overlay_Boundary_Tiles")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/Overlay_Boundary_Tiles")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="ড্যাপ জোন ও সাবজোন">
-            <TileLayer url={getTileUrl("Hosted/Rajuk_Zone_Subzone_Tiles")} opacity={0.7} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/Rajuk_Zone_Subzone_Tiles")}
+              opacity={0.7}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="প্রস্তাবিত ভূমি ব্যবহার (Landuse)">
-            <TileLayer url={getTileUrl("Hosted/DAP_proposed_landuse")} opacity={0.6} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/DAP_proposed_landuse")}
+              opacity={0.6}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="MS মৌজা ম্যাপ (লাল)" checked>
-            <TileLayer url={getTileUrl("Hosted/MS_Mauza_Tiles_Final")} opacity={0.9} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/MS_Mauza_Tiles_Final")}
+              opacity={0.9}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="RS মৌজা ম্যাপ (টাইল)">
-            <TileLayer url={getTileUrl("Hosted/RS_Mauza_Tiles_Final")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/RS_Mauza_Tiles_Final")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="RS মৌজা হাই-রেজ (282 Scale)">
-            <TileLayer url={getTileUrl("Hosted/RS_Mauza_282Scale")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/RS_Mauza_282Scale")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="প্রস্তাবিত পরিবহন নেটওয়ার্ক">
-            <TileLayer url={getTileUrl("Hosted/Transport_Network_Tiles")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/Transport_Network_Tiles")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="বন্যা প্লাবন এলাকা">
-            <TileLayer url={getTileUrl("Hosted/flood_overlay_lvl11_20")} opacity={0.6} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/flood_overlay_lvl11_20")}
+              opacity={0.6}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="গুরুত্বপূর্ণ স্থাপনা (Landmarks)">
-            <TileLayer url={getTileUrl("Hosted/Major_Landmarks_V2_TILES")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/Major_Landmarks_V2_TILES")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="প্রস্তাবিত POI">
-            <TileLayer url={getTileUrl("Hosted/POI_Proposed_Tiles")} maxZoom={22} />
+            <TileLayer
+              url={getTileUrl("Hosted/POI_Proposed_Tiles")}
+              maxZoom={22}
+            />
           </LayersControl.Overlay>
         </LayersControl>
       </MapContainer>

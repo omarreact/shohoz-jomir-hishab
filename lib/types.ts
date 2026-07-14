@@ -4,7 +4,7 @@ export type ThemeMode = "light" | "dark" | "system";
 // Khatiyan (land share) types
 // -------------------------
 
-export type RelationTypeBn = "পিতা" | "স্বামী";
+export type RelationTypeBn = "পিতা" | "মাতা" | "স্বামী" | "স্ত্রী";
 
 export interface KhatiyanPlot {
   id: number;

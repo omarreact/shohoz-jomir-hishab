@@ -1,0 +1,61 @@
+
+> smart-khatiyan-app@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 102s
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/31) ...
+  Generating static pages using 3 workers (7/31) 
+  Generating static pages using 3 workers (15/31) 
+  Generating static pages using 3 workers (23/31) 
+✓ Generating static pages using 3 workers (31/31) in 5.1s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/custom-pages
+├ ○ /admin/data-monitor
+├ ○ /admin/data-monitor/result
+├ ○ /admin/rajuk-config
+├ ○ /admin/settings
+├ ○ /admin/users
+├ ƒ /api/example-rajuk-fetch
+├ ƒ /api/landbd
+├ ƒ /api/landbd/[...path]
+├ ƒ /api/porcha
+├ ƒ /api/rajuk-proxy
+├ ƒ /api/rajuk-token
+├ ƒ /api/tiles
+├ ƒ /api/unified
+├ ƒ /api/unified/health
+├ ƒ /api/unified/providers
+├ ƒ /api/unified/stats
+├ ○ /blog
+├ ƒ /blog/[id]
+├ ○ /dap-map
+├ ○ /faq
+├ ○ /faraez
+├ ○ /icon.png
+├ ○ /khatiyan
+├ ○ /land-measurement
+├ ○ /login
+├ ○ /nid-copy
+├ ƒ /p/[slug]
+├ ○ /porcha
+├ ○ /privacy
+├ ○ /rajuk-test
+└ ○ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

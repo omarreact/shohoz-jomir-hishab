@@ -1,31 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  List,
-  Zap,
-  Calculator,
-  Trash2,
-  Database,
-} from "lucide-react";
+import { List, Zap, Calculator, Trash2, Database } from "lucide-react";
 import { FULL_UNIT_TIL } from "@/lib/constants";
 import { toBn, toEn, makeBanglaStr } from "@/lib/utils";
-import { buildDetailedResults } from "@/lib/exportHelpers";
-import PrintStyles from "@/components/PrintStyles";
-import DetailedCalculator from "@/components/DetailedCalculator";
-import QuickCalculator from "@/components/QuickCalculator";
-import LatestBlogs from "../../components/shared/LatestBlogs";
+import { buildDetailedResults } from "@/lib/khatiyan/calculations";
+import PrintStyles from "@/components/shared/PrintStyles";
+import DetailedCalculator from "@/components/khatiyan/DetailedCalculator";
+import QuickCalculator from "@/components/khatiyan/QuickCalculator";
+import LatestBlogs from "@/components/shared/LatestBlogs";
 import SmartRajukSearch from "@/components/RajukDatabaseSearch";
 
-const ResultSection = dynamic(() => import("@/components/ResultSection"), {
-  ssr: false,
-  loading: () => (
-    <div className="text-center p-5 mt-4">
-      <div className="spinner-border text-success"></div>
-    </div>
-  ),
-});
+const ResultSection = dynamic(
+  () => import("@/components/khatiyan/ResultSection"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-center p-5 mt-4">
+        <div className="spinner-border text-success"></div>
+      </div>
+    ),
+  },
+);
 
 // -- Types --
 type Plot = {
@@ -37,10 +34,12 @@ type Plot = {
   t: string;
   a: string;
 };
+import type { RelationTypeBn } from "@/lib/types";
+
 type Owner = {
   id: number;
   n: string;
-  rType: "পিতা" | "স্বামী";
+  rType: RelationTypeBn;
   rName: string;
   a: number;
   g: number;
@@ -59,11 +58,25 @@ type QuickData = {
 type QuickResult = { land: number; sqft: number; katha: number };
 
 const initialPlot = (id: number): Plot => ({
-  id, cs: "", rs: "", city: "", bds: "", t: "", a: "",
+  id,
+  cs: "",
+  rs: "",
+  city: "",
+  bds: "",
+  t: "",
+  a: "",
 });
 
 const initialOwner = (id: number): Owner => ({
-  id, n: "", rType: "পিতা", rName: "", a: 0, g: 0, k: 0, kr: 0, ti: 0,
+  id,
+  n: "",
+  rType: "পিতা",
+  rName: "",
+  a: 0,
+  g: 0,
+  k: 0,
+  kr: 0,
+  ti: 0,
 });
 
 export default function SmartKhatiyanApp() {
@@ -75,7 +88,12 @@ export default function SmartKhatiyanApp() {
   const [owners, setOwners] = useState<Owner[]>([initialOwner(2)]);
   const [detailedResults, setDetailedResults] = useState<any[] | null>(null);
   const [quickData, setQuickData] = useState<QuickData>({
-    totalLand: "", a: 0, g: 0, k: 0, kr: 0, ti: 0,
+    totalLand: "",
+    a: 0,
+    g: 0,
+    k: 0,
+    kr: 0,
+    ti: 0,
   });
   const [quickResult, setQuickResult] = useState<QuickResult | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
@@ -93,37 +111,70 @@ export default function SmartKhatiyanApp() {
 
   useEffect(() => {
     const timer = setTimeout(
-      () => localStorage.setItem("khatiyanNextData", JSON.stringify({ plots, owners })),
+      () =>
+        localStorage.setItem(
+          "khatiyanNextData",
+          JSON.stringify({ plots, owners }),
+        ),
       500,
     );
     return () => clearTimeout(timer);
   }, [plots, owners]);
 
-  const addPlot = () => setPlots((prev) => [...prev, initialPlot(nextPlotId.current++)]);
-  const removePlot = (id: number) => setPlots((prev) => prev.filter((p) => p.id !== id));
+  const addPlot = () =>
+    setPlots((prev) => [...prev, initialPlot(nextPlotId.current++)]);
+  const removePlot = (id: number) =>
+    setPlots((prev) => prev.filter((p) => p.id !== id));
   const updatePlot = (id: number, field: keyof Plot, value: string) => {
     const finalValue = ["cs", "rs", "city", "bds", "a"].includes(field)
-      ? makeBanglaStr(value) : value;
-    setPlots((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: finalValue as any } : p)));
+      ? makeBanglaStr(value)
+      : value;
+    setPlots((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [field]: finalValue as any } : p)),
+    );
   };
 
-  const addOwner = () => setOwners((prev) => [...prev, initialOwner(nextOwnerId.current++)]);
-  const removeOwner = (id: number) => setOwners((prev) => prev.filter((o) => o.id !== id));
-  const updateOwner = <K extends keyof Owner>(id: number, field: K, value: Owner[K]) =>
-    setOwners((prev) => prev.map((o) => (o.id === id ? { ...o, [field]: value } : o)));
+  const addOwner = () =>
+    setOwners((prev) => [...prev, initialOwner(nextOwnerId.current++)]);
+  const removeOwner = (id: number) =>
+    setOwners((prev) => prev.filter((o) => o.id !== id));
+  const updateOwner = <K extends keyof Owner>(
+    id: number,
+    field: K,
+    value: Owner[K],
+  ) =>
+    setOwners((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, [field]: value } : o)),
+    );
 
   const totalOwnerTil = owners.reduce(
     (acc, o) =>
-      acc + Number(o.a) * 4800 + Number(o.g) * 240 +
-      Number(o.k) * 60 + Number(o.kr) * 20 + Number(o.ti),
+      acc +
+      Number(o.a) * 4800 +
+      Number(o.g) * 240 +
+      Number(o.k) * 60 +
+      Number(o.kr) * 20 +
+      Number(o.ti),
     0,
   );
 
   const calculateDetailed = () => {
-    const { hasData, computedResults } = buildDetailedResults(owners, plots, FULL_UNIT_TIL, toEn, toBn);
+    const { hasData, computedResults } = buildDetailedResults(
+      owners,
+      plots,
+      FULL_UNIT_TIL,
+      toEn,
+      toBn,
+    );
     if (hasData && computedResults.length > 0) {
       setDetailedResults(computedResults);
-      setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 100);
+      setTimeout(
+        () =>
+          document
+            .getElementById("resultSection")
+            ?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
     } else {
       alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।");
     }
@@ -131,11 +182,19 @@ export default function SmartKhatiyanApp() {
 
   const calculateQuick = () => {
     const total = toEn(quickData.totalLand);
-    const shareTil = Number(quickData.a) * 4800 + Number(quickData.g) * 240 +
-      Number(quickData.k) * 60 + Number(quickData.kr) * 20 + Number(quickData.ti);
+    const shareTil =
+      Number(quickData.a) * 4800 +
+      Number(quickData.g) * 240 +
+      Number(quickData.k) * 60 +
+      Number(quickData.kr) * 20 +
+      Number(quickData.ti);
     const share = shareTil / FULL_UNIT_TIL;
     if (total > 0 && share > 0) {
-      setQuickResult({ land: total * share, sqft: total * share * 435.6, katha: (total * share) / 1.65 });
+      setQuickResult({
+        land: total * share,
+        sqft: total * share * 435.6,
+        katha: (total * share) / 1.65,
+      });
     } else {
       alert("দয়া করে জমির পরিমাণ এবং অংশ সঠিক ভাবে দিন।");
     }
@@ -156,12 +215,17 @@ export default function SmartKhatiyanApp() {
     setQuickData((prev) => ({
       ...prev,
       ...newData,
-      ...(newData.totalLand !== undefined && { totalLand: makeBanglaStr(newData.totalLand) }),
+      ...(newData.totalLand !== undefined && {
+        totalLand: makeBanglaStr(newData.totalLand),
+      }),
     }));
   };
 
   const handleUseArea = (decimalArea: number, dagNo: string, type: string) => {
-    if (plots.length === 0) { alert("খতিয়ানে কমপক্ষে একটি প্লট বা দাগ থাকা আবশ্যক!"); return; }
+    if (plots.length === 0) {
+      alert("খতিয়ানে কমপক্ষে একটি প্লট বা দাগ থাকা আবশ্যক!");
+      return;
+    }
     updatePlot(plots[0].id, "a", decimalArea.toFixed(2));
     updatePlot(plots[0].id, "rs", type !== "ms_plot_no" ? toBn(dagNo) : "");
     setActiveTab("detailed");
@@ -211,10 +275,16 @@ export default function SmartKhatiyanApp() {
               onUpdateOwner={updateOwner}
             />
             <div className="d-flex justify-content-center gap-3 mt-4 mb-5">
-              <button onClick={clearAll} className="btn btn-outline-danger px-4 py-2 fw-bold rounded-pill shadow-sm d-flex align-items-center">
+              <button
+                onClick={clearAll}
+                className="btn btn-outline-danger px-4 py-2 fw-bold rounded-pill shadow-sm d-flex align-items-center"
+              >
                 <Trash2 size={18} className="me-2" /> মুছে ফেলুন
               </button>
-              <button onClick={calculateDetailed} className="btn btn-success px-5 py-2 fw-bold rounded-pill shadow-lg d-flex align-items-center">
+              <button
+                onClick={calculateDetailed}
+                className="btn btn-success px-5 py-2 fw-bold rounded-pill shadow-lg d-flex align-items-center"
+              >
                 <Calculator size={18} className="me-2" /> হিসাব করুন
               </button>
             </div>
