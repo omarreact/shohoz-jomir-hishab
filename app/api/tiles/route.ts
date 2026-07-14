@@ -15,13 +15,7 @@ export async function GET(request: Request) {
     const x = searchParams.get("x");
     const y = searchParams.get("y");
     const z = searchParams.get("z");
-    const MS_MAUZA_TOKEN = "a8G2bN9mqFsECE9ZUgn_Wj3vZ_onrRdJ9Uck8dMWUELQmzyydmv8pKkPeUA1Gez5_2eX-QZkJzhnnFSFbukM3qEq-7iBKPIZecCLlyQAPybJAr4AeWz5RvuTXRM_DVwlel3ojOLGRq9ApEm-dgCsfPeUcVz9COSLi4qoR0Dch9FQItydXvjBW760CddqCWZKQbF2OCe1_pCA2IgTZbspb1nbg9GNN-Xps6y__xJ2_r07AHU8jU5YF8acmqXR4M0Y0xFHPYFxk1TyeGtW9m2c-cBYSm5Gvh88otoEIVzIbVKfnPbVPQxL-d7AalqJbNZA9E3vbaXfhrZ-7-WNywio_A..";
-
-    let token = searchParams.get("token");
-    if (service === "Hosted/MS_Mauza_Tiles_Final") {
-      token = MS_MAUZA_TOKEN;
-    }
-
+    const token = searchParams.get("token");
     const format = searchParams.get("f") || (x && y && z ? "png" : "pjson");
 
     if (!service) {
