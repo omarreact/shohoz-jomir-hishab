@@ -274,7 +274,6 @@ export default function Navbar() {
           <h6 className="text-muted fw-bold small mb-3">অন্যান্য সেবা</h6>
           <ul className="navbar-nav mb-auto">
             <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} />
-            <OffcanvasNavItem href="/rajuk-test" label="রাজউক ম্যাপ" Icon={MapPin} />
             <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} />
             <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} />
           </ul>

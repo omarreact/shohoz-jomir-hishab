@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   BarChart3,
+  MapPin,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -122,6 +123,7 @@ export default function AdminLayout({
     { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users",          icon: Users,           roles: ["Super Admin", "Admin"] },
     { name: "রাজউক API কন্ট্রোল", path: "/admin/rajuk-config",  icon: Database,        roles: ["Super Admin", "Admin"] },
     { name: "ডেটা মনিটর",         path: "/admin/data-monitor",  icon: BarChart3,       roles: ["Super Admin", "Admin"] },
+    { name: "রাজউক টেস্ট",       path: "/admin/rajuk-test",    icon: MapPin,          roles: ["Super Admin", "Admin"] },
     { name: "সেটিংস",             path: "/admin/settings",      icon: Settings,        roles: ["Super Admin", "Admin"] },
   ];
 
@@ -141,6 +143,7 @@ export default function AdminLayout({
     <div
       style={{
         display: "flex",
+        flexDirection: "column",
         height: "100vh",
         width: "100vw",
         overflow: "hidden",
@@ -150,73 +153,37 @@ export default function AdminLayout({
         left: 0,
       }}
     >
-      {/* Sidebar */}
-      <div
-        className="bg-dark text-white flex-shrink-0"
-        style={{
-          width: isSidebarOpen ? "260px" : "72px",
-          transition: "width 0.3s ease",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
+      {/* Top Navbar */}
+      <nav
+        className="navbar navbar-light bg-white shadow-sm border-bottom px-3 py-2 flex-shrink-0"
+        style={{ minHeight: "70px", gap: "10px" }}
       >
-        <div
-          className="p-3 d-flex align-items-center border-bottom border-secondary"
-          style={{ height: "70px", justifyContent: isSidebarOpen ? "flex-start" : "center" }}
-        >
-          <ShieldCheck size={28} className="text-success flex-shrink-0" />
-          {isSidebarOpen && (
-            <h5 className="mb-0 fw-bold ms-2 text-nowrap">Smart Admin</h5>
-          )}
-        </div>
-        <ul className="nav flex-column p-2 mt-3" style={{ flex: 1 }}>
-          {navItems.map((item) => {
-            const isActive = pathname === item.path;
-            return (
-              <li className="nav-item mb-2" key={item.path}>
+        <div className="d-flex align-items-center flex-wrap w-100 gap-3">
+          <div className="d-flex align-items-center">
+            <ShieldCheck size={28} className="text-success me-2 flex-shrink-0" />
+            <h5 className="mb-0 fw-bold text-nowrap">Smart Admin</h5>
+          </div>
+
+          <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1 justify-content-center">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
+              return (
                 <Link
                   href={item.path}
-                  className={`nav-link rounded-3 d-flex align-items-center ${isActive ? "bg-success text-white shadow-sm" : "text-light"}`}
-                  style={{ justifyContent: isSidebarOpen ? "flex-start" : "center", padding: "10px 12px" }}
+                  key={item.path}
+                  className={`btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 transition-all ${
+                    isActive ? "btn-success fw-bold shadow-sm" : "btn-light border hover-bg-light text-secondary"
+                  }`}
+                  style={{ whiteSpace: "nowrap" }}
                 >
-                  <item.icon
-                    size={20}
-                    className="flex-shrink-0"
-                    style={{ marginRight: isSidebarOpen ? "12px" : "0" }}
-                  />
-                  {isSidebarOpen && (
-                    <span className="text-nowrap">{item.name}</span>
-                  )}
+                  <item.icon size={16} className="me-2 flex-shrink-0" />
+                  {item.name}
                 </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+              );
+            })}
+          </div>
 
-      {/* Main Content Area */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {/* Top Navbar */}
-        <nav
-          className="navbar navbar-light bg-white shadow-sm border-bottom px-3 flex-shrink-0"
-          style={{ height: "70px" }}
-        >
-          <button
-            className="btn btn-light rounded-pill border-0"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            <Menu size={24} />
-          </button>
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2 justify-content-end">
             <button 
               onClick={toggleTheme} 
               className="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center hover-shadow border"
@@ -224,14 +191,14 @@ export default function AdminLayout({
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <Link href="/" className="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center">
+            <Link href="/" className="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap">
               <Globe size={16} className="me-2" /> ওয়েবসাইটে যান
             </Link>
-            <span className="fw-bold d-none d-md-inline text-muted small">
+            <span className="fw-bold d-none d-lg-inline text-muted small text-nowrap">
               স্বাগতম, <span className="text-dark">{userName || "Admin"}</span>
             </span>
             <button
-              className="btn btn-danger btn-sm rounded-pill px-3 d-flex align-items-center"
+              className="btn btn-danger btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap"
               onClick={async () => {
                 const { auth } = await import("@/lib/firebase");
                 const { signOut } = await import("firebase/auth");
@@ -243,12 +210,19 @@ export default function AdminLayout({
               <LogOut size={16} className="me-2" /> লগআউট
             </button>
           </div>
-        </nav>
-
-        {/* Page Content */}
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "24px" }}>
-          {children}
         </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: "24px",
+        }}
+      >
+        {children}
       </div>
     </div>
   );

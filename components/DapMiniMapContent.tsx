@@ -127,6 +127,20 @@ export default function DapMiniMapContent({
                 />
               </LayersControl.Overlay>
 
+              <LayersControl.Overlay checked name="Overlay Boundary Tiles">
+                <TileLayer
+                  url={getTileUrl("Hosted/Overlay_Boundary_Tiles")}
+                  opacity={1.0}
+                />
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay name="RS Mauza 282 Scale">
+                <TileLayer
+                  url={getTileUrl("Hosted/RS_Mauza_282Scale")}
+                  opacity={0.8}
+                />
+              </LayersControl.Overlay>
+
               <LayersControl.Overlay name="DAP Proposed Landuse">
                 <TileLayer
                   url={getTileUrl("Hosted/DAP_proposed_landuse")}
