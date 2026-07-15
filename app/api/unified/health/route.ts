@@ -9,7 +9,7 @@ export async function GET() {
     const health = await gateway.getHealth();
     
     // Check if any critical providers are down
-    const isDegraded = Object.values(health).some((h: any) => h.status === "down");
+    const isDegraded = Object.values(health).some((h: { status?: string }) => h.status === "down");
     
     return NextResponse.json({
       status: isDegraded ? "degraded" : "healthy",
@@ -18,10 +18,10 @@ export async function GET() {
       latency: Math.round(performance.now() - start),
       providers: health
     }, { status: isDegraded ? 207 : 200 }); // 207 Multi-Status
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       status: "down",
-      message: error.message
+      message: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }

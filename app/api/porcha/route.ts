@@ -21,10 +21,10 @@ export async function GET(request: Request) {
     // যদি সার্চ বক্সে কিছু লেখা থাকে, তবেই ফিল্টার হবে
     if (query.length > 0) {
       filteredData = data.filter(
-        (item: any) =>
-          item.JOMIHUB?.toString().toLowerCase().includes(query) ||
-          item.Column2?.toLowerCase().includes(query) ||
-          item.Column4?.toString().toLowerCase().includes(query),
+        (item: Record<string, unknown>) =>
+          String(item.JOMIHUB || "").toLowerCase().includes(query) ||
+          String(item.Column2 || "").toLowerCase().includes(query) ||
+          String(item.Column4 || "").toLowerCase().includes(query),
       );
     }
 

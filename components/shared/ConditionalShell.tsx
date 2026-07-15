@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/shared/Navbar";
+import GisNavbar from "@/components/shared/GisNavbar";
 import Footer from "@/components/shared/Footer";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import { LanguageProvider } from "@/components/shared/LanguageContext";
@@ -87,7 +88,25 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
     );
   }
 
+  const isGisRoute = pathname?.startsWith("/dap-map");
+
   // For all public routes: wrap with Navbar, Footer, ThemeToggle
+  if (isGisRoute) {
+    return (
+      <LanguageProvider>
+        <div style={{ height: "100vh", width: "100vw", overflow: "hidden", position: "relative" }}>
+          {/* Dynamically load GisNavbar so it doesn't block SSR or bundle unnecessarily */}
+          <GisNavbar />
+          <main className="w-100 h-100">
+            {children}
+          </main>
+          {/* We do not render Footer on GIS route */}
+          <ThemeToggle />
+        </div>
+      </LanguageProvider>
+    );
+  }
+
   return (
     <LanguageProvider>
       <Navbar />

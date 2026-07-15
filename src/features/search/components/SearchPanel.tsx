@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   MapPin,
   Search,
@@ -9,116 +9,22 @@ import {
   AlertTriangle,
   Database,
   Info,
-  Loader,
 } from "lucide-react";
-import RajukIntelligenceReport from "./RajukIntelligenceReport";
-import DapMiniMap from "./DapMiniMap";
+import RajukIntelligenceReport from "@/components/RajukIntelligenceReport";
+import DapMiniMap from "@/components/DapMiniMap";
+import { useRajukSearch, LAYER1_FIELDS } from "../hooks/useRajukSearch";
+import { engToBdNum, formatKeyName, formatValue, IGNORED_KEYS } from "../utils/formatters";
 
-// ── API Service Paths ──────────────────────────────────────────────────────────
-const SERVICES = {
-  LOCATION: "rajuk_db/Rajuk_dap_db/FeatureServer/1",
-  RS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/0",
-  MS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/2",
-};
-
-const LAYER1_FIELDS = {
-  DIST: "m_district",
-  THANA: "upazila_ps",
-  MOUZA: "mauza",
-};
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-const engToBdNum = (str: any): string => {
-  if (str === null || str === undefined || str === "") return "-";
-  const map: Record<string, string> = {
-    "0": "০",
-    "1": "১",
-    "2": "২",
-    "3": "৩",
-    "4": "৪",
-    "5": "৫",
-    "6": "৬",
-    "7": "৭",
-    "8": "৮",
-    "9": "৯",
-  };
-  return String(str).replace(/[0-9]/g, (d) => map[d] || d);
-};
-
-const keyTranslations: Record<string, string> = {
-  mDistrict: "জেলা",
-  upazilaPs: "থানা",
-  mauza: "মৌজা",
-  plotTypeCustom: "দাগের ধরন",
-  landuse: "ভূমি ব্যবহার (Landuse)",
-  areaKatha: "প্লট এরিয়া (কাঠা)",
-  areaAcre: "আয়তন (একর)",
-  remarks: "মন্তব্য",
-  zone: "জোন",
-  subzone: "সাবজোন",
-  dapZone: "ড্যাপ জোন",
-  area: "ভূমির পরিমাণ (Shape Area)",
-  address: "ঠিকানা (Address)",
-  rsPlotNumber: "আরএস (RS) দাগ",
-  msPlotNumber: "এমএস (MS) দাগ",
-  plotNumber: "দাগ নম্বর",
-  distMs: "জেলা (MS)",
-  thanaMs: "থানা (MS)",
-  thana: "থানা",
-  jlNo: "জেএল (JL) নম্বর",
-  sheetNo: "শীট নম্বর",
-  plotType: "প্লট টাইপ",
-  maximumHe: "সর্বোচ্চ উচ্চতা",
-  far: "ফার (FAR)",
-  rajukZone: "রাজউক জোন",
-  rajukSubzone: "রাজউক সাবজোন",
-  regionNameEn: "অঞ্চলের নাম (ইংরেজি)",
-  regionNameBn: "অঞ্চলের নাম (বাংলা)",
-  length: "সীমানার দৈর্ঘ্য",
-};
-
-const IGNORED_KEYS = [
-  "id",
-  "objectid",
-  "globalid",
-  "shape",
-];
-
-const formatKeyName = (key: string): string => {
-  return keyTranslations[key] || key.replace(/([A-Z])/g, " $1").toUpperCase();
-};
-
-const formatValue = (key: string, value: any): string => {
-  if (value === null || value === undefined || value === "") return "-";
-  let strVal = String(value);
-  if (
-    ["mDistrict", "upazilaPs", "mauza", "plotTypeCustom"].includes(key)
-  ) {
-    return strVal;
-  }
-  if (
-    ["areaAcre", "area", "length", "far", "areaKatha"].includes(key)
-  ) {
-    const num = parseFloat(strVal);
-    if (!isNaN(num)) strVal = num.toFixed(4);
-  }
-  return engToBdNum(strVal);
-};
-
-// ── Props ──────────────────────────────────────────────────────────────────────
 interface SmartRajukSearchProps {
-  /** Called when user clicks "Use this land". Receives parsed decimal area (শতাংশ), dag no, and type. */
   onUseArea?: (decimalArea: number, dagNo: string, type: string) => void;
-  /** When true, hides the full data table — just shows area summary + "Use" button. */
   compact?: boolean;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
-export default function SmartRajukSearch({
+export default function SearchPanel({
   onUseArea,
   compact = false,
 }: SmartRajukSearchProps) {
-  const [localCache, setLocalCache] = useState<Record<string, any>>({});
+  const { fetchLocation, smartSearch } = useRajukSearch();
 
   const [districts, setDistricts] = useState<string[]>([]);
   const [thanas, setThanas] = useState<string[]>([]);
@@ -135,78 +41,13 @@ export default function SmartRajukSearch({
     "idle" | "loading" | "found" | "not_found" | "error"
   >("idle");
 
-  // ── Fetch helpers ────────────────────────────────────────────────────────────
-  const fetchLocation = useCallback(
-    async (where: string, outField: string): Promise<string[]> => {
-      const cacheKey = `location-${where}-${outField}`;
-      if (localCache[cacheKey]) return localCache[cacheKey];
-
-      try {
-        const url = new URL("/api/unified", window.location.origin);
-        url.searchParams.append("include", "location");
-        url.searchParams.append("where", where);
-        url.searchParams.append("outFields", outField);
-        url.searchParams.append("returnGeometry", "false");
-        url.searchParams.append("limit", "2000");
-
-        const res = await fetch(url.toString());
-        const json = await res.json();
-        
-        if (!json.success || !json.data.location) throw new Error();
-        
-        const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
-        const results = json.data.location
-          .map((f: any) => f.properties[camelOutField] || f.properties[outField])
-          .filter(Boolean);
-        
-        const unique = [...new Set(results)].sort() as string[];
-        setLocalCache((prev) => ({ ...prev, [cacheKey]: unique }));
-        return unique;
-      } catch {
-        return [];
-      }
-    },
-    [localCache],
-  );
-
-  const smartSearch = async (
-    targetLayer: "msPlots" | "plots",
-    queries: string[],
-  ): Promise<any | null> => {
-    for (const q of queries) {
-      const url = new URL("/api/unified", window.location.origin);
-      url.searchParams.append("include", targetLayer);
-      url.searchParams.append("where", q);
-      url.searchParams.append("limit", "1");
-      
-      try {
-        const res = await fetch(url.toString());
-        const json = await res.json();
-        
-        if (json.success && json.data[targetLayer] && json.data[targetLayer].length > 0) {
-          const feature = json.data[targetLayer][0];
-          return {
-            attributes: feature.properties,
-            geometry: feature.geometry
-          };
-        }
-      } catch {
-        /* try next query */
-      }
-    }
-    return null;
-  };
-
-  // ── Init: load districts ─────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const dists = await fetchLocation("1=1", LAYER1_FIELDS.DIST);
       setDistricts(dists);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchLocation]);
 
-  // ── Cascade handlers ─────────────────────────────────────────────────────────
   const handleDistChange = async (val: string) => {
     setSelectedDist(val);
     setThanas([]);
@@ -247,7 +88,6 @@ export default function SmartRajukSearch({
     setSearchStatus("idle");
   };
 
-  // ── Search ───────────────────────────────────────────────────────────────────
   const handleSearch = async () => {
     if (!dagNo.trim() || !selectedType || !selectedMouza) return;
 
@@ -264,33 +104,19 @@ export default function SmartRajukSearch({
 
     if (selectedType === "ms_plot_no") {
       targetLayer = "msPlots";
-      queries.push(
-        `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`,
-      );
-      if (isNum)
-        queries.push(
-          `UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`,
-        );
+      queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`);
+      if (isNum) queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`);
       queries.push(`plot_no='${safeDag}'`);
     } else {
       targetLayer = "plots";
-      queries.push(
-        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`,
-      );
-      queries.push(
-        `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`,
-      );
-      if (isNum)
-        queries.push(
-          `UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`,
-        );
+      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`);
+      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`);
+      if (isNum) queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`);
     }
 
     const result = await smartSearch(targetLayer, queries);
 
     if (result) {
-      // Inject selected location values (override API's raw location fields)
-      // Inject selected location values (override API's raw location fields)
       const {
         mDistrict,
         upazilaPs,
@@ -310,7 +136,7 @@ export default function SmartRajukSearch({
         plotTypeCustom:
           selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
         ...rest,
-        geometry: result.geometry, // Keep the geometry for advanced features
+        geometry: result.geometry,
       };
 
       setPlotData(enhanced);
@@ -320,7 +146,6 @@ export default function SmartRajukSearch({
     }
   };
 
-  // ── "Use this land" handler ──────────────────────────────────────────────────
   const handleUseArea = () => {
     if (!plotData || !onUseArea) return;
 
@@ -328,8 +153,7 @@ export default function SmartRajukSearch({
     if (selectedType === "ms_plot_no") {
       decimalArea = (plotData.areaKatha || 0) * 1.65;
     } else {
-      decimalArea =
-        (plotData.area || 0) * 0.0247105;
+      decimalArea = (plotData.area || 0) * 0.0247105;
     }
 
     if (decimalArea === 0) {
@@ -340,27 +164,20 @@ export default function SmartRajukSearch({
     onUseArea(parseFloat(decimalArea.toFixed(2)), dagNo, selectedType);
   };
 
-  // ── Area display helper ──────────────────────────────────────────────────────
   const getAreaDisplay = (): string => {
     if (!plotData) return "-";
     if (selectedType === "ms_plot_no") {
       return engToBdNum((plotData.areaKatha || 0).toFixed(2)) + " কাঠা";
     }
     return (
-      engToBdNum(
-        (
-          (plotData.area || 0) * 0.0247105
-        ).toFixed(2),
-      ) + " শতাংশ"
+      engToBdNum(((plotData.area || 0) * 0.0247105).toFixed(2)) + " শতাংশ"
     );
   };
 
   const isDropdownLoading = searchStatus === "loading" && !plotData;
 
-  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="card shadow border-0 rounded-4 overflow-hidden">
-      {/* Header */}
       <div className="card-header bg-dark text-white p-3 text-center">
         <h5 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
           <Database size={20} className="me-2 text-warning" />
@@ -372,9 +189,7 @@ export default function SmartRajukSearch({
       </div>
 
       <div className="card-body p-4 bg-light">
-        {/* Location Selectors */}
         <div className="row g-3 mb-3">
-          {/* District */}
           <div className="col-md-6">
             <label className="form-label small fw-bold text-muted mb-1">
               ১. জেলা
@@ -396,7 +211,6 @@ export default function SmartRajukSearch({
             </select>
           </div>
 
-          {/* Thana */}
           <div className="col-md-6">
             <label className="form-label small fw-bold text-muted mb-1">
               ২. থানা
@@ -416,7 +230,6 @@ export default function SmartRajukSearch({
             </select>
           </div>
 
-          {/* Mouza */}
           <div className="col-md-6">
             <label className="form-label small fw-bold text-muted mb-1">
               ৩. মৌজা
@@ -442,7 +255,6 @@ export default function SmartRajukSearch({
             </select>
           </div>
 
-          {/* Plot Type */}
           <div className="col-md-6">
             <label className="form-label small fw-bold text-success mb-1">
               ৪. দাগের ধরন
@@ -465,7 +277,6 @@ export default function SmartRajukSearch({
           </div>
         </div>
 
-        {/* Dag Number Input */}
         {selectedType && (
           <div className="mt-3 fade-in">
             <label className="form-label fw-bold text-dark mb-2">
@@ -507,7 +318,6 @@ export default function SmartRajukSearch({
           </div>
         )}
 
-        {/* Loading indicator for dropdowns */}
         {isDropdownLoading && (
           <div className="text-center text-success fw-bold mt-3 small">
             <span className="spinner-border spinner-border-sm me-2" />
@@ -515,7 +325,6 @@ export default function SmartRajukSearch({
           </div>
         )}
 
-        {/* Not Found */}
         {searchStatus === "not_found" && (
           <div className="alert alert-danger shadow-sm border-0 rounded-4 d-flex align-items-center p-3 mt-4 fade-in">
             <AlertTriangle
@@ -532,10 +341,8 @@ export default function SmartRajukSearch({
           </div>
         )}
 
-        {/* Result */}
         {searchStatus === "found" && plotData && (
           <div className="mt-4 fade-in">
-            {/* Area Summary Card */}
             <div className="card border-success border-2 rounded-4 overflow-hidden shadow-sm">
               <div className="card-header bg-success text-white py-3 text-center">
                 <h5 className="fw-bolder mb-0 d-flex align-items-center justify-content-center">
@@ -548,7 +355,6 @@ export default function SmartRajukSearch({
               </div>
 
               <div className="card-body bg-white p-3 p-md-4">
-                {/* Area Highlight */}
                 <div className="row g-3 text-center mb-4">
                   <div className="col-6 border-end">
                     <p className="text-muted small mb-1">মোট জমির পরিমাণ</p>
@@ -566,7 +372,6 @@ export default function SmartRajukSearch({
                   </div>
                 </div>
 
-                {/* Use Area Button — only shown if onUseArea prop is provided */}
                 {onUseArea && (
                   <button
                     onClick={handleUseArea}
@@ -577,7 +382,6 @@ export default function SmartRajukSearch({
                   </button>
                 )}
 
-                {/* Full data table — hidden in compact mode */}
                 {!compact && (
                   <div className="table-responsive bg-white rounded-4 shadow-sm border border-light-subtle mt-3">
                     <table className="table table-hover table-bordered mb-0 align-middle">
@@ -592,7 +396,6 @@ export default function SmartRajukSearch({
                               key !== "geometry",
                           )
                           .map(([key, value]) => {
-                            // Safely handle nested objects (fixes [object Object] bug)
                             let displayValue = value;
                             if (typeof value === "object") {
                               displayValue = JSON.stringify(value);
@@ -620,7 +423,6 @@ export default function SmartRajukSearch({
                       </tbody>
                     </table>
                     
-                    {/* Explanation for why MS has fewer details */}
                     {selectedType === "ms_plot_no" && (
                       <div className="p-3 bg-light border-top text-muted small">
                         <Info size={14} className="me-1 mb-1 text-warning" />
@@ -630,7 +432,6 @@ export default function SmartRajukSearch({
                   </div>
                 )}
 
-                {/* Intelligence Report and Map Integration */}
                 <div className="row mt-4 g-3 align-items-stretch">
                   <div className="col-12 col-xl-6">
                     <RajukIntelligenceReport plotData={plotData} />

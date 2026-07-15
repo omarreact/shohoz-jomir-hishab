@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const cache = new Map<string, { data: any; timestamp: number }>();
+const cache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 3600000; // ১ ঘণ্টা
 
 export async function GET(request: Request) {
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
 
     cache.set(cacheKey, { data, timestamp: Date.now() });
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }

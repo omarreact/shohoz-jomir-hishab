@@ -75,23 +75,30 @@ export default function AdminLayout({
                 
                 // Only use Firestore data if it came from the server (not blocked cache)
                 if (!snapshot.metadata.fromCache) {
-                  let matchedAdmin: any = null;
+                  interface AdminUser {
+                    role?: string;
+                    name?: string;
+                    status?: string;
+                    email?: string;
+                  }
+                  let matchedAdmin: AdminUser | null = null;
                   const userEmail = user.email.toLowerCase().trim();
                   
                   snapshot.forEach((doc) => {
-                    const data = doc.data();
+                    const data = doc.data() as AdminUser;
                     if (data.email && data.email.toLowerCase().trim() === userEmail) {
                       matchedAdmin = data;
                     }
                   });
 
-                  if (matchedAdmin) {
+                  if (matchedAdmin !== null) {
+                    const admin = matchedAdmin as AdminUser;
                     // Update role and name from Firestore
-                    setUserRole(matchedAdmin.role || "Super Admin");
-                    setUserName(matchedAdmin.name || user.email.split("@")[0]);
+                    setUserRole(admin.role || "Super Admin");
+                    setUserName(admin.name || user.email.split("@")[0]);
                     
                     // Only kick out if explicitly Suspended
-                    if (matchedAdmin.status === "Suspended") {
+                    if (admin.status === "Suspended") {
                       await fbSignOut(auth);
                       setIsLoggedIn(false);
                       router.push("/login?error=suspended");

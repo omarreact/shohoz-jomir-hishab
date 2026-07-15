@@ -43,9 +43,9 @@ export default function SettingsPage() {
       if (docSnap.exists()) {
         setSettings(prev => ({ ...prev, ...docSnap.data() }));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching settings:", error);
-      if (error.code === 'permission-denied') {
+      if (error instanceof Error && (error as any).code === 'permission-denied') {
         setErrorMsg("Firebase Security Rules (Firestore) এ পারমিশন দেওয়া নেই। দয়া করে Firebase Console থেকে 'config' কালেকশনের Read/Write পারমিশন দিন।");
       }
     } finally {

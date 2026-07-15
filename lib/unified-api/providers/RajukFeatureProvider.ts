@@ -3,6 +3,9 @@ import { TokenManager } from "../core/TokenManager";
 import { FieldNormalizer } from "../normalizers/FieldNormalizer";
 import { GeometryNormalizer } from "../normalizers/GeometryNormalizer";
 import { ProviderQuery, UnifiedFeature } from "../types";
+import { RajukFeatureResponseSchema } from "@/src/types/rajuk";
+import { ApiError } from "@/src/shared/utils/errors";
+import { logger } from "@/src/shared/utils/logger";
 
 export class RajukFeatureProvider extends BaseProvider {
   public readonly name: string;
@@ -50,14 +53,18 @@ export class RajukFeatureProvider extends BaseProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Rajuk API returned status ${response.status} ${response.statusText}`);
+      throw new ApiError(`Rajuk API returned status ${response.status} ${response.statusText}`, response.status);
     }
 
     let data;
     try {
-      data = await response.json();
-    } catch (e: any) {
-      throw new Error(`Rajuk API JSON Parse Error: ${e.message}`);
+      const rawJson = await response.json();
+      data = RajukFeatureResponseSchema.parse(rawJson);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        throw new ApiError(`Rajuk API Parse/Validation Error: ${e.message}`, 500);
+      }
+      throw new ApiError("Rajuk API Parse Error", 500);
     }
 
     if (data.error) {
@@ -66,10 +73,10 @@ export class RajukFeatureProvider extends BaseProvider {
         await TokenManager.getInstance().refreshToken();
         return this.retryFetch(query);
       }
-      throw new Error(`Rajuk API Error: ${data.error.message}`);
+      throw new ApiError(`Rajuk API Error: ${data.error.message}`, data.error.code || 400);
     }
 
-    return this.normalize(data) as UnifiedFeature[];
+    return this.normalize(data);
   }
 
   private async retryFetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
@@ -106,22 +113,28 @@ export class RajukFeatureProvider extends BaseProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Rajuk API returned status ${response.status} on retry`);
+      throw new ApiError(`Rajuk API returned status ${response.status} on retry`, response.status);
     }
 
     try {
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
-      return this.normalize(data) as UnifiedFeature[];
-    } catch (e: any) {
-      throw new Error(`Rajuk API JSON Parse Error on retry: ${e.message}`);
+      const rawJson = await response.json();
+      const data = RajukFeatureResponseSchema.parse(rawJson);
+      
+      if (data.error) throw new ApiError(data.error.message || "Unknown error", data.error.code || 400);
+      return this.normalize(data);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        throw new ApiError(`Rajuk API Parse Error on retry: ${e.message}`, 500);
+      }
+      throw new ApiError("Rajuk API Parse Error on retry", 500);
     }
   }
 
-  public normalize(rawData: any): UnifiedFeature[] {
-    if (!rawData.features || !Array.isArray(rawData.features)) return [];
+  public normalize(rawData: unknown): UnifiedFeature[] {
+    const data = RajukFeatureResponseSchema.parse(rawData);
+    if (!data.features || !Array.isArray(data.features)) return [];
 
-    return rawData.features.map((feature: any) => {
+    return data.features.map((feature) => {
       const properties = FieldNormalizer.normalize(feature.attributes);
       const geometry = GeometryNormalizer.normalize(feature.geometry);
 
@@ -131,7 +144,7 @@ export class RajukFeatureProvider extends BaseProvider {
         geometry,
         metadata: {
           layerId: this.name,
-          spatialReference: rawData.spatialReference,
+          spatialReference: (data as any).spatialReference,
         }
       };
     });

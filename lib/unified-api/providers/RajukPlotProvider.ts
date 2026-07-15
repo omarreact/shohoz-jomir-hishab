@@ -21,7 +21,7 @@ export class RajukPlotProvider extends BaseProvider {
     }
   }
 
-  public normalize(rawData: any): UnifiedFeature[] {
+  public normalize(rawData: unknown): UnifiedFeature[] {
     return [];
   }
 

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Search, Download, Code, Table } from "lucide-react";
 
 interface DynamicApiTableProps {
-  data: any;
+  data: unknown;
   apiName: string;
 }
 
@@ -20,31 +20,34 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
     if (!data) return [];
     
     if (Array.isArray(data)) {
-      return data;
+      return data as Record<string, unknown>[];
     }
     
     // ESRI format
-    if (data.features && Array.isArray(data.features)) {
-      return data.features.map((f: any) => ({
-        ...f.attributes,
-        // optionally include geometry if needed, but usually we just want attributes
-      }));
+    const typedData = data as Record<string, unknown>;
+    if (typedData.features && Array.isArray(typedData.features)) {
+      return typedData.features.map((f: unknown) => {
+        const feature = f as { attributes?: Record<string, unknown> };
+        return {
+          ...(feature.attributes || {}),
+        };
+      });
     }
     
     // Common object-wrapping array formats
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
+    if (typedData.data && Array.isArray(typedData.data)) {
+      return typedData.data as Record<string, unknown>[];
     }
-    if (data.items && Array.isArray(data.items)) {
-      return data.items;
+    if (typedData.items && Array.isArray(typedData.items)) {
+      return typedData.items as Record<string, unknown>[];
     }
-    if (data.results && Array.isArray(data.results)) {
-      return data.results;
+    if (typedData.results && Array.isArray(typedData.results)) {
+      return typedData.results as Record<string, unknown>[];
     }
     
     // If it's just a single object, wrap it
     if (typeof data === "object") {
-      return [data];
+      return [typedData];
     }
     
     return [{ value: String(data) }];
@@ -70,7 +73,7 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
     if (!search) return normalizedData;
     const lowerSearch = search.toLowerCase();
     
-    return normalizedData.filter((row: any) => {
+    return normalizedData.filter((row) => {
       if (!row || typeof row !== "object") return false;
       return Object.values(row).some(val => 
         String(val).toLowerCase().includes(lowerSearch)
@@ -86,7 +89,7 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
     if (filteredData.length === 0 || columns.length === 0) return;
     
     const header = columns.join(",") + "\n";
-    const csvContent = filteredData.map((row: any) => {
+    const csvContent = filteredData.map((row) => {
       return columns.map(col => {
         const val = row[col];
         if (val === null || val === undefined) return "";
@@ -109,7 +112,7 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
   };
 
   // Safe renderer for cell values (objects/arrays)
-  const renderCell = (val: any) => {
+  const renderCell = (val: unknown) => {
     if (val === null || val === undefined) return <span className="text-muted">null</span>;
     if (typeof val === "boolean") return <span className={`badge ${val ? 'bg-success' : 'bg-secondary'}`}>{val ? 'true' : 'false'}</span>;
     if (typeof val === "object") {
@@ -186,7 +189,7 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
           </thead>
           <tbody>
             {pageData.length > 0 ? (
-              pageData.map((row: any, idx: number) => (
+              pageData.map((row, idx) => (
                 <tr key={idx}>
                   <td className="px-3 py-2 text-center text-muted fw-bold bg-light">
                     {(page - 1) * PAGE_SIZE + idx + 1}

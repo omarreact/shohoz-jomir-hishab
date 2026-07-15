@@ -10,7 +10,7 @@ import PrintStyles from "@/components/shared/PrintStyles";
 import DetailedCalculator from "@/components/khatiyan/DetailedCalculator";
 import QuickCalculator from "@/components/khatiyan/QuickCalculator";
 import LatestBlogs from "@/components/shared/LatestBlogs";
-import SmartRajukSearch from "@/components/RajukDatabaseSearch";
+import SearchPanel from "@/src/features/search/components/SearchPanel";
 
 const ResultSection = dynamic(
   () => import("@/components/khatiyan/ResultSection"),
@@ -303,7 +303,7 @@ export default function SmartKhatiyanApp() {
         {activeTab === "rajuk" && (
           <div className="row justify-content-center fade-in mb-5">
             <div className="col-lg-8">
-              <SmartRajukSearch onUseArea={handleUseArea} compact />
+              <SearchPanel onUseArea={handleUseArea} compact />
             </div>
           </div>
         )}

@@ -300,20 +300,81 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
 
 
 /* =========================================
-   Animations & Effects
+   Animations, Transitions & A11y Focus
    ========================================= */
-.fade-in {
-  animation: fadeIn 0.4s ease-in-out;
+
+/* Focus accessibility */
+*:focus-visible {
+  outline: 2px solid var(--bs-success);
+  outline-offset: 2px;
 }
+
+/* Base Transitions */
+.transition-all {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-colors {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, fill 0.2s ease, stroke 0.2s ease;
+}
+
+.transition-transform {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .hover-shadow { transition: all 0.3s ease; }
 .hover-shadow:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.hover-bg-light:hover {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+
+html[data-theme="dark"] .hover-bg-light:hover {
+  background-color: rgba(255,255,255,0.05) !important;
+}
+
+.hover-text-success:hover {
+  color: var(--bs-success) !important;
 }
 
 .blur-effect {

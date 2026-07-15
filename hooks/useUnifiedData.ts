@@ -1,64 +1,74 @@
 import { create } from "zustand";
-import { UnifiedResponseData } from "@/lib/unified-api/types";
+import { UnifiedResponseData, UnifiedResponse } from "@/lib/unified-api/types";
+import { SearchService } from "@/src/features/search/services/searchService";
+
+interface QueryStatus {
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
 
 interface UnifiedDataState {
   data: UnifiedResponseData;
+  queries: Record<string, QueryStatus>;
+  
+  // Legacy fields (for backwards compatibility, but mapped to the generic/latest query)
   isLoading: boolean;
   error: string | null;
   lastUpdated: string | null;
   
   // Actions
-  fetchData: (includes?: string[], query?: Record<string, any>) => Promise<void>;
+  fetchData: (includes?: string[], query?: Record<string, string | number | boolean>) => Promise<void>;
   clearData: () => void;
 }
 
 export const useUnifiedData = create<UnifiedDataState>((set, get) => ({
   data: {},
+  queries: {},
+  
   isLoading: false,
   error: null,
   lastUpdated: null,
 
-  fetchData: async (includes?: string[], query?: Record<string, any>) => {
-    set({ isLoading: true, error: null });
+  fetchData: async (includes?: string[], query?: Record<string, string | number | boolean>) => {
+    // Generate a simple cache key for this query
+    const queryKey = JSON.stringify({ includes, query });
+    
+    set((state) => ({
+      isLoading: true,
+      error: null,
+      queries: {
+        ...state.queries,
+        [queryKey]: { loading: true, error: null, lastUpdated: null }
+      }
+    }));
 
     try {
-      const url = new URL("/api/unified", window.location.origin);
-      
-      if (includes && includes.length > 0) {
-        url.searchParams.append("include", includes.join(","));
-      }
-      
-      if (query) {
-        Object.entries(query).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-             url.searchParams.append(key, value.toString());
-          }
-        });
-      }
-
-      const response = await fetch(url.toString());
-      const result = await response.json();
-
-      if (!result.success && Object.keys(result.data).length === 0) {
-        // Complete failure
-        set({ 
-          error: result.errors[0]?.message || "Failed to fetch unified data", 
-          isLoading: false 
-        });
-        return;
-      }
+      const result: UnifiedResponse = await SearchService.fetchUnifiedData(includes, query);
 
       // Merge new data with existing data to allow partial updates
       set((state) => ({
         data: { ...state.data, ...result.data },
         lastUpdated: result.generatedAt,
         isLoading: false,
+        queries: {
+          ...state.queries,
+          [queryKey]: { loading: false, error: null, lastUpdated: result.generatedAt }
+        }
       }));
 
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      set((state) => ({ 
+        error: errorMessage, 
+        isLoading: false,
+        queries: {
+          ...state.queries,
+          [queryKey]: { loading: false, error: errorMessage, lastUpdated: null }
+        }
+      }));
     }
   },
 
-  clearData: () => set({ data: {}, lastUpdated: null, error: null })
+  clearData: () => set({ data: {}, queries: {}, lastUpdated: null, error: null, isLoading: false })
 }));

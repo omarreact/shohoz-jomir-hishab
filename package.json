@@ -27,6 +27,7 @@
     "react-leaflet": "^5.0.0",
     "react-quill-new": "^3.8.3",
     "recharts": "^3.8.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

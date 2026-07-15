@@ -59,10 +59,17 @@ export async function GET(request: Request) {
     const contentType = response.headers.get("content-type") || "image/png";
     const headers = new Headers();
     headers.set("Content-Type", contentType);
-    headers.set(
-      "Cache-Control",
-      "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800, immutable",
-    );
+
+    // Rajuk sometimes returns 200 OK with JSON error (e.g. invalid token) for tiles
+    if (contentType.includes("json") || contentType.includes("text")) {
+      headers.set("Cache-Control", "no-store, max-age=0");
+    } else {
+      headers.set(
+        "Cache-Control",
+        "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800, immutable",
+      );
+    }
+    
     headers.set("X-Proxy-Source", "rajuk-tile");
 
     const etag = response.headers.get("etag");

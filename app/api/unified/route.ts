@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const status = response.success ? 200 : 502;
     
     return NextResponse.json(response, { status });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
       generatedAt: new Date().toISOString(),
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       version: "1.0.0",
       data: {},
       metadata: {},
-      errors: [{ provider: "Gateway", message: error.message }]
+      errors: [{ provider: "Gateway", message: error instanceof Error ? error.message : "Unknown error" }]
     }, { status: 500 });
   }
 }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     
     const status = response.success ? 200 : 502;
     return NextResponse.json(response, { status });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unified API Route Critical Error:", error);
     return NextResponse.json({
       success: false,
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       version: "2.0.0",
       data: {},
       metadata: {},
-      errors: [{ provider: "Gateway", message: error.message }]
+      errors: [{ provider: "Gateway", message: error instanceof Error ? error.message : "Unknown error" }]
     }, { status: 500 });
   }
 }

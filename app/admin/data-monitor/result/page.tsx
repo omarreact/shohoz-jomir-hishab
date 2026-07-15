@@ -23,7 +23,7 @@ interface TestResult {
   endpoint: string;
   status: number;
   timeMs: number;
-  data: any;
+  data: unknown;
   error?: string;
   recordCount: number;
 }
@@ -98,7 +98,7 @@ function CombinedResultContent() {
               data: jsonData,
               recordCount,
             };
-          } catch (e: any) {
+          } catch (e: unknown) {
             return {
               apiIndex: idx,
               name: api?.name || "Unknown",
@@ -106,7 +106,7 @@ function CombinedResultContent() {
               status: 500,
               timeMs: Math.round(performance.now() - startReqTime),
               data: null,
-              error: e.message,
+              error: e instanceof Error ? e.message : "Unknown error",
               recordCount: 0,
             };
           }

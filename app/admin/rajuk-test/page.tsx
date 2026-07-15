@@ -1,11 +1,11 @@
 "use client";
 
-import RajukDatabaseSearch from "@/components/RajukDatabaseSearch";
+import SearchPanel from "@/src/features/search/components/SearchPanel";
 
 export default function RajukSinglePlotTestPage() {
   return (
     <div className="container py-4">
-      <RajukDatabaseSearch />
+      <SearchPanel />
     </div>
   );
 }

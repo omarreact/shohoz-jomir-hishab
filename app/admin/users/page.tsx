@@ -126,8 +126,8 @@ export default function UserManagement() {
       setShowCreateForm(false);
       showSuccess(`✅ "${name}" সফলভাবে তৈরি হয়েছে!`);
       fetchUsers();
-    } catch (error: any) {
-      alert(`সমস্যা হয়েছে: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`সমস্যা হয়েছে: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -154,8 +154,8 @@ export default function UserManagement() {
       setEditingUser(null);
       showSuccess(`✅ "${editName}" আপডেট হয়েছে!`);
       fetchUsers();
-    } catch (error: any) {
-      alert(`আপডেট করতে সমস্যা: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`আপডেট করতে সমস্যা: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsEditSubmitting(false);
     }
@@ -173,8 +173,8 @@ export default function UserManagement() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "Failed");
       showSuccess(`✅ পাসওয়ার্ড রিসেট ইমেইল পাঠানো হয়েছে!`);
-    } catch (error: any) {
-      alert(`ইমেইল পাঠাতে সমস্যা: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`ইমেইল পাঠাতে সমস্যা: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsSendingReset(false);
     }
