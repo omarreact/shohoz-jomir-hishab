@@ -10,6 +10,7 @@ import {
   Popup,
   Polygon,
   Tooltip,
+  FeatureGroup,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -43,11 +44,6 @@ function ViewportPolygonFetcher({
   const fetchInView = useCallback(
     async (map: any) => {
       const zoom = map.getZoom();
-      // Only fetch RS vector polygons when zoomed in enough (zoom >= 15) to avoid huge queries
-      if (zoom < 15) {
-        onPolygonsLoaded([]);
-        return;
-      }
       if (isFetching) return;
       setIsFetching(true);
       try {
@@ -130,7 +126,7 @@ function InitialViewSetter({ initialData }: { initialData?: any }) {
       }
 
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { maxZoom: 16, animate: true, duration: 1.5 });
+        map.flyToBounds(bounds, { maxZoom: 18, duration: 1.5, easeLinearity: 0.25 });
       }
     } catch (e) {
       console.error("Bounds error", e);
@@ -414,10 +410,6 @@ export default function FullDapMapContent({
           />
           নির্বাচিত RS প্লট
         </span>
-        <span className="text-white opacity-50 small">
-          <Info size={12} className="me-1" />
-          জুম ≥ 15 তে RS ভেক্টর দেখাবে
-        </span>
       </div>
 
       {/* ── Intelligence Panel ──────────────────────────────────────── */}
@@ -599,62 +591,65 @@ export default function FullDapMapContent({
         )}
 
         {/* ── RS Vector Polygons (BLUE) ─────────────────────────────── */}
-        {rsPolygons.map((feature: any, idx: number) => {
-          if (!feature.geometry?.rings) return null;
-          const ring = feature.geometry.rings[0];
-          const coords: [number, number][] = ring.map((pt: number[]) => [
-            pt[1],
-            pt[0],
-          ]);
-          const attrs = feature.attributes || {};
-          const label = attrs.rs_plot_no || attrs.plot_no;
-          const isSelected = attrs.objectid === selectedRsId;
-
-          return (
-            <Polygon
-              key={idx}
-              positions={coords}
-              pathOptions={
-                isSelected
-                  ? {
-                      color: "#16a34a",
-                      fillColor: "#22c55e",
-                      fillOpacity: 0.35,
-                      weight: 3,
-                    }
-                  : {
-                      color: "#3b82f6",
-                      fillColor: "#3b82f6",
-                      fillOpacity: 0.08,
-                      weight: 1.8,
-                    }
-              }
-            >
-              <Tooltip
-                direction="center"
-                permanent
-                className="bg-transparent border-0 shadow-none fw-bold"
-              >
-                <span
-                  style={{
-                    color: isSelected ? "#16a34a" : "#2563eb",
-                    fontSize: "11px",
-                    textShadow:
-                      "1px 1px 0 white,-1px 1px 0 white,1px -1px 0 white,-1px -1px 0 white",
-                    background: "transparent",
-                    boxShadow: "none",
-                    border: "none",
-                  }}
-                >
-                  {label}
-                </span>
-              </Tooltip>
-            </Polygon>
-          );
-        })}
-
-        {/* ── Layers Control ────────────────────────────────────────── */}
         <LayersControl position="topright">
+          <LayersControl.Overlay name="RS প্লট (ভেক্টর)" checked>
+            <FeatureGroup>
+              {rsPolygons.map((feature: any, idx: number) => {
+                if (!feature.geometry?.rings) return null;
+                const ring = feature.geometry.rings[0];
+                const coords: [number, number][] = ring.map((pt: number[]) => [
+                  pt[1],
+                  pt[0],
+                ]);
+                const attrs = feature.attributes || {};
+                const label = attrs.rs_plot_no || attrs.plot_no;
+                const isSelected = attrs.objectid === selectedRsId;
+
+                return (
+                  <Polygon
+                    key={idx}
+                    positions={coords}
+                    pathOptions={
+                      isSelected
+                        ? {
+                            color: "#16a34a",
+                            fillColor: "#22c55e",
+                            fillOpacity: 0.35,
+                            weight: 3,
+                          }
+                        : {
+                            color: "#3b82f6",
+                            fillColor: "#3b82f6",
+                            fillOpacity: 0.08,
+                            weight: 1.8,
+                          }
+                    }
+                  >
+                    <Tooltip
+                      direction="center"
+                      permanent
+                      className="bg-transparent border-0 shadow-none fw-bold"
+                    >
+                      <span
+                        style={{
+                          color: isSelected ? "#16a34a" : "#2563eb",
+                          fontSize: "11px",
+                          textShadow:
+                            "1px 1px 0 white,-1px 1px 0 white,1px -1px 0 white,-1px -1px 0 white",
+                          background: "transparent",
+                          boxShadow: "none",
+                          border: "none",
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </Tooltip>
+                  </Polygon>
+                );
+              })}
+            </FeatureGroup>
+          </LayersControl.Overlay>
+
           {/* Base Layers */}
           <LayersControl.BaseLayer name="গুগল ম্যাপ (Standard)">
             <TileLayer
