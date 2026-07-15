@@ -706,18 +706,24 @@ export default function FullDapMapContent({
               url={getTileUrl("Hosted/MS_Mauza_Tiles_Final")}
               opacity={0.9}
               maxZoom={22}
+              maxNativeZoom={19}
+              minNativeZoom={14}
             />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="RS মৌজা ম্যাপ (টাইল)">
             <TileLayer
               url={getTileUrl("Hosted/RS_Mauza_Tiles_Final")}
               maxZoom={22}
+              maxNativeZoom={19}
+              minNativeZoom={14}
             />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="RS মৌজা হাই-রেজ (282 Scale)">
             <TileLayer
               url={getTileUrl("Hosted/RS_Mauza_282Scale")}
               maxZoom={22}
+              maxNativeZoom={19}
+              minNativeZoom={15}
             />
           </LayersControl.Overlay>
           <LayersControl.Overlay name="প্রস্তাবিত পরিবহন নেটওয়ার্ক">
