@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const harPath = 'C:\\Users\\Faruk Khan\\Downloads\\masterplan.rajuk.gov.bd.har';
+const harPath = 'C:\\Users\\Faruk Khan\\Downloads\\landbd.pincodeit.com.har';
 
 try {
   console.log(`Reading HAR file: ${harPath}`);
@@ -18,12 +18,14 @@ try {
     const res = entry.response;
     const url = new URL(req.url);
 
-    // Only look at rajuk or GIS related endpoints
-    if (url.hostname.includes('rajuk') || url.pathname.includes('api') || url.pathname.includes('arcgis')) {
+    // Log all errors (status >= 400) or GIS endpoints
+    if (res.status >= 400 || url.hostname.includes('rajuk') || url.pathname.includes('api') || url.pathname.includes('arcgis')) {
       const endpointKey = `${req.method} ${url.origin}${url.pathname}`;
       
-      if (!apiEndpoints[endpointKey]) {
-        apiEndpoints[endpointKey] = {
+      if (!apiEndpoints[endpointKey] || res.status >= 400) {
+        // use status code in key to differentiate failed ones
+        const uniqueKey = res.status >= 400 ? `${endpointKey} (ERROR ${res.status})` : endpointKey;
+        apiEndpoints[uniqueKey] = {
           url: req.url,
           method: req.method,
           queryParams: req.queryString.map(q => q.name),
@@ -37,18 +39,9 @@ try {
     }
   });
 
-  console.log("=== RAJUK / GIS API ENDPOINTS FOUND ===\n");
+  console.log("=== API ENDPOINTS & ERRORS FOUND ===\n");
   for (const [key, data] of Object.entries(apiEndpoints)) {
-    // Filter out obvious static assets
-    if (!data.url.match(/\.(png|jpg|jpeg|gif|css|js|woff2?|svg|ico)$/i) && !data.responseMimeType.includes('image')) {
-      console.log(`Endpoint: ${key}`);
-      if (data.queryParams.length > 0) console.log(`  Query Params: ${data.queryParams.join(', ')}`);
-      if (data.postData && data.postData.length < 500) console.log(`  Payload: ${data.postData}`);
-      console.log(`  Response Type: ${data.responseMimeType} (${Math.round(data.responseSize / 1024)} KB)`);
-      
-      // If it's JSON, try to parse and show keys
-      if (data.responseMimeType.includes('json') && data.sampleResponseText) {
-         try {
+    // Just dump everything we recorded
            const parsed = JSON.parse(data.sampleResponseText.replace('...', ''));
            const keys = Object.keys(parsed);
            console.log(`  JSON Keys (Root): ${keys.join(', ')}`);
