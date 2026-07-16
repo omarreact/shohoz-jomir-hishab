@@ -28,6 +28,18 @@ function MapEngineBootstrapper() {
     }
   }, [map, setMap]);
 
+  useEffect(() => {
+    const handleFlyTo = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { lat, lng, zoom } = customEvent.detail;
+      if (lat && lng && map) {
+        map.flyTo([lat, lng], zoom || 18, { duration: 1.5 });
+      }
+    };
+    window.addEventListener("fly-to-location", handleFlyTo);
+    return () => window.removeEventListener("fly-to-location", handleFlyTo);
+  }, [map]);
+
   return null;
 }
 
@@ -82,13 +94,14 @@ export default function MapCore({
       } else {
         setRsPolygons((prev) => {
           const exists = prev.find(
-            (p) => p.attributes?.objectid === initialData.objectid,
+            (p) => (p.properties?.objectid || p.attributes?.objectid) === (initialData.properties?.objectid || initialData.attributes?.objectid),
           );
           return exists ? prev : [...prev, initialData];
         });
-        setSelectedRsId(initialData.objectid || null);
-        if (initialData.geometry?.rings?.[0]?.[0]) {
-          const [lng, lat] = initialData.geometry.rings[0][0];
+        setSelectedRsId(initialData.properties?.objectid || initialData.attributes?.objectid || null);
+        if (initialData.geometry?.coordinates?.[0]?.[0] || initialData.geometry?.rings?.[0]?.[0]) {
+          const coords = initialData.geometry.coordinates || initialData.geometry.rings;
+          const [lng, lat] = coords[0][0];
           setClickedPos({ lat, lng });
           setInferredData({
             rsData: initialData,
@@ -99,6 +112,52 @@ export default function MapCore({
       }
     }
   }, [initialData, setClickedPos, setInferredData, setSelectedRsId]);
+
+  // Handle Smart Search Results
+  useEffect(() => {
+    const handleSearchResult = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const result = customEvent.detail;
+      
+      if (!result) return;
+      
+      if (result.type === "COORDINATE") {
+        setClickedPos({ lat: result.data.lat, lng: result.data.lng });
+        window.dispatchEvent(new CustomEvent("fly-to-location", { detail: { lat: result.data.lat, lng: result.data.lng, zoom: 18 } }));
+      } else if (result.type === "RS_PLOT" || result.type === "MS_PLOT") {
+        const plotData = result.data;
+        const pAttrs = plotData.properties || plotData.attributes || {};
+        
+        setRsPolygons((prev) => {
+          const exists = prev.find(
+            (p) => {
+              const prevAttrs = p.properties || p.attributes || {};
+              return prevAttrs.OBJECTID === pAttrs.OBJECTID || prevAttrs.objectid === pAttrs.objectid;
+            }
+          );
+          return exists ? prev : [...prev, plotData];
+        });
+        
+        const objId = pAttrs.OBJECTID || pAttrs.objectid;
+        setSelectedRsId(objId || null);
+        
+        const coords = plotData.geometry?.coordinates || plotData.geometry?.rings;
+        if (coords?.[0]?.[0]) {
+          const [lng, lat] = coords[0][0];
+          setClickedPos({ lat, lng });
+          setInferredData({
+            rsData: plotData,
+            landuseData: null,
+            floodData: null,
+          });
+          window.dispatchEvent(new CustomEvent("fly-to-location", { detail: { lat, lng, zoom: 18 } }));
+        }
+      }
+    };
+    
+    window.addEventListener("smart-search-result", handleSearchResult);
+    return () => window.removeEventListener("smart-search-result", handleSearchResult);
+  }, [setClickedPos, setInferredData, setSelectedRsId]);
 
 
 

@@ -23,6 +23,11 @@ import {
   Sparkles,
   ExternalLink,
 } from "lucide-react";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 export interface ApiRow {
   name: string;
@@ -288,30 +293,30 @@ export default function DataMonitorPage() {
   ).length;
 
   return (
-    <div className="p-4 bg-light min-vh-100">
+    <div className="fade-in" data-admin-panel="true">
       <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
-        <div>
-          <div className="d-flex align-items-center gap-2 mb-2">
-            <BarChart3 size={22} className="text-success" />
-            <h4 className="fw-bold mb-0">ডেটা মনিটর</h4>
-          </div>
-          <p className="text-muted mb-0">
-            API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা
-            করুন।
-          </p>
-        </div>
+        <SectionHeader 
+          title="ডেটা মনিটর" 
+          subtitle="API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা করুন।"
+          className="mb-0"
+        />
         <div className="d-flex gap-2 flex-wrap">
-          <button
+          <Button
             onClick={() => setRefreshKey((value) => value + 1)}
-            className="btn btn-outline-success rounded-pill px-3 d-flex align-items-center gap-2"
+            variant="outline"
+            className="rounded-pill"
+            leftIcon={<RefreshCw size={15} />}
           >
-            <RefreshCw size={15} /> রিফ্রেশ
-          </button>
-          <Link
-            href="/admin/data-monitor/result"
-            className="btn btn-dark rounded-pill px-3 d-flex align-items-center gap-2"
-          >
-            <ExternalLink size={15} /> রেজাল্ট পেজ
+            রিফ্রেশ
+          </Button>
+          <Link href="/admin/data-monitor/result" className="text-decoration-none">
+            <Button
+              variant="primary"
+              className="rounded-pill"
+              leftIcon={<ExternalLink size={15} />}
+            >
+              রেজাল্ট পেজ
+            </Button>
           </Link>
         </div>
       </div>
@@ -345,93 +350,93 @@ export default function DataMonitorPage() {
 
       <div className="row g-3 mb-4">
         {loading ? (
-          <div className="col-12 text-center py-3 text-muted">
+          <div className="col-12 text-center py-3 text-secondary">
             ফায়ারবেস ডেটা লোড হচ্ছে...
           </div>
         ) : (
           firebaseData.map((item) => (
             <div key={item.label} className="col-sm-6 col-xl-4">
-              <div
-                className={`card border-0 shadow-sm rounded-4 h-100 p-3 ${item.category === "config" ? "bg-dark text-white" : item.category === "users" ? "bg-success bg-opacity-10" : "bg-white"}`}
+              <Card 
+                className={`border-0 shadow-sm h-100 p-3`}
+                style={{ backgroundColor: item.category === "config" ? "var(--slate-800)" : item.category === "users" ? "var(--slate-700)" : "var(--card-bg)" }}
               >
-                <div className="d-flex align-items-center gap-2 mb-2 opacity-75">
+                <div className="d-flex align-items-center gap-2 mb-2 opacity-75 text-secondary">
                   {item.icon}
                   <span className="small fw-bold">{item.label}</span>
                 </div>
-                <div className="fs-4 fw-bolder">{item.value}</div>
-              </div>
+                <div className="fs-4 fw-bolder text-white">{item.value}</div>
+              </Card>
             </div>
           ))
         )}
       </div>
 
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div className="card-header bg-white border-bottom p-3 d-flex flex-wrap gap-3 align-items-center justify-content-between">
+      <Card className="mb-4">
+        <CardHeader className="d-flex flex-wrap gap-3 align-items-center justify-content-between">
           <div>
             <h6 className="fw-bold mb-1">API রেজিস্ট্রি</h6>
             <p className="small text-muted mb-0">
               Rajuk, Firebase, External এবং Landbd API-র তালিকা দেখুন।
             </p>
           </div>
-          <div className="d-flex gap-2 flex-wrap">
-            <input
-              type="text"
-              className="form-control form-control-sm rounded-pill"
-              placeholder="খুঁজুন..."
-              style={{ width: 200 }}
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-            <select
-              className="form-select form-select-sm rounded-pill"
-              style={{ width: 140 }}
-              value={typeFilter}
-              onChange={(event) => {
-                setTypeFilter(event.target.value);
-                setPage(1);
-              }}
+          <div className="d-flex gap-2 flex-wrap align-items-end">
+            <div style={{ width: 200, marginBottom: '-16px' }}>
+              <Input
+                type="text"
+                placeholder="খুঁজুন..."
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div style={{ width: 140, marginBottom: '-16px' }}>
+              <Select
+                value={typeFilter}
+                onChange={(event) => {
+                  setTypeFilter(event.target.value);
+                  setPage(1);
+                }}
+                options={[
+                  { label: "সব ধরন", value: "all" },
+                  { label: "Rajuk", value: "Rajuk" },
+                  { label: "Firebase", value: "Firebase" },
+                  { label: "External", value: "External" }
+                ]}
+              />
+            </div>
+            <Button
+              onClick={() => setSortDir((direction) => direction === "asc" ? "desc" : "asc")}
+              variant="outline"
+              size="sm"
+              leftIcon={<ArrowUpDown size={13} />}
             >
-              <option value="all">সব ধরন</option>
-              <option value="Rajuk">Rajuk</option>
-              <option value="Firebase">Firebase</option>
-              <option value="External">External</option>
-            </select>
-            <button
-              onClick={() =>
-                setSortDir((direction) =>
-                  direction === "asc" ? "desc" : "asc",
-                )
-              }
-              className="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-1"
-            >
-              <ArrowUpDown size={13} /> নাম
-            </button>
+              নাম
+            </Button>
           </div>
-        </div>
+        </CardHeader>
 
         <div className="table-responsive">
-          <table className="table table-hover mb-0 align-middle">
-            <thead className="table-light">
+          <table className="table table-hover mb-0 align-middle table-dark bg-transparent">
+            <thead>
               <tr>
-                <th className="px-3 py-3 small fw-bold text-uppercase">নাম</th>
-                <th className="px-3 py-3 small fw-bold text-uppercase">ধরন</th>
-                <th className="px-3 py-3 small fw-bold text-uppercase">
+                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">নাম</th>
+                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">ধরন</th>
+                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">
                   এন্ডপয়েন্ট
                 </th>
-                <th className="px-3 py-3 small fw-bold text-uppercase">
+                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">
                   স্ট্যাটাস
                 </th>
-                <th className="px-3 py-3 small fw-bold text-uppercase">নোট</th>
+                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">নোট</th>
               </tr>
             </thead>
             <tbody>
               {pageSlice.map((row) => (
                 <tr key={row.name}>
-                  <td className="px-3 py-2 fw-bold small">{row.name}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 fw-bold small text-white border-secondary">{row.name}</td>
+                  <td className="px-3 py-2 border-secondary">
                     <span
                       className={`badge rounded-pill px-2 ${row.type === "Rajuk" ? "bg-success bg-opacity-10 text-success" : row.type === "Firebase" ? "bg-warning bg-opacity-10 text-warning" : "bg-primary bg-opacity-10 text-primary"}`}
                     >
@@ -439,84 +444,74 @@ export default function DataMonitorPage() {
                     </span>
                   </td>
                   <td
-                    className="px-3 py-2 text-muted small"
+                    className="px-3 py-2 text-secondary small border-secondary"
                     style={{ maxWidth: 260, wordBreak: "break-all" }}
                   >
                     {row.endpoint}
                   </td>
-                  <td className="px-3 py-2">
-                    <span className="badge bg-success rounded-pill">
+                  <td className="px-3 py-2 border-secondary">
+                    <span className="badge bg-success bg-opacity-25 text-success rounded-pill">
                       <CheckCircle2 size={11} className="me-1" />
                       active
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-muted small">{row.note}</td>
+                  <td className="px-3 py-2 text-secondary small border-secondary">{row.note}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <div className="card-footer bg-white border-top d-flex align-items-center justify-content-between px-3 py-2">
+        <div className="card-footer bg-transparent border-top d-flex align-items-center justify-content-between px-3 py-2">
           <span className="small text-muted">
             {(page - 1) * PAGE_SIZE + 1}–
             {Math.min(page * PAGE_SIZE, filteredApis.length)} /{" "}
             {filteredApis.length}
           </span>
           <div className="d-flex gap-2">
-            <button
+            <Button
               onClick={() => setPage((value) => Math.max(1, value - 1))}
               disabled={page === 1}
-              className="btn btn-sm btn-outline-secondary rounded-pill"
+              variant="outline"
+              size="sm"
             >
               <ChevronLeft size={14} />
-            </button>
+            </Button>
             <span className="btn btn-sm disabled">
               {page} / {totalPages}
             </span>
-            <button
-              onClick={() =>
-                setPage((value) => Math.min(totalPages, value + 1))
-              }
+            <Button
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
               disabled={page === totalPages}
-              className="btn btn-sm btn-outline-secondary rounded-pill"
+              variant="outline"
+              size="sm"
             >
               <ChevronRight size={14} />
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden mt-4">
-        <div className="card-header bg-white border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <Card className="mt-4">
+        <CardHeader className="d-flex flex-wrap align-items-center justify-content-between gap-3">
           <div className="d-flex align-items-center gap-2">
             <Terminal size={18} className="text-primary" />
             <h6 className="fw-bold mb-0">API Selection Panel</h6>
           </div>
-          <div className="d-flex gap-2 flex-wrap">
+          <div className="d-flex gap-2 flex-wrap align-items-center">
             <span className="small fw-bold text-primary bg-primary bg-opacity-10 px-3 py-1 rounded-pill">
               Selected APIs: {selectedApis.length} of {API_REGISTRY.length}
             </span>
-            <button
-              onClick={selectAll}
-              className="btn btn-sm btn-outline-secondary rounded-pill px-3"
-            >
-              Select All
-            </button>
-            <button
-              onClick={unselectAll}
-              className="btn btn-sm btn-outline-secondary rounded-pill px-3"
-            >
-              Unselect All
-            </button>
+            <Button onClick={selectAll} variant="outline" size="sm" className="rounded-pill">Select All</Button>
+            <Button onClick={unselectAll} variant="outline" size="sm" className="rounded-pill">Unselect All</Button>
           </div>
-        </div>
-        <div className="card-body p-4">
+        </CardHeader>
+        <CardBody className="p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <p className="small text-muted mb-0">
               একটি সমন্বিত লিঙ্ক তৈরি করতে একাধিক API নির্বাচন করুন।
             </p>
-            <button
+            <Button
               onClick={() => {
                 const dataStr =
                   "data:text/json;charset=utf-8," +
@@ -557,18 +552,21 @@ export default function DataMonitorPage() {
                 anchor.click();
                 anchor.remove();
               }}
-              className="btn btn-sm btn-outline-dark rounded-pill d-flex align-items-center gap-2"
+              variant="outline"
+              size="sm"
+              className="rounded-pill"
+              leftIcon={<Sparkles size={14} />}
             >
-              <Sparkles size={14} /> Download Postman Collection
-            </button>
+              Download Postman Collection
+            </Button>
           </div>
 
           <div className="row g-3 mb-4">
             {API_REGISTRY.map((api, index) => (
               <div key={index} className="col-md-6 col-xl-4">
                 <div
-                  className={`form-check border rounded-3 p-3 d-flex flex-column user-select-none h-100 ${selectedApis.includes(index) ? "bg-primary bg-opacity-10 border-primary" : "bg-light"}`}
-                  style={{ cursor: "pointer" }}
+                  className={`form-check border rounded-3 p-3 d-flex flex-column user-select-none h-100 ${selectedApis.includes(index) ? "bg-primary bg-opacity-10 border-primary" : "border-secondary border-opacity-25"}`}
+                  style={{ cursor: "pointer", backgroundColor: selectedApis.includes(index) ? "var(--primary-color)20" : "var(--card-bg-secondary)" }}
                   onClick={() => handleCheckboxChange(index)}
                 >
                   <div className="d-flex align-items-center mb-1">
@@ -579,21 +577,21 @@ export default function DataMonitorPage() {
                       onChange={() => {}}
                     />
                     <label
-                      className="form-check-label fw-bold text-truncate"
+                      className="form-check-label fw-bold text-truncate text-white"
                       style={{ pointerEvents: "none" }}
                       title={api.name}
                     >
                       {api.name}
                     </label>
                     <span
-                      className={`badge ms-auto ${api.status === "active" ? "bg-success" : "bg-secondary"}`}
+                      className={`badge ms-auto ${api.status === "active" ? "bg-success bg-opacity-25 text-success" : "bg-secondary text-white"}`}
                       style={{ fontSize: "0.65rem" }}
                     >
                       {api.status}
                     </span>
                   </div>
                   <div
-                    className="ms-4 ps-2 small text-muted text-truncate"
+                    className="ms-4 ps-2 small text-secondary text-truncate"
                     title={api.endpoint}
                   >
                     {api.endpoint}
@@ -603,8 +601,8 @@ export default function DataMonitorPage() {
             ))}
           </div>
 
-          <div className="d-flex flex-wrap gap-3 align-items-center border-top pt-4">
-            <button
+          <div className="d-flex flex-wrap gap-3 align-items-center border-top border-light pt-4">
+            <Button
               onClick={() => {
                 if (selectedApis.length === 0) return;
                 const url = new URL(
@@ -614,10 +612,12 @@ export default function DataMonitorPage() {
                 setGeneratedLink(url.toString());
               }}
               disabled={selectedApis.length === 0}
-              className="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 fw-bold shadow-sm"
+              variant="primary"
+              className="rounded-pill px-4"
+              leftIcon={<Link2 size={16} />}
             >
-              <Link2 size={16} /> Generate Combined Link
-            </button>
+              Generate Combined Link
+            </Button>
 
             {generatedLink && (
               <div
@@ -647,8 +647,8 @@ export default function DataMonitorPage() {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

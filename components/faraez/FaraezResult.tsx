@@ -133,7 +133,7 @@ export default function FaraezResult({
           
           <div className="text-center text-muted small pt-5 mt-4">
             <p className="mb-1 border-top pt-3 d-inline-block px-5 border-secondary">
-              * এই দলিলটি <strong>সহজ জমির হিসাব</strong> ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত। 
+              * এই দলিলটি <strong>LandBD</strong> ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত। 
             </p>
             <p>চূড়ান্ত আইনি বা দাপ্তরিক কাজের জন্য অভিজ্ঞ আইনজীবী বা মুফতির পরামর্শ গ্রহণ করুন।</p>
           </div>

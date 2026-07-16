@@ -12,6 +12,8 @@ import { calculateHinduDayabhaga } from "@/lib/faraez/hindu-law";
 import { Calculator, HelpCircle } from "lucide-react";
 import LatestBlogs from "../../components/shared/LatestBlogs";
 import dynamic from "next/dynamic";
+import HeroBanner from "@/components/ui/HeroBanner";
+import { Button } from "@/components/ui/Button";
 
 const FaraezResult = dynamic(() => import("@/components/faraez/FaraezResult"), {
   ssr: false,
@@ -112,8 +114,20 @@ export default function FaraezPage() {
   };
 
   return (
-    <div className="container py-5">
-      <div className="row justify-content-center mb-4">
+    <>
+      <HeroBanner
+        align="center"
+        badge="উত্তরাধিকার ক্যালকুলেটর"
+        title={
+          <>
+            স্মার্ট <span className="text-primary">ফারায়েজ</span> ও বন্টন
+          </>
+        }
+        description="বাংলাদেশী মুসলিম ফারায়েজ ও হিন্দু দায়ভাগ আইন অনুযায়ী পৈতৃক সম্পত্তির নিখুঁত হিসাব করুন মাত্র কয়েক ক্লিকে।"
+        pattern="none"
+      />
+      <div className="container py-5">
+        <div className="row justify-content-center mb-4">
         <div className="col-lg-10">
           
           <div className="accordion mb-4 shadow-sm rounded-4" id="manualFaraez">
@@ -178,5 +192,6 @@ export default function FaraezPage() {
       </div>
       <LatestBlogs />
     </div>
+    </>
   );
 }

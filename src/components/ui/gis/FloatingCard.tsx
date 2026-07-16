@@ -15,21 +15,22 @@ export function FloatingCard({ title, icon, onClose, children, className = "", s
     <div
       role="dialog"
       aria-label={title}
-      className={`bg-white rounded-4 shadow-lg overflow-hidden d-flex flex-column animate-slide-in-left ${className}`}
+      className={`rounded-4 shadow-lg overflow-hidden d-flex flex-column animate-slide-in-left ${className}`}
       style={{
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid var(--border-color)",
+        backgroundColor: "var(--card-bg)",
         pointerEvents: "auto",
         ...style
       }}
     >
-      <div className="d-flex align-items-center justify-content-between p-3 bg-light border-bottom">
-        <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
-          {icon && <span className="text-success">{icon}</span>}
+      <div className="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary border-opacity-25" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
+        <h6 className="mb-0 fw-bold d-flex align-items-center gap-2 text-white">
+          {icon && <span className="text-primary">{icon}</span>}
           {title}
         </h6>
         {onClose && (
           <button 
-            className="btn btn-sm btn-link text-muted p-0 border-0 hover-text-success transition-colors" 
+            className="btn btn-sm btn-link text-secondary p-0 border-0 hover-text-primary transition-colors" 
             onClick={onClose}
             aria-label="Close"
           >
@@ -37,7 +38,7 @@ export function FloatingCard({ title, icon, onClose, children, className = "", s
           </button>
         )}
       </div>
-      <div className="flex-grow-1 overflow-auto p-3 bg-white d-flex flex-column gap-3">
+      <div className="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-3 text-white">
         {children}
       </div>
     </div>

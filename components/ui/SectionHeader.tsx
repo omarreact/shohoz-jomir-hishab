@@ -1,9 +1,11 @@
 interface SectionHeaderProps {
-  eyebrow: string;        // Small badge text above the heading
+  eyebrow?: string;        // Small badge text above the heading
   title: string;
   subtitle?: string;
-  subtitleMaxWidth?: number;
+  badge?: string;
+  icon?: React.ReactNode;
   centered?: boolean;
+  className?: string;
 }
 
 /**
@@ -11,23 +13,26 @@ interface SectionHeaderProps {
  * Eliminates repeated markup across all pages.
  */
 export default function SectionHeader({
-  eyebrow,
   title,
   subtitle,
-  subtitleMaxWidth = 600,
-  centered = true,
+  badge,
+  icon,
+  centered = false,
+  className = "",
 }: SectionHeaderProps) {
   return (
-    <div className={`mb-5 pb-2 pt-5 ${centered ? "text-center" : ""}`}>
-      <span className="text-success fw-bold text-uppercase small bg-success bg-opacity-10 px-3 py-1 rounded-pill mb-3 d-inline-block">
-        {eyebrow}
-      </span>
-      <h2 className="fw-bold text-dark display-6 mb-3">{title}</h2>
+    <div className={`mb-5 ${centered ? "text-center" : ""} ${className}`}>
+      {badge && (
+        <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-medium letter-spacing-wide">
+          {badge}
+        </span>
+      )}
+      <h2 className={`display-6 fw-bold text-body mb-3 d-flex align-items-center ${centered ? "justify-content-center" : ""}`}>
+        {icon && <span className="me-3 text-primary">{icon}</span>}
+        {title}
+      </h2>
       {subtitle && (
-        <p
-          className={`text-secondary fs-6 ${centered ? "mx-auto" : ""}`}
-          style={{ maxWidth: subtitleMaxWidth }}
-        >
+        <p className={`lead text-muted max-w-2xl ${centered ? "mx-auto" : ""} mb-0`}>
           {subtitle}
         </p>
       )}

@@ -1,4 +1,5 @@
-import { BrainCircuit, X, MapPin, Layers, Maximize2, Waves } from "lucide-react";
+import { BrainCircuit, MapPin, Layers, Maximize2, Waves } from "lucide-react";
+import { FloatingCard } from "@/src/components/ui/gis/FloatingCard";
 
 interface IntelligencePanelProps {
   clickedPos: { lat: number; lng: number } | null;
@@ -20,48 +21,34 @@ export function IntelligencePanel({
   if (!clickedPos) return null;
 
   return (
-    <div
-      className="position-absolute bg-white rounded-4 shadow-lg overflow-hidden"
+    <FloatingCard
+      title="স্থান বিশ্লেষণ"
+      icon={<BrainCircuit size={18} className="text-warning" />}
+      onClose={onClose}
+      className="position-absolute z-3"
       style={{
         top: 20,
         left: 20,
         width: 340,
         maxHeight: "calc(100% - 40px)",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-        border: "1px solid rgba(0,0,0,0.1)",
       }}
     >
-      <div className="bg-dark text-white p-3 d-flex align-items-center justify-content-between">
-        <span className="d-flex align-items-center fw-bold">
-          <BrainCircuit size={18} className="me-2 text-warning" />
-          স্থান বিশ্লেষণ
-        </span>
-        <button
-          className="btn btn-sm btn-dark border-0 p-0"
-          onClick={onClose}
-        >
-          <X size={16} />
-        </button>
-      </div>
-
-      <div className="p-3 overflow-auto" style={{ flexGrow: 1 }}>
-        <div className="mb-3">
-          <div className="badge bg-light text-dark border w-100 text-start py-2 px-3 fw-normal mb-2 d-flex align-items-center">
+      <div className="d-flex flex-column gap-3 h-100">
+        <div className="mb-0">
+          <div className="badge border w-100 text-start py-2 px-3 fw-normal mb-2 d-flex align-items-center" style={{ backgroundColor: "var(--card-bg-secondary)", borderColor: "var(--border-color) !important", color: "var(--text-primary)" }}>
             <MapPin size={13} className="me-2 text-danger flex-shrink-0" />
             <span className="text-truncate">
               {clickedPos.lat.toFixed(6)}, {clickedPos.lng.toFixed(6)}
             </span>
           </div>
-          <div className="badge bg-light text-dark border w-100 text-start py-2 px-3 fw-normal d-flex align-items-center">
+          <div className="badge border w-100 text-start py-2 px-3 fw-normal d-flex align-items-center" style={{ backgroundColor: "var(--card-bg-secondary)", borderColor: "var(--border-color) !important", color: "var(--text-primary)" }}>
             <Layers size={13} className="me-2 text-primary flex-shrink-0" />
             উচ্চতা:{" "}
             {elevation !== null ? (
               <strong className="ms-1">{elevation} মিটার</strong>
             ) : (
               <span
-                className="spinner-border spinner-border-sm ms-2"
+                className="spinner-border spinner-border-sm ms-2 text-primary"
                 style={{ width: 12, height: 12, borderWidth: 2 }}
               />
             )}
@@ -145,13 +132,13 @@ export function IntelligencePanel({
             {!inferredData.rsData &&
               !inferredData.landuseData &&
               !inferredData.floodData && (
-                <div className="text-center py-3 text-muted small">
+                <div className="text-center py-3 text-secondary small">
                   এই স্থানে কোনো ড্যাপ ডেটা পাওয়া যায়নি।
                 </div>
               )}
           </div>
         )}
       </div>
-    </div>
+    </FloatingCard>
   );
 }

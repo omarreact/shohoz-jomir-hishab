@@ -52,7 +52,7 @@ export default function WhyUsSection() {
               কেন আমরা সেরা?
             </span>
             <h3 className="fw-bold text-white mb-4 display-6">
-              কেন সহজ জমির হিসাব ব্যবহার করবেন?
+              কেন LandBD ব্যবহার করবেন?
             </h3>
             <p className="text-light text-opacity-75 fs-5 mb-4 lh-lg">
               আমরা মানুষের ভূমি সংক্রান্ত জটিল হিসাবগুলোকে সহজ, দ্রুত এবং নির্ভুল করার

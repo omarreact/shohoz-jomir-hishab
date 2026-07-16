@@ -1,5 +1,5 @@
 const printStyles = `
-  body { font-family: var(--font-tiro-bangla), serif; background-color: #f8f9fa; padding-bottom: 80px; }
+  body { font-family: var(--font-noto-bengali), var(--font-hind-siliguri), var(--font-geist-sans), sans-serif; background-color: #f8f9fa; padding-bottom: 80px; }
   .print-only { display: none; }
   @media print {
     body * { visibility: hidden; }

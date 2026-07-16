@@ -38,7 +38,7 @@ export function LayerManagerPanel() {
           const opacity = opacities[layer.id] ?? 1.0;
 
           return (
-            <div key={layer.id} className="p-3 bg-light rounded-3 border">
+            <div key={layer.id} className="p-3 rounded-3 border-0" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <div className="d-flex align-items-center gap-2">
                   <button 
@@ -47,9 +47,9 @@ export function LayerManagerPanel() {
                     aria-label={`Toggle visibility of ${layer.displayName}`}
                     aria-pressed={isVisible}
                   >
-                    {isVisible ? <Eye size={18} className="text-success transition-transform hover-shadow" /> : <EyeOff size={18} className="transition-transform hover-shadow" />}
+                    {isVisible ? <Eye size={18} className="text-primary transition-transform hover-shadow" /> : <EyeOff size={18} className="transition-transform hover-shadow" />}
                   </button>
-                  <span className={`fw-bold small ${isVisible ? "text-dark" : "text-muted"}`}>
+                  <span className={`fw-bold small ${isVisible ? "text-white" : "text-secondary"}`}>
                     {layer.displayName}
                   </span>
                 </div>

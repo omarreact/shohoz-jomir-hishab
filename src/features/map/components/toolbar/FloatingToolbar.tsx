@@ -16,12 +16,13 @@ export function FloatingToolbar() {
     <div 
       role="toolbar"
       aria-label="GIS Tools"
-      className="position-absolute z-3 bg-white rounded-4 shadow-lg d-flex flex-column align-items-center py-2 gap-2 animate-fade-in"
+      className="position-absolute z-3 rounded-4 shadow-lg d-flex flex-column align-items-center py-2 gap-2 animate-fade-in"
       style={{
         top: "90px",
         left: "20px",
         width: "56px",
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid var(--border-color)",
+        backgroundColor: "var(--card-bg)",
         pointerEvents: "auto"
       }}
     >
@@ -58,8 +59,13 @@ export function FloatingToolbar() {
       
       <hr className="w-75 my-1 border-secondary opacity-25" />
 
-      {/* Measurement tools (disabled for now or just visually present) */}
-      <ToolButton icon={<Ruler size={20} />} label="Measure" onClick={() => {}} className="opacity-50" />
+      {/* Measurement tools */}
+      <ToolButton 
+        icon={<Ruler size={20} />} 
+        label="Measure" 
+        isActive={activePanel === "tools"} 
+        onClick={() => handleToggle("tools")} 
+      />
       
       <hr className="w-75 my-1 border-secondary opacity-25" />
       

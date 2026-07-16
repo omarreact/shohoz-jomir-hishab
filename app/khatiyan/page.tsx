@@ -11,6 +11,7 @@ import DetailedCalculator from "@/components/khatiyan/DetailedCalculator";
 import QuickCalculator from "@/components/khatiyan/QuickCalculator";
 import LatestBlogs from "@/components/shared/LatestBlogs";
 import SearchPanel from "@/src/features/search/components/SearchPanel";
+import HeroBanner from "@/components/ui/HeroBanner";
 
 const ResultSection = dynamic(
   () => import("@/components/khatiyan/ResultSection"),
@@ -236,6 +237,17 @@ export default function SmartKhatiyanApp() {
 
   return (
     <>
+      <HeroBanner
+        align="center"
+        badge="খতিয়ান ক্যালকুলেটর"
+        title={
+          <>
+            স্মার্ট <span className="text-primary">খতিয়ান</span> হিসাব
+          </>
+        }
+        description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন এবং রাজউক ম্যাপ থেকে দাগের তথ্য আনুন।"
+        pattern="none"
+      />
       <PrintStyles />
       <div className="container-fluid px-3 px-xl-5 py-5 no-print fade-in">
         <div className="d-flex justify-content-center mb-4">

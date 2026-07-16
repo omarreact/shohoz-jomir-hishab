@@ -6,6 +6,11 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase
 import { db } from "@/lib/firebase";
 import Link from "next/link";
 import Editor from "@monaco-editor/react";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 interface CustomPage {
   id: string;
@@ -118,16 +123,14 @@ export default function CustomPagesDashboard() {
     <div className="fade-in" data-admin-panel="true">
       {/* Header */}
       <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="fw-bolder mb-1" style={{ background: "linear-gradient(45deg, #0f172a, #334155)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            কাস্টম পেজ ম্যানেজমেন্ট
-          </h2>
-          <p className="text-muted fw-medium mb-0 d-flex align-items-center">
-            <FileText size={16} className="me-2" /> সিস্টেমে মোট {pages.length} টি পেজ আছে
-          </p>
-        </div>
-        <button
-          className="btn btn-success fw-bold rounded-pill px-4 py-2 d-flex align-items-center shadow-sm"
+        <SectionHeader 
+          title="কাস্টম পেজ ম্যানেজমেন্ট"
+          subtitle={`সিস্টেমে মোট ${pages.length} টি পেজ আছে`}
+          className="mb-0"
+        />
+        <Button
+          variant={showCreateForm && !editingId ? "secondary" : "primary"}
+          className="rounded-pill"
           onClick={() => {
             if (showCreateForm && editingId) {
                setEditingId(null); setTitle(""); setSlug(""); setContent("");
@@ -135,48 +138,62 @@ export default function CustomPagesDashboard() {
             setShowCreateForm(!showCreateForm);
           }}
           style={{ transition: "all 0.3s ease", transform: showCreateForm && !editingId ? "scale(0.95)" : "scale(1)" }}
+          leftIcon={showCreateForm && !editingId ? <X size={20} /> : <Plus size={20} />}
         >
-          {showCreateForm && !editingId ? <X size={20} className="me-2" /> : <Plus size={20} className="me-2" />} 
           {showCreateForm && !editingId ? "বাতিল করুন" : "নতুন পেজ তৈরি করুন"}
-        </button>
+        </Button>
       </div>
 
       {/* Creator Form - Premium UI */}
       {showCreateForm && (
-        <div className="card shadow-lg border-0 rounded-4 mb-5 overflow-hidden fade-in" style={{ background: "linear-gradient(145deg, #ffffff, #f8fafc)" }}>
-          <div className="card-body p-4 p-md-5">
-            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
-              <h5 className="fw-bolder text-dark mb-0 d-flex align-items-center">
+        <Card className="mb-5 border-0" style={{ backgroundColor: "var(--card-bg)" }}>
+          <CardBody className="p-4 p-md-5">
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+              <h5 className="fw-bolder text-primary mb-0 d-flex align-items-center">
                 <FileText className="me-2 text-primary" size={24} /> {editingId ? "পেজ আপডেট করুন" : "নতুন কাস্টম পেজ লিখুন"}
               </h5>
               {editingId && (
-                <button className="btn btn-light rounded-circle text-secondary p-2 shadow-sm" onClick={() => { setShowCreateForm(false); setEditingId(null); setTitle(""); setSlug(""); setContent(""); }}>
+                <Button variant="ghost" size="icon" onClick={() => { setShowCreateForm(false); setEditingId(null); setTitle(""); setSlug(""); setContent(""); }}>
                   <X size={20} />
-                </button>
+                </Button>
               )}
             </div>
             
             <form onSubmit={handleSubmit}>
               <div className="row g-4 mb-4">
                 <div className="col-md-6">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">পেজের টাইটেল</label>
-                  <input type="text" className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4 fw-medium text-dark" placeholder="যেমন: Privacy Policy" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  <Input 
+                    label="পেজের টাইটেল"
+                    type="text" 
+                    placeholder="যেমন: Privacy Policy" 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    required 
+                  />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">পেজের লিংক (Slug)</label>
-                  <div className="input-group">
-                    <span className="input-group-text border-0 bg-light text-muted ps-4 pe-1">/p/</span>
-                    <input type="text" className="form-control form-control-lg bg-light border-0 shadow-none rounded-end-3 px-2 fw-medium text-primary" placeholder="privacy-policy" value={slug} onChange={(e) => setSlug(e.target.value)} required />
-                  </div>
+                  <Input 
+                    label="পেজের লিংক (Slug)"
+                    type="text" 
+                    placeholder="privacy-policy" 
+                    value={slug} 
+                    onChange={(e) => setSlug(e.target.value)} 
+                    required 
+                    leftIcon={<span className="text-muted fw-bold">/p/</span>}
+                  />
                 </div>
                 <div className="col-md-12">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">পেজের ক্যাটাগরি</label>
-                  <select className="form-select form-select-lg bg-light border-0 shadow-none rounded-3 px-4 fw-medium text-dark" value={category} onChange={(e) => setCategory(e.target.value)}>
-                    <option value="সাধারণ (General)">সাধারণ (General)</option>
-                    <option value="আইন বিষয়ক (Legal)">আইন বিষয়ক (Legal)</option>
-                    <option value="নোটিশ (Notice)">নোটিশ (Notice)</option>
-                    <option value="অন্যান্য (Other)">অন্যান্য (Other)</option>
-                  </select>
+                  <Select 
+                    label="পেজের ক্যাটাগরি"
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)}
+                    options={[
+                      { label: "সাধারণ (General)", value: "সাধারণ (General)" },
+                      { label: "আইন বিষয়ক (Legal)", value: "আইন বিষয়ক (Legal)" },
+                      { label: "নোটিশ (Notice)", value: "নোটিশ (Notice)" },
+                      { label: "অন্যান্য (Other)", value: "অন্যান্য (Other)" }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -203,13 +220,13 @@ export default function CustomPagesDashboard() {
               </div>
 
               <div className="d-flex justify-content-end">
-                <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-lg fw-bold rounded-pill px-5 shadow-sm d-flex align-items-center">
-                  <Save size={20} className="me-2" /> {isSubmitting ? "সেভ হচ্ছে..." : (editingId ? "আপডেট করুন" : "পেজ পাবলিশ করুন")}
-                </button>
+                <Button type="submit" isLoading={isSubmitting} variant="primary" size="lg" className="rounded-pill px-5" leftIcon={!isSubmitting && <Save size={20} />}>
+                  {isSubmitting ? "সেভ হচ্ছে..." : (editingId ? "আপডেট করুন" : "পেজ পাবলিশ করুন")}
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Pages List - Premium UI */}
@@ -218,20 +235,20 @@ export default function CustomPagesDashboard() {
           <div className="spinner-border text-primary border-3" style={{ width: "3rem", height: "3rem" }} />
         </div>
       ) : pages.length === 0 ? (
-        <div className="text-center py-5 my-5 bg-white rounded-4 shadow-sm border text-muted">
+        <div className="text-center py-5 my-5 rounded-4 shadow-sm border-0 text-muted" style={{ backgroundColor: "var(--card-bg)" }}>
           <List size={64} className="mb-3 opacity-25" />
-          <h4 className="fw-bold">কোনো পেজ তৈরি করা হয়নি</h4>
+          <h4 className="fw-bold text-white">কোনো পেজ তৈরি করা হয়নি</h4>
           <p>উপরের বাটনটি ব্যবহার করে নতুন পেজ তৈরি করুন</p>
         </div>
       ) : (
-        <div className="card shadow-sm border-0 rounded-4 overflow-hidden bg-white">
-          <div className="card-header bg-white border-bottom p-4">
-            <h5 className="fw-bold mb-0 text-dark">প্রকাশিত পেজসমূহ</h5>
-          </div>
-          <div className="card-body p-0">
+        <Card className="border-0 overflow-hidden" style={{ backgroundColor: "var(--card-bg)" }}>
+          <CardHeader className="border-bottom border-secondary border-opacity-25 p-4" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
+            <h5 className="fw-bold mb-0 text-white">প্রকাশিত পেজসমূহ</h5>
+          </CardHeader>
+          <CardBody className="p-0">
             <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0" style={{ minWidth: "800px" }}>
-                <thead className="bg-light">
+              <table className="table table-hover table-dark align-middle mb-0" style={{ minWidth: "800px" }}>
+                <thead style={{ backgroundColor: "var(--card-bg-secondary)" }}>
                   <tr>
                     <th className="text-secondary fw-bold text-uppercase py-3 ps-4" style={{ fontSize: "12px", letterSpacing: "1px" }}>পেজের টাইটেল</th>
                     <th className="text-secondary fw-bold text-uppercase py-3" style={{ fontSize: "12px", letterSpacing: "1px" }}>লিংক (URL)</th>
@@ -242,30 +259,30 @@ export default function CustomPagesDashboard() {
                 <tbody>
                   {pages.map((page) => (
                     <tr key={page.id} style={{ transition: "background-color 0.2s ease" }}>
-                      <td className="ps-4 py-3">
+                      <td className="ps-4 py-3 border-secondary border-opacity-25">
                         <div className="d-flex align-items-center">
-                          <div className="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center me-3 shadow-sm" style={{ width: 40, height: 40 }}>
+                          <div className="bg-dark text-primary rounded-3 d-flex align-items-center justify-content-center me-3 shadow-sm" style={{ width: 40, height: 40 }}>
                             <FileText size={20} />
                           </div>
-                          <span className="fw-bolder text-dark fs-6">{page.title}</span>
+                          <span className="fw-bolder text-white fs-6">{page.title}</span>
                         </div>
                       </td>
-                      <td className="py-3">
-                        <Link href={`/p/${page.slug}`} target="_blank" className="btn btn-light btn-sm rounded-pill text-primary fw-medium px-3 d-inline-flex align-items-center hover-shadow">
+                      <td className="py-3 border-secondary border-opacity-25">
+                        <Link href={`/p/${page.slug}`} target="_blank" className="btn btn-outline-primary btn-sm rounded-pill fw-medium px-3 d-inline-flex align-items-center hover-shadow border-opacity-50">
                           /p/{page.slug} <ExternalLink size={12} className="ms-2 opacity-75" />
                         </Link>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 border-secondary border-opacity-25">
                         <span className={`badge ${getCategoryColor(page.category)} rounded-pill px-3 py-2 fw-medium d-inline-flex align-items-center shadow-sm`} style={{ letterSpacing: "0.5px" }}>
                           <Tag size={12} className="me-1" /> {page.category || "সাধারণ"}
                         </span>
                       </td>
-                      <td className="py-3 text-end pe-4">
+                      <td className="py-3 text-end pe-4 border-secondary border-opacity-25">
                         <div className="d-flex gap-2 justify-content-end">
-                          <button onClick={() => handleEdit(page)} className="btn btn-light text-primary btn-sm rounded-circle shadow-sm" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit">
+                          <button onClick={() => handleEdit(page)} className="btn btn-dark text-primary btn-sm rounded-circle shadow-sm hover-bg-dark" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit">
                             <Edit size={16} />
                           </button>
-                          <button onClick={() => handleDelete(page.id, page.title)} className="btn btn-light text-danger btn-sm rounded-circle shadow-sm" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete">
+                          <button onClick={() => handleDelete(page.id, page.title)} className="btn btn-dark text-danger btn-sm rounded-circle shadow-sm hover-bg-dark" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -275,8 +292,8 @@ export default function CustomPagesDashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
     </div>
   );

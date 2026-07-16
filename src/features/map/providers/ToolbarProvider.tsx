@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState } from "react";
 
 export type ToolbarAction = "select" | "measure" | "draw" | "none";
-export type ToolbarPanel = "layers" | "basemap" | "bookmarks" | "none";
+export type ToolbarPanel = "layers" | "basemap" | "bookmarks" | "tools" | "none";
 
 interface ToolbarContextValue {
   activeAction: ToolbarAction;

@@ -293,7 +293,7 @@ export default function PorchaPage() {
                       খতিয়ান (পর্চা) বিবরণী
                     </h2>
                     <p className="text-muted fw-bold mb-0">
-                      ডিজিটাল রেকর্ড রুম | সহজ জমির হিসাব
+                      ডিজিটাল রেকর্ড রুম | LandBD
                     </p>
                   </div>
                   <div className="table-responsive">

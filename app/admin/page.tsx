@@ -13,6 +13,9 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import SectionHeader from "@/components/ui/SectionHeader";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 const quickStats = [
   {
@@ -68,29 +71,23 @@ const serviceCards = [
 
 export default function AdminDashboard() {
   return (
-    <div className="fade-in">
+    <div className="fade-in" data-admin-panel="true">
       <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-          <div className="d-flex align-items-center gap-2 mb-2">
-            <ShieldCheck size={22} className="text-success" />
-            <h3 className="fw-bold mb-0 text-dark">অ্যাডমিন ড্যাশবোর্ড</h3>
-          </div>
-          <p className="text-muted mb-0">
-            Rajuk, Firebase এবং Landbd API-র কার্যক্রম একসাথে পর্যবেক্ষণ করুন।
-          </p>
-        </div>
+        <SectionHeader 
+          title="অ্যাডমিন ড্যাশবোর্ড" 
+          subtitle="Rajuk, Firebase এবং Landbd API-র কার্যক্রম একসাথে পর্যবেক্ষণ করুন।"
+          className="mb-0"
+        />
         <div className="d-flex gap-2 flex-wrap">
-          <Link
-            href="/admin/data-monitor"
-            className="btn btn-success rounded-pill px-3"
-          >
-            <BarChart3 size={16} className="me-2" /> ডেটা মনিটর
+          <Link href="/admin/data-monitor" className="text-decoration-none">
+            <Button variant="primary" className="rounded-pill px-3" leftIcon={<BarChart3 size={16} />}>
+              ডেটা মনিটর
+            </Button>
           </Link>
-          <Link
-            href="/"
-            className="btn btn-outline-secondary rounded-pill px-3"
-          >
-            <ExternalLink size={16} className="me-2" /> ওয়েবসাইটে যান
+          <Link href="/" className="text-decoration-none">
+            <Button variant="outline" className="rounded-pill px-3" leftIcon={<ExternalLink size={16} />}>
+              ওয়েবসাইটে যান
+            </Button>
           </Link>
         </div>
       </div>
@@ -128,16 +125,16 @@ export default function AdminDashboard() {
 
       <div className="row g-4 mb-4">
         <div className="col-xl-8">
-          <div className="card border-0 rounded-4 shadow-sm h-100">
-            <div className="card-body p-4">
-              <div className="d-flex align-items-center justify-content-between mb-3">
+          <Card className="border-0 shadow-sm h-100" style={{ backgroundColor: "var(--card-bg)" }}>
+            <CardBody className="p-4">
+              <div className="d-flex align-items-center justify-content-between mb-4">
                 <div>
-                  <h5 className="fw-bold mb-1">সিস্টেম অবস্থা</h5>
-                  <p className="text-muted small mb-0">
+                  <h5 className="fw-bold mb-1 text-white">সিস্টেম অবস্থা</h5>
+                  <p className="text-secondary small mb-0">
                     অ্যাপের মূল সেবা এবং কনফিগারেশন এক নজরে।
                   </p>
                 </div>
-                <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
+                <span className="badge bg-primary bg-opacity-25 text-primary rounded-pill px-3 py-2 border border-primary border-opacity-25">
                   <Sparkles size={14} className="me-1" /> উন্নত মডেল
                 </span>
               </div>
@@ -161,30 +158,30 @@ export default function AdminDashboard() {
                   ],
                 ].map(([name, detail, status]) => (
                   <div className="col-12" key={name}>
-                    <div className="border rounded-3 p-3 d-flex align-items-center justify-content-between">
+                    <div className="border border-secondary border-opacity-25 rounded-3 p-3 d-flex align-items-center justify-content-between" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
                       <div>
-                        <div className="fw-semibold">{name}</div>
-                        <div className="small text-muted">{detail}</div>
+                        <div className="fw-bold text-white mb-1">{name}</div>
+                        <div className="small text-secondary">{detail}</div>
                       </div>
-                      <span className="badge bg-light text-dark rounded-pill px-3 py-2">
+                      <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
                         {status}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
 
         <div className="col-xl-4">
-          <div className="card border-0 rounded-4 shadow-sm h-100">
-            <div className="card-body p-4">
-              <div className="d-flex align-items-center gap-2 mb-3">
+          <Card className="border-0 shadow-sm h-100" style={{ backgroundColor: "var(--card-bg)" }}>
+            <CardBody className="p-4">
+              <div className="d-flex align-items-center gap-2 mb-4">
                 <Blocks size={18} className="text-primary" />
-                <h5 className="fw-bold mb-0">দ্রুত এক্সেস</h5>
+                <h5 className="fw-bold mb-0 text-white">দ্রুত এক্সেস</h5>
               </div>
-              <div className="d-grid gap-2">
+              <div className="d-grid gap-3">
                 {serviceCards.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -193,23 +190,23 @@ export default function AdminDashboard() {
                       href={item.href}
                       className="text-decoration-none"
                     >
-                      <div className="border rounded-3 p-3 d-flex align-items-center justify-content-between hover-shadow">
+                      <div className="border border-secondary border-opacity-25 rounded-3 p-3 d-flex align-items-center justify-content-between hover-bg-secondary transition-all" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
                         <div>
-                          <div className="fw-semibold text-dark">
+                          <div className="fw-bold text-white mb-1">
                             {item.title}
                           </div>
-                          <div className="small text-muted">
+                          <div className="small text-secondary">
                             {item.description}
                           </div>
                         </div>
-                        <Icon size={18} className="text-success" />
+                        <Icon size={18} className="text-primary opacity-75" />
                       </div>
                     </Link>
                   );
                 })}
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
       </div>
     </div>

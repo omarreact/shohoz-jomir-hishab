@@ -3,117 +3,61 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Calculator,
-  Ruler,
-  Users,
-  Home,
-  BookOpen,
-  LogOut,
-  LogIn,
-  Menu,
-  MoonStar,
-  MapPin,
+  Search,
   Map,
-  FileText,
+  BookOpen,
+  User,
+  ShieldCheck,
+  Bell,
+  Menu,
+  X,
+  LogIn,
+  LogOut,
+  ChevronDown
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { ComponentType } from "react";
-import ThemeToggle from "./ThemeToggle";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
 
-function DesktopNavItem({
-  href,
-  label,
-  Icon,
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-}) {
-  const pathname = usePathname();
-  const active = pathname === href;
-  return (
-    <li className="nav-item mx-1 mb-2 mb-lg-0">
-      <Link
-        href={href}
-        className={`nav-link d-flex align-items-center px-3 py-2 rounded-pill text-nowrap transition-all ${active ? "active bg-success bg-opacity-10 text-success fw-bold" : "text-secondary"}`}
-      >
-        <Icon size={18} className={`me-2 flex-shrink-0 ${active ? "text-success" : ""}`} />{" "}
-        {label}
-      </Link>
-    </li>
-  );
-}
+import { t } from "@/src/locales";
 
-function BottomNavItem({
-  href,
-  label,
-  Icon,
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-}) {
-  const pathname = usePathname();
-  const active = pathname === href;
-  return (
-    <Link
-      href={href}
-      className={`text-decoration-none d-flex flex-column align-items-center p-2 transition-all ${active ? "text-success" : "text-secondary"}`}
-    >
-      <div
-        className={`p-1 rounded-pill transition-all ${active ? "bg-success bg-opacity-10" : ""}`}
-      >
-        <Icon size={22} className={active ? "text-success" : ""} />
-      </div>
-      <span
-        style={{
-          fontSize: "11px",
-          marginTop: "2px",
-          fontWeight: active ? "700" : "500",
-        }}
-      >
-        {label}
-      </span>
-    </Link>
-  );
-}
-
-function OffcanvasNavItem({
-  href,
-  label,
-  Icon,
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-}) {
-  const pathname = usePathname();
-  const active = pathname === href;
-
-  return (
-    <li className="nav-item mb-2" data-bs-dismiss="offcanvas">
-      <Link
-        href={href}
-        className={`nav-link d-flex align-items-center px-3 py-3 rounded-3 transition-all ${active ? "bg-success bg-opacity-10 text-success fw-bold" : "text-secondary hover-bg-light"}`}
-      >
-        <Icon size={20} className={`me-3 ${active ? "text-success" : ""}`} />{" "}
-        {label}
-      </Link>
-    </li>
-  );
-}
+const NAV_LINKS = [
+  { href: "/", label: t.nav.home },
+  { href: "/dap-map", label: t.nav.mapWorkspaces },
+  { href: "/khatiyan", label: t.nav.tools },
+  { href: "/blog", label: t.nav.blog },
+];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
     });
-    import("bootstrap/dist/js/bootstrap.bundle.min.js").catch(console.error);
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleLogout = async () => {
@@ -125,198 +69,169 @@ export default function Navbar() {
     }
   };
 
+  const handleSelectResult = (result: any) => {
+    // If not on map, redirect to map with query parameter or similar.
+    // For now, dispatch the event in case they're on the map workspace route.
+    window.dispatchEvent(new CustomEvent("smart-search-result", { detail: result }));
+  };
+
   return (
     <>
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @media (max-width: 991.98px) {
-          body {
-            padding-bottom: 75px !important;
-          }
-        }
-      `,
-        }}
-      />
-
-      {/* Top Navbar */}
-      <nav
-        className="navbar navbar-expand-lg border-bottom sticky-top shadow-sm py-2 py-lg-3"
-        style={{
-          backgroundColor: "var(--card-bg)",
-          backdropFilter: "blur(10px)",
-        }}
+      <header
+        className={`sticky-top w-100 transition-all ${
+          scrolled ? "glass-panel shadow-sm" : "bg-transparent"
+        }`}
+        style={{ zIndex: 1030, borderBottom: scrolled ? "none" : "1px solid var(--border-color)" }}
       >
-        <div className="container">
-          <Link
-            href="/"
-            className="navbar-brand d-flex align-items-center text-decoration-none me-auto"
-          >
-            <div
-              className="bg-success text-white rounded-circle p-2 me-2 d-flex align-items-center justify-content-center shadow-sm"
-              style={{ width: "38px", height: "38px" }}
-            >
-              <Calculator size={20} />
-            </div>
-            <h4 className="fw-bold mb-0 d-none d-sm-block">
-              <span className="text-dark">সহজ</span>{" "}
-              <span className="text-success">জমির হিসাব</span>
-            </h4>
-            <h5 className="fw-bold mb-0 d-block d-sm-none text-success mt-1">
-              সহজ জমির হিসাব
-            </h5>
-          </Link>
-
-          <div className="d-none d-lg-flex align-items-center gap-3 w-100 justify-content-end">
-            <ul className="navbar-nav mx-auto">
-              <DesktopNavItem href="/" label="হোম" Icon={Home} />
-              <DesktopNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
-              <DesktopNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
-            </ul>
-            {isLoggedIn ? (
-              <>
-                <Link
-                  href="/admin"
-                  className="btn btn-sm btn-primary rounded-pill px-3 fw-bold"
-                >
-                  ড্যাশবোর্ড
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-sm btn-outline-danger rounded-pill px-3 d-flex align-items-center"
-                >
-                  <LogOut size={16} className="me-1" /> লগআউট
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="btn btn-sm btn-outline-success rounded-pill px-3 d-flex align-items-center"
-              >
-                <LogIn size={16} className="me-1" /> লগিন
-              </Link>
-            )}
-            <button
-              className="btn btn-light rounded-circle p-2 ms-2 shadow-sm border"
-              type="button"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#sidebarOffcanvas"
-              aria-controls="sidebarOffcanvas"
-            >
-              <Menu size={20} className="text-secondary" />
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Bottom Navigation - 5 Main Items Only */}
-      <div
-        className="d-lg-none fixed-bottom shadow-lg border-top d-flex justify-content-around align-items-center pb-2 pt-1 px-2"
-        style={{ backgroundColor: "var(--card-bg)", zIndex: 1040 }}
-      >
-        <BottomNavItem href="/" label="হোম" Icon={Home} />
-        <BottomNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
-        <BottomNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
-        {isLoggedIn && <BottomNavItem href="/porcha" label="পর্চা" Icon={FileText} />}
-        <button
-          className="btn btn-link text-decoration-none d-flex flex-column align-items-center p-2 text-secondary border-0 bg-transparent shadow-none"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#sidebarOffcanvas"
-          aria-controls="sidebarOffcanvas"
-        >
-          <div className="p-1">
-            <Menu size={22} />
-          </div>
-          <span
-            style={{ fontSize: "11px", marginTop: "2px", fontWeight: "500" }}
-          >
-            মেনু
-          </span>
-        </button>
-      </div>
-
-      {/* Offcanvas Menu - For Extra and Less Important Items */}
-      <div
-        className="offcanvas offcanvas-start border-end-0 shadow"
-        tabIndex={-1}
-        id="sidebarOffcanvas"
-        style={{ backgroundColor: "var(--card-bg)", width: "280px" }}
-      >
-        <div className="offcanvas-header border-bottom py-3">
-          <div className="d-flex align-items-center">
-            <div
-              className="bg-success text-white rounded-circle p-2 me-2 d-flex align-items-center justify-content-center shadow-sm"
-              style={{ width: "32px", height: "32px" }}
-            >
-              <Calculator size={16} />
-            </div>
-            <h5 className="offcanvas-title fw-bold text-success mb-0">
-              সহজ জমির হিসাব
-            </h5>
-          </div>
-          <button
-            type="button"
-            className="btn-close text-reset shadow-none"
-            data-bs-dismiss="offcanvas"
-            aria-label="Close"
-          ></button>
-        </div>
-
-        <div className="offcanvas-body d-flex flex-column px-3 py-4">
-          <h6 className="text-muted fw-bold small mb-3">প্রধান মেনু</h6>
-          <ul className="navbar-nav mb-4">
-            <OffcanvasNavItem href="/" label="হোম" Icon={Home} />
-            <OffcanvasNavItem href="/khatiyan" label="খতিয়ান" Icon={Calculator} />
-            <OffcanvasNavItem href="/land-measurement" label="জমি মাপ" Icon={Ruler} />
-            {isLoggedIn && <OffcanvasNavItem href="/porcha" label="পর্চা" Icon={FileText} />}
-          </ul>
-
-          <h6 className="text-muted fw-bold small mb-3">অন্যান্য সেবা</h6>
-          <ul className="navbar-nav mb-auto">
-            <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} />
-            <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} />
-            <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} />
-          </ul>
-
-          <div className="mt-auto pt-4 border-top">
-            <div className="d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25">
-              <span className="fw-bold text-success small d-flex align-items-center">
-                <MoonStar size={16} className="me-2" /> থিম পরিবর্তন
-              </span>
-              <ThemeToggle />
-            </div>
-
-            {isLoggedIn ? (
-              <div className="d-flex flex-column gap-2">
-                <div data-bs-dismiss="offcanvas">
-                  <Link
-                    href="/admin"
-                    className="btn btn-primary w-100 rounded-pill d-flex align-items-center justify-content-center py-2 fw-bold"
-                  >
-                    ড্যাশবোর্ড
-                  </Link>
+        <div className="container px-4">
+          <div className="d-flex align-items-center justify-content-between py-3">
+            {/* Logo area */}
+            <div className="d-flex align-items-center gap-4">
+              <Link href="/" className="text-decoration-none d-flex align-items-center gap-2">
+                <div className="bg-primary text-dark rounded d-flex align-items-center justify-content-center" style={{ width: "36px", height: "36px" }}>
+                  <Map size={20} />
                 </div>
-                <button
-                  onClick={handleLogout}
-                  data-bs-dismiss="offcanvas"
-                  className="btn btn-outline-danger w-100 rounded-pill d-flex align-items-center justify-content-center py-2 fw-bold"
-                >
-                  <LogOut size={18} className="me-2" /> লগআউট করুন
-                </button>
-              </div>
-            ) : (
-              <div data-bs-dismiss="offcanvas">
+                <h5 className="fw-bold mb-0 text-white d-none d-sm-block">
+                  LandBD <span className="text-primary">3.0</span>
+                </h5>
+              </Link>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="d-none d-lg-flex align-items-center gap-4">
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`text-decoration-none fw-medium transition-all ${
+                      isActive ? "text-primary" : "text-secondary hover-text-primary"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Right Actions */}
+            <div className="d-flex align-items-center gap-3">
+              {/* Search Shortcut */}
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-md-flex align-items-center gap-2 text-secondary"
+                style={{ backgroundColor: "var(--background)", border: "1px solid var(--border-color)" }}
+              >
+                <Search size={14} />
+                <span className="ms-1" style={{ fontSize: "13px" }}>{t.nav.searchShortcut.split(' ')[0]}</span>
+                <span className="badge bg-secondary rounded-pill ms-1" style={{ fontSize: "10px" }}>Ctrl K</span>
+              </button>
+
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="btn btn-light rounded-circle p-2 d-md-none d-flex align-items-center justify-content-center"
+              >
+                <Search size={18} className="text-white" />
+              </button>
+
+              {/* User / Auth Menu */}
+              {isLoggedIn ? (
+                <div className="d-flex align-items-center gap-3">
+                  <button className="btn btn-link p-0 text-secondary position-relative">
+                    <Bell size={20} />
+                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-dark rounded-circle">
+                      <span className="visually-hidden">New alerts</span>
+                    </span>
+                  </button>
+
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-light rounded-pill px-3 py-1 d-flex align-items-center gap-2"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      style={{ border: "1px solid var(--border-color)" }}
+                    >
+                      <User size={16} className="text-white" />
+                      <span className="fw-medium text-white d-none d-md-block" style={{ fontSize: "14px" }}>{t.nav.account}</span>
+                      <ChevronDown size={14} className="text-white" />
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" style={{ borderRadius: "var(--radius-md)", minWidth: "200px" }}>
+                      <li>
+                        <Link href="/admin" className="dropdown-item py-2 d-flex align-items-center gap-2 fw-medium text-white">
+                          <ShieldCheck size={16} className="text-primary" /> {t.nav.adminDashboard}
+                        </Link>
+                      </li>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button onClick={handleLogout} className="dropdown-item py-2 d-flex align-items-center gap-2 fw-medium text-danger">
+                          <LogOut size={16} /> {t.nav.logout}
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
                 <Link
                   href="/login"
-                  className="btn btn-success w-100 rounded-pill d-flex align-items-center justify-content-center py-2 text-white shadow-sm fw-bold"
+                  className="btn btn-primary btn-sm rounded-pill px-4 fw-medium d-none d-md-flex align-items-center shadow-sm"
                 >
-                  <LogIn size={18} className="me-2" /> অ্যাডমিন লগিন
+                  <LogIn size={16} className="me-2" /> {t.nav.login}
                 </Link>
-              </div>
-            )}
+              )}
+
+              {/* Mobile Hamburger */}
+              <button
+                className="btn btn-light rounded p-2 d-lg-none d-flex align-items-center justify-content-center border-0"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                style={{ backgroundColor: "var(--card-bg-secondary)" }}
+              >
+                {isMobileMenuOpen ? <X size={20} className="text-white" /> : <Menu size={20} className="text-white" />}
+              </button>
+            </div>
           </div>
+
+          {/* Mobile Dropdown Menu */}
+          {isMobileMenuOpen && (
+            <div className="d-lg-none border-top py-3 animate-fade-in" style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className="d-flex flex-column gap-2">
+                {NAV_LINKS.map((link) => {
+                  const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`text-decoration-none fw-medium py-2 px-3 rounded transition-all ${
+                        isActive ? "bg-primary bg-opacity-10 text-primary" : "text-secondary hover-bg-light"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+                {!isLoggedIn && (
+                  <Link
+                    href="/login"
+                    className="btn btn-primary rounded-pill fw-medium py-2 mt-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LogIn size={16} className="me-2" /> {t.nav.login}
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </header>
+
+      {isSearchOpen && (
+        <SmartSearchPalette
+          onClose={() => setIsSearchOpen(false)}
+          onSelectResult={handleSelectResult}
+        />
+      )}
     </>
   );
 }

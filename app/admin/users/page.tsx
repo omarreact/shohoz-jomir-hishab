@@ -4,6 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit, Users, Shield, Save, X, KeyRound, Mail, RefreshCw, Eye, EyeOff, Crown, UserCheck, UserX } from "lucide-react";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 interface AdminUser {
   id: string;
@@ -196,22 +201,20 @@ export default function UserManagement() {
     <div className="fade-in" data-admin-panel="true">
       {/* Header */}
       <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="fw-bolder mb-1" style={{ background: "linear-gradient(45deg, #0f172a, #334155)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            ইউজার ম্যানেজমেন্ট
-          </h2>
-          <p className="text-muted fw-medium mb-0 d-flex align-items-center">
-            <Users size={16} className="me-2" /> সিস্টেমে মোট {users.length} জন ইউজার আছেন
-          </p>
-        </div>
-        <button
-          className="btn btn-success fw-bold rounded-pill px-4 py-2 d-flex align-items-center shadow-sm"
+        <SectionHeader 
+          title="ইউজার ম্যানেজমেন্ট" 
+          subtitle={`সিস্টেমে মোট ${users.length} জন ইউজার আছেন`}
+          className="mb-0"
+        />
+        <Button
+          variant={showCreateForm ? "secondary" : "primary"}
+          className="rounded-pill"
           onClick={() => setShowCreateForm(!showCreateForm)}
           style={{ transition: "all 0.3s ease", transform: showCreateForm ? "scale(0.95)" : "scale(1)" }}
+          leftIcon={showCreateForm ? <X size={20} /> : <Plus size={20} />}
         >
-          {showCreateForm ? <X size={20} className="me-2" /> : <Plus size={20} className="me-2" />} 
           {showCreateForm ? "বাতিল করুন" : "নতুন ইউজার যোগ করুন"}
-        </button>
+        </Button>
       </div>
 
       {/* Success Message */}
@@ -224,55 +227,80 @@ export default function UserManagement() {
 
       {/* Create Form - Premium UI */}
       {showCreateForm && (
-        <div className="card shadow-lg border-0 rounded-4 mb-5 overflow-hidden fade-in" style={{ background: "linear-gradient(145deg, #ffffff, #f8fafc)" }}>
-          <div className="card-body p-5">
-            <h5 className="fw-bolder text-dark mb-4 d-flex align-items-center">
+        <Card className="mb-5 border-0" style={{ backgroundColor: "var(--card-bg)" }}>
+          <CardBody className="p-5">
+            <h5 className="fw-bolder text-primary mb-4 d-flex align-items-center">
               <Shield className="me-2 text-primary" size={24} /> সিকিউর ইউজার ক্রিয়েশন
             </h5>
             <form onSubmit={handleCreate}>
               <div className="row g-4">
                 <div className="col-md-6">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">পূর্ণ নাম</label>
-                  <input type="text" className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4" placeholder="e.g. Faruk Khan" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <Input 
+                    label="পূর্ণ নাম"
+                    type="text" 
+                    placeholder="e.g. Faruk Khan" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    required 
+                  />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">ইমেইল ঠিকানা</label>
-                  <input type="email" className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 px-4" placeholder="admin@domain.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input 
+                    label="ইমেইল ঠিকানা"
+                    type="email" 
+                    placeholder="admin@domain.com" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    required 
+                  />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">নতুন পাসওয়ার্ড</label>
-                  <div className="input-group">
-                    <input type={showPassword ? "text" : "password"} className="form-control form-control-lg bg-light border-0 shadow-none rounded-start-3 px-4" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                    <button type="button" className="btn btn-light border-0 bg-light rounded-end-3 px-3 text-secondary" onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
+                  <Input 
+                    label="নতুন পাসওয়ার্ড"
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                    rightIcon={
+                      <div className="cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </div>
+                    }
+                  />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">অ্যাক্সেস রোল</label>
-                  <select className="form-select form-select-lg bg-light border-0 shadow-none rounded-3 px-4 fw-medium" value={role} onChange={(e) => setRole(e.target.value)}>
-                    <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
-                    <option value="Admin">🛡️ অ্যাডমিন</option>
-                    <option value="Editor">✍️ এডিটর</option>
-                  </select>
+                  <Select 
+                    label="অ্যাক্সেস রোল"
+                    value={role} 
+                    onChange={(e) => setRole(e.target.value)}
+                    options={[
+                      { label: "👑 সুপার অ্যাডমিন", value: "Super Admin" },
+                      { label: "🛡️ অ্যাডমিন", value: "Admin" },
+                      { label: "✍️ এডিটর", value: "Editor" }
+                    ]}
+                  />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-secondary fw-bold small text-uppercase tracking-wide">অ্যাকাউন্ট স্ট্যাটাস</label>
-                  <select className="form-select form-select-lg bg-light border-0 shadow-none rounded-3 px-4 fw-medium" value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option value="Active">✅ Active (সক্রিয়)</option>
-                    <option value="Suspended">🚫 Suspended (স্থগিত)</option>
-                  </select>
+                  <Select 
+                    label="অ্যাকাউন্ট স্ট্যাটাস"
+                    value={status} 
+                    onChange={(e) => setStatus(e.target.value)}
+                    options={[
+                      { label: "✅ Active (সক্রিয়)", value: "Active" },
+                      { label: "🚫 Suspended (স্থগিত)", value: "Suspended" }
+                    ]}
+                  />
                 </div>
               </div>
               <div className="mt-5 pt-3 border-top d-flex justify-content-end">
-                <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-lg fw-bold rounded-pill px-5 shadow-sm d-flex align-items-center">
-                  <Save size={20} className="me-2" />
+                <Button type="submit" isLoading={isSubmitting} variant="primary" size="lg" className="rounded-pill" leftIcon={!isSubmitting && <Save size={20} />}>
                   {isSubmitting ? "ইউজার তৈরি করা হচ্ছে..." : "ইউজার সেভ করুন"}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* User Cards Grid - Premium UI */}
@@ -281,21 +309,18 @@ export default function UserManagement() {
           <div className="spinner-border text-primary border-3" style={{ width: "3rem", height: "3rem" }} />
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-5 my-5 bg-white rounded-4 shadow-sm border text-muted">
+        <div className="text-center py-5 my-5 rounded-4 shadow-sm border-0 text-muted" style={{ backgroundColor: "var(--card-bg)" }}>
           <Users size={64} className="mb-3 opacity-25" />
-          <h4 className="fw-bold">কোনো ইউজার পাওয়া যায়নি</h4>
+          <h4 className="fw-bold text-white">কোনো ইউজার পাওয়া যায়নি</h4>
           <p>সিস্টেমে কাজ করার জন্য নতুন ইউজার তৈরি করুন</p>
         </div>
       ) : (
         <div className="row g-4">
           {users.map((user) => (
             <div className="col-xl-6 col-lg-12" key={user.id}>
-              <div 
-                className="card border-0 rounded-4 shadow-sm h-100 position-relative overflow-hidden hover-shadow"
-                style={{ 
-                  background: "#ffffff",
-                  transition: "all 0.3s ease"
-                }}
+              <Card 
+                className="border-0 h-100 position-relative overflow-hidden hover-shadow hover-lift"
+                style={{ backgroundColor: "var(--card-bg)" }}
               >
                 {/* Status Indicator Bar */}
                 <div 
@@ -306,14 +331,14 @@ export default function UserManagement() {
                   }}
                 />
 
-                <div className="card-body p-4 ps-5">
+                <CardBody className="p-4 ps-5">
                   <div className="d-flex align-items-start justify-content-between gap-3">
                     
                     {/* User Info Left Side */}
                     <div className="d-flex gap-3 align-items-center">
                       <AvatarCircle name={user.name} role={user.role} />
                       <div>
-                        <h5 className="fw-bolder text-dark mb-1 d-flex align-items-center gap-2">
+                        <h5 className="fw-bolder text-white mb-1 d-flex align-items-center gap-2">
                           {user.name || "(Un-named)"}
                           {user.status === "Suspended" && (
                             <span className="badge bg-danger rounded-pill fw-medium" style={{ fontSize: "10px", padding: "4px 8px" }}>
@@ -367,8 +392,8 @@ export default function UserManagement() {
                       {isSendingReset ? "পাঠানো হচ্ছে..." : "পাসওয়ার্ড রিসেট"}
                     </button>
                   </div>
-                </div>
-              </div>
+                </CardBody>
+              </Card>
             </div>
           ))}
         </div>
@@ -378,7 +403,7 @@ export default function UserManagement() {
       {editingUser && (
         <div className="modal show d-flex align-items-center justify-content-center" style={{ background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(8px)", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered w-100" style={{ maxWidth: "550px" }}>
-            <div className="modal-content border-0 rounded-4 shadow-lg overflow-hidden fade-in">
+            <Card className="w-100 border-0 shadow-lg fade-in p-0">
               {/* Modal Header */}
               <div className="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-start justify-content-between">
                 <div className="d-flex align-items-center gap-3">
@@ -388,50 +413,62 @@ export default function UserManagement() {
                     <p className="text-secondary fw-medium mb-0 small">{editingUser.email}</p>
                   </div>
                 </div>
-                <button className="btn btn-light rounded-circle text-secondary p-2" onClick={() => setEditingUser(null)}>
+                <Button variant="ghost" size="icon" onClick={() => setEditingUser(null)}>
                   <X size={20} />
-                </button>
+                </Button>
               </div>
               
               {/* Modal Body */}
-              <div className="modal-body p-4">
-                <div className="mb-4">
-                  <label className="form-label text-secondary fw-bold small text-uppercase">পূর্ণ নাম</label>
-                  <input type="text" className="form-control form-control-lg bg-light border-0 shadow-none rounded-3 fw-medium" value={editName} onChange={(e) => setEditName(e.target.value)} />
-                </div>
+              <CardBody className="p-4">
+                <Input 
+                  label="পূর্ণ নাম"
+                  type="text" 
+                  value={editName} 
+                  onChange={(e) => setEditName(e.target.value)} 
+                />
                 
-                <div className="row g-4 mb-2">
+                <div className="row g-4 mb-2 mt-0">
                   <div className="col-sm-6">
-                    <label className="form-label text-secondary fw-bold small text-uppercase">অ্যাক্সেস রোল</label>
-                    <select className="form-select form-select-lg bg-light border-0 shadow-none rounded-3 fw-medium" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
-                      <option value="Super Admin">সুপার অ্যাডমিন</option>
-                      <option value="Admin">অ্যাডমিন</option>
-                      <option value="Editor">এডিটর</option>
-                    </select>
+                    <Select 
+                      label="অ্যাক্সেস রোল"
+                      value={editRole} 
+                      onChange={(e) => setEditRole(e.target.value)}
+                      options={[
+                        { label: "সুপার অ্যাডমিন", value: "Super Admin" },
+                        { label: "অ্যাডমিন", value: "Admin" },
+                        { label: "এডিটর", value: "Editor" }
+                      ]}
+                    />
                   </div>
                   <div className="col-sm-6">
-                    <label className="form-label text-secondary fw-bold small text-uppercase">অ্যাকাউন্ট স্ট্যাটাস</label>
-                    <select className="form-select form-select-lg bg-light border-0 shadow-none rounded-3 fw-medium" value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
-                      <option value="Active">✅ Active (সক্রিয়)</option>
-                      <option value="Suspended">🚫 Suspended (স্থগিত)</option>
-                    </select>
+                    <Select 
+                      label="অ্যাকাউন্ট স্ট্যাটাস"
+                      value={editStatus} 
+                      onChange={(e) => setEditStatus(e.target.value)}
+                      options={[
+                        { label: "✅ Active (সক্রিয়)", value: "Active" },
+                        { label: "🚫 Suspended (স্থগিত)", value: "Suspended" }
+                      ]}
+                    />
                   </div>
                 </div>
-              </div>
+              </CardBody>
 
               {/* Modal Footer */}
-              <div className="modal-footer border-0 p-4 pt-0 bg-white">
-                <button className="btn btn-light btn-lg fw-bold rounded-pill px-4" onClick={() => setEditingUser(null)}>বাতিল</button>
-                <button
-                  className="btn btn-primary btn-lg fw-bold rounded-pill px-5 shadow-sm d-flex align-items-center"
+              <div className="modal-footer border-0 p-4 pt-0 bg-transparent">
+                <Button variant="secondary" size="lg" className="rounded-pill" onClick={() => setEditingUser(null)}>বাতিল</Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="rounded-pill"
                   onClick={handleEditSave}
-                  disabled={isEditSubmitting}
+                  isLoading={isEditSubmitting}
+                  leftIcon={!isEditSubmitting && <Save size={20} />}
                 >
-                  <Save size={20} className="me-2" />
                   {isEditSubmitting ? "সেভ হচ্ছে..." : "পরিবর্তন সেভ করুন"}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       )}

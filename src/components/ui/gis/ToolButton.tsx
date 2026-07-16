@@ -17,14 +17,14 @@ export function ToolButton({ icon, label, isActive, onClick, className = "" }: T
       aria-pressed={isActive}
       className={`btn d-flex align-items-center justify-content-center p-2 rounded-3 border-0 transition-colors transition-transform ${
         isActive 
-          ? "bg-success text-white shadow-sm hover-shadow" 
-          : "bg-transparent text-secondary hover-bg-light"
+          ? "bg-primary text-dark shadow-sm hover-shadow" 
+          : "bg-transparent text-white bg-opacity-10"
       } ${className}`}
       style={{
         width: "40px",
         height: "40px",
         outline: "none",
-        boxShadow: isActive ? "0 4px 6px -1px rgba(34, 197, 94, 0.4)" : "none",
+        boxShadow: isActive ? "0 4px 6px -1px rgba(246, 195, 67, 0.4)" : "none",
       }}
     >
       {icon}

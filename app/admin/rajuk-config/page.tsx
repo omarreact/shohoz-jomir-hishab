@@ -4,6 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Database, Key, CheckCircle, XCircle, Settings, RefreshCw, Save } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Button } from "@/components/ui/Button";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 export default function RajukConfig() {
   const [token, setToken] = useState("");
@@ -98,16 +103,20 @@ export default function RajukConfig() {
   };
 
   return (
-    <div className="fade-in">
+    <div className="fade-in" data-admin-panel="true">
       <div className="d-flex align-items-center mb-4">
-        <h3 className="fw-bold text-dark mb-0">রাজউক API কন্ট্রোল</h3>
+        <SectionHeader 
+          title="রাজউক API কন্ট্রোল" 
+          subtitle="টোকেন, API সেটিংস ও কনফিগারেশন পরিচালনা করুন।"
+          className="mb-0"
+        />
       </div>
       
       <div className="row g-4">
         {/* Status Card */}
         <div className="col-12">
-          <div className="card shadow-sm border-0 rounded-4" style={{ backgroundColor: "#1e293b", color: "#f8fafc" }}>
-            <div className="card-body p-4 d-flex align-items-center justify-content-between">
+          <Card className="border-0 shadow-sm" style={{ backgroundColor: "var(--card-bg)" }}>
+            <CardBody className="p-4 d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
                 <div className="bg-dark p-3 rounded-circle me-3">
                   <Database size={28} className="text-info" />
@@ -126,14 +135,14 @@ export default function RajukConfig() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* Auto Generator */}
         <div className="col-lg-6">
-          <div className="card shadow-sm border-0 rounded-4 h-100" style={{ backgroundColor: "#1e293b", color: "#f8fafc" }}>
-            <div className="card-body p-4 p-md-5">
+          <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: "var(--card-bg)" }}>
+            <CardBody className="p-4 p-md-5">
               <h5 className="fw-bold mb-4 d-flex align-items-center text-success">
                 <RefreshCw size={24} className="me-2" /> অটোমেটিক টোকেন জেনারেটর
               </h5>
@@ -141,39 +150,39 @@ export default function RajukConfig() {
               
               <form onSubmit={handleAutoGenerate}>
                 <div className="mb-3">
-                  <label className="form-label text-light fw-bold small">রাজউক ইউজারনেম</label>
-                  <input 
+                  <Input 
+                    label="রাজউক ইউজারনেম"
                     type="text" 
-                    className="form-control bg-dark text-white border-secondary" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="form-label text-light fw-bold small">পাসওয়ার্ড</label>
-                  <input 
+                  <Input 
+                    label="পাসওয়ার্ড"
                     type="password" 
-                    className="form-control bg-dark text-white border-secondary" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <button type="submit" disabled={isGenerating} className="btn btn-success fw-bold px-4 rounded-pill d-flex align-items-center w-100 justify-content-center">
-                  {isGenerating ? (
-                    <><span className="spinner-border spinner-border-sm me-2"></span> জেনারেট হচ্ছে...</>
-                  ) : (
-                    <><RefreshCw size={18} className="me-2" /> নতুন টোকেন তৈরি করুন</>
-                  )}
-                </button>
+                <Button 
+                  type="submit" 
+                  isLoading={isGenerating} 
+                  variant="primary" 
+                  className="w-100 rounded-pill fw-bold px-4"
+                  leftIcon={!isGenerating && <RefreshCw size={18} />}
+                >
+                  {isGenerating ? "জেনারেট হচ্ছে..." : "নতুন টোকেন তৈরি করুন"}
+                </Button>
               </form>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* Manual Entry */}
         <div className="col-lg-6">
-          <div className="card shadow-sm border-0 rounded-4 h-100" style={{ backgroundColor: "#1e293b", color: "#f8fafc" }}>
-            <div className="card-body p-4 p-md-5">
+          <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: "var(--card-bg)" }}>
+            <CardBody className="p-4 p-md-5">
               <h5 className="fw-bold mb-4 d-flex align-items-center text-warning">
                 <Settings size={24} className="me-2" /> ম্যানুয়াল টোকেন এন্ট্রি
               </h5>
@@ -181,22 +190,28 @@ export default function RajukConfig() {
 
               <form onSubmit={handleManualSave}>
                 <div className="mb-4">
-                  <label className="form-label text-light fw-bold small">বর্তমান টোকেন</label>
-                  <textarea 
-                    className="form-control bg-dark text-white border-secondary text-monospace" 
+                  <Textarea
+                    label="বর্তমান টোকেন"
                     rows={6}
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                     style={{ fontSize: '12px', wordBreak: 'break-all' }}
                     placeholder="eyJhb..."
-                  ></textarea>
+                    className="text-monospace"
+                  />
                 </div>
-                <button type="submit" disabled={isSaving} className="btn btn-warning fw-bold px-4 rounded-pill d-flex align-items-center w-100 justify-content-center text-dark">
-                  {isSaving ? "সেভ হচ্ছে..." : <><Save size={18} className="me-2" /> ম্যানুয়ালি সেভ করুন</>}
-                </button>
+                <Button 
+                  type="submit" 
+                  isLoading={isSaving} 
+                  variant="secondary" 
+                  className="w-100 rounded-pill fw-bold px-4 text-dark"
+                  leftIcon={!isSaving && <Save size={18} />}
+                >
+                  {isSaving ? "সেভ হচ্ছে..." : "ম্যানুয়ালি সেভ করুন"}
+                </Button>
               </form>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
 
       </div>

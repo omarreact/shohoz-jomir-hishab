@@ -44,17 +44,7 @@ export default function AdminLayout({
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
-    const savedTheme = localStorage.getItem("theme") || "light";
-    setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-  };
 
   // Auth Check & Role Verification
   useEffect(() => {
@@ -138,8 +128,8 @@ export default function AdminLayout({
 
   if (!isMounted || authChecking) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-        <div className="spinner-border text-success" role="status"></div>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh", backgroundColor: "var(--background)" }}>
+        <div className="spinner-border text-primary" role="status"></div>
       </div>
     );
   }
@@ -154,7 +144,7 @@ export default function AdminLayout({
         height: "100vh",
         width: "100vw",
         overflow: "hidden",
-        backgroundColor: "#f8f9fa",
+        backgroundColor: "var(--background)",
         position: "fixed",
         top: 0,
         left: 0,
@@ -162,13 +152,13 @@ export default function AdminLayout({
     >
       {/* Top Navbar */}
       <nav
-        className="navbar navbar-light bg-white shadow-sm border-bottom px-3 py-2 flex-shrink-0"
-        style={{ minHeight: "70px", gap: "10px" }}
+        className="navbar navbar-dark shadow-sm border-bottom border-secondary border-opacity-25 px-3 py-2 flex-shrink-0"
+        style={{ minHeight: "70px", gap: "10px", backgroundColor: "var(--card-bg)" }}
       >
         <div className="d-flex align-items-center flex-wrap w-100 gap-3">
           <div className="d-flex align-items-center">
-            <ShieldCheck size={28} className="text-success me-2 flex-shrink-0" />
-            <h5 className="mb-0 fw-bold text-nowrap">Smart Admin</h5>
+            <ShieldCheck size={28} className="text-primary me-2 flex-shrink-0" />
+            <h5 className="mb-0 fw-bold text-nowrap text-white">Smart Admin</h5>
           </div>
 
           <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1 justify-content-center">
@@ -179,7 +169,7 @@ export default function AdminLayout({
                   href={item.path}
                   key={item.path}
                   className={`btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 transition-all ${
-                    isActive ? "btn-success fw-bold shadow-sm" : "btn-light border hover-bg-light text-secondary"
+                    isActive ? "btn-primary fw-bold shadow-sm" : "text-secondary hover-text-white border-0"
                   }`}
                   style={{ whiteSpace: "nowrap" }}
                 >
@@ -190,22 +180,15 @@ export default function AdminLayout({
             })}
           </div>
 
-          <div className="d-flex align-items-center gap-2 justify-content-end">
-            <button 
-              onClick={toggleTheme} 
-              className="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center hover-shadow border"
-              title={theme === "light" ? "ডার্ক মোড" : "লাইট মোড"}
-            >
-              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-            <Link href="/" className="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap">
+          <div className="d-flex align-items-center gap-3 justify-content-end">
+            <Link href="/" className="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap">
               <Globe size={16} className="me-2" /> ওয়েবসাইটে যান
             </Link>
-            <span className="fw-bold d-none d-lg-inline text-muted small text-nowrap">
-              স্বাগতম, <span className="text-dark">{userName || "Admin"}</span>
+            <span className="fw-bold d-none d-lg-inline text-secondary small text-nowrap">
+              স্বাগতম, <span className="text-white">{userName || "Admin"}</span>
             </span>
             <button
-              className="btn btn-danger btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap"
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap hover-text-white"
               onClick={async () => {
                 const { auth } = await import("@/lib/firebase");
                 const { signOut } = await import("firebase/auth");

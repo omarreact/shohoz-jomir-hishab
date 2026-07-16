@@ -28,6 +28,7 @@ import {
 import { toBn } from "@/lib/utils";
 import LatestBlogs from "../../components/shared/LatestBlogs";
 import DapMiniMap from "@/components/DapMiniMap";
+import HeroBanner from "@/components/ui/HeroBanner";
 
 type ShapeType = "rect" | "triangle" | "quad" | "pentagon" | "circle";
 
@@ -381,8 +382,20 @@ export default function LandMeasurementPage() {
   );
 
   return (
-    <div className="container py-5 fade-in">
-      <div className="row justify-content-center mb-5">
+    <>
+      <HeroBanner
+        align="center"
+        badge="ভূমি পরিমাপ"
+        title={
+          <>
+            সহজ ও নির্ভুল <span className="text-primary">জমি পরিমাপ</span>
+          </>
+        }
+        description="আপনার জমির সঠিক পরিমাপ বের করুন রাজউকের ম্যাপ থেকে অথবা ম্যানুয়ালি দৈর্ঘ্য ও প্রস্থ দিয়ে।"
+        pattern="none"
+      />
+      <div className="container py-5 fade-in">
+        <div className="row justify-content-center mb-5">
         <div className="col-lg-8">
           <div className="d-flex justify-content-center mb-4">
             <div className="bg-white p-1 rounded-pill shadow-sm border d-inline-flex">
@@ -760,5 +773,6 @@ export default function LandMeasurementPage() {
       )}
       <LatestBlogs />
     </div>
+    </>
   );
 }

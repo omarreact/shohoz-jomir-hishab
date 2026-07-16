@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Tiro_Bangla } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Bengali, Hind_Siliguri } from "next/font/google";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
@@ -16,17 +16,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const tiroBangla = Tiro_Bangla({
-  weight: "400",
-  style: ["normal", "italic"],
-  subsets: ["bengali", "latin"],
-  variable: "--font-tiro-bangla",
+const notoBengali = Noto_Sans_Bengali({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["bengali"],
+  variable: "--font-noto-bengali",
+});
+
+const hindSiliguri = Hind_Siliguri({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["bengali"],
+  variable: "--font-hind-siliguri",
 });
 
 export const metadata: Metadata = {
-  title: "সহজ জমির হিসাব | Shohoz Jomir Hishab",
+  title: "LandBD - বাংলাদেশ ভূমি তথ্য প্ল্যাটফর্ম",
   description:
-    "বাংলাদেশের সবচেয়ে নির্ভুল ডিজিটাল ভূমি পরিমাপ, খতিয়ানের আনা-গন্ডা হিসাব এবং মুসলিম ও হিন্দু ফারায়েজ (উত্তরাধিকার) ক্যালকুলেটর।",
+    "বাংলাদেশের সবচেয়ে আধুনিক ন্যাশনাল ল্যান্ড ইন্টেলিজেন্স প্ল্যাটফর্ম। খতিয়ান অনুসন্ধান, ম্যাপ বিশ্লেষণ, উত্তরাধিকার বণ্টন এবং ভূমি রেকর্ড সংক্রান্ত সকল সেবা দ্রুত ও নিরাপদে।",
   keywords: [
     "খতিয়ান ক্যালকুলেটর",
     "ফারায়েজ ক্যালকুলেটর",
@@ -35,15 +40,15 @@ export const metadata: Metadata = {
     "khatiyan calculator",
     "faraez calculator bangladesh",
     "vumi jorip",
-    "shohoz jomir hishab",
+    "LandBD",
   ],
   authors: [{ name: "Md. Omar Faruk Khan" }],
   openGraph: {
-    title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
+    title: "LandBD - বাংলাদেশ ভূমি তথ্য প্ল্যাটফর্ম",
     description:
-      "খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট সমাধান।",
+      "বাংলাদেশের সবচেয়ে আধুনিক ন্যাশনাল ল্যান্ড ইন্টেলিজেন্স প্ল্যাটফর্ম। খতিয়ান অনুসন্ধান, ম্যাপ বিশ্লেষণ, উত্তরাধিকার বণ্টন এবং ভূমি রেকর্ড সংক্রান্ত সকল সেবা দ্রুত ও নিরাপদে।",
     url: "https://shohoz-jomir-hishab.vercel.app/", // আপনার আসল ডোমেইন দিন
-    siteName: "Shohoz Jomir Hishab",
+    siteName: "LandBD",
     locale: "bn_BD",
     type: "website",
   },
@@ -55,9 +60,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn" data-scroll-behavior="smooth">
+    <html lang="bn" data-theme="dark" data-scroll-behavior="smooth">
       <body
-        className={tiroBangla.variable}
+        className={`${geistSans.variable} ${geistMono.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}
         style={{ display: "flex", flexDirection: "column", minHeight: "100vh", overflowX: "hidden" }}
       >
         <ConditionalShell>{children}</ConditionalShell>

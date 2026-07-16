@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layers } from "lucide-react";
 import dynamic from "next/dynamic";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import FloatingSearchPanel from "@/src/features/search/components/FloatingSearchPanel";
 
 // Lazy load the heavy Leaflet map — never loaded until user selects a plot
 const FullDapMap = dynamic(() => import("@/components/FullDapMap"), {
@@ -15,9 +14,17 @@ const FullDapMap = dynamic(() => import("@/components/FullDapMap"), {
 export default function DapMapPage() {
   const [selectedPlot, setSelectedPlot] = useState<any | null>(null);
 
-  const handlePlotSelected = (plot: any) => {
-    setSelectedPlot(plot);
-  };
+  useEffect(() => {
+    const handleSearchResult = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        setSelectedPlot(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("smart-search-result", handleSearchResult);
+    return () => window.removeEventListener("smart-search-result", handleSearchResult);
+  }, []);
 
   return (
     <div className="position-relative w-100 h-100 overflow-hidden">
@@ -25,9 +32,6 @@ export default function DapMapPage() {
       <div className="position-absolute top-0 start-0 w-100 h-100 z-0">
         <FullDapMap initialData={selectedPlot} />
       </div>
-
-      {/* Floating Search Panel (Left Side) */}
-      <FloatingSearchPanel onPlotSelected={handlePlotSelected} />
     </div>
   );
 }

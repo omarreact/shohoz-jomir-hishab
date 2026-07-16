@@ -40,12 +40,12 @@ export function BottomStatusBar() {
     <div 
       role="contentinfo"
       aria-label="Map Status Bar"
-      className="position-absolute bottom-0 start-0 w-100 bg-white border-top d-flex align-items-center justify-content-between px-3 z-3 animate-slide-up"
-      style={{ height: "32px", fontSize: "0.75rem", pointerEvents: "auto", userSelect: "none" }}
+      className="position-absolute bottom-0 start-0 w-100 border-top border-secondary border-opacity-25 d-flex align-items-center justify-content-between px-3 z-3 animate-slide-up"
+      style={{ height: "32px", fontSize: "0.75rem", pointerEvents: "auto", userSelect: "none", backgroundColor: "var(--card-bg)" }}
     >
-      <div className="d-flex align-items-center gap-4 text-muted fw-bold">
+      <div className="d-flex align-items-center gap-4 text-secondary fw-bold">
         <button 
-          className="btn btn-link p-0 text-muted text-decoration-none fw-bold d-flex align-items-center gap-1 hover-text-success transition-colors"
+          className="btn btn-link p-0 text-secondary text-decoration-none fw-bold d-flex align-items-center gap-1 hover-text-primary transition-colors"
           onClick={toggleFormat}
           title="Click to toggle DD/DMS"
           aria-label={`Current coordinates: ${displayCoords}. Click to toggle format.`}
@@ -60,9 +60,9 @@ export function BottomStatusBar() {
         </div>
       </div>
 
-      <div className="d-flex align-items-center gap-3 text-muted fw-bold">
+      <div className="d-flex align-items-center gap-3 text-secondary fw-bold">
         <span className="d-flex align-items-center gap-2">
-          <span className="spinner-grow spinner-grow-sm text-success" style={{ width: "8px", height: "8px" }} />
+          <span className="spinner-grow spinner-grow-sm text-primary" style={{ width: "8px", height: "8px" }} />
           System Active
         </span>
       </div>
