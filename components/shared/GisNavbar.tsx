@@ -3,23 +3,36 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu,
   Search,
   Map,
+  Menu,
   LogIn,
-  User,
+  LogOut,
   ShieldCheck,
-  LogOut
+  ChevronDown,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import { t } from "@/src/locales";
 
 export default function GisNavbar() {
+  const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -39,10 +52,6 @@ export default function GisNavbar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleSelectResult = (result: any) => {
-    window.dispatchEvent(new CustomEvent("smart-search-result", { detail: result }));
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -52,136 +61,189 @@ export default function GisNavbar() {
     }
   };
 
+  const handleSelectResult = (result: Record<string, unknown>) => {
+    window.dispatchEvent(
+      new CustomEvent("smart-search-result", { detail: result }),
+    );
+  };
+
   return (
     <>
-    <div
-      className="position-absolute top-0 start-0 w-100 p-3 z-3"
-      style={{ pointerEvents: "none" }}
-    >
       <nav
-        className="navbar navbar-expand-lg rounded-4 shadow-sm px-3 py-2 mx-auto d-flex justify-content-between align-items-center"
-        style={{
-          backgroundColor: "var(--card-bg)",
-          border: "1px solid var(--border-color)",
-          pointerEvents: "auto",
-          maxWidth: "1400px",
-          opacity: 0.95
-        }}
+        className={cn(
+          "flex items-center justify-between rounded-2xl px-4 py-2.5 mx-auto gap-2 transition-all duration-300 relative z-50 mt-4 max-w-[calc(100%-2rem)]",
+          "bg-background/80 backdrop-blur-xl shadow-lg border border-white/10"
+        )}
       >
-        <div className="d-flex align-items-center gap-4">
-          <Link
-            href="/"
-            className="navbar-brand d-flex align-items-center text-decoration-none"
-          >
+        {/* Left section: Logo + Search */}
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center no-underline hover-transform">
             <div
-              className="bg-primary text-dark rounded-circle p-2 me-2 d-flex align-items-center justify-content-center shadow-sm"
-              style={{ width: "38px", height: "38px" }}
+              className="bg-primary text-primary-foreground rounded-xl p-2 mr-3 flex items-center justify-center shadow-glow"
+              style={{ width: "40px", height: "40px" }}
             >
-              <Map size={20} />
+              <Map size={24} />
             </div>
-            <h5 className="fw-bold mb-0 text-white d-none d-sm-block">
-              LandBD <span className="text-primary">3.0</span>
+            <h5 className="font-black mb-0 text-foreground hidden sm:block tracking-tight text-xl">
+              LandBD <span className="text-primary">4.1</span>
             </h5>
           </Link>
 
-          {/* Quick Search Shortcut */}
-          <button 
-            className="btn btn-outline-secondary rounded-pill px-3 py-2 shadow-sm d-none d-md-flex align-items-center gap-2 transition-all"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsSearchOpen(true)}
-            style={{ backgroundColor: "var(--background)", border: "1px solid var(--border-color)", fontSize: "14px" }}
+            className="hidden md:flex gap-2 rounded-full border-white/10 bg-background/50 text-muted-foreground hover:text-foreground"
           >
-            <Search size={16} />
-            <span className="text-muted">{t.hero.searchPlaceholder}</span>
-            <span className="badge bg-secondary rounded-pill ms-2" style={{ fontSize: "10px" }}>Ctrl K</span>
-          </button>
+            <Search size={14} />
+            <span className="text-xs font-medium">
+              {t.hero.searchPlaceholder}
+            </span>
+            <span className="inline-flex items-center rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
+              Ctrl K
+            </span>
+          </Button>
         </div>
 
-        <div className="d-none d-lg-flex align-items-center gap-2">
-          <Link href="/dap-map" className="btn btn-sm btn-link text-secondary text-decoration-none fw-bold hover-text-primary">
+        {/* Center Navigation Links (Desktop) */}
+        <div className="hidden lg:flex items-center gap-2">
+          <Link
+            href="/dap-map"
+            className={cn(
+              "px-3 py-1.5 text-sm font-bold no-underline rounded-lg transition-colors",
+              pathname?.startsWith("/dap-map")
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-accent",
+            )}
+          >
             {t.nav.mapWorkspaces}
           </Link>
-          <Link href="/khatiyan" className="btn btn-sm btn-link text-secondary text-decoration-none fw-bold hover-text-primary">
+          <Link
+            href="/khatiyan"
+            className={cn(
+              "px-3 py-1.5 text-sm font-bold no-underline rounded-lg transition-colors",
+              pathname?.startsWith("/khatiyan")
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-accent",
+            )}
+          >
             {t.nav.tools}
           </Link>
-          <Link href="/blog" className="btn btn-sm btn-link text-secondary text-decoration-none fw-bold hover-text-primary">
+          <Link
+            href="/blog"
+            className={cn(
+              "px-3 py-1.5 text-sm font-bold no-underline rounded-lg transition-colors",
+              pathname?.startsWith("/blog")
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-accent",
+            )}
+          >
             {t.nav.blog}
           </Link>
 
-          <div className="vr mx-2 bg-secondary opacity-25"></div>
+          <div className="w-px h-5 bg-border mx-1" />
 
           {isLoggedIn ? (
-            <div className="dropdown ms-2">
-              <button
-                className="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-2 dropdown-toggle"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <User size={16} /> {t.nav.account}
-              </button>
-              <ul className="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" style={{ backgroundColor: "var(--card-bg)" }}>
-                <li>
-                  <Link href="/admin" className="dropdown-item py-2 d-flex align-items-center gap-2 fw-bold text-primary">
-                    <ShieldCheck size={16} /> {t.nav.adminDashboard}
-                  </Link>
-                </li>
-                <li><hr className="dropdown-divider" /></li>
-                <li>
-                  <button onClick={handleLogout} className="dropdown-item py-2 text-danger d-flex align-items-center gap-2">
-                    <LogOut size={16} /> {t.nav.logout}
-                  </button>
-                </li>
-              </ul>
-            </div>
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold no-underline rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+            >
+              <ShieldCheck size={14} className="text-primary" />{" "}
+              {t.nav.adminDashboard}
+            </Link>
           ) : (
             <Link
               href="/login"
-              className="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm ms-2 d-flex align-items-center"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold no-underline rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
             >
-              <LogIn size={16} className="me-2" /> {t.nav.login}
+              <LogIn size={14} /> {t.nav.login}
             </Link>
           )}
         </div>
 
-        <button
-          className="btn btn-light rounded-circle p-2 d-lg-none shadow-sm border"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#gisSidebar"
-          style={{ backgroundColor: "var(--card-bg-secondary)" }}
-        >
-          <Menu size={20} className="text-white" />
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <div className="hidden lg:flex items-center">
+              <Link
+                href="/admin"
+                className="px-4 py-1.5 text-sm font-bold rounded-full bg-primary text-primary-foreground no-underline hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                <ShieldCheck size={16} className="inline mr-1.5" />{" "}
+                {t.nav.adminDashboard}
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden lg:flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-full bg-primary text-primary-foreground no-underline hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <LogIn size={16} /> {t.nav.login}
+            </Link>
+          )}
+
+          {/* Mobile Toggle */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                className="flex lg:hidden rounded-lg p-2 bg-card border border-border"
+                type="button"
+              >
+                <Menu size={20} className="text-muted-foreground" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 p-0 flex flex-col" style={{ backgroundColor: "var(--card-bg)" }}>
+              <SheetHeader className="p-4 border-b border-border text-left">
+                <SheetTitle className="flex items-center gap-2 text-foreground">
+                  <Map size={20} className="text-primary" /> LandBD
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-2 p-4">
+                <Link
+                  href="/dap-map"
+                  className="block px-4 py-3 rounded-xl border border-border text-sm font-bold no-underline text-foreground hover:bg-accent transition-colors"
+                >
+                  {t.nav.mapWorkspaces}
+                </Link>
+                <Link
+                  href="/khatiyan"
+                  className="block px-4 py-3 rounded-xl border border-border text-sm font-bold no-underline text-foreground hover:bg-accent transition-colors"
+                >
+                  {t.nav.tools}
+                </Link>
+                <Link
+                  href="/blog"
+                  className="block px-4 py-3 rounded-xl border border-border text-sm font-bold no-underline text-foreground hover:bg-accent transition-colors"
+                >
+                  {t.nav.blog}
+                </Link>
+              </div>
+              <div className="mt-auto p-4 border-t border-border">
+                {isLoggedIn ? (
+                  <Link
+                    href="/admin"
+                    className="block w-full text-center rounded-full bg-primary text-primary-foreground py-3 font-bold no-underline hover:bg-primary/90 transition-colors"
+                  >
+                    {t.nav.adminDashboard}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block w-full text-center rounded-full bg-primary text-primary-foreground py-3 font-bold no-underline hover:bg-primary/90 transition-colors"
+                  >
+                    {t.nav.login}
+                  </Link>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </nav>
 
-      {/* Mobile Offcanvas for GIS Navbar */}
-      <div className="offcanvas offcanvas-end border-0 shadow-lg" tabIndex={-1} id="gisSidebar" style={{ pointerEvents: "auto", backgroundColor: "var(--card-bg)" }}>
-        <div className="offcanvas-header border-bottom py-3">
-          <h5 className="fw-bold mb-0 d-flex align-items-center gap-2 text-white">
-             <Map size={20} className="text-primary" /> LandBD
-          </h5>
-          <button type="button" className="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div className="offcanvas-body d-flex flex-column gap-3 p-4">
-          <Link href="/dap-map" className="btn btn-outline-secondary text-start py-3 rounded-3 fw-bold">{t.nav.mapWorkspaces}</Link>
-          <Link href="/khatiyan" className="btn btn-outline-secondary text-start py-3 rounded-3 fw-bold">{t.nav.tools}</Link>
-          <Link href="/blog" className="btn btn-outline-secondary text-start py-3 rounded-3 fw-bold">{t.nav.blog}</Link>
-          
-          <div className="mt-auto">
-            {isLoggedIn ? (
-              <Link href="/admin" className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-dark">{t.nav.adminDashboard}</Link>
-            ) : (
-              <Link href="/login" className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-dark">{t.nav.login}</Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-      
       {isSearchOpen && (
-        <SmartSearchPalette 
-          onClose={() => setIsSearchOpen(false)} 
-          onSelectResult={handleSelectResult} 
+        <SmartSearchPalette
+          onClose={() => setIsSearchOpen(false)}
+          onSelectResult={handleSelectResult}
         />
       )}
     </>

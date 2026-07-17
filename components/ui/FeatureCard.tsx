@@ -1,64 +1,75 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
-export interface FeatureCardProps {
+interface FeatureCardProps {
   href: string;
+  icon: LucideIcon;
   title: string;
   description: string;
   badge?: string;
-  badgeColor?: string;
-  Icon: LucideIcon;
   ctaLabel?: string;
+  badgeColor?: "primary" | "success" | "warning" | "destructive" | string;
 }
 
-/**
- * Reusable Feature Card — used on the homepage grid and any feature listing.
- * Renders a card with an icon, badge, title, description, and CTA arrow link.
- */
+const badgeColorMap: Record<string, string> = {
+  primary: "bg-primary/10 text-primary",
+  success: "bg-emerald-500/10 text-emerald-500",
+  warning: "bg-amber-500/10 text-amber-500",
+  destructive: "bg-destructive/10 text-destructive",
+};
+
 export default function FeatureCard({
   href,
+  icon: Icon,
   title,
   description,
   badge,
+  ctaLabel = "Explore",
   badgeColor = "success",
-  Icon,
-  ctaLabel = "হিসাব শুরু করুন",
 }: FeatureCardProps) {
   return (
-    <Link href={href} className="text-decoration-none h-100 d-block">
-      <div className="card h-100 border-0 shadow-sm rounded-4 transition-all hover-shadow bg-white overflow-hidden">
-        <div className="card-body p-4 p-xl-5 position-relative">
+    <Link href={href} className="no-underline h-full block group">
+      <div className="h-full rounded-2xl border border-border bg-card transition-all duration-200 overflow-hidden hover:shadow-lg hover:-translate-y-1">
+        <div className="p-4 sm:p-5 xl:p-6 relative">
           {/* Ghost background icon */}
-          <div
-            className="position-absolute top-0 end-0 opacity-10 translate-middle-y me-n4 mt-4"
-            style={{ pointerEvents: "none" }}
-          >
-            <Icon size={120} className="text-success" />
+          <div className="absolute top-0 right-0 opacity-5 -translate-y-1/2 translate-x-1/2 pointer-events-none">
+            <Icon size={120} />
           </div>
 
-          <div className="d-flex justify-content-between align-items-start mb-4 position-relative z-1">
+          <div className="flex justify-between items-start mb-4 relative z-10">
             <div
-              className="bg-success bg-opacity-10 rounded-4 d-flex align-items-center justify-content-center"
-              style={{ width: 65, height: 65 }}
+              className="rounded-xl bg-emerald-500/10 flex items-center justify-center"
+              style={{ width: 56, height: 56 }}
             >
-              <Icon size={32} className="text-success" />
+              <Icon size={28} className="text-emerald-500" />
             </div>
             {badge && (
               <span
-                className={`badge bg-${badgeColor} rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center`}
+                className={cn(
+                  "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold shadow-sm",
+                  badgeColorMap[badgeColor] || badgeColorMap.success,
+                )}
               >
-                {badge === "New" && <Sparkles size={14} className="me-1" />}
                 {badge}
               </span>
             )}
           </div>
 
-          <h4 className="fw-bold mb-3 text-dark position-relative z-1">{title}</h4>
-          <p className="text-secondary mb-4 position-relative z-1 lh-lg">{description}</p>
+          <h4 className="font-bold mb-3 text-foreground relative z-10">
+            {title}
+          </h4>
+          <p className="text-muted-foreground mb-4 relative z-10 leading-relaxed line-clamp-2">
+            {description}
+          </p>
 
-          <div className="d-inline-flex align-items-center fw-bold text-success position-relative z-1 mt-auto">
-            {ctaLabel} <ArrowRight size={18} className="ms-2" />
+          <div className="inline-flex items-center font-bold text-emerald-500 relative z-10 mt-auto group-hover:gap-3 transition-all">
+            {ctaLabel}{" "}
+            <ArrowRight
+              size={18}
+              className="ml-2 transition-transform group-hover:translate-x-1"
+            />
           </div>
         </div>
       </div>
