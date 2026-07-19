@@ -23,11 +23,6 @@ import {
   Sparkles,
   ExternalLink,
 } from "lucide-react";
-import { Card, CardBody, CardHeader } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import SectionHeader from "@/components/ui/SectionHeader";
 
 export interface ApiRow {
   name: string;
@@ -44,7 +39,8 @@ interface DataRow {
   icon: React.ReactNode;
 }
 
-const MS_MAUZA_TOKEN = "a8G2bN9mqFsECE9ZUgn_Wj3vZ_onrRdJ9Uck8dMWUELQmzyydmv8pKkPeUA1Gez5_2eX-QZkJzhnnFSFbukM3qEq-7iBKPIZecCLlyQAPybJAr4AeWz5RvuTXRM_DVwlel3ojOLGRq9ApEm-dgCsfPeUcVz9COSLi4qoR0Dch9FQItydXvjBW760CddqCWZKQbF2OCe1_pCA2IgTZbspb1nbg9GNN-Xps6y__xJ2_r07AHU8jU5YF8acmqXR4M0Y0xFHPYFxk1TyeGtW9m2c-cBYSm5Gvh88otoEIVzIbVKfnPbVPQxL-d7AalqJbNZA9E3vbaXfhrZ-7-WNywio_A..";
+const MS_MAUZA_TOKEN =
+  "a8G2bN9mqFsECE9ZUgn_Wj3vZ_onrRdJ9Uck8dMWUELQmzyydmv8pKkPeUA1Gez5_2eX-QZkJzhnnFSFbukM3qEq-7iBKPIZecCLlyQAPybJAr4AeWz5RvuTXRM_DVwlel3ojOLGRq9ApEm-dgCsfPeUcVz9COSLi4qoR0Dch9FQItydXvjBW760CddqCWZKQbF2OCe1_pCA2IgTZbspb1nbg9GNN-Xps6y__xJ2_r07AHU8jU5YF8acmqXR4M0Y0xFHPYFxk1TyeGtW9m2c-cBYSm5Gvh88otoEIVzIbVKfnPbVPQxL-d7AalqJbNZA9E3vbaXfhrZ-7-WNywio_A..";
 
 export const API_REGISTRY: ApiRow[] = [
   {
@@ -293,95 +289,81 @@ export default function DataMonitorPage() {
   ).length;
 
   return (
-    <div className="fade-in" data-admin-panel="true">
-      <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
-        <SectionHeader 
-          title="ডেটা মনিটর" 
-          subtitle="API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা করুন।"
-          className="mb-0"
-        />
-        <div className="d-flex gap-2 flex-wrap">
-          <Button
+    <div className="fade-in visible" data-admin-panel="true">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">ডেটা মনিটর</h1>
+          <p className="text-[var(--text-secondary)]">API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা করুন।</p>
+        </div>
+        <div className="flex gap-4 flex-wrap">
+          <button
             onClick={() => setRefreshKey((value) => value + 1)}
-            variant="outline"
-            className="rounded-pill"
-            leftIcon={<RefreshCw size={15} />}
+            className="px-6 py-2.5 rounded-full font-bold border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)] transition-colors flex items-center"
           >
-            রিফ্রেশ
-          </Button>
-          <Link href="/admin/data-monitor/result" className="text-decoration-none">
-            <Button
-              variant="primary"
-              className="rounded-pill"
-              leftIcon={<ExternalLink size={15} />}
-            >
+            <RefreshCw size={18} className="mr-2" /> রিফ্রেশ
+          </button>
+          <Link
+            href="/admin/data-monitor/result"
+            className="text-decoration-none"
+          >
+            <button className="px-6 py-2.5 rounded-full font-bold bg-[var(--text-primary)] text-[var(--bg)] hover:scale-105 transition-transform shadow-md">
               রেজাল্ট পেজ
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
 
-      <div className="row g-3 mb-4">
-        <div className="col-lg-3 col-sm-6">
-          <div className="card border-0 rounded-4 shadow-sm h-100 p-3 bg-primary text-white">
-            <div className="small opacity-75">সক্রিয় API</div>
-            <div className="fs-3 fw-bold">{activeApis}</div>
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="bg-blue-500 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-80 mb-2">সক্রিয় API</div>
+          <div className="text-4xl font-bold">{activeApis}</div>
         </div>
-        <div className="col-lg-3 col-sm-6">
-          <div className="card border-0 rounded-4 shadow-sm h-100 p-3 bg-success text-white">
-            <div className="small opacity-75">ফায়ারবেস ডেটা</div>
-            <div className="fs-3 fw-bold">{firebaseData.length}</div>
-          </div>
+        <div className="bg-green-500 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-80 mb-2">ফায়ারবেস ডেটা</div>
+          <div className="text-4xl font-bold">{firebaseData.length}</div>
         </div>
-        <div className="col-lg-3 col-sm-6">
-          <div className="card border-0 rounded-4 shadow-sm h-100 p-3 bg-warning text-dark">
-            <div className="small opacity-75">Rajuk + Landbd</div>
-            <div className="fs-3 fw-bold">2 সেবা</div>
-          </div>
+        <div className="bg-yellow-500 rounded-2xl p-6 shadow-sm text-gray-900 flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-80 mb-2">Rajuk + Landbd</div>
+          <div className="text-4xl font-bold">2 সেবা</div>
         </div>
-        <div className="col-lg-3 col-sm-6">
-          <div className="card border-0 rounded-4 shadow-sm h-100 p-3 bg-dark text-white">
-            <div className="small opacity-75">অ্যাপ সেটিংস</div>
-            <div className="fs-3 fw-bold">Live</div>
-          </div>
+        <div className="bg-gray-800 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-80 mb-2">অ্যাপ সেটিংস</div>
+          <div className="text-4xl font-bold">Live</div>
         </div>
       </div>
 
-      <div className="row g-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         {loading ? (
-          <div className="col-12 text-center py-3 text-secondary">
+          <div className="col-span-full text-center py-10 text-[var(--text-secondary)] font-medium flex items-center justify-center">
+            <span className="w-5 h-5 border-2 border-[var(--text-secondary)] border-t-transparent rounded-full animate-spin mr-3"></span>
             ফায়ারবেস ডেটা লোড হচ্ছে...
           </div>
         ) : (
           firebaseData.map((item) => (
-            <div key={item.label} className="col-sm-6 col-xl-4">
-              <Card 
-                className={`border-0 shadow-sm h-100 p-3`}
-                style={{ backgroundColor: item.category === "config" ? "var(--slate-800)" : item.category === "users" ? "var(--slate-700)" : "var(--card-bg)" }}
-              >
-                <div className="d-flex align-items-center gap-2 mb-2 opacity-75 text-secondary">
+            <div key={item.label} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col justify-between hover:border-[var(--accent)] transition-colors">
+              <div className="flex items-center gap-3 mb-4 text-[var(--text-secondary)]">
+                <div className="bg-[var(--bg)] p-2 rounded-lg">
                   {item.icon}
-                  <span className="small fw-bold">{item.label}</span>
                 </div>
-                <div className="fs-4 fw-bolder text-white">{item.value}</div>
-              </Card>
+                <span className="text-sm font-bold">{item.label}</span>
+              </div>
+              <div className="text-2xl font-bold text-[var(--text-primary)]">{item.value}</div>
             </div>
           ))
         )}
       </div>
 
-      <Card className="mb-4">
-        <CardHeader className="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+      <div className="card-new mb-8">
+        <div className="p-6 md:p-8 border-b border-[var(--border)] flex flex-wrap gap-4 items-center justify-between">
           <div>
-            <h6 className="fw-bold mb-1">API রেজিস্ট্রি</h6>
-            <p className="small text-muted mb-0">
+            <h6 className="font-bold text-xl text-[var(--text-primary)] mb-1">API রেজিস্ট্রি</h6>
+            <p className="text-sm text-[var(--text-secondary)] mb-0">
               Rajuk, Firebase, External এবং Landbd API-র তালিকা দেখুন।
             </p>
           </div>
-          <div className="d-flex gap-2 flex-wrap align-items-end">
-            <div style={{ width: 200, marginBottom: '-16px' }}>
-              <Input
+          <div className="flex gap-4 flex-wrap items-center">
+            <div className="w-48">
+              <input
                 type="text"
                 placeholder="খুঁজুন..."
                 value={search}
@@ -389,129 +371,157 @@ export default function DataMonitorPage() {
                   setSearch(event.target.value);
                   setPage(1);
                 }}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)] transition-colors text-sm"
               />
             </div>
-            <div style={{ width: 140, marginBottom: '-16px' }}>
-              <Select
+            <div className="w-40">
+              <select
                 value={typeFilter}
                 onChange={(event) => {
                   setTypeFilter(event.target.value);
                   setPage(1);
                 }}
-                options={[
-                  { label: "সব ধরন", value: "all" },
-                  { label: "Rajuk", value: "Rajuk" },
-                  { label: "Firebase", value: "Firebase" },
-                  { label: "External", value: "External" }
-                ]}
-              />
+                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)] transition-colors text-sm"
+              >
+                <option value="all">সব ধরন</option>
+                <option value="Rajuk">Rajuk</option>
+                <option value="Firebase">Firebase</option>
+                <option value="External">External</option>
+              </select>
             </div>
-            <Button
-              onClick={() => setSortDir((direction) => direction === "asc" ? "desc" : "asc")}
-              variant="outline"
-              size="sm"
-              leftIcon={<ArrowUpDown size={13} />}
+            <button
+              onClick={() =>
+                setSortDir((direction) =>
+                  direction === "asc" ? "desc" : "asc",
+                )
+              }
+              className="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-medium flex items-center"
             >
-              নাম
-            </Button>
+              নাম {sortDir === "asc" ? "↑" : "↓"}
+            </button>
           </div>
-        </CardHeader>
+        </div>
 
-        <div className="table-responsive">
-          <table className="table table-hover mb-0 align-middle table-dark bg-transparent">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
-              <tr>
-                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">নাম</th>
-                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">ধরন</th>
-                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">
+              <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
+                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                  নাম
+                </th>
+                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                  ধরন
+                </th>
+                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
                   এন্ডপয়েন্ট
                 </th>
-                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">
+                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
                   স্ট্যাটাস
                 </th>
-                <th className="px-3 py-3 small fw-bold text-uppercase border-secondary">নোট</th>
+                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                  নোট
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[var(--border)]">
               {pageSlice.map((row) => (
-                <tr key={row.name}>
-                  <td className="px-3 py-2 fw-bold small text-white border-secondary">{row.name}</td>
-                  <td className="px-3 py-2 border-secondary">
+                <tr key={row.name} className="hover:bg-[var(--surface)] transition-colors">
+                  <td className="px-6 py-4 font-bold text-[var(--text-primary)] text-sm">
+                    {row.name}
+                  </td>
+                  <td className="px-6 py-4">
                     <span
-                      className={`badge rounded-pill px-2 ${row.type === "Rajuk" ? "bg-success bg-opacity-10 text-success" : row.type === "Firebase" ? "bg-warning bg-opacity-10 text-warning" : "bg-primary bg-opacity-10 text-primary"}`}
+                      className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                        row.type === "Rajuk" 
+                          ? "bg-green-500/10 text-green-500" 
+                          : row.type === "Firebase" 
+                            ? "bg-yellow-500/10 text-yellow-500" 
+                            : "bg-blue-500/10 text-blue-500"
+                      }`}
                     >
                       {row.type}
                     </span>
                   </td>
                   <td
-                    className="px-3 py-2 text-secondary small border-secondary"
-                    style={{ maxWidth: 260, wordBreak: "break-all" }}
+                    className="px-6 py-4 text-[var(--text-secondary)] text-sm font-mono break-all max-w-xs"
                   >
                     {row.endpoint}
                   </td>
-                  <td className="px-3 py-2 border-secondary">
-                    <span className="badge bg-success bg-opacity-25 text-success rounded-pill">
-                      <CheckCircle2 size={11} className="me-1" />
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center bg-green-500/20 text-green-500 rounded-full px-3 py-1 text-xs font-bold">
+                      <CheckCircle2 size={12} className="mr-1.5" />
                       active
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-secondary small border-secondary">{row.note}</td>
+                  <td className="px-6 py-4 text-[var(--text-secondary)] text-sm">
+                    {row.note}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <div className="card-footer bg-transparent border-top d-flex align-items-center justify-content-between px-3 py-2">
-          <span className="small text-muted">
+        <div className="p-4 border-t border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
+          <span className="text-sm text-[var(--text-secondary)] font-medium">
             {(page - 1) * PAGE_SIZE + 1}–
             {Math.min(page * PAGE_SIZE, filteredApis.length)} /{" "}
             {filteredApis.length}
           </span>
-          <div className="d-flex gap-2">
-            <Button
+          <div className="flex gap-2 items-center">
+            <button
               onClick={() => setPage((value) => Math.max(1, value - 1))}
               disabled={page === 1}
-              variant="outline"
-              size="sm"
+              className="p-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg)] disabled:opacity-50 transition-colors"
             >
-              <ChevronLeft size={14} />
-            </Button>
-            <span className="btn btn-sm disabled">
+              <ChevronLeft size={18} />
+            </button>
+            <span className="px-4 py-2 text-sm font-bold text-[var(--text-primary)]">
               {page} / {totalPages}
             </span>
-            <Button
-              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            <button
+              onClick={() =>
+                setPage((value) => Math.min(totalPages, value + 1))
+              }
               disabled={page === totalPages}
-              variant="outline"
-              size="sm"
+              className="p-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg)] disabled:opacity-50 transition-colors"
             >
-              <ChevronRight size={14} />
-            </Button>
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
-      </Card>
+      </div>
 
-      <Card className="mt-4">
-        <CardHeader className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-          <div className="d-flex align-items-center gap-2">
-            <Terminal size={18} className="text-primary" />
-            <h6 className="fw-bold mb-0">API Selection Panel</h6>
+      <div className="card-new">
+        <div className="p-6 md:p-8 border-b border-[var(--border)] flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Terminal size={24} className="text-[var(--accent)]" />
+            <h6 className="font-bold text-xl text-[var(--text-primary)] mb-0">API Selection Panel</h6>
           </div>
-          <div className="d-flex gap-2 flex-wrap align-items-center">
-            <span className="small fw-bold text-primary bg-primary bg-opacity-10 px-3 py-1 rounded-pill">
+          <div className="flex gap-3 flex-wrap items-center">
+            <span className="text-sm font-bold text-blue-500 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
               Selected APIs: {selectedApis.length} of {API_REGISTRY.length}
             </span>
-            <Button onClick={selectAll} variant="outline" size="sm" className="rounded-pill">Select All</Button>
-            <Button onClick={unselectAll} variant="outline" size="sm" className="rounded-pill">Unselect All</Button>
+            <button
+              onClick={selectAll}
+              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold"
+            >
+              Select All
+            </button>
+            <button
+              onClick={unselectAll}
+              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold"
+            >
+              Unselect All
+            </button>
           </div>
-        </CardHeader>
-        <CardBody className="p-4">
-          <div className="d-flex align-items-center justify-content-between mb-3">
-            <p className="small text-muted mb-0">
+        </div>
+        <div className="p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <p className="text-sm text-[var(--text-secondary)] mb-0">
               একটি সমন্বিত লিঙ্ক তৈরি করতে একাধিক API নির্বাচন করুন।
             </p>
-            <Button
+            <button
               onClick={() => {
                 const dataStr =
                   "data:text/json;charset=utf-8," +
@@ -552,57 +562,53 @@ export default function DataMonitorPage() {
                 anchor.click();
                 anchor.remove();
               }}
-              variant="outline"
-              size="sm"
-              className="rounded-pill"
-              leftIcon={<Sparkles size={14} />}
+              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold flex items-center"
             >
-              Download Postman Collection
-            </Button>
+              <Database size={16} className="mr-2" /> Download Postman Collection
+            </button>
           </div>
 
-          <div className="row g-3 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
             {API_REGISTRY.map((api, index) => (
-              <div key={index} className="col-md-6 col-xl-4">
-                <div
-                  className={`form-check border rounded-3 p-3 d-flex flex-column user-select-none h-100 ${selectedApis.includes(index) ? "bg-primary bg-opacity-10 border-primary" : "border-secondary border-opacity-25"}`}
-                  style={{ cursor: "pointer", backgroundColor: selectedApis.includes(index) ? "var(--primary-color)20" : "var(--card-bg-secondary)" }}
-                  onClick={() => handleCheckboxChange(index)}
-                >
-                  <div className="d-flex align-items-center mb-1">
-                    <input
-                      className="form-check-input ms-1 me-2"
-                      type="checkbox"
-                      checked={selectedApis.includes(index)}
-                      onChange={() => {}}
-                    />
-                    <label
-                      className="form-check-label fw-bold text-truncate text-white"
-                      style={{ pointerEvents: "none" }}
-                      title={api.name}
-                    >
-                      {api.name}
-                    </label>
-                    <span
-                      className={`badge ms-auto ${api.status === "active" ? "bg-success bg-opacity-25 text-success" : "bg-secondary text-white"}`}
-                      style={{ fontSize: "0.65rem" }}
-                    >
-                      {api.status}
-                    </span>
-                  </div>
-                  <div
-                    className="ms-4 ps-2 small text-secondary text-truncate"
-                    title={api.endpoint}
+              <div
+                key={index}
+                className={`border rounded-xl p-4 flex flex-col select-none transition-all cursor-pointer ${
+                  selectedApis.includes(index) 
+                    ? "bg-blue-500/10 border-blue-500" 
+                    : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]"
+                }`}
+                onClick={() => handleCheckboxChange(index)}
+              >
+                <div className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 mr-3 cursor-pointer"
+                    checked={selectedApis.includes(index)}
+                    onChange={() => {}}
+                  />
+                  <span className="font-bold text-[var(--text-primary)] truncate block flex-1" title={api.name}>
+                    {api.name}
+                  </span>
+                  <span
+                    className={`ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      api.status === "active" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
+                    }`}
                   >
-                    {api.endpoint}
-                  </div>
+                    {api.status}
+                  </span>
+                </div>
+                <div
+                  className="pl-7 text-xs text-[var(--text-secondary)] font-mono truncate"
+                  title={api.endpoint}
+                >
+                  {api.endpoint}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="d-flex flex-wrap gap-3 align-items-center border-top border-light pt-4">
-            <Button
+          <div className="border-t border-[var(--border)] pt-8 flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            <button
               onClick={() => {
                 if (selectedApis.length === 0) return;
                 const url = new URL(
@@ -612,27 +618,24 @@ export default function DataMonitorPage() {
                 setGeneratedLink(url.toString());
               }}
               disabled={selectedApis.length === 0}
-              variant="primary"
-              className="rounded-pill px-4"
-              leftIcon={<Link2 size={16} />}
+              className="cta-gradient text-[var(--bg)] font-bold px-6 py-3 rounded-xl disabled:opacity-50 whitespace-nowrap shadow-md hover:-translate-y-0.5 transition-transform"
             >
               Generate Combined Link
-            </Button>
+            </button>
 
             {generatedLink && (
               <div
-                className="input-group shadow-sm rounded-pill overflow-hidden flex-nowrap"
-                style={{ maxWidth: 800 }}
+                className="flex items-stretch rounded-xl overflow-hidden border border-[var(--border)] shadow-sm w-full lg:w-auto flex-1"
               >
                 <input
                   type="text"
-                  className="form-control bg-light border-0 small text-muted px-3"
+                  className="flex-1 bg-[var(--surface)] border-0 text-sm text-[var(--text-secondary)] px-4 min-w-[200px]"
                   value={generatedLink}
                   readOnly
                 />
                 <button
                   onClick={copyLink}
-                  className="btn btn-outline-secondary fw-bold px-3"
+                  className="px-4 font-bold text-[var(--text-primary)] bg-[var(--bg)] border-l border-[var(--border)] hover:bg-[var(--surface)] transition-colors"
                 >
                   Copy
                 </button>
@@ -640,15 +643,15 @@ export default function DataMonitorPage() {
                   href={generatedLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-success fw-bold d-flex align-items-center gap-2 px-4"
+                  className="px-5 font-bold text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                 >
-                  <PlayCircle size={16} /> Open in New Tab
+                  <PlayCircle size={18} /> Open in New Tab
                 </a>
               </div>
             )}
           </div>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

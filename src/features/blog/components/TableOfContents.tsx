@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody } from "@/components/ui/Card";
 
 export default function TableOfContents() {
   const [activeId, setActiveId] = useState<string>("");
@@ -19,17 +18,19 @@ export default function TableOfContents() {
   }, []);
 
   return (
-    <div className="position-sticky" style={{ top: "100px" }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: "var(--card-bg)" }}>
-        <CardBody className="p-4">
-          <h5 className="fw-bold mb-4 text-white">সূচিপত্র</h5>
-          <nav className="d-flex flex-column gap-2">
+    <div className="sticky top-24">
+      <div className="card-new overflow-hidden border-l-4 border-l-[var(--accent)]">
+        <div className="p-6">
+          <h5 className="font-bold mb-5 text-[var(--text-primary)] text-xl border-b border-[var(--border)] pb-3">সূচিপত্র</h5>
+          <nav className="flex flex-col gap-2">
             {dummyHeaders.map((header) => (
               <a
                 key={header.id}
                 href={`#${header.id}`}
-                className={`text-decoration-none transition-all p-2 rounded ${
-                  activeId === header.id ? "bg-primary bg-opacity-10 text-primary fw-bold" : "text-secondary hover-bg-dark"
+                className={`transition-colors p-3 rounded-lg font-medium ${
+                  activeId === header.id 
+                  ? "bg-[var(--accent)]/10 text-[var(--accent)]" 
+                  : "text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text-primary)]"
                 }`}
                 onClick={() => setActiveId(header.id)}
               >
@@ -37,8 +38,8 @@ export default function TableOfContents() {
               </a>
             ))}
           </nav>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

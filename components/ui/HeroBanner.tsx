@@ -14,9 +14,8 @@ interface HeroBannerProps {
 }
 
 /**
- * A standardized, premium Hero Banner for LandBD 3.2.
- * Enforces a global dark aesthetic with golden glowing accents, glassmorphism,
- * and decorative background patterns.
+ * A standardized, premium Hero Banner for LandBD 4.0.
+ * Follows the Light/Dark hybrid theme.
  */
 export default function HeroBanner({
   badge,
@@ -32,89 +31,113 @@ export default function HeroBanner({
   const isCenter = align === "center";
 
   return (
-    <section className="position-relative overflow-hidden" style={{ padding: "6rem 0", backgroundColor: "var(--background)" }}>
+    <section
+      className="relative overflow-hidden hero-gradient border-b border-c"
+      style={{ padding: "6rem 0" }}
+    >
       {/* Decorative Glow */}
-      <div 
-        className="position-absolute translate-middle rounded-circle blur-effect opacity-25" 
-        style={{ 
-          top: "50%", 
-          left: isCenter ? "50%" : "20%", 
-          width: "600px", 
-          height: "600px", 
-          background: "radial-gradient(circle, rgba(246, 195, 67, 0.4) 0%, transparent 70%)"
-        }} 
+      <div
+        className="absolute rounded-full opacity-10 dark:opacity-20 pointer-events-none"
+        style={{
+          top: "50%",
+          left: isCenter ? "50%" : "20%",
+          transform: "translate(-50%, -50%)",
+          width: "600px",
+          height: "600px",
+          background:
+            "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
       />
 
       {/* Decorative Pattern */}
       {pattern === "dots" && (
         <div
-          className="position-absolute top-0 start-0 w-100 h-100 opacity-25 blur-effect"
+          className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)",
+            backgroundImage:
+              "radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)",
             backgroundSize: "32px 32px",
           }}
         />
       )}
       {pattern === "grid" && (
         <div
-          className="position-absolute top-0 start-0 w-100 h-100 opacity-25 blur-effect"
+          className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none"
           style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
+            backgroundImage:
+              "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)",
             backgroundSize: "32px 32px",
           }}
         />
       )}
 
-      <div className="container position-relative z-1">
-        <div className={`row align-items-center ${isCenter ? "justify-content-center text-center" : ""}`}>
-          <div className={`${illustration ? "col-lg-6" : "col-lg-8"} ${isCenter ? "mx-auto" : ""}`}>
-            <div className="animate-slide-up">
-              {badge && (
-                <div className={`mb-4 d-flex ${isCenter ? "justify-content-center" : "justify-content-start"}`}>
-                  <Badge variant="primary" pill size="sm" className="px-3 py-2 text-uppercase letter-spacing-wide border border-primary border-opacity-50">
-                    {badge}
-                  </Badge>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div
+          className={`flex flex-wrap items-center gap-10 ${
+            isCenter ? "justify-center text-center" : ""
+          }`}
+        >
+          {/* Content */}
+          <div
+            className={`${illustration ? "flex-1 min-w-0 max-w-xl" : "w-full max-w-3xl"} ${
+              isCenter ? "mx-auto" : ""
+            } fade-in visible`}
+          >
+            {badge && (
+              <div
+                className={`mb-4 flex ${isCenter ? "justify-center" : "justify-start"}`}
+              >
+                <div className="inline-block bg-[var(--surface)] text-[var(--text-secondary)] px-4 py-2 rounded-full text-sm font-medium border border-c">
+                  {badge}
                 </div>
-              )}
-              
-              <h1 className="display-4 fw-bold mb-3 lh-sm text-body text-balance">
-                {title}
-              </h1>
-              
-              {subtitle && (
-                <h3 className="h4 text-primary fw-medium mb-3">
-                  {subtitle}
-                </h3>
-              )}
-              
-              {description && (
-                <div className={`lead text-muted mb-5 max-w-2xl ${isCenter ? "mx-auto" : ""}`} style={{ fontSize: "1.15rem", lineHeight: 1.8 }}>
-                  {description}
-                </div>
-              )}
-              
-              {children && (
-                <div className="mb-5">
-                  {children}
-                </div>
-              )}
-              
-              {actions && (
-                <div className={`d-flex flex-wrap gap-3 ${isCenter ? "justify-content-center" : "justify-content-start"}`}>
-                  {actions}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight text-[var(--text-primary)]">
+              {title}
+            </h1>
+
+            {subtitle && (
+              <h3 className="text-xl text-[var(--text-primary)] font-medium mb-3">{subtitle}</h3>
+            )}
+
+            {description && (
+              <div
+                className={`text-[var(--text-secondary)] mb-8 text-lg leading-relaxed ${
+                  isCenter ? "mx-auto" : ""
+                }`}
+                style={{ maxWidth: "600px" }}
+              >
+                {description}
+              </div>
+            )}
+
+            {children && <div className="mb-8">{children}</div>}
+
+            {actions && (
+              <div
+                className={`flex flex-wrap gap-3 ${
+                  isCenter ? "justify-center" : "justify-start"
+                }`}
+              >
+                {actions}
+              </div>
+            )}
           </div>
 
+          {/* Illustration */}
           {illustration && (
-            <div className="col-lg-6 mt-5 mt-lg-0 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <div className="position-relative">
-                {/* Optional glass backing for illustrations */}
-                <div className="position-absolute top-50 start-50 translate-middle w-100 h-100 bg-primary bg-opacity-10 rounded-circle blur-effect" style={{ filter: "blur(60px)" }} />
-                <div className="position-relative z-1">
-                  {illustration}
-                </div>
+            <div
+              className="flex-1 min-w-0 max-w-xl fade-in visible"
+              style={{ transitionDelay: "200ms" }}
+            >
+              <div className="relative">
+                <div
+                  className="absolute inset-0 rounded-full opacity-10 pointer-events-none"
+                  style={{ background: "var(--accent)", filter: "blur(60px)" }}
+                />
+                <div className="relative z-10">{illustration}</div>
               </div>
             </div>
           )}

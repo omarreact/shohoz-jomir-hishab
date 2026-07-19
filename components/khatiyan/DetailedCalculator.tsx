@@ -3,6 +3,8 @@ import type { KhatiyanOwner, KhatiyanPlot } from "@/lib/types";
 import { toBn } from "@/lib/utils";
 import PlotsCard from "./PlotsCard";
 import OwnersCard from "./OwnersCard";
+import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DetailedCalculatorProps {
   plots: KhatiyanPlot[];
@@ -16,7 +18,6 @@ interface DetailedCalculatorProps {
   onUpdateOwner: <Key extends keyof KhatiyanOwner>(id: number, field: Key, value: KhatiyanOwner[Key]) => void;
 }
 
-// সমাধান: এখানে শুধু `: any` যুক্ত করা হয়েছে
 export default function DetailedCalculator({
   plots,
   owners,
@@ -30,27 +31,35 @@ export default function DetailedCalculator({
 }: DetailedCalculatorProps) {
   return (
     <div>
-      <div
-        className={`alert text-center fw-bold shadow-sm mb-4 ${totalOwnerTil === FULL_UNIT_TIL ? "alert-success" : totalOwnerTil > FULL_UNIT_TIL ? "alert-danger" : "alert-warning"}`}
-      >
+      <div className="mb-6">
         {totalOwnerTil === FULL_UNIT_TIL && (
-          <span>১৬ আনা (সম্পূর্ণ অংশ) মিলেছে!</span>
+          <Alert className="bg-green-50 text-green-900 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/50">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>সঠিক হিসাব</AlertTitle>
+            <AlertDescription className="font-bold">১৬ আনা (সম্পূর্ণ অংশ) মিলেছে!</AlertDescription>
+          </Alert>
         )}
         {totalOwnerTil > FULL_UNIT_TIL && (
-          <span>
-            ১৬ আনার বেশি হয়েছে! (অতিরিক্ত:{" "}
-            {toBn(totalOwnerTil - FULL_UNIT_TIL)} তিল)
-          </span>
+          <Alert variant="destructive" className="bg-red-50 text-red-900 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>ভুল হিসাব</AlertTitle>
+            <AlertDescription className="font-bold">
+              ১৬ আনার বেশি হয়েছে! (অতিরিক্ত: {toBn(totalOwnerTil - FULL_UNIT_TIL)} তিল)
+            </AlertDescription>
+          </Alert>
         )}
         {totalOwnerTil < FULL_UNIT_TIL && (
-          <span>
-            ১৬ আনা পূর্ণ হয়নি। (বাকি:{" "}
-            {toBn(FULL_UNIT_TIL - totalOwnerTil)} তিল)
-          </span>
+          <Alert className="bg-yellow-50 text-yellow-900 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900/50">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>অসম্পূর্ণ হিসাব</AlertTitle>
+            <AlertDescription className="font-bold">
+              ১৬ আনা পূর্ণ হয়নি। (বাকি: {toBn(FULL_UNIT_TIL - totalOwnerTil)} তিল)
+            </AlertDescription>
+          </Alert>
         )}
       </div>
 
-      <div className="row g-4 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <PlotsCard
           plots={plots}
           onAddPlot={onAddPlot}

@@ -7,56 +7,51 @@ import HeroSection from "@/components/features/home/HeroSection";
 import ServicesSection from "@/components/features/home/ServicesSection";
 import MapPreviewSection from "@/components/features/home/MapPreviewSection";
 import StatisticsSection from "@/components/features/home/StatisticsSection";
-import FeatureHighlightsSection from "@/components/features/home/FeatureHighlightsSection";
+import HowItWorksSection from "@/components/features/home/HowItWorksSection";
+import BlogPreviewSection from "@/components/features/home/BlogPreviewSection";
 import FaqSection from "@/components/features/home/FaqSection";
-import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
+import ContactSection from "@/components/features/home/ContactSection";
 import AnnouncementBanner from "@/components/features/home/AnnouncementBanner";
 import { useAnnouncement } from "@/lib/hooks/useAnnouncement";
-
-// Lazy-load the blog section
-const LatestBlogs = dynamic(() => import("@/components/shared/LatestBlogs"), {
-  loading: () => <LoadingSpinner label="লোড হচ্ছে..." />,
-  ssr: false,
-});
 
 export default function HomePage() {
   const announcement = useAnnouncement();
 
   return (
-    <div className="fade-in">
+    <div className="flex flex-col w-full">
       <AnnouncementBanner message={announcement} />
 
       {/* 1. Hero */}
       <HeroSection />
 
-      {/* 2. Service Cards */}
-      <ServicesSection />
+      {/* 2. Service Cards / Features */}
+      <div className="bg-alt-1">
+        <ServicesSection />
+      </div>
 
-      {/* 3. Interactive Map Preview */}
+      {/* 3. Interactive Map Preview / Search */}
       <MapPreviewSection />
 
       {/* 4. Statistics */}
-      <StatisticsSection />
+      <div className="bg-alt-1">
+        <StatisticsSection />
+      </div>
 
-      {/* 5. Feature Highlights */}
-      <FeatureHighlightsSection />
+      {/* 5. How It Works */}
+      <HowItWorksSection />
 
-      {/* 6. Latest Blog Posts */}
-      <div className="container py-5">
-        <Suspense fallback={<LoadingSpinner label="লোড হচ্ছে..." />}>
-          <LatestBlogs />
-        </Suspense>
+      {/* 6. Blog Preview */}
+      <div className="bg-alt-2">
+        <BlogPreviewSection />
       </div>
 
       {/* 7. FAQ */}
       <FaqSection />
 
-      {/* 8. Newsletter */}
-      <div className="container py-5">
-        <NewsletterCta />
+      {/* 8. Contact Form */}
+      <div className="bg-alt-1">
+        <ContactSection />
       </div>
-
-      {/* 9. Footer Layout is handled in layout.tsx via ConditionalShell -> AppHeader / Footer */}
     </div>
   );
 }

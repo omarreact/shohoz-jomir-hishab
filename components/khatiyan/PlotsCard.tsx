@@ -1,7 +1,10 @@
-import { MapPin, X } from "lucide-react";
+import { MapPin, X, Plus } from "lucide-react";
 import { plotClassOptionsList } from "@/lib/constants";
 import { toBn } from "@/lib/utils";
 import type { KhatiyanPlot } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
 
 interface PlotsCardProps {
   plots: KhatiyanPlot[];
@@ -17,95 +20,99 @@ export default function PlotsCard({
   onUpdatePlot,
 }: PlotsCardProps) {
   return (
-    <div className="col-lg-6">
-      <div className="card shadow-sm h-100 rounded-4 border-0">
-        <div className="card-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
-          <span className="fw-bold d-flex align-items-center">
-            <MapPin size={18} className="me-2" /> জমির দাগসমূহ
-          </span>
-          <button
-            onClick={onAddPlot}
-            className="btn btn-sm btn-light text-primary fw-bold"
-          >
-            + দাগ যোগ
-          </button>
-        </div>
-        <div className="card-body bg-light p-3">
-          {plots.length === 0 && (
-            <div className="text-center py-4 text-muted border border-dashed rounded-3 bg-white">
-              কোনো দাগ যুক্ত করা হয়নি
-            </div>
-          )}
+    <Card className="h-full flex flex-col">
+      <CardHeader className="bg-primary text-primary-foreground rounded-t-xl flex flex-row justify-between items-center py-4">
+        <CardTitle className="text-lg flex items-center m-0">
+          <MapPin size={18} className="mr-2" /> জমির দাগসমূহ
+        </CardTitle>
+        <Button
+          onClick={onAddPlot}
+          variant="secondary"
+          size="sm"
+          className="font-bold flex items-center"
+        >
+          <Plus size={14} className="mr-1" /> দাগ যোগ
+        </Button>
+      </CardHeader>
+      
+      <CardContent className="bg-muted/30 flex-1 p-4 overflow-y-auto">
+        {plots.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border rounded-lg bg-background">
+            কোনো দাগ যুক্ত করা হয়নি
+          </div>
+        )}
+        
+        <div className="space-y-4">
           {plots.map((p, index) => (
-            <div
-              key={p.id}
-              className="card mb-3 shadow-sm border-0 rounded-3 p-3"
-            >
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <span className="badge bg-success rounded-pill">
+            <Card key={p.id} className="p-4 shadow-sm border-border relative group">
+              <div className="flex justify-between items-center mb-4">
+                <span className="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold">
                   দাগ নং: {toBn(index + 1)}
                 </span>
-                <button
+                <Button
                   onClick={() => onRemovePlot(p.id)}
-                  className="btn btn-sm btn-outline-danger"
+                  variant="destructive"
+                  size="icon"
+                  className="h-7 w-7 rounded-full opacity-70 group-hover:opacity-100 transition-opacity"
                 >
                   <X size={14} />
-                </button>
+                </Button>
               </div>
+              
               {/* Dag number inputs row */}
-              <div className="row g-2 mb-2">
-                <div className="col-6">
-                  <label className="form-label small fw-bold">সিএস/এসএ দাগ</label>
-                  <input
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">সিএস/এসএ দাগ</label>
+                  <Input
                     type="text"
                     value={p.cs}
                     onChange={(e) => onUpdatePlot(p.id, "cs", e.target.value)}
-                    className="form-control form-control-sm"
                     placeholder="১০১"
+                    className="h-9"
                   />
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-bold">আরএস দাগ</label>
-                  <input
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">আরএস দাগ</label>
+                  <Input
                     type="text"
                     value={p.rs}
                     onChange={(e) => onUpdatePlot(p.id, "rs", e.target.value)}
-                    className="form-control form-control-sm"
                     placeholder="১০২"
+                    className="h-9"
                   />
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-bold">সিটি দাগ</label>
-                  <input
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">সিটি দাগ</label>
+                  <Input
                     type="text"
                     value={p.city}
                     onChange={(e) => onUpdatePlot(p.id, "city", e.target.value)}
-                    className="form-control form-control-sm"
                     placeholder="১০৩"
+                    className="h-9"
                   />
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-bold">বিডিএস দাগ</label>
-                  <input
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">বিডিএস দাগ</label>
+                  <Input
                     type="text"
                     value={p.bds}
                     onChange={(e) => onUpdatePlot(p.id, "bds", e.target.value)}
-                    className="form-control form-control-sm"
                     placeholder="১০৪"
+                    className="h-9"
                   />
                 </div>
               </div>
 
               {/* শ্রেণী and জমি row */}
-              <div className="row g-2">
-                <div className="col-6">
-                  <label className="form-label small fw-bold">শ্রেণী</label>
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">শ্রেণী</label>
                   <select
-                    value={p.t}
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-input"
+                    value={p.t || ""}
                     onChange={(e) => onUpdatePlot(p.id, "t", e.target.value)}
-                    className="form-select form-select-sm"
                   >
-                    <option value="">নির্বাচন করুন</option>
+                    <option value="" disabled>নির্বাচন করুন</option>
                     {plotClassOptionsList.map((c: string) => (
                       <option key={c} value={c}>
                         {c}
@@ -113,23 +120,23 @@ export default function PlotsCard({
                     ))}
                   </select>
                 </div>
-                <div className="col-6">
-                  <label className="form-label small fw-bold">
-                    দাগের মোট জমি (শতাংশ)
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">
+                    মোট জমি (শতাংশ)
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={p.a}
                     onChange={(e) => onUpdatePlot(p.id, "a", e.target.value)}
-                    className="form-control form-control-sm"
                     placeholder="০.০০"
+                    className="h-9 font-medium text-primary"
                   />
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

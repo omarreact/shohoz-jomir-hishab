@@ -7,9 +7,9 @@ import { Loader } from "lucide-react";
 const MapCore = dynamic(() => import("@/src/features/map/components/MapCore"), {
   ssr: false,
   loading: () => (
-    <div className="d-flex flex-column align-items-center justify-content-center w-100 h-100" style={{ minHeight: "80vh", backgroundColor: "var(--card-bg)" }}>
-      <Loader className="spinner-border text-primary mb-3" style={{ width: "3rem", height: "3rem", borderWidth: "0.25em" }} />
-      <h5 className="text-secondary fw-bold">Loading Map Workspace...</h5>
+    <div className="flex flex-col items-center justify-center w-full h-full" style={{ minHeight: "80vh", backgroundColor: "var(--card)" }}>
+      <Loader className="animate-spin text-[var(--accent)] mb-3" size={48} />
+      <h5 className="text-[var(--text-secondary)] font-bold text-lg">Loading Map Workspace...</h5>
     </div>
   ),
 });
@@ -25,7 +25,7 @@ const ToolsPanel = dynamic(() => import("@/src/features/map/components/toolbar/T
 
 export default function FullDapMap({ initialData }: { initialData?: any }) {
   return (
-    <div className="w-100 h-100 position-relative overflow-hidden">
+    <div className="w-full h-full relative overflow-hidden">
       <MapEngineProvider>
         <MapCore initialData={initialData} />
         

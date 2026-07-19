@@ -29,6 +29,10 @@ import { toBn } from "@/lib/utils";
 import LatestBlogs from "../../components/shared/LatestBlogs";
 import DapMiniMap from "@/components/DapMiniMap";
 import HeroBanner from "@/components/ui/HeroBanner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
 
 type ShapeType = "rect" | "triangle" | "quad" | "pentagon" | "circle";
 
@@ -325,26 +329,31 @@ export default function LandMeasurementPage() {
     subLabel,
   }: any) => (
     <div
-      className={`d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 rounded-4 mb-3 border ${colorClass} bg-opacity-10`}
+      className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl mb-4 border bg-muted/30 ${
+        colorClass === "primary" ? "border-blue-500/30" : 
+        colorClass === "warning" ? "border-yellow-500/30" : 
+        "border-primary/30"
+      }`}
     >
-      <div className="mb-2 mb-md-0">
-        <div className="d-flex align-items-center fw-bold text-dark">
-          <Icon size={18} className="me-2" /> {label}
+      <div className="mb-3 md:mb-0">
+        <div className={`flex items-center font-bold ${
+          colorClass === "primary" ? "text-blue-500" : 
+          colorClass === "warning" ? "text-yellow-500" : 
+          "text-primary"
+        }`}>
+          <Icon size={18} className="mr-2" /> {label}
         </div>
         {subLabel && (
-          <small className="text-muted" style={{ fontSize: "11px" }}>
+          <small className="text-muted-foreground text-xs mt-1 block">
             {subLabel}
           </small>
         )}
       </div>
-      <div className="d-flex gap-2">
-        <div
-          className="input-group input-group-sm"
-          style={{ maxWidth: "130px" }}
-        >
+      <div className="flex gap-3">
+        <div className="flex items-stretch w-32 border border-border rounded-lg overflow-hidden focus-within:border-primary transition-colors bg-background">
           <input
             type="number"
-            className="form-control text-center fw-bold"
+            className="w-full text-center font-bold bg-transparent outline-none text-foreground px-2"
             placeholder="০"
             value={inputs[sideKey as keyof typeof inputs].feet}
             onChange={(e) =>
@@ -355,15 +364,12 @@ export default function LandMeasurementPage() {
               )
             }
           />
-          <span className="input-group-text bg-white">ফুট</span>
+          <span className="bg-muted/50 text-muted-foreground px-3 flex items-center border-l border-border text-sm font-medium">ফুট</span>
         </div>
-        <div
-          className="input-group input-group-sm"
-          style={{ maxWidth: "130px" }}
-        >
+        <div className="flex items-stretch w-32 border border-border rounded-lg overflow-hidden focus-within:border-primary transition-colors bg-background">
           <input
             type="number"
-            className="form-control text-center fw-bold"
+            className="w-full text-center font-bold bg-transparent outline-none text-foreground px-2"
             placeholder="০"
             max="11"
             value={inputs[sideKey as keyof typeof inputs].inches}
@@ -375,7 +381,7 @@ export default function LandMeasurementPage() {
               )
             }
           />
-          <span className="input-group-text bg-white">ইঞ্চি</span>
+          <span className="bg-muted/50 text-muted-foreground px-3 flex items-center border-l border-border text-sm font-medium">ইঞ্চি</span>
         </div>
       </div>
     </div>
@@ -388,48 +394,46 @@ export default function LandMeasurementPage() {
         badge="ভূমি পরিমাপ"
         title={
           <>
-            সহজ ও নির্ভুল <span className="text-primary">জমি পরিমাপ</span>
+            সহজ ও নির্ভুল <span className="accent-text">জমি পরিমাপ</span>
           </>
         }
         description="আপনার জমির সঠিক পরিমাপ বের করুন রাজউকের ম্যাপ থেকে অথবা ম্যানুয়ালি দৈর্ঘ্য ও প্রস্থ দিয়ে।"
         pattern="none"
       />
-      <div className="container py-5 fade-in">
-        <div className="row justify-content-center mb-5">
-        <div className="col-lg-8">
-          <div className="d-flex justify-content-center mb-4">
-            <div className="bg-white p-1 rounded-pill shadow-sm border d-inline-flex">
-              <button
-                onClick={() => setMode("manual")}
-                className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ${mode === "manual" ? "btn-success shadow-sm" : "btn-light text-secondary"}`}
-              >
-                <Ruler size={18} className="me-2" /> ম্যানুয়াল পরিমাপ
-              </button>
-              <button
-                onClick={() => setMode("rajuk")}
-                className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ms-2 ${mode === "rajuk" ? "btn-dark shadow-sm" : "btn-light text-secondary"}`}
-              >
-                <Database size={18} className="me-2 text-warning" /> রাজউক অটো
-                পরিমাপ
-              </button>
-            </div>
-          </div>
-
-          <div className="card shadow border-0 rounded-4 overflow-hidden">
-            <div className="card-header bg-dark text-white p-3 text-center">
-              <h5 className="fw-bold mb-0">জমি পরিমাপ ক্যালকুলেটর</h5>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible">
+        <div className="max-w-4xl mx-auto mb-10">
+          <Tabs defaultValue="manual" value={mode} onValueChange={(v) => setMode(v as any)} className="w-full">
+            <div className="flex justify-center mb-8">
+              <TabsList className="bg-card border border-border rounded-full p-1 h-auto shadow-sm">
+                <TabsTrigger
+                  value="manual"
+                  className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all text-muted-foreground"
+                >
+                  <Ruler size={18} className="mr-2" /> ম্যানুয়াল পরিমাপ
+                </TabsTrigger>
+                <TabsTrigger
+                  value="rajuk"
+                  className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md transition-all text-muted-foreground ml-2"
+                >
+                  <Database size={18} className="mr-2 text-yellow-500" /> রাজউক অটো পরিমাপ
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            <div className="card-body p-4 bg-light">
-              {mode === "rajuk" ? (
-                <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm border fade-in">
-                  <h6 className="fw-bold text-success mb-3 text-center">
+            <Card className="border-t-4 border-t-primary overflow-hidden">
+              <CardHeader className="bg-muted/30 border-b border-border text-center py-4">
+                <CardTitle className="text-lg">জমি পরিমাপ ক্যালকুলেটর</CardTitle>
+              </CardHeader>
+
+              <CardContent className="p-6 md:p-8">
+                <TabsContent value="rajuk" className="mt-0 outline-none fade-in visible">
+                  <h6 className="font-bold text-primary mb-6 text-center text-lg">
                     রাজউকের ম্যাপ থেকে সরাসরি দাগের মাপ বের করুন
                   </h6>
-                  <div className="row g-3">
-                    <div className="col-md-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
                       <select
-                        className="form-select rounded-pill"
+                        className="w-full bg-background border border-border text-foreground rounded-xl px-4 h-12 focus:outline-none focus:border-primary"
                         value={rSelectedDist}
                         onChange={(e) => onRDistChange(e.target.value)}
                         disabled={rDistricts.length === 0}
@@ -442,9 +446,9 @@ export default function LandMeasurementPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-6">
+                    <div>
                       <select
-                        className="form-select rounded-pill"
+                        className="w-full bg-background border border-border text-foreground rounded-xl px-4 h-12 focus:outline-none focus:border-primary"
                         value={rSelectedThana}
                         onChange={(e) => onRThanaChange(e.target.value)}
                         disabled={rThanas.length === 0 || rLoading}
@@ -457,9 +461,9 @@ export default function LandMeasurementPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-6">
+                    <div>
                       <select
-                        className="form-select rounded-pill"
+                        className="w-full bg-background border border-border text-foreground rounded-xl px-4 h-12 focus:outline-none focus:border-primary"
                         value={rSelectedMouza}
                         onChange={(e) => {
                           setRSelectedMouza(e.target.value);
@@ -477,9 +481,9 @@ export default function LandMeasurementPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-6">
+                    <div>
                       <select
-                        className="form-select rounded-pill text-success fw-bold"
+                        className="w-full bg-background border border-primary text-primary font-bold rounded-xl px-4 h-12 focus:outline-none focus:ring-2 focus:ring-primary/50"
                         value={rSelectedType}
                         onChange={(e) => onRTypeChange(e.target.value)}
                         disabled={!rSelectedMouza || rLoading}
@@ -491,193 +495,131 @@ export default function LandMeasurementPage() {
                     </div>
 
                     {rSelectedType && (
-                      <div className="col-12 mt-3 fade-in">
-                        <label className="fw-bold text-dark mb-2 text-center w-100">
+                      <div className="col-span-full mt-4 fade-in visible">
+                        <label className="font-bold text-foreground mb-3 text-center w-full block">
                           ৫. দাগ নম্বর লিখুন:
                         </label>
-                        <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-                          <input
+                        <div className="flex rounded-xl overflow-hidden shadow-sm border border-border focus-within:border-primary transition-colors h-12">
+                          <Input
                             type="text"
-                            className="form-control border-dark border-opacity-25 text-center fw-bold"
+                            className="flex-1 bg-background text-foreground text-center font-bold px-4 h-full border-0 focus-visible:ring-0 rounded-none rounded-l-xl"
                             placeholder="যেমন: ১২৩ বা 123"
                             value={rDagInput}
                             onChange={(e) => { setRDagInput(e.target.value); setResult(null); }}
                             onKeyDown={(e) => { if (e.key === "Enter") handleDagSearch(); }}
                             disabled={rLoading}
                           />
-                          <button
-                            className="btn btn-success fw-bold px-4"
+                          <Button
+                            className="h-full rounded-none rounded-r-xl font-bold px-8"
                             onClick={handleDagSearch}
                             disabled={!rDagInput.trim() || rLoading}
                           >
-                            {rLoading
-                              ? <span className="spinner-border spinner-border-sm" />
-                              : "সার্চ"}
-                          </button>
+                            {rLoading ? (
+                              <span className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin inline-block"></span>
+                            ) : (
+                              "সার্চ"
+                            )}
+                          </Button>
                         </div>
                       </div>
                     )}
                   </div>
                   {rLoading && (
-                    <div className="text-center text-success fw-bold mt-3">
-                      <span className="spinner-border spinner-border-sm me-2"></span>{" "}
+                    <div className="text-center text-primary font-bold mt-6 flex items-center justify-center">
+                      <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></span>{" "}
                       ডাটা আনা হচ্ছে...
                     </div>
                   )}
-                </div>
-              ) : (
-                <>
-                  <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-                    <button
+                </TabsContent>
+
+                <TabsContent value="manual" className="mt-0 outline-none fade-in visible">
+                  <div className="flex flex-wrap justify-center gap-2 mb-8">
+                    <Button
+                      variant={shape === "rect" ? "default" : "outline"}
                       onClick={() => handleShapeChange("rect")}
-                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "rect" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                      className="rounded-full font-bold"
                     >
-                      <Square size={16} className="me-2" /> আয়তক্ষেত্র
-                    </button>
-                    <button
+                      <Square size={16} className="mr-2" /> আয়তক্ষেত্র
+                    </Button>
+                    <Button
+                      variant={shape === "triangle" ? "default" : "outline"}
                       onClick={() => handleShapeChange("triangle")}
-                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "triangle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                      className="rounded-full font-bold"
                     >
-                      <Triangle size={16} className="me-2" /> ত্রিভুজ
-                    </button>
-                    <button
+                      <Triangle size={16} className="mr-2" /> ত্রিভুজ
+                    </Button>
+                    <Button
+                      variant={shape === "quad" ? "default" : "outline"}
                       onClick={() => handleShapeChange("quad")}
-                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "quad" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                      className="rounded-full font-bold"
                     >
-                      <Box size={16} className="me-2" /> চতুর্ভুজ
-                    </button>
-                    <button
+                      <Box size={16} className="mr-2" /> চতুর্ভুজ
+                    </Button>
+                    <Button
+                      variant={shape === "pentagon" ? "default" : "outline"}
                       onClick={() => handleShapeChange("pentagon")}
-                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "pentagon" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                      className="rounded-full font-bold"
                     >
-                      <Map size={16} className="me-2" /> পঞ্চভুজ
-                    </button>
-                    <button
+                      <Map size={16} className="mr-2" /> পঞ্চভুজ
+                    </Button>
+                    <Button
+                      variant={shape === "circle" ? "default" : "outline"}
                       onClick={() => handleShapeChange("circle")}
-                      className={`btn rounded-pill px-3 fw-bold d-flex align-items-center ${shape === "circle" ? "btn-success shadow-sm" : "btn-outline-secondary"}`}
+                      className="rounded-full font-bold"
                     >
-                      <Circle size={16} className="me-2" /> বৃত্তাকার
-                    </button>
+                      <Circle size={16} className="mr-2" /> বৃত্তাকার
+                    </Button>
                   </div>
-                  <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm border">
+                  
+                  <div className="space-y-4 max-w-2xl mx-auto">
                     {shape === "rect" && (
                       <>
-                        <InputRow
-                          label="দৈর্ঘ্য"
-                          sideKey="side1"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="প্রস্থ"
-                          sideKey="side2"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
+                        <InputRow label="দৈর্ঘ্য" sideKey="side1" icon={Ruler} colorClass="primary" />
+                        <InputRow label="প্রস্থ" sideKey="side2" icon={Ruler} colorClass="warning" />
                       </>
                     )}
                     {shape === "triangle" && (
                       <>
-                        <InputRow
-                          label="১ম বাহু"
-                          sideKey="side1"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="২য় বাহু"
-                          sideKey="side2"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="৩য় বাহু"
-                          sideKey="side3"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
+                        <InputRow label="১ম বাহু" sideKey="side1" icon={Ruler} colorClass="primary" />
+                        <InputRow label="২য় বাহু" sideKey="side2" icon={Ruler} colorClass="primary" />
+                        <InputRow label="৩য় বাহু" sideKey="side3" icon={Ruler} colorClass="primary" />
                       </>
                     )}
                     {shape === "quad" && (
                       <>
-                        <InputRow
-                          label="উত্তর আইল"
-                          sideKey="side1"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="দক্ষিণ আইল"
-                          sideKey="side2"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="পূর্ব আইল"
-                          sideKey="side3"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
-                        <InputRow
-                          label="পশ্চিম আইল"
-                          sideKey="side4"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
+                        <InputRow label="উত্তর আইল" sideKey="side1" icon={Ruler} colorClass="primary" />
+                        <InputRow label="দক্ষিণ আইল" sideKey="side2" icon={Ruler} colorClass="primary" />
+                        <InputRow label="পূর্ব আইল" sideKey="side3" icon={Ruler} colorClass="warning" />
+                        <InputRow label="পশ্চিম আইল" sideKey="side4" icon={Ruler} colorClass="warning" />
                         <InputRow
                           label="কর্ণ (ঐচ্ছিক)"
                           sideKey="diag1"
                           icon={TriangleRight}
-                          colorClass="border-success bg-success"
+                          colorClass="success"
                           subLabel="কর্ণ না দিলে গড় পদ্ধতিতে হিসাব হবে"
                         />
                       </>
                     )}
                     {shape === "pentagon" && (
                       <>
-                        <InputRow
-                          label="১ম বাহু"
-                          sideKey="side1"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="২য় বাহু"
-                          sideKey="side2"
-                          icon={Ruler}
-                          colorClass="border-primary"
-                        />
-                        <InputRow
-                          label="৩য় বাহু"
-                          sideKey="side3"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
-                        <InputRow
-                          label="৪র্থ বাহু"
-                          sideKey="side4"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
-                        <InputRow
-                          label="৫ম বাহু"
-                          sideKey="side5"
-                          icon={Ruler}
-                          colorClass="border-warning"
-                        />
-                        <div className="mt-3 pt-3 border-top">
+                        <InputRow label="১ম বাহু" sideKey="side1" icon={Ruler} colorClass="primary" />
+                        <InputRow label="২য় বাহু" sideKey="side2" icon={Ruler} colorClass="primary" />
+                        <InputRow label="৩য় বাহু" sideKey="side3" icon={Ruler} colorClass="warning" />
+                        <InputRow label="৪র্থ বাহু" sideKey="side4" icon={Ruler} colorClass="warning" />
+                        <InputRow label="৫ম বাহু" sideKey="side5" icon={Ruler} colorClass="warning" />
+                        <div className="pt-4 mt-6 border-t border-border">
                           <InputRow
                             label="১ম কর্ণ"
                             sideKey="diag1"
                             icon={TriangleRight}
-                            colorClass="border-success bg-success"
+                            colorClass="success"
                             subLabel="১ম ও ৩য় কোণার সংযোগ"
                           />
                           <InputRow
                             label="২য় কর্ণ"
                             sideKey="diag2"
                             icon={TriangleRight}
-                            colorClass="border-success bg-success"
+                            colorClass="success"
                             subLabel="১ম ও ৪র্থ কোণার সংযোগ"
                           />
                         </div>
@@ -688,91 +630,75 @@ export default function LandMeasurementPage() {
                         label="ব্যাস (Diameter)"
                         sideKey="diameter"
                         icon={Circle}
-                        colorClass="border-primary"
+                        colorClass="primary"
                         subLabel="একপ্রান্ত থেকে অন্যপ্রান্তের দূরত্ব"
                       />
                     )}
                   </div>
-                  <div className="text-center mt-4 pt-2">
-                    <button
+                  <div className="text-center mt-10">
+                    <Button
                       onClick={handleCalculate}
-                      className="btn btn-success btn-lg px-5 rounded-pill shadow fw-bold d-inline-flex align-items-center"
+                      size="lg"
+                      className="px-8 py-6 rounded-full font-bold shadow-lg hover:-translate-y-1 transition-all text-lg"
                     >
-                      <Calculator size={20} className="me-2" /> ক্ষেত্রফল হিসাব
-                      করুন
-                    </button>
+                      <Calculator size={20} className="mr-2" /> ক্ষেত্রফল হিসাব করুন
+                    </Button>
                   </div>
-                </>
-              )}
-            </div>
-          </div>
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </Tabs>
         </div>
-      </div>
 
       {result && (
-        <div
-          id="landResultSection"
-          className="row justify-content-center pb-5 fade-in"
-        >
-          <div className="col-lg-8">
+        <div id="landResultSection" className="max-w-4xl mx-auto pb-12 fade-in visible">
             {!result.isValid ? (
-              <div className="alert alert-danger d-flex align-items-center p-4 rounded-4 shadow-sm">
-                <AlertTriangle size={28} className="me-3 flex-shrink-0" />
-                <span className="fw-bold">{result.errorMsg}</span>
+              <div className="bg-red-500/10 border border-red-500/30 text-red-500 flex items-center p-5 rounded-xl shadow-sm">
+                <AlertTriangle size={28} className="mr-4 flex-shrink-0" />
+                <span className="font-bold text-lg">{result.errorMsg}</span>
               </div>
             ) : (
-              <div className="card shadow border-success border-2 rounded-4 overflow-hidden">
-                <div className="card-header bg-success text-white text-center py-3">
-                  <h5 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
-                    <CheckCircle2 className="me-2" /> পরিমাপের ফলাফল
+              <Card className="overflow-hidden border-t-4 border-t-primary">
+                <div className="bg-primary text-primary-foreground text-center py-4">
+                  <h5 className="font-bold mb-0 flex items-center justify-center text-xl">
+                    <CheckCircle2 className="mr-2" /> পরিমাপের ফলাফল
                   </h5>
                 </div>
                 {result.isAverage && (
-                  <div className="bg-warning bg-opacity-10 border-bottom border-warning px-4 py-2 text-center text-dark small fw-bold d-flex align-items-center justify-content-center">
-                    <Info size={16} className="me-2 text-warning" /> কর্ণ না
-                    দেওয়ায় এটি গড় পদ্ধতিতে হিসাব করা হয়েছে (আনুমানিক)। নিখুঁত
-                    হিসাবের জন্য কর্ণের মাপ দিন।
+                  <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-5 py-3 text-center text-yellow-500 text-sm font-bold flex items-center justify-center">
+                    <Info size={18} className="mr-2" /> কর্ণ না দেওয়ায় এটি গড় পদ্ধতিতে হিসাব করা হয়েছে (আনুমানিক)। নিখুঁত হিসাবের জন্য কর্ণের মাপ দিন।
                   </div>
                 )}
-                <div className="card-body p-0">
-                  <div className="row g-0 text-center">
-                    <div className="col-6 col-md-4 border-end border-bottom p-4 bg-light">
-                      <p className="text-muted small fw-bold mb-1">
-                        মোট শতাংশ (ডেসিমেল)
-                      </p>
-                      <h3 className="text-success fw-bold mb-0">
-                        {toBn(result.shotok.toFixed(3))}
-                      </h3>
+                <div className="p-0">
+                  <div className="grid grid-cols-2 md:grid-cols-3 divide-x divide-y md:divide-y-0 divide-border text-center">
+                    <div className="p-6 bg-muted/30">
+                      <p className="text-muted-foreground text-sm font-bold mb-2">মোট শতাংশ (ডেসিমেল)</p>
+                      <h3 className="text-primary text-3xl font-bold mb-0">{toBn(result.shotok.toFixed(3))}</h3>
                     </div>
-                    <div className="col-6 col-md-4 border-end border-bottom p-4">
-                      <p className="text-muted small fw-bold mb-1">মোট কাঠা</p>
-                      <h3 className="text-primary fw-bold mb-0">
-                        {toBn(result.katha.toFixed(3))}
-                      </h3>
+                    <div className="p-6">
+                      <p className="text-muted-foreground text-sm font-bold mb-2">মোট কাঠা</p>
+                      <h3 className="text-blue-500 text-3xl font-bold mb-0">{toBn(result.katha.toFixed(3))}</h3>
                     </div>
-                    <div className="col-12 col-md-4 border-bottom p-4 bg-light">
-                      <p className="text-muted small fw-bold mb-1">
-                        মোট বর্গফুট (Sq. Ft)
-                      </p>
-                      <h3 className="text-dark fw-bold mb-0">
-                        {toBn(result.sqFt.toFixed(2))}
-                      </h3>
+                    <div className="col-span-2 md:col-span-1 p-6 bg-muted/30 md:bg-transparent border-t md:border-t-0 border-border">
+                      <p className="text-muted-foreground text-sm font-bold mb-2">মোট বর্গফুট (Sq. Ft)</p>
+                      <h3 className="text-foreground text-3xl font-bold mb-0">{toBn(result.sqFt.toFixed(2))}</h3>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             )}
             
             {result?.plotData && (
-              <div className="mt-4 fade-in">
+              <div className="mt-8 fade-in visible">
                 <DapMiniMap plotData={result.plotData} />
               </div>
             )}
-          </div>
         </div>
       )}
-      <LatestBlogs />
-    </div>
+      <div className="mt-16">
+        <LatestBlogs />
+      </div>
+      </div>
     </>
   );
 }

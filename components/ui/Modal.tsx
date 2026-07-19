@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { X, CheckCircle2, AlertCircle, Info } from "lucide-react";
-import { Button } from "./Button";
+import { Button } from "./button";
 
 export type ModalVariant = "standard" | "success" | "dark";
 
@@ -83,38 +83,51 @@ export const Modal: React.FC<ModalProps> = ({
   if (size === "lg") maxWidthClass = "max-w-lg";
   if (size === "xl") maxWidthClass = "max-w-xl";
 
-  const defaultIcon = 
-    variant === "success" ? <CheckCircle2 size={24} /> :
-    variant === "dark" ? <AlertCircle size={24} /> :
-    <Info size={24} />;
+  const defaultIcon =
+    variant === "success" ? (
+      <CheckCircle2 size={24} />
+    ) : variant === "dark" ? (
+      <AlertCircle size={24} />
+    ) : (
+      <Info size={24} />
+    );
 
   return (
-    <div 
-      className="position-fixed top-0 start-0 w-100 h-100 z-3 d-flex align-items-center justify-content-center" 
-      style={{ 
-        backgroundColor: "rgba(15, 23, 42, 0.6)", 
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 z-3 d-flex align-items-center justify-content-center"
+      style={{
+        backgroundColor: "rgba(15, 23, 42, 0.6)",
         backdropFilter: "blur(4px)",
-        zIndex: 1050
+        zIndex: 1050,
       }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
     >
-      <div 
-        className={`card border-0 shadow-lg animate-slide-up`} 
-        style={{ 
+      <div
+        className={`card border-0 shadow-lg animate-slide-up`}
+        style={{
           backgroundColor: customBg,
-          width: "90%", 
-          maxWidth: size === 'sm' ? '400px' : size === 'lg' ? '800px' : size === 'xl' ? '1140px' : '500px',
+          width: "90%",
+          maxWidth:
+            size === "sm"
+              ? "400px"
+              : size === "lg"
+                ? "800px"
+                : size === "xl"
+                  ? "1140px"
+                  : "500px",
           borderRadius: "var(--radius-xl)",
           maxHeight: "90vh",
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
         }}
       >
         {/* Header */}
         <div className={`p-4 d-flex align-items-start gap-3 ${borderClass}`}>
-          <div className={`rounded-circle d-flex align-items-center justify-content-center p-2 flex-shrink-0 ${iconContainerClass}`}>
+          <div
+            className={`rounded-circle d-flex align-items-center justify-content-center p-2 flex-shrink-0 ${iconContainerClass}`}
+          >
             {icon || defaultIcon}
           </div>
           <div className="flex-grow-1">
@@ -123,26 +136,31 @@ export const Modal: React.FC<ModalProps> = ({
               <p className={`mb-0 small ${descColor}`}>{description}</p>
             )}
           </div>
-          <button 
-            type="button" 
-            className={closeBtnClass} 
+          <button
+            type="button"
+            className={closeBtnClass}
             onClick={onClose}
             aria-label="Close"
           ></button>
         </div>
 
         {/* Body */}
-        <div className={`p-4 overflow-auto ${textColor}`} style={{ flex: "1 1 auto" }}>
+        <div
+          className={`p-4 overflow-auto ${textColor}`}
+          style={{ flex: "1 1 auto" }}
+        >
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className={`p-4 ${variant === 'dark' ? 'border-top border-secondary border-opacity-25' : 'border-top bg-light bg-opacity-50'} rounded-bottom-4 d-flex justify-content-end gap-2`}>
+          <div
+            className={`p-4 ${variant === "dark" ? "border-top border-secondary border-opacity-25" : "border-top bg-light bg-opacity-50"} rounded-bottom-4 d-flex justify-content-end gap-2`}
+          >
             {footer}
           </div>
         )}
       </div>
     </div>
   );
-}
+};

@@ -12,14 +12,15 @@ import QuickCalculator from "@/components/khatiyan/QuickCalculator";
 import LatestBlogs from "@/components/shared/LatestBlogs";
 import SearchPanel from "@/src/features/search/components/SearchPanel";
 import HeroBanner from "@/components/ui/HeroBanner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ResultSection = dynamic(
   () => import("@/components/khatiyan/ResultSection"),
   {
     ssr: false,
     loading: () => (
-      <div className="text-center p-5 mt-4">
-        <div className="spinner-border text-success"></div>
+      <div className="text-center p-5 mt-4 text-[var(--text-secondary)]">
+        লোড হচ্ছে...
       </div>
     ),
   },
@@ -242,83 +243,87 @@ export default function SmartKhatiyanApp() {
         badge="খতিয়ান ক্যালকুলেটর"
         title={
           <>
-            স্মার্ট <span className="text-primary">খতিয়ান</span> হিসাব
+            স্মার্ট <span className="accent-text">খতিয়ান</span> হিসাব
           </>
         }
         description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন এবং রাজউক ম্যাপ থেকে দাগের তথ্য আনুন।"
         pattern="none"
       />
       <PrintStyles />
-      <div className="container-fluid px-3 px-xl-5 py-5 no-print fade-in">
-        <div className="d-flex justify-content-center mb-4">
-          <div className="bg-white p-1 rounded-pill shadow-sm border d-inline-flex flex-wrap justify-content-center">
-            <button
-              onClick={() => setActiveTab("detailed")}
-              className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ${activeTab === "detailed" ? "btn-success shadow-sm" : "btn-light text-secondary"}`}
-            >
-              <List size={18} className="me-2" /> বিস্তারিত হিসাব
-            </button>
-            <button
-              onClick={() => setActiveTab("quick")}
-              className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ms-md-2 ${activeTab === "quick" ? "btn-primary shadow-sm" : "btn-light text-secondary"}`}
-            >
-              <Zap size={18} className="me-2" /> কুইক
-            </button>
-            <button
-              onClick={() => setActiveTab("rajuk")}
-              className={`btn rounded-pill px-4 py-2 fw-semibold d-flex align-items-center ms-md-2 mt-2 mt-md-0 ${activeTab === "rajuk" ? "btn-dark shadow-sm" : "btn-light text-secondary"}`}
-            >
-              <Database size={18} className="me-2 text-warning" /> রাজউক ডাটা
-            </button>
-          </div>
-        </div>
-
-        {activeTab === "detailed" && (
-          <>
-            <DetailedCalculator
-              plots={plots}
-              owners={owners}
-              totalOwnerTil={totalOwnerTil}
-              onAddPlot={addPlot}
-              onRemovePlot={removePlot}
-              onUpdatePlot={updatePlot}
-              onAddOwner={addOwner}
-              onRemoveOwner={removeOwner}
-              onUpdateOwner={updateOwner}
-            />
-            <div className="d-flex justify-content-center gap-3 mt-4 mb-5">
-              <button
-                onClick={clearAll}
-                className="btn btn-outline-danger px-4 py-2 fw-bold rounded-pill shadow-sm d-flex align-items-center"
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 no-print fade-in visible">
+        <Tabs defaultValue="detailed" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="flex justify-center mb-10">
+            <TabsList className="bg-card border border-border rounded-full p-1 h-auto shadow-sm">
+              <TabsTrigger
+                value="detailed"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all text-muted-foreground"
               >
-                <Trash2 size={18} className="me-2" /> মুছে ফেলুন
-              </button>
-              <button
-                onClick={calculateDetailed}
-                className="btn btn-success px-5 py-2 fw-bold rounded-pill shadow-lg d-flex align-items-center"
+                <List size={18} className="mr-2" /> বিস্তারিত হিসাব
+              </TabsTrigger>
+              <TabsTrigger
+                value="quick"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-muted-foreground"
               >
-                <Calculator size={18} className="me-2" /> হিসাব করুন
-              </button>
-            </div>
-          </>
-        )}
-
-        {activeTab === "quick" && (
-          <QuickCalculator
-            quickData={quickData}
-            quickResult={quickResult}
-            onQuickDataChange={handleQuickDataChange}
-            onCalculateQuick={calculateQuick}
-          />
-        )}
-
-        {activeTab === "rajuk" && (
-          <div className="row justify-content-center fade-in mb-5">
-            <div className="col-lg-8">
-              <SearchPanel onUseArea={handleUseArea} compact />
-            </div>
+                <Zap size={18} className="mr-2" /> কুইক
+              </TabsTrigger>
+              <TabsTrigger
+                value="rajuk"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md transition-all text-muted-foreground"
+              >
+                <Database size={18} className="mr-2 text-yellow-500" /> রাজউক ডাটা
+              </TabsTrigger>
+            </TabsList>
           </div>
-        )}
+
+          <TabsContent value="detailed" className="mt-0 outline-none">
+            <div className="card-new p-6 md:p-8 animate-in fade-in zoom-in-95 duration-300 visible">
+              <DetailedCalculator
+                plots={plots}
+                owners={owners}
+                totalOwnerTil={totalOwnerTil}
+                onAddPlot={addPlot}
+                onRemovePlot={removePlot}
+                onUpdatePlot={updatePlot}
+                onAddOwner={addOwner}
+                onRemoveOwner={removeOwner}
+                onUpdateOwner={updateOwner}
+              />
+              <div className="flex justify-center gap-4 mt-8 mb-4 border-t border-border pt-8">
+                <button
+                  onClick={clearAll}
+                  className="px-6 py-3 font-bold rounded-xl border border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center"
+                >
+                  <Trash2 size={18} className="mr-2" /> মুছে ফেলুন
+                </button>
+                <button
+                  onClick={calculateDetailed}
+                  className="px-8 py-3 cta-gradient text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-shadow flex items-center"
+                >
+                  <Calculator size={18} className="mr-2" /> হিসাব করুন
+                </button>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quick" className="mt-0 outline-none">
+            <div className="card-new p-6 md:p-8 max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-300 visible">
+              <QuickCalculator
+                quickData={quickData}
+                quickResult={quickResult}
+                onQuickDataChange={handleQuickDataChange}
+                onCalculateQuick={calculateQuick}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="rajuk" className="mt-0 outline-none">
+            <div className="flex justify-center animate-in fade-in zoom-in-95 duration-300 mb-10 visible">
+              <div className="w-full max-w-4xl card-new p-6 md:p-8">
+                <SearchPanel onUseArea={handleUseArea} compact />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <ResultSection
           detailedResults={detailedResults}
@@ -326,7 +331,9 @@ export default function SmartKhatiyanApp() {
           onDownloadPDF={downloadMultiPagePDF}
           onDownloadExcel={downloadExcel}
         />
-        <LatestBlogs />
+        <div className="mt-20">
+          <LatestBlogs />
+        </div>
       </div>
     </>
   );

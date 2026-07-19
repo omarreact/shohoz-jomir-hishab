@@ -1,5 +1,5 @@
 interface SectionHeaderProps {
-  eyebrow?: string;        // Small badge text above the heading
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   badge?: string;
@@ -19,20 +19,28 @@ export default function SectionHeader({
   icon,
   centered = false,
   className = "",
-}: SectionHeaderProps) {
+  titleClassName = "",
+}: SectionHeaderProps & { titleClassName?: string }) {
   return (
-    <div className={`mb-5 ${centered ? "text-center" : ""} ${className}`}>
+    <div className={`mb-10 ${centered ? "text-center" : ""} ${className}`}>
       {badge && (
-        <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-medium letter-spacing-wide">
+        <span className="inline-block bg-[#f6c343]/10 text-[#f6c343] px-3 py-1.5 rounded-full mb-3 text-xs font-semibold uppercase tracking-widest border border-[#f6c343]/20">
           {badge}
         </span>
       )}
-      <h2 className={`display-6 fw-bold text-body mb-3 d-flex align-items-center ${centered ? "justify-content-center" : ""}`}>
-        {icon && <span className="me-3 text-primary">{icon}</span>}
+      <h2
+        className={`text-3xl sm:text-4xl font-bold mb-3 flex items-center ${
+          centered ? "justify-center" : ""
+        } ${titleClassName || "text-white"}`}
+      >
+        {icon && <span className="mr-3 text-[#f6c343]">{icon}</span>}
         {title}
       </h2>
       {subtitle && (
-        <p className={`lead text-muted max-w-2xl ${centered ? "mx-auto" : ""} mb-0`}>
+        <p
+          className={`text-[#b7bdc8] text-lg leading-relaxed ${centered ? "mx-auto" : ""} mb-0`}
+          style={{ maxWidth: "600px" }}
+        >
           {subtitle}
         </p>
       )}

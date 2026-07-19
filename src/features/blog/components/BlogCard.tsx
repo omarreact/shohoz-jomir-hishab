@@ -21,49 +21,47 @@ interface BlogCardProps {
 
 export default function BlogCard({ post, featured = false }: BlogCardProps) {
   return (
-    <Card hoverEffect variant={featured ? 'default' : 'flat'} className={`h-100 overflow-hidden border-0 ${featured ? 'border border-secondary border-opacity-25' : ''}`} style={{ backgroundColor: featured ? "var(--card-bg-secondary)" : "var(--card-bg)" }}>
-      <Link href={`/blog/${post.slug}`} className="text-decoration-none">
+    <div className={`card-new h-full flex flex-col group ${featured ? 'md:flex-row' : ''}`}>
+      <Link href={`/blog/${post.slug}`} className="flex-1 flex flex-col md:flex-row w-full h-full">
         <div 
-          className="position-relative w-100" 
-          style={{ height: featured ? "300px" : "200px", backgroundColor: "var(--slate-200)", overflow: 'hidden' }}
+          className={`relative overflow-hidden w-full ${featured ? 'md:w-1/2 h-64 md:h-auto' : 'h-52'}`} 
         >
           {/* Placeholder for actual Next.js Image */}
           <div 
-            className="w-100 h-100" 
+            className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105" 
             style={{ 
               backgroundImage: `url(${post.coverImage})`, 
-              backgroundSize: 'cover', 
-              backgroundPosition: 'center',
-              transition: "transform 0.3s ease"
             }} 
           />
-          <div className="position-absolute top-0 start-0 m-3">
-            <Badge variant="primary" className="shadow-sm">
+          <div className="absolute top-4 left-4">
+            <span className="bg-[var(--accent)] text-[var(--bg)] text-xs font-bold px-3 py-1 rounded-full shadow-md">
               {post.category}
-            </Badge>
+            </span>
           </div>
         </div>
         
-        <CardBody className="p-4 d-flex flex-column">
-          <h3 className={`fw-bold text-white mb-3 ${featured ? 'fs-2' : 'fs-4'}`} style={{ lineHeight: 1.4 }}>
+        <div className={`p-6 flex flex-col flex-1 ${featured ? 'md:w-1/2 justify-center' : ''}`}>
+          <h3 className={`font-bold text-[var(--text-primary)] mb-3 group-hover:text-[var(--accent)] transition-colors line-clamp-2 ${featured ? 'text-2xl md:text-3xl leading-snug' : 'text-xl'}`}>
             {post.title}
           </h3>
-          <p className="text-secondary flex-grow-1 mb-4" style={{ display: '-webkit-box', WebkitLineClamp: featured ? 3 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p className={`text-[var(--text-secondary)] flex-1 line-clamp-3 mb-6 ${featured ? 'text-lg' : 'text-base'}`}>
             {post.excerpt}
           </p>
           
-          <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top border-secondary border-opacity-25">
-            <div className="d-flex align-items-center gap-2 text-secondary small">
-              <div className="bg-secondary bg-opacity-25 rounded-circle" style={{ width: "24px", height: "24px" }}></div>
-              <span className="fw-medium">{post.author}</span>
+          <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm">
+              <div className="bg-[var(--border)] rounded-full w-8 h-8 flex items-center justify-center">
+                <User size={14} className="text-[var(--text-primary)]" />
+              </div>
+              <span className="font-bold text-[var(--text-primary)]">{post.author}</span>
             </div>
-            <div className="d-flex align-items-center gap-3 text-secondary small">
+            <div className="flex items-center gap-3 text-[var(--text-secondary)] text-sm font-medium">
               <span>{post.date}</span>
-              <span className="d-flex align-items-center gap-1"><Clock size={14} /> {post.readingTime}</span>
+              <span className="flex items-center gap-1"><Clock size={14} className="text-[var(--accent)]" /> {post.readingTime}</span>
             </div>
           </div>
-        </CardBody>
+        </div>
       </Link>
-    </Card>
+    </div>
   );
 }

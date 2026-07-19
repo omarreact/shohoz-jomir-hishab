@@ -1,7 +1,7 @@
-"use client";
-
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Search, Download, Code, Table } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Download, Code, Table as TableIcon } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
 
 interface DynamicApiTableProps {
   data: unknown;
@@ -113,19 +113,19 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
 
   // Safe renderer for cell values (objects/arrays)
   const renderCell = (val: unknown) => {
-    if (val === null || val === undefined) return <span className="text-muted">null</span>;
-    if (typeof val === "boolean") return <span className={`badge ${val ? 'bg-success' : 'bg-secondary'}`}>{val ? 'true' : 'false'}</span>;
+    if (val === null || val === undefined) return <span className="text-muted-foreground italic">null</span>;
+    if (typeof val === "boolean") return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${val ? 'bg-success/10 text-success' : 'bg-secondary text-secondary-foreground'}`}>{val ? 'true' : 'false'}</span>;
     if (typeof val === "object") {
-      return <span className="text-muted fst-italic text-truncate d-inline-block" style={{ maxWidth: 150 }}>{JSON.stringify(val)}</span>;
+      return <span className="text-muted-foreground italic truncate inline-block font-mono text-xs" style={{ maxWidth: 150 }}>{JSON.stringify(val)}</span>;
     }
-    return <span className="text-truncate d-inline-block" style={{ maxWidth: 200 }} title={String(val)}>{String(val)}</span>;
+    return <span className="truncate inline-block text-sm" style={{ maxWidth: 200 }} title={String(val)}>{String(val)}</span>;
   };
 
   if (normalizedData.length === 0) {
     return (
-      <div className="p-4 text-center bg-light">
-        <p className="text-muted mb-0 small">No recognizable array data found in response.</p>
-        <pre className="text-start mt-3 p-3 bg-dark text-light small overflow-auto custom-scrollbar rounded-3" style={{ maxHeight: 200, fontSize: '0.75rem' }}>
+      <div className="p-4 text-center bg-muted/30">
+        <p className="text-muted-foreground mb-0 text-sm">No recognizable array data found in response.</p>
+        <pre className="text-left mt-3 p-3 bg-slate-950 text-slate-300 text-xs overflow-auto rounded-lg max-h-48">
           {JSON.stringify(data, null, 2)}
         </pre>
       </div>
@@ -133,113 +133,115 @@ export default function DynamicApiTable({ data, apiName }: DynamicApiTableProps)
   }
 
   return (
-    <div className="d-flex flex-column h-100">
+    <div className="flex flex-col h-full bg-card text-card-foreground">
       {/* Table Toolbar */}
-      <div className="d-flex flex-wrap gap-3 align-items-center justify-content-between p-3 border-bottom bg-light bg-opacity-50">
-        <div className="text-muted small fw-bold">
-          Showing <span className="text-dark">{filteredData.length}</span> records
+      <div className="flex flex-wrap gap-3 items-center justify-between p-3 border-b border-border bg-muted/30">
+        <div className="text-muted-foreground text-xs font-bold">
+          Showing <span className="text-foreground">{filteredData.length}</span> records
         </div>
-        <div className="d-flex gap-2">
-          <div className="position-relative">
-            <Search size={14} className="position-absolute top-50 start-0 translate-middle-y ms-2 text-muted" />
-            <input 
+        <div className="flex gap-2 items-center">
+          <div className="relative">
+            <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <Input 
               type="text" 
-              className="form-control form-control-sm rounded-pill ps-4" 
+              className="h-8 rounded-full pl-9 w-[220px] text-xs bg-background" 
               placeholder="Search data..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              style={{ width: 220 }}
             />
           </div>
-          <div className="btn-group btn-group-sm rounded-pill shadow-sm">
+          <div className="flex rounded-full overflow-hidden border border-border shadow-sm">
             <button 
               onClick={() => setViewMode("table")} 
-              className={`btn ${viewMode === "table" ? "btn-secondary" : "btn-outline-secondary"} d-flex align-items-center gap-1`}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "table" ? "bg-secondary text-secondary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
             >
-              <Table size={14} /> Table
+              <TableIcon size={14} /> Table
             </button>
+            <div className="w-px bg-border"></div>
             <button 
               onClick={() => setViewMode("json")} 
-              className={`btn ${viewMode === "json" ? "btn-secondary" : "btn-outline-secondary"} d-flex align-items-center gap-1`}
+              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "json" ? "bg-secondary text-secondary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
             >
               <Code size={14} /> JSON
             </button>
           </div>
-          <button onClick={handleExportCSV} className="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-1 px-3">
+          <Button onClick={handleExportCSV} variant="outline" size="sm" className="rounded-full h-8 text-xs flex items-center gap-1 px-3">
             <Download size={14} /> CSV
-          </button>
+          </Button>
         </div>
       </div>
 
       {viewMode === "table" ? (
         <>
-          {/* Table Container with custom scrollbar */}
-          <div className="table-responsive custom-scrollbar" style={{ maxHeight: 400 }}>
-        <table className="table table-hover table-bordered mb-0 align-middle small">
-          <thead className="table-light sticky-top" style={{ zIndex: 1 }}>
-            <tr>
-              <th className="px-3 py-2 text-center" style={{ width: 50 }}>#</th>
-              {columns.map(col => (
-                <th key={col} className="px-3 py-2 text-nowrap fw-bold">{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pageData.length > 0 ? (
-              pageData.map((row, idx) => (
-                <tr key={idx}>
-                  <td className="px-3 py-2 text-center text-muted fw-bold bg-light">
-                    {(page - 1) * PAGE_SIZE + idx + 1}
-                  </td>
+          {/* Table Container */}
+          <div className="overflow-auto max-h-[400px]">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-muted/50 sticky top-0 z-10 shadow-sm border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-muted-foreground w-12 border-r border-border">#</th>
                   {columns.map(col => (
-                    <td key={col} className="px-3 py-1">
-                      {renderCell(row[col])}
-                    </td>
+                    <th key={col} className="px-4 py-3 text-xs font-bold text-muted-foreground border-r border-border last:border-0">{col}</th>
                   ))}
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={columns.length + 1} className="text-center py-4 text-muted">
-                  No records match your search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination Footer */}
-      <div className="d-flex align-items-center justify-content-between p-3 border-top bg-light bg-opacity-50">
-        <span className="small text-muted">
-          Page {page} of {totalPages}
-        </span>
-        <div className="d-flex gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="btn btn-sm btn-white border rounded-pill d-flex align-items-center justify-content-center"
-            style={{ width: 32, height: 32 }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="btn btn-sm btn-white border rounded-pill d-flex align-items-center justify-content-center"
-            style={{ width: 32, height: 32 }}
-          >
-            <ChevronRight size={16} />
-            </button>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {pageData.length > 0 ? (
+                  pageData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-2 text-center text-xs font-bold text-muted-foreground bg-muted/10 border-r border-border">
+                        {(page - 1) * PAGE_SIZE + idx + 1}
+                      </td>
+                      {columns.map(col => (
+                        <td key={col} className="px-4 py-2 text-sm border-r border-border last:border-0 text-foreground">
+                          {renderCell(row[col])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={columns.length + 1} className="text-center py-8 text-muted-foreground text-sm">
+                      No records match your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
+
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between p-3 border-t border-border bg-muted/30">
+            <span className="text-xs text-muted-foreground font-medium">
+              Page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-background"
+              >
+                <ChevronLeft size={16} />
+              </Button>
+              <Button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-background"
+              >
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          </div>
         </>
       ) : (
-        <div className="p-3 bg-dark custom-scrollbar" style={{ maxHeight: 450, overflow: "auto" }}>
-          <pre className="text-light small mb-0" style={{ fontSize: '0.8rem' }}>
+        <div className="p-4 bg-slate-950 max-h-[450px] overflow-auto">
+          <pre className="text-slate-300 text-xs font-mono mb-0">
             {JSON.stringify(data, null, 2)}
           </pre>
         </div>

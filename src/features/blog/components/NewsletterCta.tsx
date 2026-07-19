@@ -1,31 +1,39 @@
+import { Mail } from "lucide-react";
 import { t } from "@/src/locales";
-import { Card, CardBody } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
 
 export default function NewsletterCta() {
   return (
-    <Card className="border-0 shadow-sm overflow-hidden text-dark" style={{ backgroundColor: "var(--bs-primary)" }}>
-      <CardBody className="p-4 p-md-5 text-center">
-        <h3 className="fw-bold mb-3">{t.newsletter.title}</h3>
-        <p className="mb-4 opacity-75 mx-auto text-dark" style={{ maxWidth: "500px" }}>
+    <div className="card-new max-w-3xl mx-auto p-10 text-center relative overflow-hidden group border-t-4 border-t-[var(--accent)]">
+      <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none transition-transform duration-700 group-hover:scale-110">
+        <Mail size={120} className="text-[var(--accent)]" />
+      </div>
+      <div className="relative z-10">
+        <h3 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-4">
+          {t.newsletter.title}
+        </h3>
+        <p className="text-[var(--text-secondary)] text-lg mb-8 max-w-xl mx-auto leading-relaxed">
           {t.newsletter.subtitle}
         </p>
-        <form className="d-flex flex-column flex-sm-row gap-2 justify-content-center mx-auto" style={{ maxWidth: "400px" }}>
-          <div className="flex-grow-1">
-            <Input 
-              type="email" 
-              placeholder={t.newsletter.placeholder} 
+
+        <form className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+          <div className="flex-1 relative">
+            <input
+              type="email"
+              placeholder={t.newsletter.placeholder}
               required
-              className="mb-0"
-              style={{ height: "50px", borderRadius: "50px" }}
+              autoComplete="off"
+              className="w-full h-12 bg-[var(--bg)] border border-[var(--border)] rounded-full px-6 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
             />
           </div>
-          <Button type="submit" variant="dark" className="rounded-pill px-4 fw-bold" style={{ height: "50px" }}>
+          <button
+            type="submit"
+            className="h-12 rounded-full px-8 font-bold cta-gradient text-[var(--bg)] shadow-md hover:-translate-y-0.5 transition-transform shrink-0"
+          >
             {t.newsletter.button}
-          </Button>
+          </button>
         </form>
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 }

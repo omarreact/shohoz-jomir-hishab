@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -18,7 +18,12 @@ import {
   Moon,
   BarChart3,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
+  PenTool,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function AdminLayout({
   children,
@@ -27,21 +32,21 @@ export default function AdminLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [theme, setTheme] = useState("light");
-  
+  const { theme, setTheme } = useTheme();
+
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
-  
-  const pathname = usePathname();
-  const router = require("next/navigation").useRouter();
 
-  // Next.js hydration error সমাধানের জন্য
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Next.js hydration error
   useEffect(() => {
     setIsMounted(true);
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 1024) {
       setIsSidebarOpen(false);
     }
   }, []);
@@ -49,172 +54,263 @@ export default function AdminLayout({
   // Auth Check & Role Verification
   useEffect(() => {
     import("@/lib/firebase").then(({ auth, db }) => {
-      import("firebase/auth").then(({ onAuthStateChanged, signOut: fbSignOut }) => {
-        import("firebase/firestore").then(({ collection, getDocs }) => {
-          const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user && user.email) {
-              // ✅ PRIMARY GATE: Firebase Auth — user is authenticated
-              setIsLoggedIn(true);
-              setUserName(user.email.split("@")[0]);
-              setUserRole("Super Admin"); // default until Firestore confirms
-              setAuthChecking(false);
+      import("firebase/auth").then(
+        ({ onAuthStateChanged, signOut: fbSignOut }) => {
+          import("firebase/firestore").then(({ collection, getDocs }) => {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+              if (user && user.email) {
+                setIsLoggedIn(true);
+                setUserName(user.email.split("@")[0]);
+                setUserRole("Super Admin");
+                setAuthChecking(false);
 
-              // 🔍 SECONDARY CHECK: Firestore for role info (non-blocking)
-              try {
-                const snapshot = await getDocs(collection(db, "admin_users"));
-                
-                // Only use Firestore data if it came from the server (not blocked cache)
-                if (!snapshot.metadata.fromCache) {
-                  interface AdminUser {
-                    role?: string;
-                    name?: string;
-                    status?: string;
-                    email?: string;
-                  }
-                  let matchedAdmin: AdminUser | null = null;
-                  const userEmail = user.email.toLowerCase().trim();
-                  
-                  snapshot.forEach((doc) => {
-                    const data = doc.data() as AdminUser;
-                    if (data.email && data.email.toLowerCase().trim() === userEmail) {
-                      matchedAdmin = data;
-                    }
-                  });
+                try {
+                  const snapshot = await getDocs(
+                    collection(db, "admin_users")
+                  );
 
-                  if (matchedAdmin !== null) {
-                    const admin = matchedAdmin as AdminUser;
-                    // Update role and name from Firestore
-                    setUserRole(admin.role || "Super Admin");
-                    setUserName(admin.name || user.email.split("@")[0]);
-                    
-                    // Only kick out if explicitly Suspended
-                    if (admin.status === "Suspended") {
-                      await fbSignOut(auth);
-                      setIsLoggedIn(false);
-                      router.push("/login?error=suspended");
+                  if (!snapshot.metadata.fromCache) {
+                    interface AdminUser {
+                      role?: string;
+                      name?: string;
+                      status?: string;
+                      email?: string;
+                    }
+                    let matchedAdmin: AdminUser | null = null;
+                    const userEmail = user.email.toLowerCase().trim();
+
+                    snapshot.forEach((doc) => {
+                      const data = doc.data() as AdminUser;
+                      if (
+                        data.email &&
+                        data.email.toLowerCase().trim() === userEmail
+                      ) {
+                        matchedAdmin = data;
+                      }
+                    });
+
+                    if (matchedAdmin !== null) {
+                      const admin = matchedAdmin as AdminUser;
+                      setUserRole(admin.role || "Super Admin");
+                      setUserName(admin.name || user.email.split("@")[0]);
+
+                      if (admin.status === "Suspended") {
+                        await fbSignOut(auth);
+                        setIsLoggedIn(false);
+                        router.push("/login?error=suspended");
+                      }
                     }
                   }
+                } catch (error) {
+                  console.warn("Firestore role check skipped:", error);
                 }
-              } catch (error) {
-                // Firestore blocked or failed — Firebase Auth already granted access
-                console.warn("Firestore role check skipped:", error);
+              } else {
+                setIsLoggedIn(false);
+                setAuthChecking(false);
+                router.push("/login");
               }
-            } else {
-              // Not authenticated at all
-              setIsLoggedIn(false);
-              setAuthChecking(false);
-              router.push("/login");
-            }
+            });
+            return () => unsubscribe();
           });
-          return () => unsubscribe();
-        });
-      });
+        }
+      );
     });
   }, [router]);
 
-
-  // Filter Nav Items based on Role
   const allNavItems = [
-    { name: "ড্যাশবোর্ড",          path: "/admin",               icon: LayoutDashboard, roles: ["Super Admin", "Admin", "Editor"] },
-    { name: "কাস্টম পেজ",         path: "/admin/custom-pages",  icon: FileText,        roles: ["Super Admin", "Admin", "Editor"] },
-    { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users",          icon: Users,           roles: ["Super Admin", "Admin"] },
-    { name: "রাজউক API কন্ট্রোল", path: "/admin/rajuk-config",  icon: Database,        roles: ["Super Admin", "Admin"] },
-    { name: "ডেটা মনিটর",         path: "/admin/data-monitor",  icon: BarChart3,       roles: ["Super Admin", "Admin"] },
-    { name: "রাজউক টেস্ট",       path: "/admin/rajuk-test",    icon: MapPin,          roles: ["Super Admin", "Admin"] },
-    { name: "সেটিংস",             path: "/admin/settings",      icon: Settings,        roles: ["Super Admin", "Admin"] },
+    {
+      name: "ড্যাশবোর্ড",
+      path: "/admin",
+      icon: LayoutDashboard,
+      roles: ["Super Admin", "Admin", "Editor"],
+    },
+    {
+      name: "ব্লগ ম্যানেজমেন্ট",
+      path: "/admin/blog",
+      icon: PenTool,
+      roles: ["Super Admin", "Admin", "Editor"],
+    },
+    {
+      name: "কাস্টম পেজ",
+      path: "/admin/custom-pages",
+      icon: FileText,
+      roles: ["Super Admin", "Admin", "Editor"],
+    },
+    {
+      name: "ইউজার ম্যানেজমেন্ট",
+      path: "/admin/users",
+      icon: Users,
+      roles: ["Super Admin", "Admin"],
+    },
+    {
+      name: "রাজউক API কন্ট্রোল",
+      path: "/admin/rajuk-config",
+      icon: Database,
+      roles: ["Super Admin", "Admin"],
+    },
+    {
+      name: "ডেটা মনিটর",
+      path: "/admin/data-monitor",
+      icon: BarChart3,
+      roles: ["Super Admin", "Admin"],
+    },
+    {
+      name: "রাজউক টেস্ট",
+      path: "/admin/rajuk-test",
+      icon: MapPin,
+      roles: ["Super Admin", "Admin"],
+    },
+    {
+      name: "সেটিংস",
+      path: "/admin/settings",
+      icon: Settings,
+      roles: ["Super Admin", "Admin"],
+    },
   ];
 
-  const navItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
+  const navItems = allNavItems.filter(
+    (item) => userRole && item.roles.includes(userRole)
+  );
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const handleLogout = async () => {
+    const { auth } = await import("@/lib/firebase");
+    const { signOut } = await import("firebase/auth");
+    await signOut(auth);
+    document.cookie = "__session=; path=/; max-age=0";
+    router.push("/login");
+  };
 
   if (!isMounted || authChecking) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh", backgroundColor: "var(--background)" }}>
-        <div className="spinner-border text-primary" role="status"></div>
+      <div className="flex justify-center items-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!isLoggedIn) return null; // Redirecting...
+  if (!isLoggedIn) return null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-        backgroundColor: "var(--background)",
-        position: "fixed",
-        top: 0,
-        left: 0,
-      }}
-    >
-      {/* Top Navbar */}
-      <nav
-        className="navbar navbar-dark shadow-sm border-bottom border-secondary border-opacity-25 px-3 py-2 flex-shrink-0"
-        style={{ minHeight: "70px", gap: "10px", backgroundColor: "var(--card-bg)" }}
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground transition-colors duration-300">
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-card border-r border-border shadow-md transition-all duration-300 ${
+          isSidebarOpen ? "w-64 translate-x-0" : "-translate-x-full lg:w-20 lg:translate-x-0"
+        }`}
       >
-        <div className="d-flex align-items-center flex-wrap w-100 gap-3">
-          <div className="d-flex align-items-center">
-            <ShieldCheck size={28} className="text-primary me-2 flex-shrink-0" />
-            <h5 className="mb-0 fw-bold text-nowrap text-white">Smart Admin</h5>
+        <div className="flex items-center justify-between h-16 px-4 border-b border-border flex-shrink-0">
+          <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${isSidebarOpen ? "w-full" : "w-0 lg:w-full lg:justify-center"}`}>
+            <ShieldCheck className="h-8 w-8 text-primary flex-shrink-0" />
+            <h5 className={`font-bold text-lg whitespace-nowrap transition-opacity duration-300 ${isSidebarOpen ? "opacity-100" : "lg:hidden opacity-0"}`}>
+              Smart Admin
+            </h5>
           </div>
-
-          <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1 justify-content-center">
-            {navItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <Link
-                  href={item.path}
-                  key={item.path}
-                  className={`btn btn-sm d-flex align-items-center rounded-pill px-3 py-2 transition-all ${
-                    isActive ? "btn-primary fw-bold shadow-sm" : "text-secondary hover-text-white border-0"
-                  }`}
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  <item.icon size={16} className="me-2 flex-shrink-0" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="d-flex align-items-center gap-3 justify-content-end">
-            <Link href="/" className="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap">
-              <Globe size={16} className="me-2" /> ওয়েবসাইটে যান
-            </Link>
-            <span className="fw-bold d-none d-lg-inline text-secondary small text-nowrap">
-              স্বাগতম, <span className="text-white">{userName || "Admin"}</span>
-            </span>
-            <button
-              className="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center text-nowrap hover-text-white"
-              onClick={async () => {
-                const { auth } = await import("@/lib/firebase");
-                const { signOut } = await import("firebase/auth");
-                await signOut(auth);
-                document.cookie = "__session=; path=/; max-age=0";
-                router.push("/login");
-              }}
-            >
-              <LogOut size={16} className="me-2" /> লগআউট
-            </button>
-          </div>
+          <button
+            onClick={toggleSidebar}
+            className="lg:hidden p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft size={24} />
+          </button>
         </div>
-      </nav>
+
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`);
+            return (
+              <Link
+                href={item.path}
+                key={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all whitespace-nowrap ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                } ${!isSidebarOpen ? "lg:justify-center" : ""}`}
+                title={!isSidebarOpen ? item.name : undefined}
+              >
+                <item.icon size={20} className="flex-shrink-0" />
+                <span className={`transition-opacity duration-300 ${isSidebarOpen ? "opacity-100" : "lg:hidden opacity-0"}`}>
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-border flex-shrink-0 space-y-2">
+           <Button
+            variant="outline"
+            className={`w-full flex items-center justify-start gap-2 ${!isSidebarOpen ? "lg:justify-center px-0" : ""}`}
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
+            <span className={!isSidebarOpen ? "lg:hidden" : ""}>লগআউট</span>
+          </Button>
+        </div>
+      </aside>
 
       {/* Main Content Area */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          padding: "24px",
-        }}
-      >
-        {children}
+      <div className={`flex flex-col flex-1 h-screen overflow-hidden transition-all duration-300 ${isSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        {/* Top Navbar */}
+        <header className="flex-shrink-0 h-16 bg-card border-b border-border shadow-sm flex items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground hidden lg:block"
+            >
+              <Menu size={24} />
+            </button>
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground lg:hidden"
+            >
+              <Menu size={24} />
+            </button>
+            
+            <h1 className="text-xl font-bold hidden sm:block">
+              {navItems.find((n) => pathname === n.path || pathname.startsWith(`${n.path}/`))?.name || "ড্যাশবোর্ড"}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-full">
+                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+            </Button>
+            <Link href="/">
+              <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 rounded-full">
+                <Globe size={16} /> ওয়েবসাইটে যান
+              </Button>
+            </Link>
+            <div className="hidden md:flex items-center gap-2 pl-4 ml-4 border-l border-border">
+               <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                 {userName.charAt(0).toUpperCase()}
+               </div>
+               <div className="flex flex-col text-sm">
+                 <span className="font-semibold leading-none">{userName || "Admin"}</span>
+                 <span className="text-xs text-muted-foreground">{userRole}</span>
+               </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-auto bg-background p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto h-full">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
 }
-

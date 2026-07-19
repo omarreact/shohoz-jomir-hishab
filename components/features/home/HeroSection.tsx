@@ -1,81 +1,124 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Map as MapIcon, PlayCircle } from "lucide-react";
+import { Search, Map as MapIcon, Database, Users, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { t } from "@/src/locales";
-import { Button } from "@/components/ui/Button";
-import HeroBanner from "@/components/ui/HeroBanner";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
 
 export default function HeroSection() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/dap-map?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const actionButtons = (
-    <>
-      <Link href="/dap-map">
-        <Button variant="primary" size="lg" className="rounded-pill px-5 fw-bold" leftIcon={<MapIcon size={20} />}>
-          {t.hero.ctaPrimary}
-        </Button>
-      </Link>
-      <Link href="/about">
-        <Button variant="outline" size="lg" className="rounded-pill px-5 fw-bold bg-glass text-white" leftIcon={<PlayCircle size={20} />}>
-          {t.hero.ctaSecondary}
-        </Button>
-      </Link>
-    </>
-  );
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
 
   return (
-    <HeroBanner
-      align="center"
-      badge={`LandBD 3.0 ${t.generic.officialSource}`}
-      title={t.hero.title}
-      description={t.hero.subtitle}
-      actions={actionButtons}
-      pattern="grid"
-    >
-      {/* Smart Search Bar */}
-      <div className="bg-glass p-2 rounded-pill shadow-lg mx-auto border border-secondary border-opacity-50" style={{ maxWidth: "700px" }}>
-        <form onSubmit={handleSearch} className="d-flex align-items-center">
-          <div className="ps-3 pe-2 text-primary">
-            <Search size={24} />
+    <section className="hero-gradient pt-32 pb-20 relative overflow-hidden border-b border-c">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <div className={`fade-in ${isLoaded ? "visible" : ""}`}>
+            <div className="inline-block bg-[var(--surface)] text-[var(--text-secondary)] px-4 py-2 rounded-full text-sm font-medium mb-6 border border-c">
+              🚀 LandBD 4.0 - নতুন আপডেট
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-[var(--text-primary)]">
+              ভূমির হিসাব এখন <br />
+              <span className="accent-text">আরও সহজ</span> ও নির্ভুল
+            </h1>
+            <p className="text-[var(--text-secondary)] text-lg mb-8 max-w-lg leading-relaxed">
+              {t.hero.subtitle}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="/dap-map"
+                className="cta-gradient text-white px-8 py-3 rounded-xl font-bold hover:shadow-lg transition-shadow no-underline"
+              >
+                {t.hero.ctaPrimary}
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="surface-bg text-[var(--text-primary)] border border-c px-8 py-3 rounded-xl font-medium hover:border-[var(--accent)] transition-colors no-underline"
+              >
+                কিভাবে কাজ করে?
+              </Link>
+            </div>
+
+            {/* Stats */}
+            <div className="mt-12 grid grid-cols-3 gap-6 pt-8 border-t border-c">
+              <div>
+                <h4 className="font-bold text-[var(--text-primary)] text-2xl">৫০ লাখ+</h4>
+                <p className="text-[var(--text-secondary)] text-sm">খতিয়ান রেকর্ড</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-[var(--text-primary)] text-2xl">১ লাখ+</h4>
+                <p className="text-[var(--text-secondary)] text-sm">সক্রিয় ব্যবহারকারী</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-[var(--text-primary)] text-2xl">৯৯.৯%</h4>
+                <p className="text-[var(--text-secondary)] text-sm">সঠিক হিসাব</p>
+              </div>
+            </div>
           </div>
-          <input 
-            type="text"
-            className="form-control border-0 shadow-none bg-transparent py-3 px-2 fs-5 text-white"
-            style={{ minHeight: "auto" }}
-            placeholder={t.hero.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button 
-            type="submit" 
-            variant="primary"
-            className="rounded-pill px-4 py-2 fw-bold d-none d-sm-flex ms-2"
-            style={{ minHeight: "48px" }}
+
+          {/* Right Content / App Preview */}
+          <div
+            className={`fade-in lg:ml-auto relative ${
+              isLoaded ? "visible" : ""
+            }`}
+            style={{ transitionDelay: "200ms" }}
           >
-            খুঁজুন
-          </Button>
-          <Button 
-            type="submit" 
-            variant="primary"
-            size="icon"
-            className="d-sm-none ms-2"
-          >
-            <Search size={20} />
-          </Button>
-        </form>
+            <div className="relative z-10 w-full max-w-md mx-auto">
+              {/* Decorative Card 1 */}
+              <div className="absolute -top-6 -left-6 w-32 h-32 bg-[#3B82F6] rounded-2xl opacity-20 blur-2xl"></div>
+              {/* Decorative Card 2 */}
+              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-[#F6C343] rounded-2xl opacity-20 blur-2xl"></div>
+
+              {/* Main Preview Card */}
+              <div className="card-new relative bg-[var(--bg)] shadow-2xl p-6 border border-c">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#F6C343]/20 flex items-center justify-center text-[#F6C343]">
+                      <Search size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-[var(--text-primary)] text-sm">স্মার্ট অনুসন্ধান</h4>
+                      <p className="text-[var(--text-secondary)] text-xs">খতিয়ান ও দাগ নম্বর</p>
+                    </div>
+                  </div>
+                  <div className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded text-xs font-medium">
+                    সক্রিয়
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="h-10 bg-[var(--surface)] rounded-lg border border-c w-full"></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="h-10 bg-[var(--surface)] rounded-lg border border-c w-full"></div>
+                    <div className="h-10 bg-[var(--surface)] rounded-lg border border-c w-full"></div>
+                  </div>
+                  <button className="w-full h-10 cta-gradient text-white font-bold rounded-lg mt-2">
+                    খুঁজুন
+                  </button>
+                </div>
+
+                {/* Floating elements */}
+                <div className="absolute -right-12 top-20 card-new p-4 hidden md:flex items-center gap-3 shadow-lg bg-[var(--bg)] border-c animate-bounce" style={{ animationDuration: "3s" }}>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-500">
+                    <Database size={16} />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-[var(--text-primary)] text-xs">ডিজিটাল ডাটাবেস</h5>
+                    <p className="text-[var(--text-secondary)] text-[10px]">আপডেট করা হয়েছে</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </HeroBanner>
+    </section>
   );
 }

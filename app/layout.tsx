@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Bengali, Hind_Siliguri } from "next/font/google";
-import "bootstrap/dist/css/bootstrap.min.css";
+import {
+  Geist,
+  Geist_Mono,
+  Noto_Sans_Bengali,
+  Hind_Siliguri,
+} from "next/font/google";
+
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,14 +68,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn" data-theme="dark" data-scroll-behavior="smooth">
+    <html
+      lang="bn"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh", overflowX: "hidden" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          overflowX: "hidden",
+        }}
       >
-        <ConditionalShell>{children}</ConditionalShell>
-        <Analytics />
-        <SpeedInsights />
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ConditionalShell>{children}</ConditionalShell>
+          <Analytics />
+          <SpeedInsights />
+        </ThemeProvider>
       </body>
     </html>
   );

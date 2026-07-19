@@ -177,25 +177,25 @@ export default function SearchPanel({
   const isDropdownLoading = searchStatus === "loading" && !plotData;
 
   return (
-    <div className="card shadow border-0 rounded-4 overflow-hidden">
-      <div className="card-header bg-dark text-white p-3 text-center">
-        <h5 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
-          <Database size={20} className="me-2 text-warning" />
+    <div className="card-new overflow-hidden">
+      <div className="bg-[var(--accent)] text-[var(--bg)] p-4 text-center">
+        <h5 className="font-bold mb-1 flex items-center justify-center">
+          <Database size={20} className="mr-2 text-yellow-300" />
           রাজউক মাস্টারপ্ল্যান (DAP) ডাটাবেস
         </h5>
-        <small className="text-white-50">
+        <small className="opacity-80">
           সরাসরি রাজউক সার্ভার থেকে রিয়েল-টাইম ডাটা
         </small>
       </div>
 
-      <div className="card-body p-4 bg-light">
-        <div className="row g-3 mb-3">
-          <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">
+      <div className="p-6 md:p-8 bg-[var(--bg)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
               ১. জেলা
             </label>
             <select
-              className="form-select rounded-3 shadow-sm"
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
               value={selectedDist}
               onChange={(e) => handleDistChange(e.target.value)}
               disabled={districts.length === 0}
@@ -204,19 +204,19 @@ export default function SearchPanel({
                 {districts.length === 0 ? "লোড হচ্ছে..." : "নির্বাচন করুন..."}
               </option>
               {districts.map((d) => (
-                <option key={d} value={d}>
+               <option key={d} value={d}>
                   {engToBdNum(d)}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
               ২. থানা
             </label>
             <select
-              className="form-select rounded-3 shadow-sm"
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
               value={selectedThana}
               onChange={(e) => handleThanaChange(e.target.value)}
               disabled={thanas.length === 0 || isDropdownLoading}
@@ -230,12 +230,12 @@ export default function SearchPanel({
             </select>
           </div>
 
-          <div className="col-md-6">
-            <label className="form-label small fw-bold text-muted mb-1">
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
               ৩. মৌজা
             </label>
             <select
-              className="form-select rounded-3 shadow-sm"
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
               value={selectedMouza}
               onChange={(e) => {
                 setSelectedMouza(e.target.value);
@@ -255,12 +255,12 @@ export default function SearchPanel({
             </select>
           </div>
 
-          <div className="col-md-6">
-            <label className="form-label small fw-bold text-success mb-1">
+          <div>
+            <label className="block text-[var(--text-primary)] text-sm font-bold mb-2">
               ৪. দাগের ধরন
             </label>
             <select
-              className="form-select rounded-3 border-success text-success fw-bold shadow-sm"
+              className="w-full bg-[var(--surface)] border-2 border-[var(--text-primary)] text-[var(--text-primary)] font-bold rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/30 transition-colors shadow-sm"
               value={selectedType}
               onChange={(e) => {
                 setSelectedType(e.target.value);
@@ -278,17 +278,17 @@ export default function SearchPanel({
         </div>
 
         {selectedType && (
-          <div className="mt-3 fade-in">
-            <label className="form-label fw-bold text-dark mb-2">
+          <div className="mt-6 fade-in visible">
+            <label className="block text-[var(--text-primary)] font-bold mb-3">
               ৫. দাগ নম্বর লিখুন:
             </label>
-            <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-              <span className="input-group-text bg-white border-secondary border-opacity-25">
-                <Hash size={20} className="text-secondary" />
+            <div className="flex rounded-xl overflow-hidden shadow-sm border border-[var(--border)] focus-within:border-[var(--accent)] transition-colors">
+              <span className="bg-[var(--surface)] border-r border-[var(--border)] px-4 flex items-center justify-center">
+                <Hash size={20} className="text-[var(--text-secondary)]" />
               </span>
               <input
                 type="text"
-                className="form-control border-secondary border-opacity-25"
+                className="flex-1 bg-[var(--bg)] text-[var(--text-primary)] font-bold px-4 py-3 outline-none"
                 placeholder="যেমন: ১২৩ বা 123"
                 value={dagNo}
                 onChange={(e) => {
@@ -302,15 +302,15 @@ export default function SearchPanel({
                 disabled={searchStatus === "loading"}
               />
               <button
-                className="btn btn-success fw-bold px-4 px-md-5"
+                className="bg-[var(--accent)] text-[var(--bg)] font-bold px-6 md:px-10 py-3 disabled:opacity-50 flex items-center justify-center"
                 onClick={handleSearch}
                 disabled={!dagNo.trim() || searchStatus === "loading"}
               >
                 {searchStatus === "loading" ? (
-                  <span className="spinner-border spinner-border-sm" />
+                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin"></span>
                 ) : (
                   <>
-                    <Search size={18} className="me-1" /> সার্চ
+                    <Search size={18} className="mr-2" /> সার্চ
                   </>
                 )}
               </button>
@@ -319,21 +319,21 @@ export default function SearchPanel({
         )}
 
         {isDropdownLoading && (
-          <div className="text-center text-success fw-bold mt-3 small">
-            <span className="spinner-border spinner-border-sm me-2" />
+          <div className="text-center text-[var(--accent)] font-bold mt-6 text-sm flex items-center justify-center">
+            <span className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mr-2" />
             ডাটা লোড হচ্ছে...
           </div>
         )}
 
         {searchStatus === "not_found" && (
-          <div className="alert alert-danger shadow-sm border-0 rounded-4 d-flex align-items-center p-3 mt-4 fade-in">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl p-4 mt-6 flex items-start fade-in visible">
             <AlertTriangle
               size={24}
-              className="me-3 text-danger flex-shrink-0"
+              className="mr-3 flex-shrink-0 mt-0.5"
             />
             <div>
-              <strong>দাগটি পাওয়া যায়নি!</strong>
-              <div className="small text-dark mt-1">
+              <strong className="block mb-1">দাগটি পাওয়া যায়নি!</strong>
+              <div className="text-sm">
                 এই মৌজায় <strong>{engToBdNum(dagNo)}</strong> নম্বরের কোনো দাগ
                 পাওয়া যায়নি। নম্বরটি সঠিক কিনা যাচাই করুন।
               </div>
@@ -342,29 +342,29 @@ export default function SearchPanel({
         )}
 
         {searchStatus === "found" && plotData && (
-          <div className="mt-4 fade-in">
-            <div className="card border-success border-2 rounded-4 overflow-hidden shadow-sm">
-              <div className="card-header bg-success text-white py-3 text-center">
-                <h5 className="fw-bolder mb-0 d-flex align-items-center justify-content-center">
-                  <MapPin size={20} className="me-2" />
+          <div className="mt-8 fade-in visible">
+            <div className="card-new overflow-hidden border-t-4 border-t-green-500">
+              <div className="bg-green-500/10 border-b border-green-500/20 py-4 text-center">
+                <h5 className="font-bold text-green-500 mb-1 flex items-center justify-center text-lg">
+                  <MapPin size={20} className="mr-2" />
                   দাগ নং {engToBdNum(dagNo)} — বিস্তারিত তথ্য
                 </h5>
-                <small className="text-white-50">
+                <small className="text-green-600/70 font-medium">
                   সরাসরি রাজউক DAP ডাটাবেস থেকে প্রাপ্ত
                 </small>
               </div>
 
-              <div className="card-body bg-white p-3 p-md-4">
-                <div className="row g-3 text-center mb-4">
-                  <div className="col-6 border-end">
-                    <p className="text-muted small mb-1">মোট জমির পরিমাণ</p>
-                    <h4 className="text-success fw-bold mb-0">
+              <div className="p-6 md:p-8">
+                <div className="grid grid-cols-2 divide-x divide-[var(--border)] text-center mb-8 border border-[var(--border)] rounded-xl overflow-hidden">
+                  <div className="p-4 bg-[var(--surface)]">
+                    <p className="text-[var(--text-secondary)] text-sm font-bold mb-1">মোট জমির পরিমাণ</p>
+                    <h4 className="text-[var(--accent)] font-bold text-2xl mb-0">
                       {getAreaDisplay()}
                     </h4>
                   </div>
-                  <div className="col-6">
-                    <p className="text-muted small mb-1">দাগের ধরন</p>
-                    <h6 className="fw-bold mb-0 text-dark">
+                  <div className="p-4 bg-[var(--surface)]">
+                    <p className="text-[var(--text-secondary)] text-sm font-bold mb-1">দাগের ধরন</p>
+                    <h6 className="font-bold text-[var(--text-primary)] text-lg mb-0">
                       {selectedType === "rs_plot_no"
                         ? "RS / সাধারণ দাগ"
                         : "MS দাগ"}
@@ -375,17 +375,17 @@ export default function SearchPanel({
                 {onUseArea && (
                   <button
                     onClick={handleUseArea}
-                    className="btn btn-dark w-100 rounded-pill fw-bold mb-3"
+                    className="w-full bg-[var(--text-primary)] text-[var(--bg)] font-bold rounded-xl py-3.5 mb-6 flex items-center justify-center hover:scale-[1.02] transition-transform shadow-md"
                   >
-                    <CheckCircle2 size={18} className="me-2" />
+                    <CheckCircle2 size={20} className="mr-2" />
                     এই জমি খতিয়ান হিসাবে যুক্ত করুন
                   </button>
                 )}
 
                 {!compact && (
-                  <div className="table-responsive bg-white rounded-4 shadow-sm border border-light-subtle mt-3">
-                    <table className="table table-hover table-bordered mb-0 align-middle">
-                      <tbody>
+                  <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden mb-6">
+                    <table className="w-full text-left border-collapse">
+                      <tbody className="divide-y divide-[var(--border)]">
                         {Object.entries(plotData)
                           .filter(
                             ([key, value]) =>
@@ -401,19 +401,14 @@ export default function SearchPanel({
                               displayValue = JSON.stringify(value);
                             }
                             return (
-                              <tr key={key}>
+                              <tr key={key} className="hover:bg-[var(--bg)] transition-colors">
                                 <th
-                                  className="bg-light text-secondary px-3 py-2 align-middle text-uppercase"
-                                  style={{ width: "38%", fontSize: "13px" }}
+                                  className="py-3 px-4 text-[var(--text-secondary)] font-medium text-sm uppercase w-1/3 border-r border-[var(--border)] bg-black/5 dark:bg-white/5"
                                 >
                                   {formatKeyName(key)}
                                 </th>
                                 <td
-                                  className="text-dark fw-bold px-3 py-2 align-middle"
-                                  style={{
-                                    fontSize: "14px",
-                                    wordBreak: "break-word",
-                                  }}
+                                  className="py-3 px-4 text-[var(--text-primary)] font-bold text-sm break-words"
                                 >
                                   {formatValue(key, displayValue)}
                                 </td>
@@ -424,25 +419,25 @@ export default function SearchPanel({
                     </table>
                     
                     {selectedType === "ms_plot_no" && (
-                      <div className="p-3 bg-light border-top text-muted small">
-                        <Info size={14} className="me-1 mb-1 text-warning" />
+                      <div className="p-4 bg-yellow-500/10 border-t border-[var(--border)] text-yellow-600 dark:text-yellow-500 text-sm">
+                        <Info size={16} className="inline-block mr-1.5 mb-0.5" />
                         <strong>বিশেষ দ্রষ্টব্য:</strong> রাজউকের ডাটাবেসে MS দাগের জ্যামিতিক সীমানা (Geometry) বা ম্যাপ লাইন সংযুক্ত নেই। জ্যামিতিক সীমানা না থাকায় এই দাগটি কোন ড্যাপ জোন (Landuse), ফার (FAR) বা উচ্চতা (Height) সীমার মধ্যে পড়েছে, তা স্বয়ংক্রিয়ভাবে নির্ণয় করা সম্ভব নয়। পূর্ণাঙ্গ ড্যাপ তথ্য পেতে অনুগ্রহ করে জমিটির <strong>RS দাগ</strong> নম্বর দিয়ে সার্চ করুন।
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="row mt-4 g-3 align-items-stretch">
-                  <div className="col-12 col-xl-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+                  <div className="h-full">
                     <RajukIntelligenceReport plotData={plotData} />
                   </div>
-                  <div className="col-12 col-xl-6">
+                  <div className="h-full">
                     <DapMiniMap plotData={plotData} />
                   </div>
                 </div>
 
-                <div className="text-center text-muted small mt-4 pt-2 border-top">
-                  <Info size={13} className="me-1 mb-1" />
+                <div className="text-center text-[var(--text-secondary)] text-sm mt-8 pt-4 border-t border-[var(--border)] flex items-center justify-center">
+                  <Info size={14} className="mr-1.5" />
                   তথ্যটি ডিজিটাল প্রক্রিয়ায় সরাসরি রাজউক DAP ডাটাবেস থেকে
                   সংগৃহীত।
                 </div>

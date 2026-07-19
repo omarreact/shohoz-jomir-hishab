@@ -1,4 +1,10 @@
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 import { banglaNumbers, engNumbers } from "./constants";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export const toBn = (num: any) => {
   if (num === undefined || num === null) return "০";
@@ -9,7 +15,7 @@ export const toBn = (num: any) => {
     .join("");
 };
 
-export const toEn = (str:any) => {
+export const toEn = (str: any) => {
   if (!str) return 0;
   const engStr = str
     .toString()
@@ -19,7 +25,7 @@ export const toEn = (str:any) => {
   return parseFloat(engStr) || 0;
 };
 
-export const makeBanglaStr = (str:any) => {
+export const makeBanglaStr = (str: any) => {
   const map = {
     0: "০",
     1: "১",

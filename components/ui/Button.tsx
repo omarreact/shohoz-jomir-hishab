@@ -1,73 +1,61 @@
-import React from "react";
-import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "lib/utils";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "dark";
-  size?: "sm" | "md" | "lg" | "icon";
-  isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  isFloating?: boolean;
-}
-
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className = "",
-      variant = "primary",
-      size = "md",
-      isLoading = false,
-      leftIcon,
-      rightIcon,
-      isFloating = false,
-      children,
-      disabled,
-      ...props
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        primary:
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        dark: "bg-gray-900 text-white shadow-xs hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-900",
+        destructive:
+          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost:
+          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9",
+      },
     },
-    ref
-  ) => {
-    // Base classes
-    let baseClasses = "btn d-inline-flex align-items-center justify-content-center transition-all";
-    
-    // Size classes
-    if (size === "sm") baseClasses += " btn-sm px-3 py-1";
-    if (size === "md") baseClasses += " px-4 py-2";
-    if (size === "lg") baseClasses += " btn-lg px-5 py-3";
-    if (size === "icon") baseClasses += " p-2 rounded-circle";
-
-    // Variant classes
-    if (variant === "primary") baseClasses += " btn-primary border-0 shadow-md hover-lift focus-ring";
-    if (variant === "secondary") baseClasses += " btn-light border shadow-sm hover-lift focus-ring";
-    if (variant === "outline") baseClasses += " btn-outline-secondary border-2 bg-transparent hover-lift focus-ring";
-    if (variant === "ghost") baseClasses += " bg-transparent border-0 text-body hover-transform focus-ring";
-    if (variant === "danger") baseClasses += " btn-danger border-0 text-white shadow-sm hover-lift focus-ring";
-    if (variant === "dark") baseClasses += " btn-dark border-0 text-white shadow-sm hover-lift focus-ring";
-
-    // Floating UI
-    if (isFloating) {
-      baseClasses += " position-absolute rounded-circle shadow-lg";
-      if (size !== "icon") baseClasses += " p-3";
-    }
-
-    // Disabled / Loading
-    if (disabled || isLoading) {
-      baseClasses += " opacity-75 pe-none";
-    }
-
-    return (
-      <button
-        ref={ref}
-        className={`${baseClasses} ${className}`}
-        disabled={disabled || isLoading}
-        {...props}
-      >
-        {isLoading && <Loader2 className="spinner-border spinner-border-sm me-2" size={16} />}
-        {!isLoading && leftIcon && <span className={children ? "me-2" : ""}>{leftIcon}</span>}
-        {children}
-        {!isLoading && rightIcon && <span className={children ? "ms-2" : ""}>{rightIcon}</span>}
-      </button>
-    );
-  }
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  },
 );
 
+export interface ButtonProps
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  },
+);
 Button.displayName = "Button";
+
+export { Button, buttonVariants };
