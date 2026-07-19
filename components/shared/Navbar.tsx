@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Search,
   Map,
+  BookOpen,
   User,
   ShieldCheck,
   Bell,
@@ -12,14 +13,12 @@ import {
   X,
   LogIn,
   LogOut,
-  ChevronDown,
+  ChevronDown
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 import { t } from "@/src/locales";
 
@@ -32,12 +31,10 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -72,189 +69,142 @@ export default function Navbar() {
     }
   };
 
-  const handleSelectResult = (result: Record<string, unknown>) => {
-    window.dispatchEvent(
-      new CustomEvent("smart-search-result", { detail: result }),
-    );
+  const handleSelectResult = (result: any) => {
+    // If not on map, redirect to map with query parameter or similar.
+    // For now, dispatch the event in case they're on the map workspace route.
+    window.dispatchEvent(new CustomEvent("smart-search-result", { detail: result }));
   };
 
   return (
     <>
       <header
-        className={cn(
-          "sticky top-0 w-full transition-all duration-300 z-50",
-          scrolled ? "bg-background/80 backdrop-blur-xl shadow-lg border-b border-white/10 py-1" : "bg-background/60 backdrop-blur-lg border-b border-white/5 py-3",
-        )}
+        className={`sticky-top w-100 transition-all ${
+          scrolled ? "glass-panel shadow-sm" : "bg-transparent"
+        }`}
+        style={{ zIndex: 1030, borderBottom: scrolled ? "none" : "1px solid var(--border-color)" }}
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between py-2">
+        <div className="container px-4">
+          <div className="d-flex align-items-center justify-content-between py-3">
             {/* Logo area */}
-            <div className="flex items-center gap-4">
-              <Link href="/" className="no-underline flex items-center gap-3 hover-transform">
-                <div
-                  className="bg-primary text-primary-foreground rounded-xl flex items-center justify-center shadow-glow"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <Map size={24} />
+            <div className="d-flex align-items-center gap-4">
+              <Link href="/" className="text-decoration-none d-flex align-items-center gap-2">
+                <div className="bg-primary text-dark rounded d-flex align-items-center justify-content-center" style={{ width: "36px", height: "36px" }}>
+                  <Map size={20} />
                 </div>
-                <h5 className="font-black mb-0 text-foreground hidden sm:block tracking-tight text-xl">
-                  LandBD <span className="text-primary">4.1</span>
+                <h5 className="fw-bold mb-0 text-white d-none d-sm-block">
+                  LandBD <span className="text-primary">3.0</span>
                 </h5>
               </Link>
             </div>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6">
+            <nav className="d-none d-lg-flex align-items-center gap-4">
               {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={cn(
-                      "no-underline font-semibold text-[15px] transition-colors relative group py-2",
-                      pathname === link.href
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
+                    className={`text-decoration-none fw-medium transition-all ${
+                      isActive ? "text-primary" : "text-secondary hover-text-primary"
+                    }`}
                   >
                     {link.label}
-                    <span className={cn(
-                      "absolute bottom-0 left-0 w-full h-[3px] bg-primary rounded-t-full transform origin-left transition-transform duration-300",
-                      pathname === link.href ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                    )} />
                   </Link>
                 );
               })}
             </nav>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-3">
+            <div className="d-flex align-items-center gap-3">
               {/* Search Shortcut */}
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={() => setIsSearchOpen(true)}
-                className="hidden md:flex gap-2 rounded-full border-white/10 bg-background/50 text-muted-foreground hover:text-foreground"
+                className="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-md-flex align-items-center gap-2 text-secondary"
+                style={{ backgroundColor: "var(--background)", border: "1px solid var(--border-color)" }}
               >
                 <Search size={14} />
-                <span className="text-xs font-medium">
-                  {t.nav.searchShortcut.split(" ")[0]}
-                </span>
-                <span className="inline-flex items-center rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
-                  Ctrl K
-                </span>
-              </Button>
+                <span className="ms-1" style={{ fontSize: "13px" }}>{t.nav.searchShortcut.split(' ')[0]}</span>
+                <span className="badge bg-secondary rounded-pill ms-1" style={{ fontSize: "10px" }}>Ctrl K</span>
+              </button>
 
-              <Button
-                variant="ghost"
-                size="icon-sm"
+              <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex md:hidden rounded-full"
+                className="btn btn-light rounded-circle p-2 d-md-none d-flex align-items-center justify-content-center"
               >
-                <Search size={18} />
-              </Button>
+                <Search size={18} className="text-white" />
+              </button>
 
               {/* User / Auth Menu */}
               {isLoggedIn ? (
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground hover:text-foreground">
+                <div className="d-flex align-items-center gap-3">
+                  <button className="btn btn-link p-0 text-secondary position-relative">
                     <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(239,83,80,0.8)]">
-                      <span className="sr-only">New alerts</span>
+                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-dark rounded-circle">
+                      <span className="visually-hidden">New alerts</span>
                     </span>
-                  </Button>
+                  </button>
 
-                  {/* Dropdown */}
-                  <div className="relative">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="flex items-center gap-2 rounded-full border-white/10 bg-background/50 hover:bg-background/80"
-                      aria-expanded={isDropdownOpen}
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-light rounded-pill px-3 py-1 d-flex align-items-center gap-2"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      style={{ border: "1px solid var(--border-color)" }}
                     >
-                      <User size={16} className="text-muted-foreground" />
-                      <span className="font-medium text-foreground text-sm hidden md:block">
-                        {t.nav.account}
-                      </span>
-                      <ChevronDown
-                        size={14}
-                        className="text-muted-foreground"
-                      />
-                    </Button>
-                    {isDropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setIsDropdownOpen(false)}
-                        />
-                        <div className="absolute right-0 mt-2 w-56 rounded-2xl glass-panel shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right border-white/10">
-                          <Link
-                            href="/admin"
-                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-white/5 transition-colors no-underline"
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            <ShieldCheck size={16} className="text-primary" />{" "}
-                            {t.nav.adminDashboard}
-                          </Link>
-                          <hr className="my-0 border-white/10" />
-                          <button
-                            onClick={() => {
-                              setIsDropdownOpen(false);
-                              handleLogout();
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
-                          >
-                            <LogOut size={16} /> {t.nav.logout}
-                          </button>
-                        </div>
-                      </>
-                    )}
+                      <User size={16} className="text-white" />
+                      <span className="fw-medium text-white d-none d-md-block" style={{ fontSize: "14px" }}>{t.nav.account}</span>
+                      <ChevronDown size={14} className="text-white" />
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" style={{ borderRadius: "var(--radius-md)", minWidth: "200px" }}>
+                      <li>
+                        <Link href="/admin" className="dropdown-item py-2 d-flex align-items-center gap-2 fw-medium text-white">
+                          <ShieldCheck size={16} className="text-primary" /> {t.nav.adminDashboard}
+                        </Link>
+                      </li>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button onClick={handleLogout} className="dropdown-item py-2 d-flex align-items-center gap-2 fw-medium text-danger">
+                          <LogOut size={16} /> {t.nav.logout}
+                        </button>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               ) : (
-                <Button size="sm" className="hidden md:flex rounded-full" onClick={() => router.push("/login")}>
-                  <LogIn size={16} /> {t.nav.login}
-                </Button>
+                <Link
+                  href="/login"
+                  className="btn btn-primary btn-sm rounded-pill px-4 fw-medium d-none d-md-flex align-items-center shadow-sm"
+                >
+                  <LogIn size={16} className="me-2" /> {t.nav.login}
+                </Link>
               )}
 
               {/* Mobile Hamburger */}
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="flex lg:hidden rounded-lg border-white/10 bg-background/50"
+              <button
+                className="btn btn-light rounded p-2 d-lg-none d-flex align-items-center justify-content-center border-0"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                style={{ backgroundColor: "var(--card-bg-secondary)" }}
               >
-                {isMobileMenuOpen ? (
-                  <X size={20} className="text-muted-foreground" />
-                ) : (
-                  <Menu size={20} className="text-muted-foreground" />
-                )}
-              </Button>
+                {isMobileMenuOpen ? <X size={20} className="text-white" /> : <Menu size={20} className="text-white" />}
+              </button>
             </div>
           </div>
 
           {/* Mobile Dropdown Menu */}
           {isMobileMenuOpen && (
-            <div
-              className="lg:hidden border-t border-border py-3 animate-fade-in"
-              style={{ backgroundColor: "var(--card-bg)" }}
-            >
-              <div className="flex flex-col gap-1">
+            <div className="d-lg-none border-top py-3 animate-fade-in" style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className="d-flex flex-column gap-2">
                 {NAV_LINKS.map((link) => {
-                  const isActive =
-                    pathname === link.href ||
-                    (link.href !== "/" && pathname?.startsWith(link.href));
+                  const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
                   return (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={cn(
-                        "no-underline font-medium py-2 px-3 rounded-lg transition-colors text-sm",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-accent",
-                      )}
+                      className={`text-decoration-none fw-medium py-2 px-3 rounded transition-all ${
+                        isActive ? "bg-primary bg-opacity-10 text-primary" : "text-secondary hover-bg-light"
+                      }`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {link.label}
@@ -264,10 +214,10 @@ export default function Navbar() {
                 {!isLoggedIn && (
                   <Link
                     href="/login"
-                    className="mt-2 rounded-full bg-primary text-primary-foreground font-medium py-2 px-4 text-center text-sm no-underline"
+                    className="btn btn-primary rounded-pill fw-medium py-2 mt-2"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <LogIn size={16} className="inline mr-2" /> {t.nav.login}
+                    <LogIn size={16} className="me-2" /> {t.nav.login}
                   </Link>
                 )}
               </div>
