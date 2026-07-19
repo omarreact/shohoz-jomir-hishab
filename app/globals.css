@@ -88,7 +88,8 @@
     --radius: 0.75rem;
   }
 
-  [data-theme="dark"], .dark {
+  [data-theme="dark"],
+  .dark {
     /* Legacy LandBD Tokens */
     --bg: #0D1117;
     --surface: #161B22;
@@ -147,45 +148,49 @@
   .surface-bg {
     background-color: var(--surface);
   }
-  
+
   .text-secondary-c {
     color: var(--text-secondary) !important;
   }
-  
+
   .accent-text {
     color: var(--accent);
   }
-  
+
   .accent-bg {
     background-color: var(--accent);
   }
-  
+
   .border-c {
     border-color: var(--border);
   }
-  
+
   .card-new {
     background-color: var(--card);
     color: var(--card-foreground);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-xl);
     padding: 24px;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05); /* Soft shadow for light mode */
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    /* Soft shadow for light mode */
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   }
-  
+
   .card-new:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     border-color: rgba(15, 23, 42, 0.1);
   }
 
-  [data-theme="dark"] .card-new, .dark .card-new {
-    box-shadow: none; /* Removed heavy shadow in dark mode base */
+  [data-theme="dark"] .card-new,
+  .dark .card-new {
+    box-shadow: none;
+    /* Removed heavy shadow in dark mode base */
   }
 
-  [data-theme="dark"] .card-new:hover, .dark .card-new:hover {
-    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+  [data-theme="dark"] .card-new:hover,
+  .dark .card-new:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
     border-color: rgba(255, 255, 255, 0.15);
   }
 
@@ -193,50 +198,55 @@
   .bg-alt-1 {
     background-color: #F8FAFC;
   }
-  
+
   .bg-alt-2 {
     background-color: rgba(15, 23, 42, 0.03);
   }
 
-  [data-theme="dark"] .bg-alt-1, .dark .bg-alt-1 {
+  [data-theme="dark"] .bg-alt-1,
+  .dark .bg-alt-1 {
     background-color: #0d1117;
   }
-  
-  [data-theme="dark"] .bg-alt-2, .dark .bg-alt-2 {
+
+  [data-theme="dark"] .bg-alt-2,
+  .dark .bg-alt-2 {
     background-color: #161B22;
   }
-  
+
   .fade-in {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.6s, transform 0.6s;
   }
-  
+
   .fade-in.visible {
     opacity: 1;
     transform: translateY(0);
   }
-  
+
   .nav-blur {
     backdrop-filter: blur(12px);
     background: rgba(255, 255, 255, 0.8);
   }
-  
-  [data-theme="dark"] .nav-blur, .dark .nav-blur {
+
+  [data-theme="dark"] .nav-blur,
+  .dark .nav-blur {
     background: rgba(13, 17, 23, 0.85);
   }
-  
+
   .hero-gradient {
     background: linear-gradient(135deg, var(--background) 0%, var(--surface) 100%);
   }
-  
+
   .cta-gradient {
     background: linear-gradient(135deg, #F6C343 0%, #E5A000 100%);
   }
-  
+
   .stat-num {
     font-size: 2.5rem;
     font-weight: 800;
     color: var(--accent);
   }
 }
+
+/* abcd */
