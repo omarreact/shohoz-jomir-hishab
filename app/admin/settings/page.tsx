@@ -10,9 +10,6 @@ import {
   Phone,
   Mail,
 } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Button } from "@/components/ui/button";
 
 interface AppSettings {
   siteName: string;
@@ -24,57 +21,44 @@ interface AppSettings {
   announcement: string;
 }
 
+const DEFAULT_SETTINGS: AppSettings = {
+  siteName: "LandBD",
+  contactEmail: "",
+  contactPhone: "",
+  facebookUrl: "",
+  youtubeUrl: "",
+  maintenanceMode: false,
+  announcement: "",
+};
+
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<AppSettings>({
-    siteName: "LandBD",
-    contactEmail: "",
-    contactPhone: "",
-    facebookUrl: "",
-    youtubeUrl: "",
-    maintenanceMode: false,
-    announcement: "",
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
   const [errorMsg, setErrorMsg] = useState("");
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      const docRef = doc(db, "config", "app_settings");
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setSettings((prev) => ({ ...prev, ...docSnap.data() }));
-      }
-    } catch (error: unknown) {
-      console.error("Error fetching settings:", error);
-      if (
-        error instanceof Error &&
-        (error as any).code === "permission-denied"
-      ) {
-        setErrorMsg(
-          "Firebase Security Rules (Firestore) এ পারমিশন দেওয়া নেই। দয়া করে Firebase Console থেকে 'config' কালেকশনের Read/Write পারমিশন দিন।",
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.settings) {
+          setSettings((prev) => ({ ...prev, ...data.settings }));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching settings:", err);
+        setErrorMsg("সেটিংস লোড করতে সমস্যা হয়েছে।");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
     setSettings((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -82,12 +66,19 @@ export default function SettingsPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const docRef = doc(db, "config", "app_settings");
-      await setDoc(docRef, settings, { merge: true });
-      alert("সেটিংস সফলভাবে আপডেট হয়েছে!");
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...settings,
+          maintenanceMode: String(settings.maintenanceMode),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      alert("সেটিংস সফলভাবে আপডেট হয়েছে!");
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert("সেটিংস আপডেট করতে সমস্যা হয়েছে।");
+      alert("সেটিংস আপডেট করতে সমস্যা হয়েছে।");
     } finally {
       setIsSaving(false);
     }
@@ -101,13 +92,11 @@ export default function SettingsPage() {
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <span className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : errorMsg ? (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-2xl p-6 shadow-sm mb-8">
-          <h5 className="font-bold mb-3 text-lg flex items-center">
-            <span className="mr-2">❌</span> পারমিশন এরর
-          </h5>
+        <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-2xl p-6 mb-8">
+          <h5 className="font-bold mb-3 text-lg">❌ এরর</h5>
           <p className="mb-0">{errorMsg}</p>
         </div>
       ) : (
@@ -118,9 +107,8 @@ export default function SettingsPage() {
               <h5 className="font-bold mb-6 flex items-center text-blue-500 text-xl">
                 <Globe size={24} className="mr-3" /> সাধারণ তথ্য
               </h5>
-
               <div className="mb-6">
-                <label className="block text-[var(--text-primary)] font-bold mb-2">ওয়েবসাইটের নাম (Site Name)</label>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">ওয়েবসাইটের নাম</label>
                 <input
                   type="text"
                   name="siteName"
@@ -129,13 +117,12 @@ export default function SettingsPage() {
                   className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
                 />
               </div>
-
-              <div className="mb-2">
-                <label className="block text-[var(--text-primary)] font-bold mb-2">জরুরি নোটিশ / ঘোষণা (Announcement Banner)</label>
+              <div>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">জরুরি নোটিশ / ঘোষণা</label>
                 <textarea
                   name="announcement"
                   rows={4}
-                  placeholder="হোমপেজে দেখানোর জন্য কোনো জরুরি নোটিশ থাকলে এখানে লিখুন..."
+                  placeholder="হোমপেজে দেখানোর জন্য কোনো জরুরি নোটিশ..."
                   value={settings.announcement}
                   onChange={handleChange}
                   className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm resize-y"
@@ -145,57 +132,36 @@ export default function SettingsPage() {
 
             <div className="card-new p-8 border-t-4 border-t-cyan-500">
               <h5 className="font-bold mb-6 flex items-center text-cyan-500 text-xl">
-                <Info size={24} className="mr-3" /> যোগাযোগ ও সোশ্যাল মিডিয়া
+                <Info size={24} className="mr-3" /> যোগাযোগ ও সোশ্যাল মিডিয়া
               </h5>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="flex items-center text-[var(--text-primary)] font-bold mb-2">
                     <Mail size={16} className="mr-2" /> ইমেইল
                   </label>
-                  <input
-                    type="email"
-                    name="contactEmail"
-                    value={settings.contactEmail}
-                    onChange={handleChange}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
-                  />
+                  <input type="email" name="contactEmail" value={settings.contactEmail} onChange={handleChange}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm" />
                 </div>
                 <div>
                   <label className="flex items-center text-[var(--text-primary)] font-bold mb-2">
                     <Phone size={16} className="mr-2" /> ফোন নম্বর
                   </label>
-                  <input
-                    type="text"
-                    name="contactPhone"
-                    value={settings.contactPhone}
-                    onChange={handleChange}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
-                  />
+                  <input type="text" name="contactPhone" value={settings.contactPhone} onChange={handleChange}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm" />
                 </div>
                 <div>
                   <label className="flex items-center text-[var(--text-primary)] font-bold mb-2">
                     <LinkIcon size={16} className="mr-2" /> Facebook URL
                   </label>
-                  <input
-                    type="url"
-                    name="facebookUrl"
-                    value={settings.facebookUrl}
-                    onChange={handleChange}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
-                  />
+                  <input type="url" name="facebookUrl" value={settings.facebookUrl} onChange={handleChange}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm" />
                 </div>
                 <div>
                   <label className="flex items-center text-[var(--text-primary)] font-bold mb-2">
                     <LinkIcon size={16} className="mr-2" /> YouTube URL
                   </label>
-                  <input
-                    type="url"
-                    name="youtubeUrl"
-                    value={settings.youtubeUrl}
-                    onChange={handleChange}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
-                  />
+                  <input type="url" name="youtubeUrl" value={settings.youtubeUrl} onChange={handleChange}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm" />
                 </div>
               </div>
             </div>
@@ -207,26 +173,20 @@ export default function SettingsPage() {
               <h5 className="font-bold mb-6 flex items-center text-red-500 text-xl">
                 <SettingsIcon size={24} className="mr-3" /> সিস্টেম কন্ট্রোল
               </h5>
-
-              <div className="mb-4">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="maintenanceMode"
-                    checked={settings.maintenanceMode}
-                    onChange={handleChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-14 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500"></div>
-                  <span className="ml-3 font-bold text-[var(--text-primary)]">
-                    মেইনটেন্যান্স মোড
-                  </span>
-                </label>
-                <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed">
-                  এটি চালু করলে সাধারণ ইউজাররা ওয়েবসাইট অ্যাক্সেস করতে পারবে
-                  না। শুধুমাত্র অ্যাডমিনরা দেখতে পারবে।
-                </p>
-              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="maintenanceMode"
+                  checked={settings.maintenanceMode}
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500" />
+                <span className="ml-3 font-bold text-[var(--text-primary)]">মেইনটেন্যান্স মোড</span>
+              </label>
+              <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed">
+                এটি চালু করলে সাধারণ ইউজাররা ওয়েবসাইট অ্যাক্সেস করতে পারবে না।
+              </p>
             </div>
 
             <button
@@ -236,13 +196,11 @@ export default function SettingsPage() {
             >
               {isSaving ? (
                 <>
-                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-3"></span>
+                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-3" />
                   আপডেট হচ্ছে...
                 </>
               ) : (
-                <>
-                  <Save size={20} className="mr-2" /> পরিবর্তনগুলো সেভ করুন
-                </>
+                <><Save size={20} className="mr-2" /> পরিবর্তনগুলো সেভ করুন</>
               )}
             </button>
           </div>

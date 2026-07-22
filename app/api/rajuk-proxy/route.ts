@@ -45,15 +45,16 @@ export async function GET(request: Request) {
 
   let activeToken = process.env.RAJUK_MAP_TOKEN || "";
   try {
-    const { doc, getDoc } = await import("firebase/firestore");
-    const { db } = await import("@/lib/firebase");
-    const docRef = doc(db, "config", "rajuk_api");
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists() && docSnap.data().token) {
-      activeToken = docSnap.data().token;
+    // Load token from our own DB-backed API
+    const tokenRes = await fetch(
+      new URL("/api/admin/rajuk-config", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").toString()
+    );
+    if (tokenRes.ok) {
+      const tokenData = await tokenRes.json();
+      if (tokenData.token) activeToken = tokenData.token;
     }
   } catch (err) {
-    console.error("Failed to load Rajuk token from Firebase:", err);
+    console.error("Failed to load Rajuk token:", err);
   }
 
   const params = new URLSearchParams({

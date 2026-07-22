@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Rajuk Integration API
+  description: Enterprise-grade proxy for ArcGIS Server tokens.
+  version: 1.0.0
+paths:
+  /api/rajuk/health:
+    get:
+      summary: Health check endpoint
+      description: Returns health of dependencies and circuit breaker stats
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthy:
+                    type: boolean
+                  expiresIn:
+                    type: integer
+                  cache:
+                    type: string
+                  provider:
+                    type: string
+  /api/rajuk/proxy:
+    get:
+      summary: Proxy request to ArcGIS
+      description: Forwards requests securely appending the managed token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: target
+          schema:
+            type: string
+          required: true
+          description: The ArcGIS URL to proxy to
+      responses:
+        '200':
+          description: Successful proxy response
+        '401':
+          description: Unauthorized
+        '429':
+          description: Too Many Requests
+  /api/metrics:
+    get:
+      summary: Prometheus Metrics
+      description: Scrape endpoint for Prometheus
+      responses:
+        '200':
+          description: Formatted Prometheus metrics
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

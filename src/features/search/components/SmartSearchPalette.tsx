@@ -179,7 +179,7 @@ export default function SmartSearchPalette({ onClose, onSelectResult }: SmartSea
           <CommandEmpty className="py-10">
             <div className="text-center flex flex-col items-center">
               <Search size={40} className="text-muted-foreground/30 mb-3" />
-              <h5 className="font-bold text-foreground mb-1">No results found for "{query}"</h5>
+              <h5 className="font-bold text-foreground mb-1">No results found for &quot;{query}&quot;</h5>
               <p className="text-sm text-muted-foreground">The Search Engine queried multiple providers but found no matches.</p>
             </div>
           </CommandEmpty>

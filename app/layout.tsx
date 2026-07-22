@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import type { Metadata } from "next";
 import {
   Geist,
@@ -68,11 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="bn"
-      data-scroll-behavior="smooth"
-      suppressHydrationWarning
-    >
+    <html lang="bn" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}

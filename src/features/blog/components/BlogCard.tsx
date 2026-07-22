@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 
 export interface BlogPost {
   slug: string;
+  categorySlug?: string;
   title: string;
   excerpt: string;
   coverImage: string;
@@ -22,7 +23,7 @@ interface BlogCardProps {
 export default function BlogCard({ post, featured = false }: BlogCardProps) {
   return (
     <div className={`card-new h-full flex flex-col group ${featured ? 'md:flex-row' : ''}`}>
-      <Link href={`/blog/${post.slug}`} className="flex-1 flex flex-col md:flex-row w-full h-full">
+      <Link href={`/blog/${post.categorySlug || 'general'}/${post.slug}`} className="flex-1 flex flex-col md:flex-row w-full h-full">
         <div 
           className={`relative overflow-hidden w-full ${featured ? 'md:w-1/2 h-64 md:h-auto' : 'h-52'}`} 
         >

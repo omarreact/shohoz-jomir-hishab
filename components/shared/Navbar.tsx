@@ -17,8 +17,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
 import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
 import { t } from "@/src/locales";
 import { useTheme } from "next-themes";
@@ -35,6 +34,7 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn: authLoggedIn, loading: authLoading, logout } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -49,11 +49,8 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoggedIn(!!user);
-    });
-    return () => unsubscribe();
-  }, []);
+    if (!authLoading) setIsLoggedIn(authLoggedIn);
+  }, [authLoggedIn, authLoading]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,8 +76,8 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      window.location.reload();
+      await logout();
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout Error:", error);
     }

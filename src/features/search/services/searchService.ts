@@ -1,4 +1,4 @@
-import { UnifiedResponse } from "@/lib/unified-api/types";
+import { UnifiedResponse } from "@/src/modules/unified/types";
 import { ApiError } from "@/src/shared/utils/errors";
 
 export class SearchService {

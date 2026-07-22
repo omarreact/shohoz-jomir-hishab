@@ -1,4 +1,4 @@
-import { UnifiedFeature } from "@/lib/unified-api/types";
+import { UnifiedFeature } from "@/src/modules/unified/types";
 
 export interface SearchAction {
   id: string;

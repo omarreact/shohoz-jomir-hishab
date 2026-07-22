@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, FileText, Download, X } from "lucide-react";
 import { toBn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PorchaData {
   JOMIHUB: number | string;
@@ -18,34 +19,18 @@ export default function PorchaPage() {
   const [selectedPorcha, setSelectedPorcha] = useState<PorchaData | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authChecking, setAuthChecking] = useState(true);
-
-  // পেজিনেশনের জন্য নতুন স্টেট
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  // Auth Check Effect
-  useEffect(() => {
-    import("@/lib/firebase").then(({ auth }) => {
-      import("firebase/auth").then(({ onAuthStateChanged }) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          setIsLoggedIn(!!user);
-          setAuthChecking(false);
-        });
-        return () => unsubscribe();
-      });
-    });
-  }, []);
+  // Auth — JWT cookie-based, no Firebase
+  const { isLoggedIn, loading: authChecking } = useAuth();
 
-  // ইউজারের সার্চ অনুযায়ী API থেকে ডাটা নিয়ে আসা
+  // Fetch on search query change
   useEffect(() => {
-    if (!isLoggedIn) return; // Don't fetch if not logged in
+    if (!isLoggedIn) return;
 
     if (!searchQuery.trim()) {
       setFilteredData([]);
@@ -56,16 +41,14 @@ export default function PorchaPage() {
 
     setLoading(true);
 
-    const delayDebounceFn = setTimeout(() => {
-      setPage(1); // নতুন করে সার্চ দিলে পেজ নম্বর ১ হয়ে যাবে
-
+    const timer = setTimeout(() => {
+      setPage(1);
       fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}&page=1`)
         .then((res) => {
           if (!res.ok) throw new Error("Network response was not ok");
           return res.json();
         })
         .then((data) => {
-          // এখানেই মূল সমাধান: data.results সেভ করা হচ্ছে
           setFilteredData(data.results || []);
           setHasMore(data.hasMore || false);
           setLoading(false);
@@ -77,18 +60,15 @@ export default function PorchaPage() {
         });
     }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(timer);
   }, [searchQuery, isLoggedIn]);
 
-  // Load More বাটনে ক্লিক করলে আরও ডাটা আনার ফাংশন
   const loadMore = () => {
     const nextPage = page + 1;
     setIsLoadingMore(true);
-
     fetch(`/api/porcha?q=${encodeURIComponent(searchQuery)}&page=${nextPage}`)
       .then((res) => res.json())
       .then((data) => {
-        // আগের ডাটার সাথে নতুন ডাটা যুক্ত করা হচ্ছে
         setFilteredData((prev) => [...prev, ...(data.results || [])]);
         setHasMore(data.hasMore || false);
         setPage(nextPage);
@@ -103,23 +83,16 @@ export default function PorchaPage() {
   const downloadPDF = async () => {
     if (!exportRef.current) return;
     setIsDownloading(true);
-
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-
       const opt = {
         margin: [15, 15, 15, 15] as [number, number, number, number],
         filename: `Khotiyan_${selectedPorcha?.JOMIHUB}.pdf`,
-        image: { type: "jpeg" as `jpeg`, quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait" as `portrait`,
-        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
-
       await html2pdf().set(opt).from(exportRef.current).save();
     } catch (err) {
       console.error(err);
@@ -132,8 +105,10 @@ export default function PorchaPage() {
   if (authChecking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-[var(--text-secondary)] font-bold">যাচাই করা হচ্ছে...</p>
+        <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-[var(--text-secondary)] font-bold">
+          যাচাই করা হচ্ছে...
+        </p>
       </div>
     );
   }
@@ -147,11 +122,16 @@ export default function PorchaPage() {
               <div className="bg-red-500/10 text-red-500 rounded-full inline-flex p-4 mb-6">
                 <Search size={48} />
               </div>
-              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-4">অ্যাক্সেস ডিনাইড</h3>
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
+                অ্যাক্সেস ডিনাইড
+              </h3>
               <p className="text-[var(--text-secondary)] mb-8">
-                এই পেজটি শুধুমাত্র অ্যাডমিনদের জন্য। পর্চা খুঁজতে অনুগ্রহ করে লগিন করুন।
+                পর্চা খুঁজতে অনুগ্রহ করে লগিন করুন।
               </p>
-              <a href="/login" className="cta-gradient text-[var(--bg)] font-bold px-8 py-3 rounded-full shadow-lg block w-full">
+              <a
+                href="/login"
+                className="cta-gradient text-[var(--bg)] font-bold px-8 py-3 rounded-full shadow-lg block w-full"
+              >
                 লগিন করুন
               </a>
             </div>
@@ -166,22 +146,22 @@ export default function PorchaPage() {
       <div className="flex justify-center mb-12">
         <div className="w-full max-w-2xl text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 flex items-center justify-center text-[var(--text-primary)]">
-            <FileText size={32} className="mr-3 text-[var(--accent)]" /> ডিজিটাল খতিয়ান (পর্চা) সংগ্রহ
+            <FileText size={32} className="mr-3 text-[var(--accent)]" /> ডিজিটাল
+            খতিয়ান (পর্চা) সংগ্রহ
           </h2>
           <p className="text-[var(--text-secondary)] text-lg mb-8">
-            আপনার কাঙ্ক্ষিত খতিয়ান, দাগ নম্বর বা মালিকের নাম লিখে সার্চ করুন এবং ডাউনলোড করুন।
+            আপনার কাঙ্ক্ষিত খতিয়ান, দাগ নম্বর বা মালিকের নাম লিখে সার্চ করুন।
           </p>
-
           <div className="relative">
             <input
               type="text"
               className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-full px-6 py-4 pl-14 shadow-sm focus:outline-none focus:border-[var(--accent)] transition-colors text-lg"
-              placeholder="খতিয়ান নং, দাগ নং বা মালিকের নাম খুঁজুন..."
+              placeholder="খতিয়ান নং, দাগ নং বা মালিকের নাম..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Search
-              className="absolute text-[var(--text-secondary)] top-1/2 left-5 transform -translate-y-1/2"
+              className="absolute text-[var(--text-secondary)] top-1/2 left-5 -translate-y-1/2"
               size={24}
             />
           </div>
@@ -190,14 +170,19 @@ export default function PorchaPage() {
 
       {loading ? (
         <div className="text-center py-16">
-          <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-[var(--text-secondary)] font-bold">সার্ভার থেকে তথ্য খোঁজা হচ্ছে...</p>
+          <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-[var(--text-secondary)] font-bold">
+            সার্ভার থেকে তথ্য খোঁজা হচ্ছে...
+          </p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredData?.map((item, index) => (
-              <div key={index} className="card-new p-6 flex flex-col justify-between h-full">
+            {filteredData.map((item, index) => (
+              <div
+                key={index}
+                className="card-new p-6 flex flex-col justify-between h-full"
+              >
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <span className="bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-bold rounded-full px-4 py-1 border border-[var(--accent)]/20">
@@ -208,7 +193,10 @@ export default function PorchaPage() {
                     মালিক: {item.Column2 || "অজ্ঞাত"}
                   </h6>
                   <p className="text-[var(--text-secondary)] text-sm mb-6">
-                    <strong className="text-[var(--text-primary)]">দাগ নং:</strong> {item.Column4 ? toBn(item.Column4) : "অজ্ঞাত"}
+                    <strong className="text-[var(--text-primary)]">
+                      দাগ নং:
+                    </strong>{" "}
+                    {item.Column4 ? toBn(item.Column4) : "অজ্ঞাত"}
                   </p>
                 </div>
                 <div className="pt-4 border-t border-[var(--border)] mt-auto">
@@ -221,25 +209,25 @@ export default function PorchaPage() {
                 </div>
               </div>
             ))}
-
-            {filteredData?.length === 0 && searchQuery && (
+            {filteredData.length === 0 && searchQuery && (
               <div className="col-span-full text-center py-16">
-                <p className="text-[var(--text-secondary)] text-xl">কোনো খতিয়ান পাওয়া যায়নি!</p>
+                <p className="text-[var(--text-secondary)] text-xl">
+                  কোনো খতিয়ান পাওয়া যায়নি!
+                </p>
               </div>
             )}
           </div>
 
-          {/* Load More Button */}
           {hasMore && (
             <div className="text-center mt-12">
               <button
                 onClick={loadMore}
                 disabled={isLoadingMore}
-                className="px-8 py-3 rounded-full cta-gradient text-[var(--bg)] font-bold shadow-lg hover:shadow-xl transition-shadow flex items-center mx-auto"
+                className="px-8 py-3 rounded-full cta-gradient text-[var(--bg)] font-bold shadow-lg flex items-center mx-auto"
               >
                 {isLoadingMore ? (
                   <>
-                    <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2"></span>
+                    <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2" />
                     লোড হচ্ছে...
                   </>
                 ) : (
@@ -251,12 +239,13 @@ export default function PorchaPage() {
         </>
       )}
 
-      {/* Tailwind Modal */}
       {selectedPorcha && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-200">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col relative">
             <div className="flex justify-between items-center p-6 border-b border-[var(--border)]">
-              <h3 className="text-xl font-bold text-[var(--text-primary)]">পর্চা প্রিভিউ</h3>
+              <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                পর্চা প্রিভিউ
+              </h3>
               <button
                 onClick={() => setSelectedPorcha(null)}
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--surface)] rounded-full p-2"
@@ -264,8 +253,7 @@ export default function PorchaPage() {
                 <X size={24} />
               </button>
             </div>
-            
-            <div className="overflow-y-auto p-0 flex-1">
+            <div className="overflow-y-auto flex-1">
               <div ref={exportRef} className="bg-white p-8 sm:p-12 text-black">
                 <div className="text-center mb-8 border-b-2 border-green-600 pb-4">
                   <h2 className="text-2xl font-bold text-green-700 mb-2">
@@ -278,63 +266,66 @@ export default function PorchaPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse border border-gray-300 text-left">
                     <tbody>
-                      <tr>
-                        <th className="bg-gray-100 border border-gray-300 w-1/3 px-4 py-3 text-gray-800 font-bold">
-                          খতিয়ান নং
-                        </th>
-                        <td className="border border-gray-300 px-4 py-3 font-bold text-lg text-green-700">
-                          {selectedPorcha.JOMIHUB ? toBn(selectedPorcha.JOMIHUB) : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-100 border border-gray-300 px-4 py-3 text-gray-800 font-bold">
-                          মালিকের নাম
-                        </th>
-                        <td className="border border-gray-300 px-4 py-3 font-bold text-gray-900">
-                          {selectedPorcha.Column2 || "প্রযোজ্য নয়"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-100 border border-gray-300 px-4 py-3 text-gray-800 font-bold">
-                          পিতা/স্বামীর নাম
-                        </th>
-                        <td className="border border-gray-300 px-4 py-3 text-gray-700">
-                          {selectedPorcha.Column3 || "প্রযোজ্য নয়"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-100 border border-gray-300 px-4 py-3 text-gray-800 font-bold">
-                          দাগ নং সমূহ
-                        </th>
-                        <td className="border border-gray-300 px-4 py-3 text-blue-700 font-semibold">
-                          {selectedPorcha.Column4 ? toBn(selectedPorcha.Column4) : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-100 border border-gray-300 px-4 py-3 text-gray-800 font-bold">
-                          জমির পরিমাণ / অংশ
-                        </th>
-                        <td className="border border-gray-300 px-4 py-3 font-bold text-gray-900">
-                          {selectedPorcha.Column5 ? toBn(selectedPorcha.Column5) : "-"}
-                        </td>
-                      </tr>
+                      {[
+                        [
+                          "খতিয়ান নং",
+                          (item: PorchaData) =>
+                            item.JOMIHUB ? toBn(item.JOMIHUB) : "-",
+                          "font-bold text-lg text-green-700",
+                        ],
+                        [
+                          "মালিকের নাম",
+                          (item: PorchaData) => item.Column2 || "প্রযোজ্য নয়",
+                          "font-bold text-gray-900",
+                        ],
+                        [
+                          "পিতা/স্বামীর নাম",
+                          (item: PorchaData) => item.Column3 || "প্রযোজ্য নয়",
+                          "text-gray-700",
+                        ],
+                        [
+                          "দাগ নং সমূহ",
+                          (item: PorchaData) =>
+                            item.Column4 ? toBn(item.Column4) : "-",
+                          "text-blue-700 font-semibold",
+                        ],
+                        [
+                          "জমির পরিমাণ",
+                          (item: PorchaData) =>
+                            item.Column5 ? toBn(item.Column5) : "-",
+                          "font-bold text-gray-900",
+                        ],
+                      ].map(([label, getValue, cls]) => (
+                        <tr key={label as string}>
+                          <th className="bg-gray-100 border border-gray-300 w-1/3 px-4 py-3 text-gray-800 font-bold">
+                            {label as string}
+                          </th>
+                          <td
+                            className={`border border-gray-300 px-4 py-3 ${cls as string}`}
+                          >
+                            {(
+                              getValue as (item: PorchaData) => React.ReactNode
+                            )(selectedPorcha!)}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
                 <div className="mt-8 pt-4 text-center text-gray-500 text-sm border-t border-gray-200">
-                  * এই খতিয়ানটি ডিজিটাল কপি। দাপ্তরিক কাজের জন্য মূল কপির সাথে যাচাই করে নেওয়ার অনুরোধ করা হলো।
+                  * এই খতিয়ানটি ডিজিটাল কপি। দাপ্তরিক কাজের জন্য মূল কপির সাথে
+                  যাচাই করুন।
                 </div>
               </div>
             </div>
-
             <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)] flex justify-center rounded-b-2xl">
               <button
                 onClick={downloadPDF}
-                disabled={isDownloading || !selectedPorcha}
-                className="btn cta-gradient text-[var(--bg)] px-8 py-3 rounded-full font-bold shadow-lg flex items-center hover:opacity-90 disabled:opacity-50"
+                disabled={isDownloading}
+                className="cta-gradient text-[var(--bg)] px-8 py-3 rounded-full font-bold shadow-lg flex items-center hover:opacity-90 disabled:opacity-50"
               >
                 {isDownloading ? (
-                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2"></span>
+                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2" />
                 ) : (
                   <Download size={20} className="mr-2" />
                 )}

@@ -20,6 +20,8 @@ export default function BlogPreviewSection() {
       date: "১২ মে, ২০২৪",
       image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800",
       delay: "0s",
+      slug: "new-land-registration-rules",
+      categorySlug: "law",
     },
     {
       id: 2,
@@ -29,6 +31,8 @@ export default function BlogPreviewSection() {
       date: "১০ মে, ২০২৪",
       image: "https://images.unsplash.com/photo-1555374018-1c4ffa612ebe?auto=format&fit=crop&q=80&w=800",
       delay: "100ms",
+      slug: "inheritance-property-distribution",
+      categorySlug: "law",
     },
     {
       id: 3,
@@ -38,6 +42,8 @@ export default function BlogPreviewSection() {
       date: "০৫ মে, ২০২৪",
       image: "https://images.unsplash.com/photo-1450101499163-c8848c66cb85?auto=format&fit=crop&q=80&w=800",
       delay: "200ms",
+      slug: "khas-land-settlement-process",
+      categorySlug: "law",
     },
   ];
 
@@ -64,7 +70,7 @@ export default function BlogPreviewSection() {
         <div className="grid md:grid-cols-3 gap-8">
           {blogPosts.map((post) => (
             <Link
-              href={`/blog/${post.id}`}
+              href={`/blog/${post.categorySlug || 'general'}/${post.slug || post.id}`}
               key={post.id}
               className={`card-new overflow-hidden p-0 fade-in group no-underline ${
                 isLoaded ? "visible" : ""

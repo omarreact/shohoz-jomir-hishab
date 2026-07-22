@@ -3,55 +3,58 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, LogIn } from "lucide-react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login, loading, isLoggedIn } = useAuth();
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
     if (errorParam === "not_admin") {
       setError("অ্যাক্সেস ডিনাইড: আপনি এই সিস্টেমের অ্যাডমিন নন।");
     } else if (errorParam === "suspended") {
-      setError("আপনার একাউন্টটি সাময়িকভাবে বন্ধ (Suspended) করা হয়েছে।");
+      setError("আপনার একাউন্টটি সাময়িকভাবে বন্ধ (Suspended) করা হয়েছে।");
     }
   }, [searchParams]);
 
+  // Already logged in — redirect
+  useEffect(() => {
+    if (!loading && isLoggedIn) {
+      const from = searchParams.get("from") || "/admin";
+      router.replace(from);
+    }
+  }, [loading, isLoggedIn, router, searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
+    // Support plain username (appends @smartkhatiyan.com) or full email
     const emailToUse = username.includes("@")
       ? username.toLowerCase().trim()
       : `${username.toLowerCase().trim()}@smartkhatiyan.com`;
 
     try {
-      // Step 1: Authenticate with Firebase
-      await signInWithEmailAndPassword(auth, emailToUse, password);
-
-      // Set a cookie so the Next.js middleware knows we are logged in
-      document.cookie = "__session=1; path=/; max-age=86400; SameSite=Lax";
-
-      // Step 2: Redirect to admin — the admin layout handles role verification
-      router.push("/admin");
+      await login(emailToUse, password);
+      const from = searchParams.get("from") || "/admin";
+      router.push(from);
     } catch (err: any) {
+      const msg: string = err.message || "";
       if (
-        err.code === "auth/invalid-credential" ||
-        err.code === "auth/wrong-password" ||
-        err.code === "auth/user-not-found"
+        msg.includes("Invalid credentials") ||
+        msg.includes("credentials")
       ) {
         setError("ভুল ইমেইল বা পাসওয়ার্ড!");
+      } else if (msg.includes("locked")) {
+        setError("অনেক বার ভুল চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
       } else {
-        setError("লগিন করতে সমস্যা হয়েছে: " + err.message);
+        setError("লগিন করতে সমস্যা হয়েছে: " + msg);
       }
-      setLoading(false);
     }
   };
 
@@ -62,12 +65,14 @@ function LoginForm() {
           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
             <Lock size={120} className="text-[var(--text-primary)]" />
           </div>
-          
+
           <div className="relative z-10 text-center mb-8">
             <div className="bg-[var(--accent)]/10 text-[var(--accent)] rounded-full inline-flex p-4 mb-4 shadow-sm">
               <Lock size={32} />
             </div>
-            <h3 className="font-bold text-[var(--text-primary)] text-2xl mb-2">অ্যাডমিন লগিন</h3>
+            <h3 className="font-bold text-[var(--text-primary)] text-2xl mb-2">
+              অ্যাডমিন লগিন
+            </h3>
             <p className="text-[var(--text-secondary)] font-medium">
               শুধুমাত্র অনুমোদিত ইউজারদের জন্য
             </p>
@@ -81,36 +86,42 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} className="space-y-5 relative z-10">
             <div>
-              <label className="block text-[var(--text-primary)] font-bold mb-2">ইমেইল বা ইউজারনেম</label>
+              <label className="block text-[var(--text-primary)] font-bold mb-2">
+                ইমেইল বা ইউজারনেম
+              </label>
               <input
                 type="text"
                 placeholder="যেমন: admin@smartkhatiyan.com"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                autoComplete="username"
                 className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
               />
             </div>
-            
+
             <div>
-              <label className="block text-[var(--text-primary)] font-bold mb-2">পাসওয়ার্ড</label>
+              <label className="block text-[var(--text-primary)] font-bold mb-2">
+                পাসওয়ার্ড
+              </label>
               <input
                 type="password"
                 placeholder="পাসওয়ার্ড দিন"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
               className="w-full cta-gradient text-[var(--bg)] font-bold rounded-xl px-4 py-3.5 shadow-md hover:-translate-y-0.5 transition-all flex justify-center items-center mt-4 disabled:opacity-70 disabled:hover:translate-y-0 text-lg"
             >
               {loading ? (
-                <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin"></span>
+                <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   <LogIn size={20} className="mr-2" /> লগিন করুন
@@ -129,7 +140,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
-          <span className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

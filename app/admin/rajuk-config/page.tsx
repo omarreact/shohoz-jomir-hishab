@@ -10,8 +10,6 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function RajukConfig() {
   const [token, setToken] = useState("");
@@ -33,15 +31,12 @@ export default function RajukConfig() {
   const fetchTokenConfig = async () => {
     setLoading(true);
     try {
-      const docRef = doc(db, "config", "rajuk_api");
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setToken(data.token || "");
-        if (data.updatedAt) {
-          setLastUpdated(new Date(data.updatedAt).toLocaleString("bn-BD"));
-        }
+      const res = await fetch("/api/admin/rajuk-config");
+      if (!res.ok) throw new Error("Failed to fetch config");
+      const data = await res.json();
+      setToken(data.token ?? "");
+      if (data.updatedAt) {
+        setLastUpdated(new Date(data.updatedAt).toLocaleString("bn-BD"));
       }
     } catch (error) {
       console.error("Error fetching Rajuk config:", error);
@@ -50,25 +45,24 @@ export default function RajukConfig() {
     }
   };
 
-  const saveTokenToFirestore = async (newToken: string) => {
-    try {
-      const docRef = doc(db, "config", "rajuk_api");
-      await setDoc(
-        docRef,
-        {
-          token: newToken,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
+  const saveToken = async (newToken: string) => {
+    const res = await fetch("/api/admin/rajuk-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: newToken }),
+    });
 
-      setToken(newToken);
-      setLastUpdated(new Date().toLocaleString("bn-BD"));
-      alert("টোকেন সফলভাবে সেভ হয়েছে!");
-    } catch (error) {
-      console.error("Error saving token:", error);
-      alert("টোকেন সেভ করতে সমস্যা হয়েছে।");
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "টোকেন সেভ করতে সমস্যা হয়েছে।");
     }
+
+    const data = await res.json();
+    setToken(data.token);
+    if (data.updatedAt) {
+      setLastUpdated(new Date(data.updatedAt).toLocaleString("bn-BD"));
+    }
+    alert("টোকেন সফলভাবে সেভ হয়েছে!");
   };
 
   const handleManualSave = async (e: React.FormEvent) => {
@@ -76,13 +70,19 @@ export default function RajukConfig() {
     if (!token) return alert("টোকেন দিন");
 
     setIsSaving(true);
-    await saveTokenToFirestore(token);
-    setIsSaving(false);
+    try {
+      await saveToken(token);
+    } catch (error: any) {
+      console.error("Error saving token:", error);
+      alert(error.message || "টোকেন সেভ করতে সমস্যা হয়েছে।");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAutoGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return alert("ইউজারনেম এবং পাসওয়ার্ড দিন");
+    if (!username || !password) return alert("ইউজারনেম এবং পাসওয়ার্ড দিন");
 
     setIsGenerating(true);
     try {
@@ -95,11 +95,11 @@ export default function RajukConfig() {
       const data = await res.json();
 
       if (res.ok && data.token) {
-        await saveTokenToFirestore(data.token);
+        await saveToken(data.token);
         setUsername("");
         setPassword("");
       } else {
-        alert(data.error?.message || "টোকেন জেনারেট করতে ব্যর্থ হয়েছে");
+        alert(data.error?.message || "টোকেন জেনারেট করতে ব্যর্থ হয়েছে");
       }
     } catch (error) {
       console.error(error);
@@ -131,19 +131,15 @@ export default function RajukConfig() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <span
                     className={`inline-flex items-center px-4 py-1.5 rounded-full font-bold text-sm ${
-                      token 
-                        ? "bg-green-500/10 text-green-500 border border-green-500/20" 
+                      token
+                        ? "bg-green-500/10 text-green-500 border border-green-500/20"
                         : "bg-red-500/10 text-red-500 border border-red-500/20"
                     }`}
                   >
                     {token ? (
-                      <>
-                        <CheckCircle size={16} className="mr-2" /> অ্যাক্টিভ
-                      </>
+                      <><CheckCircle size={16} className="mr-2" /> অ্যাক্টিভ</>
                     ) : (
-                      <>
-                        <XCircle size={16} className="mr-2" /> টোকেন নেই
-                      </>
+                      <><XCircle size={16} className="mr-2" /> টোকেন নেই</>
                     )}
                   </span>
                   {lastUpdated && (
@@ -164,8 +160,8 @@ export default function RajukConfig() {
               <RefreshCw size={24} className="mr-3" /> অটোমেটিক টোকেন জেনারেটর
             </h5>
             <p className="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">
-              রাজউকের ইউজারনেম এবং পাসওয়ার্ড দিয়ে অটোমেটিক টোকেন জেনারেট করুন।
-              এটি সবচেয়ে নিরাপদ এবং সহজ পদ্ধতি।
+              রাজউকের ইউজারনেম এবং পাসওয়ার্ড দিয়ে অটোমেটিক টোকেন জেনারেট করুন।
+              এটি সবচেয়ে নিরাপদ এবং সহজ পদ্ধতি।
             </p>
 
             <form onSubmit={handleAutoGenerate} className="space-y-5">
@@ -179,7 +175,7 @@ export default function RajukConfig() {
                 />
               </div>
               <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">পাসওয়ার্ড</label>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">পাসওয়ার্ড</label>
                 <input
                   type="password"
                   value={password}

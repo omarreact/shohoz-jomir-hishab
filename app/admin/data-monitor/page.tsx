@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { resolveApiRequestUrl } from "@/lib/api/rajukTiles";
 import {
   Database,
@@ -207,50 +205,44 @@ export default function DataMonitorPage() {
       setLoading(true);
       const rows: DataRow[] = [];
       try {
-        const postsSnap = await getDocs(collection(db, "posts"));
+        const res = await fetch("/api/admin/stats");
+        if (!res.ok) throw new Error("Failed to fetch stats");
+        const data = await res.json();
+
         rows.push({
           label: "মোট ব্লগ পোস্ট",
-          value: postsSnap.size,
+          value: data.blogCount ?? 0,
           category: "content",
           icon: <Globe size={16} />,
         });
-
-        const pagesSnap = await getDocs(collection(db, "dynamic_pages"));
         rows.push({
           label: "কাস্টম পেজ",
-          value: pagesSnap.size,
+          value: data.pageCount ?? 0,
           category: "content",
           icon: <Database size={16} />,
         });
-
-        const usersSnap = await getDocs(collection(db, "users"));
         rows.push({
           label: "নিবন্ধিত ব্যবহারকারী",
-          value: usersSnap.size,
+          value: data.userCount ?? 0,
           category: "users",
           icon: <Users size={16} />,
         });
-
-        const rajukToken = await getDoc(doc(db, "config", "rajuk_api"));
         rows.push({
           label: "রাজউক টোকেন কনফিগ",
-          value: rajukToken.exists() ? "✓ সেট আছে" : "✗ নেই",
+          value: data.rajukTokenSet ? "✓ সেট আছে" : "✗ নেই",
           category: "config",
           icon: <CheckCircle2 size={16} />,
         });
-
-        const appSettings = await getDoc(doc(db, "config", "app_settings"));
-        if (appSettings.exists()) {
-          const data = appSettings.data();
-          rows.push({
-            label: "মেইনটেন্যান্স মোড",
-            value: data.maintenanceMode ? "চালু" : "বন্ধ",
-            category: "config",
-            icon: <AlertTriangle size={16} />,
-          });
+        rows.push({
+          label: "মেইনটেন্যান্স মোড",
+          value: data.maintenanceMode ? "চালু" : "বন্ধ",
+          category: "config",
+          icon: <AlertTriangle size={16} />,
+        });
+        if (data.announcement) {
           rows.push({
             label: "ঘোষণা (Announcement)",
-            value: data.announcement || "—",
+            value: data.announcement,
             category: "config",
             icon: <Activity size={16} />,
           });

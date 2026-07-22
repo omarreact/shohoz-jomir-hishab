@@ -13,8 +13,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
 import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
 import { t } from "@/src/locales";
 
@@ -24,13 +23,11 @@ export default function GisNavbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { isLoggedIn: authLoggedIn, loading: authLoading, logout } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoggedIn(!!user);
-    });
-    return () => unsubscribe();
-  }, []);
+    if (!authLoading) setIsLoggedIn(authLoggedIn);
+  }, [authLoggedIn, authLoading]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -60,8 +57,8 @@ export default function GisNavbar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      window.location.reload();
+      await logout();
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout Error:", error);
     }

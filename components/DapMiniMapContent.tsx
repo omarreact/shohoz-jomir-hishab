@@ -1,62 +1,56 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   MapContainer,
   TileLayer,
   Polygon,
-  useMap,
   Tooltip,
   LayersControl,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-import { buildRajukTileProxyUrl } from "@/lib/api/rajukTiles";
 
-// Helper to center the map on the polygon
-function MapFitter({ positions }: { positions: [number, number][] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (positions && positions.length > 0) {
-      map.fitBounds(positions);
-    }
-  }, [map, positions]);
-  return null;
-}
+import { usePolygonGeometry } from "@/src/features/map/hooks/usePolygonGeometry";
+import { useRajukToken } from "@/src/features/map/hooks/useRajukToken";
+import { RajukTileLayers } from "@/src/features/map/components/RajukTileLayers";
+import { MapFitter } from "@/src/features/map/components/MapFitter";
 
 interface DapMiniMapContentProps {
   plotData: any;
 }
 
+// Base Maps configuration
+const baseMaps = {
+  satellite: {
+    name: "Satellite (Esri)",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: "&copy; Esri",
+  },
+  street: {
+    name: "Street Map (OSM)",
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: "&copy; OpenStreetMap",
+  },
+};
+
+/**
+ * Displays a Leaflet map with:
+ * - Polygon overlay of the plot geometry
+ * - Rajuk tile layers (MS, RS, Boundary, etc.)
+ * - Plot label tooltip
+ */
 export default function DapMiniMapContent({
   plotData,
 }: DapMiniMapContentProps) {
-  const [polygonCoords, setPolygonCoords] = useState<[number, number][] | null>(
-    null,
-  );
-  const [token, setToken] = useState("");
+  const polygonCoords = usePolygonGeometry(plotData);
+  const { token } = useRajukToken();
 
-  useEffect(() => {
-    // Attempt to parse geometry from the plot data
-    if (plotData?.geometry?.rings && plotData.geometry.rings.length > 0) {
-      const ring = plotData.geometry.rings[0];
-      const coords = ring.map(
-        (point: number[]) => [point[1], point[0]] as [number, number],
-      );
-      setPolygonCoords(coords);
-    }
-
-    // Fetch the active token from our proxy
-    fetch("/api/rajuk-token")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.token) {
-          setToken(data.token);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch map token", err));
-  }, [plotData]);
+  const plotLabel = plotData?.rs_plot_no || plotData?.plot_no || "RS দাগ";
+  const isMS =
+    plotData?.plot_type_custom === "MS দাগ" ||
+    plotData?.plot_type === "ms_plot_no";
 
   if (!polygonCoords) {
     return (
@@ -65,21 +59,6 @@ export default function DapMiniMapContent({
       </div>
     );
   }
-
-  const plotLabel = plotData?.rs_plot_no || plotData?.plot_no || "RS দাগ";
-  const isMS =
-    plotData?.plot_type_custom === "MS দাগ" ||
-    plotData?.plot_type === "ms_plot_no";
-
-  const getTileUrl = (servicePath: string) => {
-    const url = buildRajukTileProxyUrl(servicePath, {
-      z: "{z}",
-      y: "{y}",
-      x: "{x}",
-      token,
-    });
-    return decodeURIComponent(url);
-  };
 
   return (
     <div style={{ height: "100%", width: "100%", minHeight: "300px" }}>
@@ -97,65 +76,21 @@ export default function DapMiniMapContent({
       >
         <LayersControl position="topright">
           {/* Base Maps */}
-          <LayersControl.BaseLayer checked name="Satellite (Esri)">
+          <LayersControl.BaseLayer checked name={baseMaps.satellite.name}>
             <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution="&copy; Esri"
+              url={baseMaps.satellite.url}
+              attribution={baseMaps.satellite.attribution}
             />
           </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Street Map (OSM)">
+          <LayersControl.BaseLayer name={baseMaps.street.name}>
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap"
+              url={baseMaps.street.url}
+              attribution={baseMaps.street.attribution}
             />
           </LayersControl.BaseLayer>
 
-          {/* RAJUK Overlays (Only render if we have a token) */}
-          {token && (
-            <>
-              <LayersControl.Overlay checked={isMS} name="MS Mauza (Rajuk)">
-                <TileLayer
-                  url={getTileUrl("Hosted/MS_Mauza_Tiles_Final")}
-                  opacity={0.8}
-                />
-              </LayersControl.Overlay>
-
-              <LayersControl.Overlay checked={!isMS} name="RS Mauza (Rajuk)">
-                <TileLayer
-                  url={getTileUrl("Hosted/RS_Mauza_Tiles_Final")}
-                  opacity={0.8}
-                />
-              </LayersControl.Overlay>
-
-              <LayersControl.Overlay checked name="Overlay Boundary Tiles">
-                <TileLayer
-                  url={getTileUrl("Hosted/Overlay_Boundary_Tiles")}
-                  opacity={1.0}
-                />
-              </LayersControl.Overlay>
-
-              <LayersControl.Overlay name="RS Mauza 282 Scale">
-                <TileLayer
-                  url={getTileUrl("Hosted/RS_Mauza_282Scale")}
-                  opacity={0.8}
-                />
-              </LayersControl.Overlay>
-
-              <LayersControl.Overlay name="DAP Proposed Landuse">
-                <TileLayer
-                  url={getTileUrl("Hosted/DAP_proposed_landuse")}
-                  opacity={0.6}
-                />
-              </LayersControl.Overlay>
-
-              <LayersControl.Overlay name="Transport Network">
-                <TileLayer
-                  url={getTileUrl("Hosted/Transport_Network_Tiles")}
-                  opacity={0.9}
-                />
-              </LayersControl.Overlay>
-            </>
-          )}
+          {/* RAJUK Overlays */}
+          <RajukTileLayers token={token} isMS={isMS} />
         </LayersControl>
 
         {/* The Plot Polygon with Label */}

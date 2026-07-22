@@ -3,10 +3,13 @@ import {
   buildRajukTileServiceUrl,
   normalizeRajukService,
 } from "@/lib/api/rajukTiles";
-
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+import { container } from "@/lib/di/container";
+import { RajukTokenManager } from "@/lib/rajuk/manager";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
+
+const TILE_TIMEOUT_MS = 10_000;
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +18,6 @@ export async function GET(request: Request) {
     const x = searchParams.get("x");
     const y = searchParams.get("y");
     const z = searchParams.get("z");
-    const token = searchParams.get("token");
     const format = searchParams.get("f") || (x && y && z ? "png" : "pjson");
 
     if (!service) {
@@ -25,27 +27,54 @@ export async function GET(request: Request) {
       );
     }
 
+    // Inject token server-side — never expose raw token to frontend
+    let token: string | undefined;
+    try {
+      const tokenManager = container.resolve(RajukTokenManager);
+      token = await tokenManager.getToken();
+    } catch (err) {
+      logger.error({ err }, "Failed to acquire Rajuk token for tile proxy");
+      return NextResponse.json(
+        { error: "Failed to authenticate with tile service" },
+        { status: 502 },
+      );
+    }
+
     const normalizedService = normalizeRajukService(service);
     const rajukUrl = buildRajukTileServiceUrl(
       normalizedService,
       x || undefined,
       y || undefined,
       z || undefined,
-      token || undefined,
+      token,
       format || undefined,
     );
 
-    const response = await fetch(rajukUrl, {
-      method: "GET",
-      headers: {
-        Accept:
-          "image/png,image/jpeg,image/*,*/*;q=0.8,application/json,text/plain,*/*;q=0.5",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
-    });
+    // Use AbortController for timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TILE_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(rajukUrl, {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          Accept:
+            "image/png,image/jpeg,image/*,*/*;q=0.8,application/json,text/plain,*/*;q=0.5",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        },
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
+      logger.warn(
+        { status: response.status, service, x, y, z },
+        "Tile upstream returned error",
+      );
       return NextResponse.json(
         {
           error: `Failed to fetch Rajuk service: ${response.status} ${response.statusText}`,
@@ -60,16 +89,21 @@ export async function GET(request: Request) {
     const headers = new Headers();
     headers.set("Content-Type", contentType);
 
-    // Rajuk sometimes returns 200 OK with JSON error (e.g. invalid token) for tiles
-    if (contentType.includes("json") || contentType.includes("text")) {
+    // Rajuk sometimes returns 200 OK with JSON error (e.g., invalid token) for tiles
+    const isJsonContent =
+      contentType.includes("json") || contentType.includes("text");
+    if (isJsonContent) {
+      headers.set("Cache-Control", "no-store, max-age=0");
+    } else if (response.status !== 200) {
       headers.set("Cache-Control", "no-store, max-age=0");
     } else {
+      // Only cache successful image tile responses
       headers.set(
         "Cache-Control",
-        "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800, immutable",
+        "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
       );
     }
-    
+
     headers.set("X-Proxy-Source", "rajuk-tile");
 
     const etag = response.headers.get("etag");
@@ -90,7 +124,19 @@ export async function GET(request: Request) {
       headers,
     });
   } catch (error) {
-    console.error("Tile proxy error:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown tile proxy error";
+    logger.error({ err: message }, "Tile proxy error");
+
+    const isAbortError =
+      error instanceof DOMException && error.name === "AbortError";
+    if (isAbortError) {
+      return NextResponse.json(
+        { error: "Tile upstream timed out" },
+        { status: 504 },
+      );
+    }
+
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { UnifiedGateway } from "@/lib/unified-api/core/UnifiedGateway";
+import { UnifiedGateway } from "@/src/modules/unified/core/UnifiedGateway";
 
 const gateway = new UnifiedGateway();
 

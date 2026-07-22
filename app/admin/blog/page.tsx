@@ -18,9 +18,13 @@ import { format } from "date-fns";
 type Blog = {
   id: string;
   title: string;
+  slug: string;
   author: string;
   status: string;
-  createdAt: any;
+  createdAt: string;
+  category?: string;
+  categorySlug?: string;
+  readingTime?: string;
 };
 
 export default function BlogManagementPage() {
@@ -33,20 +37,10 @@ export default function BlogManagementPage() {
 
   const fetchBlogs = async () => {
     try {
-      const { db } = await import("@/lib/firebase");
-      const { collection, getDocs, orderBy, query } = await import(
-        "firebase/firestore"
-      );
-
-      const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-
-      const blogData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Blog[];
-
-      setBlogs(blogData);
+      const res = await fetch("/api/blogs");
+      if (!res.ok) throw new Error("Failed to fetch blogs");
+      const data = await res.json();
+      setBlogs(data.blogs ?? []);
     } catch (error) {
       console.error("Error fetching blogs:", error);
     } finally {
@@ -58,9 +52,8 @@ export default function BlogManagementPage() {
     if (!confirm("আপনি কি নিশ্চিত যে এই ব্লগটি মুছে ফেলতে চান?")) return;
 
     try {
-      const { db } = await import("@/lib/firebase");
-      const { doc, deleteDoc } = await import("firebase/firestore");
-      await deleteDoc(doc(db, "blogs", id));
+      const res = await fetch(`/api/blogs/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
       setBlogs((prev) => prev.filter((b) => b.id !== id));
     } catch (error) {
       console.error("Error deleting blog:", error);
@@ -73,9 +66,7 @@ export default function BlogManagementPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">ব্লগ ম্যানেজমেন্ট</h2>
-          <p className="text-muted-foreground mt-2">
-            আপনার ওয়েবসাইটের সমস্ত ব্লগ পোস্ট পরিচালনা করুন।
-          </p>
+          <p className="text-muted-foreground mt-2">আপনার ওয়েবসাইটের সমস্ত ব্লগ পোস্ট পরিচালনা করুন।</p>
         </div>
         <Link href="/admin/blog/new">
           <Button className="flex items-center gap-2">
@@ -115,9 +106,9 @@ export default function BlogManagementPage() {
                       <TableCell className="font-medium">{blog.title}</TableCell>
                       <TableCell>{blog.author || "অ্যাডমিন"}</TableCell>
                       <TableCell>
-                        {blog.createdAt?.seconds
-                          ? format(new Date(blog.createdAt.seconds * 1000), "dd MMM, yyyy")
-                          : "Unknown"}
+                        {blog.createdAt
+                          ? format(new Date(blog.createdAt), "dd MMM, yyyy")
+                          : "—"}
                       </TableCell>
                       <TableCell>
                         <span
@@ -132,12 +123,19 @@ export default function BlogManagementPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Link href={`/blog/${blog.id}`} target="_blank">
+                          <Link
+                            href={`/blog/${blog.categorySlug || "general"}/${blog.slug || blog.id}`}
+                            target="_blank"
+                          >
                             <Button variant="outline" size="sm" className="h-8 w-8 p-0">
                               <Eye size={14} />
                             </Button>
                           </Link>
-                          {/* Note: Edit functionally would go to /admin/blog/edit/[id] */}
+                          <Link href={`/admin/blog/edit/${blog.id}`}>
+                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                              <Edit size={14} />
+                            </Button>
+                          </Link>
                           <Button
                             variant="destructive"
                             size="sm"

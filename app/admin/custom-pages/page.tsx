@@ -12,15 +12,6 @@ import {
   ExternalLink,
   Tag,
 } from "lucide-react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import Link from "next/link";
 import Editor from "@monaco-editor/react";
 
@@ -29,7 +20,7 @@ interface CustomPage {
   title: string;
   slug: string;
   category: string;
-  content: string;
+  content?: string;
 }
 
 export default function CustomPagesDashboard() {
@@ -52,12 +43,10 @@ export default function CustomPagesDashboard() {
   const fetchPages = async () => {
     setLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, "dynamic_pages"));
-      const pagesData: CustomPage[] = [];
-      querySnapshot.forEach((doc) => {
-        pagesData.push({ id: doc.id, ...doc.data() } as CustomPage);
-      });
-      setPages(pagesData);
+      const res = await fetch("/api/pages");
+      if (!res.ok) throw new Error("Failed to load pages");
+      const data = await res.json();
+      setPages(data.pages ?? []);
     } catch (error) {
       console.error("Error fetching pages:", error);
     } finally {
@@ -81,48 +70,70 @@ export default function CustomPagesDashboard() {
         content,
       };
 
-      if (editingId) {
-        await updateDoc(doc(db, "dynamic_pages", editingId), pageData);
-        alert("পেজ আপডেট হয়েছে!");
-      } else {
-        await addDoc(collection(db, "dynamic_pages"), pageData);
-        alert("নতুন পেজ তৈরি হয়েছে!");
+      const res = editingId
+        ? await fetch(`/api/pages/${editingId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pageData),
+          })
+        : await fetch("/api/pages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pageData),
+          });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "সেভ করতে সমস্যা হয়েছে");
       }
 
-      setTitle("");
-      setSlug("");
-      setCategory("সাধারণ (General)");
-      setContent("");
-      setEditingId(null);
-      setShowCreateForm(false);
-
+      alert(editingId ? "পেজ আপডেট হয়েছে!" : "নতুন পেজ তৈরি হয়েছে!");
+      resetForm();
       fetchPages();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving page:", error);
-      alert("পেজ সেভ করতে সমস্যা হয়েছে");
+      alert(error.message || "পেজ সেভ করতে সমস্যা হয়েছে");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEdit = (page: CustomPage) => {
+  const resetForm = () => {
+    setTitle("");
+    setSlug("");
+    setCategory("সাধারণ (General)");
+    setContent("");
+    setEditingId(null);
+    setShowCreateForm(false);
+  };
+
+  const handleEdit = async (page: CustomPage) => {
+    // Fetch full content for the editor
+    try {
+      const res = await fetch(`/api/pages/${page.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setContent(data.page.content ?? "");
+      }
+    } catch {
+      setContent("");
+    }
     setEditingId(page.id);
     setTitle(page.title);
     setSlug(page.slug);
     setCategory(page.category || "সাধারণ (General)");
-    setContent(page.content);
     setShowCreateForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id: string, pageTitle: string) => {
-    if (confirm(`"${pageTitle}" পেজটি কি আপনি সত্যিই ডিলিট করতে চান?`)) {
-      try {
-        await deleteDoc(doc(db, "dynamic_pages", id));
-        fetchPages();
-      } catch (error) {
-        console.error("Error deleting page:", error);
-      }
+    if (!confirm(`"${pageTitle}" পেজটি কি আপনি সত্যিই ডিলিট করতে চান?`)) return;
+    try {
+      const res = await fetch(`/api/pages/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("ডিলিট করতে সমস্যা হয়েছে");
+      fetchPages();
+    } catch (error) {
+      console.error("Error deleting page:", error);
     }
   };
 
@@ -145,15 +156,12 @@ export default function CustomPagesDashboard() {
         <button
           className={`px-6 py-2.5 rounded-full font-bold transition-all shadow-md ${
             showCreateForm && !editingId
-              ? "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border)] scale-95" 
+              ? "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border)] scale-95"
               : "cta-gradient text-[var(--bg)] hover:scale-105"
           }`}
           onClick={() => {
             if (showCreateForm && editingId) {
-              setEditingId(null);
-              setTitle("");
-              setSlug("");
-              setContent("");
+              resetForm();
             }
             setShowCreateForm(!showCreateForm);
           }}
@@ -162,7 +170,7 @@ export default function CustomPagesDashboard() {
         </button>
       </div>
 
-      {/* Creator Form - Premium UI */}
+      {/* Creator Form */}
       {showCreateForm && (
         <div className="card-new mb-10 overflow-hidden border-t-4 border-t-[var(--accent)] fade-in visible">
           <div className="p-6 md:p-8">
@@ -174,13 +182,7 @@ export default function CustomPagesDashboard() {
               {editingId && (
                 <button
                   className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setEditingId(null);
-                    setTitle("");
-                    setSlug("");
-                    setContent("");
-                  }}
+                  onClick={resetForm}
                 >
                   <X size={24} />
                 </button>
@@ -224,7 +226,7 @@ export default function CustomPagesDashboard() {
                     className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
                   >
                     <option value="সাধারণ (General)">সাধারণ (General)</option>
-                    <option value="আইন বিষয়ক (Legal)">আইন বিষয়ক (Legal)</option>
+                    <option value="আইন বিষয়ক (Legal)">আইন বিষয়ক (Legal)</option>
                     <option value="নোটিশ (Notice)">নোটিশ (Notice)</option>
                     <option value="অন্যান্য (Other)">অন্যান্য (Other)</option>
                   </select>
@@ -252,7 +254,7 @@ export default function CustomPagesDashboard() {
                       fontSize: 14,
                       wordWrap: "on",
                       formatOnPaste: true,
-                      padding: { top: 16, bottom: 16 }
+                      padding: { top: 16, bottom: 16 },
                     }}
                   />
                 </div>
@@ -281,7 +283,7 @@ export default function CustomPagesDashboard() {
         </div>
       )}
 
-      {/* Pages List - Premium UI */}
+      {/* Pages List */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <span className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
@@ -297,23 +299,15 @@ export default function CustomPagesDashboard() {
           <div className="p-6 border-b border-[var(--border)] bg-black/5 dark:bg-white/5">
             <h5 className="font-bold mb-0 text-[var(--text-primary)] text-lg">প্রকাশিত পেজসমূহ</h5>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                    পেজের টাইটেল
-                  </th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                    লিংক (URL)
-                  </th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                    ক্যাটাগরি
-                  </th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider text-right">
-                    অ্যাকশন
-                  </th>
+                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">পেজের টাইটেল</th>
+                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">লিংক (URL)</th>
+                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">ক্যাটাগরি</th>
+                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider text-right">অ্যাকশন</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
@@ -324,9 +318,7 @@ export default function CustomPagesDashboard() {
                         <div className="bg-[var(--bg)] border border-[var(--border)] text-[var(--accent)] w-10 h-10 rounded-xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
                           <FileText size={20} />
                         </div>
-                        <span className="font-bold text-[var(--text-primary)] text-base">
-                          {page.title}
-                        </span>
+                        <span className="font-bold text-[var(--text-primary)] text-base">{page.title}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

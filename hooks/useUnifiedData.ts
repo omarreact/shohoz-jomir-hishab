@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { UnifiedResponseData, UnifiedResponse } from "@/lib/unified-api/types";
+import { UnifiedResponseData, UnifiedResponse } from "@/src/modules/unified/types";
 import { SearchService } from "@/src/features/search/services/searchService";
 
 interface QueryStatus {

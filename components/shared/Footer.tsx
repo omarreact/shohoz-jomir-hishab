@@ -2,24 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { Calculator, ShieldCheck, FileText, HelpCircle, Map } from "lucide-react";
 
+type FooterPage = { id: string; title: string; slug: string };
+
 export default function Footer() {
-  const [dynamicPages, setDynamicPages] = useState<any[]>([]);
+  const [dynamicPages, setDynamicPages] = useState<FooterPage[]>([]);
 
   useEffect(() => {
-    const fetchPages = async () => {
-      try {
-        const q = query(collection(db, "dynamic_pages"), orderBy("createdAt", "asc"));
-        const snapshot = await getDocs(q);
-        setDynamicPages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      } catch (e) {
-        console.error("Error loading footer pages:", e);
-      }
-    };
-    fetchPages();
+    fetch("/api/pages")
+      .then((r) => r.ok ? r.json() : { pages: [] })
+      .then((data) => setDynamicPages(data.pages ?? []))
+      .catch(() => {});
   }, []);
 
   const currentYear = new Date().getFullYear();
