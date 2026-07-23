@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const cookieHeader = req.headers.get("cookie") || "";
     const match = cookieHeader.match(/(?:^|;\s*)refresh_token=([^;]+)/);
-    const refreshToken = match ? match[1] : null;
+    const refreshToken = match ? decodeURIComponent(match[1]) : null;
 
     if (refreshToken) {
       await AuthService.logout(refreshToken);

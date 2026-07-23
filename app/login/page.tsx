@@ -34,10 +34,10 @@ function LoginForm() {
     e.preventDefault();
     setError("");
 
-    // Support plain username (appends @smartkhatiyan.com) or full email
+    // Support plain username (ensuring it becomes an email) or full email
     const emailToUse = username.includes("@")
       ? username.toLowerCase().trim()
-      : `${username.toLowerCase().trim()}@smartkhatiyan.com`;
+      : `${username.toLowerCase().trim()}@landbd.com`;
 
     try {
       await login(emailToUse, password);
@@ -45,13 +45,12 @@ function LoginForm() {
       router.push(from);
     } catch (err: any) {
       const msg: string = err.message || "";
-      if (
-        msg.includes("Invalid credentials") ||
-        msg.includes("credentials")
-      ) {
+      if (msg.includes("Invalid credentials") || msg.includes("credentials")) {
         setError("ভুল ইমেইল বা পাসওয়ার্ড!");
       } else if (msg.includes("locked")) {
-        setError("অনেক বার ভুল চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
+        setError(
+          "অনেক বার ভুল চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+        );
       } else {
         setError("লগিন করতে সমস্যা হয়েছে: " + msg);
       }
@@ -91,7 +90,7 @@ function LoginForm() {
               </label>
               <input
                 type="text"
-                placeholder="যেমন: admin@smartkhatiyan.com"
+                placeholder="যেমন: admin@landbd.com"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required

@@ -1,11 +1,20 @@
 import { Worker, Job } from "bullmq";
 import { redis } from "@/src/modules/redis/redis.client";
 import { prisma } from "@/src/modules/database/prisma";
+import Redis from "ioredis";
 // Assuming Pino logger is available, or use console for now
 import pino from "pino";
 
 const logger = pino();
-const connection = redis;
+
+// When Redis is unavailable, create a dummy connection that won't actually work
+// but prevents TypeScript errors. Worker operations will fail gracefully.
+const connection =
+  redis ??
+  (new Redis({
+    lazyConnect: true,
+    maxRetriesPerRequest: null,
+  }) as unknown as Redis);
 
 // 1. Worker for processing emails
 export const emailWorker = new Worker(
@@ -16,7 +25,7 @@ export const emailWorker = new Worker(
     await new Promise((resolve) => setTimeout(resolve, 500));
     logger.info(`Successfully sent email to ${job.data.to}`);
   },
-  { connection }
+  { connection },
 );
 
 emailWorker.on("completed", (job) => {
@@ -26,7 +35,6 @@ emailWorker.on("failed", (job, err) => {
   logger.error(`Email job ${job?.id} failed: ${err.message}`);
 });
 
-
 // 2. Worker for token cleanup (background cron job)
 export const tokenCleanupWorker = new Worker(
   "token-cleanup-queue",
@@ -34,12 +42,12 @@ export const tokenCleanupWorker = new Worker(
     logger.info("Running token cleanup job...");
     const result = await prisma.session.deleteMany({
       where: {
-        expiresAt: { lt: new Date() }
-      }
+        expiresAt: { lt: new Date() },
+      },
     });
     logger.info(`Deleted ${result.count} expired sessions.`);
   },
-  { connection }
+  { connection },
 );
 
 tokenCleanupWorker.on("completed", (job) => {

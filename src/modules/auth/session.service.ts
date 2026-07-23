@@ -11,12 +11,12 @@ export class SessionService {
 
     const ipAddress = req.headers.get("x-forwarded-for") || "unknown";
     const userAgentStr = req.headers.get("user-agent") || "";
-    
+
     // In a real app we would parse User Agent to get device details.
     // For simplicity, we just use a hash or the raw string as device identifier.
     let deviceId = "unknown-device";
     if (userAgentStr) {
-       deviceId = Buffer.from(userAgentStr).toString("base64").substring(0, 32);
+      deviceId = Buffer.from(userAgentStr).toString("base64").substring(0, 32);
     }
 
     // Upsert device
@@ -48,11 +48,16 @@ export class SessionService {
   }
 
   /**
-   * Validate and rotate refresh token
+   * Validate and rotate refresh token.
+   * Returns the new refresh token along with user info.
    */
-  static async rotateRefreshToken(oldRefreshToken: string, req: Request): Promise<string> {
+  static async rotateRefreshToken(
+    oldRefreshToken: string,
+    req: Request,
+  ): Promise<{ newRefreshToken: string; user: { id: string; role: string } }> {
     const session = await prisma.session.findUnique({
       where: { refreshToken: oldRefreshToken },
+      include: { user: { select: { id: true, role: true } } },
     });
 
     if (!session) {
@@ -84,7 +89,7 @@ export class SessionService {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const ipAddress = req.headers.get("x-forwarded-for") || "unknown";
-    
+
     // Update device last active
     if (session.deviceId) {
       await prisma.device.update({
@@ -103,7 +108,10 @@ export class SessionService {
       },
     });
 
-    return newRefreshToken;
+    return {
+      newRefreshToken,
+      user: { id: session.user.id, role: session.user.role },
+    };
   }
 
   /**

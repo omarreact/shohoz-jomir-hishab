@@ -8,31 +8,49 @@ const LOCKOUT_MINUTES = 15;
 
 export class UserService {
   /**
-   * Check if a user account is currently locked out
+   * Check if a user account is currently locked out.
+   * Returns FALSE if Redis is unavailable (graceful degradation).
    */
   static async isLockedOut(userId: string): Promise<boolean> {
-    const attempts = await RedisService.get<number>(`login_attempts:${userId}`);
-    return attempts !== null && attempts >= MAX_FAILED_ATTEMPTS;
-  }
-
-  /**
-   * Handle a failed login attempt (increment counter, lock if needed)
-   */
-  static async handleFailedLogin(userId: string): Promise<void> {
-    const key = `login_attempts:${userId}`;
-    const current = await RedisService.get<number>(key) || 0;
-    
-    if (current < MAX_FAILED_ATTEMPTS) {
-      await RedisService.increment(key, LOCKOUT_MINUTES * 60);
+    try {
+      const attempts = await RedisService.get<number>(
+        `login_attempts:${userId}`,
+      );
+      return attempts !== null && attempts >= MAX_FAILED_ATTEMPTS;
+    } catch {
+      // Redis unavailable — allow login attempt (graceful degradation)
+      return false;
     }
   }
 
   /**
-   * Reset failed attempts after successful login
+   * Handle a failed login attempt (increment counter, lock if needed).
+   * Silently ignores Redis errors so login is not blocked.
+   */
+  static async handleFailedLogin(userId: string): Promise<void> {
+    try {
+      const key = `login_attempts:${userId}`;
+      const current = (await RedisService.get<number>(key)) || 0;
+
+      if (current < MAX_FAILED_ATTEMPTS) {
+        await RedisService.increment(key, LOCKOUT_MINUTES * 60);
+      }
+    } catch {
+      // Redis unavailable — skip attempt tracking (graceful degradation)
+    }
+  }
+
+  /**
+   * Reset failed attempts after successful login.
+   * Silently ignores Redis errors.
    */
   static async resetFailedAttempts(userId: string): Promise<void> {
-    await RedisService.delete(`login_attempts:${userId}`);
-    
+    try {
+      await RedisService.delete(`login_attempts:${userId}`);
+    } catch {
+      // Redis unavailable — skip (graceful degradation)
+    }
+
     // Still update lastLogin in database
     await prisma.user.update({
       where: { id: userId },

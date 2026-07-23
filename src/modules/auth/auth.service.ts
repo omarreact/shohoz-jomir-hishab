@@ -9,7 +9,10 @@ export class AuthService {
   static async register(data: RegisterInput, req: Request) {
     const user = await UserService.registerUser(data);
     const refreshToken = await SessionService.createSession(user.id, req);
-    const accessToken = TokenService.generateAccessToken({ userId: user.id, role: user.role });
+    const accessToken = TokenService.generateAccessToken({
+      userId: user.id,
+      role: user.role,
+    });
 
     return { user, accessToken, refreshToken };
   }
@@ -29,7 +32,9 @@ export class AuthService {
       await prisma.loginHistory.create({
         data: { userId: user.id, status: "LOCKED_OUT", ipAddress, userAgent },
       });
-      throw new Error("Account is temporarily locked due to too many failed login attempts");
+      throw new Error(
+        "Account is temporarily locked due to too many failed login attempts",
+      );
     }
 
     const isValidPassword = await bcrypt.compare(data.password, user.password);
@@ -49,30 +54,24 @@ export class AuthService {
     });
 
     const refreshToken = await SessionService.createSession(user.id, req);
-    const accessToken = TokenService.generateAccessToken({ userId: user.id, role: user.role });
+    const accessToken = TokenService.generateAccessToken({
+      userId: user.id,
+      role: user.role,
+    });
 
     return { user, accessToken, refreshToken };
   }
 
   static async refresh(refreshToken: string, req: Request) {
-    const newRefreshToken = await SessionService.rotateRefreshToken(refreshToken, req);
-    
-    // We need user details to generate a new access token
-    const session = await prisma.session.findUnique({
-      where: { refreshToken: newRefreshToken },
-      include: { user: true },
-    });
+    const result = await SessionService.rotateRefreshToken(refreshToken, req);
 
-    if (!session || !session.user) {
-      throw new Error("Invalid session");
-    }
-
+    // result contains both the new token and the user info
     const accessToken = TokenService.generateAccessToken({
-      userId: session.user.id,
-      role: session.user.role,
+      userId: result.user.id,
+      role: result.user.role,
     });
 
-    return { accessToken, refreshToken: newRefreshToken };
+    return { accessToken, refreshToken: result.newRefreshToken };
   }
 
   static async logout(refreshToken: string) {
