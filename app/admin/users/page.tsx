@@ -78,6 +78,13 @@ export default function UserManagement() {
   const [editRole, setEditRole] = useState("Admin");
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createEmail, setCreateEmail] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createRole, setCreateRole] = useState("Basic User");
+  const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -93,7 +100,12 @@ export default function UserManagement() {
       const res = await fetch("/api/admin/users?limit=100");
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
-      setUsers(data.users ?? data ?? []);
+      const usersList = Array.isArray(data.data)
+        ? data.data
+        : Array.isArray(data.users)
+          ? data.users
+          : [];
+      setUsers(usersList);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -117,7 +129,9 @@ export default function UserManagement() {
       });
       if (!res.ok) throw new Error("Failed to update");
       setEditingUser(null);
-      showSuccess(`✅ "${editingUser.name || editingUser.email}" আপডেট হয়েছে!`);
+      showSuccess(
+        `✅ "${editingUser.name || editingUser.email}" আপডেট হয়েছে!`,
+      );
       fetchUsers();
     } catch (error: any) {
       alert(`আপডেট করতে সমস্যা: ${error.message}`);
@@ -127,7 +141,8 @@ export default function UserManagement() {
   };
 
   const handleSuspend = async (user: AdminUser) => {
-    const isSuspended = !!user.lockedUntil && new Date(user.lockedUntil) > new Date();
+    const isSuspended =
+      !!user.lockedUntil && new Date(user.lockedUntil) > new Date();
     const action = isSuspended ? "unsuspend" : "suspend";
     const label = isSuspended ? "আনসাসপেন্ড" : "সাসপেন্ড";
 
@@ -147,18 +162,64 @@ export default function UserManagement() {
     }
   };
 
+  const handleCreateUser = async () => {
+    setIsCreateSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          email: createEmail,
+          name: createName,
+          password: createPassword,
+          role: createRole,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.error || "Failed to create user");
+      }
+
+      setIsCreateOpen(false);
+      setCreateEmail("");
+      setCreateName("");
+      setCreatePassword("");
+      setCreateRole("Basic User");
+      showSuccess(`✅ নতুন ইউজার তৈরি হয়েছে!`);
+      fetchUsers();
+    } catch (error: any) {
+      alert(`ত্রুটি: ${error.message}`);
+    } finally {
+      setIsCreateSubmitting(false);
+    }
+  };
+
   return (
     <div className="fade-in visible" data-admin-panel="true">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">ইউজার ম্যানেজমেন্ট</h1>
-          <p className="text-[var(--text-secondary)]">সিস্টেমে মোট {users.length} জন ইউজার আছেন</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+            ইউজার ম্যানেজমেন্ট
+          </h1>
+          <p className="text-[var(--text-secondary)]">
+            সিস্টেমে মোট {users.length} জন ইউজার আছেন
+          </p>
         </div>
+        <button
+          className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 font-semibold shadow-md transition-colors"
+          onClick={() => setIsCreateOpen(true)}
+        >
+          নতুন ইউজার তৈরি করুন
+        </button>
       </div>
 
       {successMsg && (
         <div className="bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl p-4 mb-8 font-bold flex items-center fade-in visible">
-          <div className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 shrink-0">✓</div>
+          <div className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 shrink-0">
+            ✓
+          </div>
           {successMsg}
         </div>
       )}
@@ -170,7 +231,9 @@ export default function UserManagement() {
       ) : users.length === 0 ? (
         <div className="card-new py-16 text-center text-[var(--text-secondary)]">
           <Users size={64} className="mx-auto mb-4 opacity-25" />
-          <h4 className="font-bold text-[var(--text-primary)] text-2xl mb-2">কোনো ইউজার পাওয়া যায়নি</h4>
+          <h4 className="font-bold text-[var(--text-primary)] text-2xl mb-2">
+            কোনো ইউজার পাওয়া যায়নি
+          </h4>
           <p>ব্যবহারকারীরা রেজিস্ট্রেশন করলে এখানে দেখা যাবে।</p>
         </div>
       ) : (
@@ -205,7 +268,10 @@ export default function UserManagement() {
                           )}
                         </h5>
                         <div className="text-[var(--text-secondary)] font-medium text-sm flex items-center break-all">
-                          <Mail size={14} className="mr-2 opacity-75 shrink-0" />
+                          <Mail
+                            size={14}
+                            className="mr-2 opacity-75 shrink-0"
+                          />
                           {user.email}
                         </div>
                       </div>
@@ -254,8 +320,12 @@ export default function UserManagement() {
               <div className="flex items-center gap-4">
                 <AvatarCircle name={editingUser.name} role={editingUser.role} />
                 <div>
-                  <h5 className="font-bold text-[var(--text-primary)] text-xl mb-1">রোল পরিবর্তন</h5>
-                  <p className="text-[var(--text-secondary)] font-medium text-sm mb-0">{editingUser.email}</p>
+                  <h5 className="font-bold text-[var(--text-primary)] text-xl mb-1">
+                    রোল পরিবর্তন
+                  </h5>
+                  <p className="text-[var(--text-secondary)] font-medium text-sm mb-0">
+                    {editingUser.email}
+                  </p>
                 </div>
               </div>
               <button
@@ -267,7 +337,9 @@ export default function UserManagement() {
             </div>
 
             <div className="p-6">
-              <label className="block text-[var(--text-primary)] font-bold mb-2">অ্যাক্সেস রোল</label>
+              <label className="block text-[var(--text-primary)] font-bold mb-2">
+                অ্যাক্সেস রোল
+              </label>
               <select
                 value={editRole}
                 onChange={(e) => setEditRole(e.target.value)}
@@ -293,6 +365,102 @@ export default function UserManagement() {
                 disabled={isEditSubmitting}
               >
                 {isEditSubmitting ? "সেভ হচ্ছে..." : "পরিবর্তন সেভ করুন"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in visible">
+          <div className="card-new w-full max-w-lg overflow-hidden shadow-2xl bg-[var(--surface)]">
+            <div className="px-6 py-5 border-b border-[var(--border)] flex items-start justify-between">
+              <div>
+                <h5 className="font-bold text-[var(--text-primary)] text-xl mb-1">
+                  নতুন ইউজার তৈরি করুন
+                </h5>
+                <p className="text-[var(--text-secondary)] text-sm">
+                  নতুন ব্যবহারকারীকে একটি রোলের সাথে তৈরি করুন।
+                </p>
+              </div>
+              <button
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                  ইমেল
+                </label>
+                <input
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                  নাম (ঐচ্ছিক)
+                </label>
+                <input
+                  type="text"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  placeholder="Example Name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                  পাসওয়ার্ড
+                </label>
+                <input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                  রোল
+                </label>
+                <select
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                >
+                  <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
+                  <option value="Admin">🛡️ অ্যাডমিন</option>
+                  <option value="Editor">✍️ এডিটর</option>
+                  <option value="Basic User">👤 বেসিক ইউজার</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-[var(--border)] bg-black/5 dark:bg-white/5 flex gap-3 justify-end">
+              <button
+                className="px-6 py-2.5 rounded-full font-bold border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                বাতিল
+              </button>
+              <button
+                className="px-6 py-2.5 rounded-full font-bold bg-[var(--text-primary)] text-[var(--bg)] hover:scale-105 transition-transform disabled:opacity-70 disabled:hover:scale-100 shadow-md"
+                onClick={handleCreateUser}
+                disabled={isCreateSubmitting}
+              >
+                {isCreateSubmitting ? "তৈরি হচ্ছে..." : "উল্লিখিত ইউজার তৈরি করুন"}
               </button>
             </div>
           </div>
