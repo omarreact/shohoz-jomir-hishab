@@ -47,7 +47,7 @@ const keyTranslations: Record<string, string> = {
   length: "সীমানার দৈর্ঘ্য",
 };
 
-export const IGNORED_KEYS = ["id", "objectid", "globalid", "shape"];
+export const IGNORED_KEYS = ["id", "objectid", "globalid", "shape", "landusedata", "flooddata", "p_guid", "p_guid_1", "t_guid", "d_guid", "m_guid"];
 
 export const formatKeyName = (key: string): string => {
   return keyTranslations[key] || key.replace(/([A-Z])/g, " $1").toUpperCase();

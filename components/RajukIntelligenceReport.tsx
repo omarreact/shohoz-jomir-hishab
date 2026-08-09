@@ -23,15 +23,19 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
     // Extract properties directly from plotData since the Unified API already includes them
     const props = plotData.properties || {};
     
-    // Map the landuse and flood zones directly
-    if (props.luZoning || props.Landuse || props.LANDUSE) {
-      setLanduse([{ attributes: props }]);
+    // Map the landuse arrays directly from the new detailed tables
+    if (props.landuseData && props.landuseData.length > 0) {
+      setLanduse(props.landuseData);
+    } else if (props.luZoning || props.Landuse || props.LANDUSE) {
+      setLanduse([{ Landuse: props.luZoning || props.Landuse || props.LANDUSE }]);
     } else {
       setLanduse([]);
     }
 
-    if (props.floodZone && props.floodZone !== "No Flood Zone" && props.floodZone !== "NO") {
-      setFloodZones([{ attributes: props }]);
+    if (props.floodData && props.floodData.length > 0) {
+      setFloodZones(props.floodData);
+    } else if (props.floodZone && props.floodZone !== "No Flood Zone" && props.floodZone !== "NO") {
+      setFloodZones([{ floodZone: props.floodZone }]);
     } else {
       setFloodZones([]);
     }
@@ -54,9 +58,14 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
   }
 
   // ── Compute UI State ──
-  const isFloodProne = floodZones.length > 0;
+  const isFloodProne = floodZones.some(fz => {
+    const fzName = fz.floodZone || fz.FLOOD_ZONE || fz.flood_zone;
+    return fzName && fzName !== "No Flood Zone" && fzName !== "NO";
+  });
   const hasRoads = roads.length > 0;
-  const primaryZone = landuse.length > 0 ? landuse[0].attributes?.Landuse || landuse[0].attributes?.LANDUSE : "অজানা";
+  
+  const uniqueLanduses = Array.from(new Set(landuse.map(lu => lu.Landuse || lu.LANDUSE || lu.lu_zoning || lu.luZoning).filter(Boolean)));
+  const primaryZone = uniqueLanduses.length > 0 ? uniqueLanduses.join(", ") : "অজানা";
 
   // If no advanced data was fetched, show a fallback message instead of a blank report
   if (!isFloodProne && !hasRoads && landuse.length === 0 && error) {

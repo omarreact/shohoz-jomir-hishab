@@ -71,33 +71,7 @@ export class UnifiedGateway {
       if (res.status === "fulfilled") {
         data[res.value.key] = res.value.data;
         
-        // Legacy Support: map the joined Plot data to the separated keys the frontend expects
-        if (res.value.key === "plots") {
-          // If the frontend asked for landuse, flood, or transport, we inject them manually
-          if (keys.includes("landuse")) {
-            data["landuse"] = res.value.data.map((f: UnifiedFeature) => ({
-              ...f,
-              properties: {
-                Landuse: f.properties.luZoning || "অজানা",
-                ...f.properties
-              }
-            }));
-          }
-          if (keys.includes("flood")) {
-            data["flood"] = res.value.data
-              .filter((f: UnifiedFeature) => f.properties.floodZone && f.properties.floodZone !== "No Flood Zone")
-              .map((f: UnifiedFeature) => ({
-                ...f,
-                properties: {
-                  ...f.properties
-                }
-              }));
-          }
-          if (keys.includes("transport")) {
-            // DAP db info table doesn't have transport/road line info. We return empty to avoid false alerts.
-            data["transport"] = [];
-          }
-        }
+
       } else {
         const failedKey = activeKeys[idx];
         errors.push({
