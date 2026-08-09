@@ -100,12 +100,16 @@ export default function UserManagement() {
       const res = await fetch("/api/admin/users?limit=100");
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
+<<<<<<< HEAD
       const usersList = Array.isArray(data.data)
         ? data.data
         : Array.isArray(data.users)
           ? data.users
           : [];
       setUsers(usersList);
+=======
+      setUsers(data.data ?? data.users ?? []);
+>>>>>>> 58add4b (WIP: save changes before push)
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {

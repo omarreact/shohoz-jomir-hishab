@@ -1,11 +1,9 @@
+import "reflect-metadata";
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import "reflect-metadata";
 import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
-
-const notificationService = container.resolve(NotificationService);
 
 const createSchema = z.object({
   userId: z.string().uuid(),
@@ -40,6 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const validatedQuery = querySchema.parse(query);
+    const notificationService = container.resolve(NotificationService);
     const result =
       await notificationService.getUserNotifications(validatedQuery);
 
@@ -68,6 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validated = createSchema.parse(body);
+    const notificationService = container.resolve(NotificationService);
     const notification = await notificationService.create(validated);
 
     return NextResponse.json(notification, { status: 201 });

@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_super_secret_jwt_key_override_this_in_prod";
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  JWT_SECRET not set — using insecure fallback. Set JWT_SECRET in production!");
+}
 const JWT_EXPIRES_IN = "15m";
 
 export class TokenService {

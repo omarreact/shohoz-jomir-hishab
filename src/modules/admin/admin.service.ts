@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { injectable } from "tsyringe";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/src/modules/database/prisma";
 import { logger } from "@/lib/logger";
 
 export interface SystemHealth {
@@ -18,8 +18,6 @@ export interface UserMetrics {
   failedLogins24h: number;
   newUsersToday: number;
 }
-
-const prisma = new PrismaClient();
 
 @injectable()
 export class AdminService {

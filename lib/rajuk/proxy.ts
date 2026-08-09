@@ -41,17 +41,20 @@ export const proxyRequest = async (
 
     proxyRequestCounter.labels(method, "success").inc();
     return response.data;
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Proxy request failed");
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : "Unknown proxy error";
+    logger.error({ error: errMsg }, "Proxy request failed");
     proxyRequestCounter.labels(method, "failed").inc();
     
     if (error instanceof ProxyError) {
       throw error;
     }
-    if (error.isAxiosError && error.response) {
-      throw new ProxyError(error.message, error.response.status);
+    // Check for axios error structure via duck typing
+    const axiosError = error as { isAxiosError?: boolean; response?: { status: number }; message?: string };
+    if (axiosError.isAxiosError && axiosError.response) {
+      throw new ProxyError(axiosError.message || errMsg, axiosError.response.status);
     }
-    throw new ProxyError(error.message || "Internal Proxy Error", 500);
+    throw new ProxyError(errMsg || "Internal Proxy Error", 500);
   }
 };
 
@@ -69,7 +72,7 @@ const makeRequest = async (
 
   requestConfig.params = {
     ...(requestConfig.params || {}),
-    token,
+    ...(token ? { token } : {}),
   };
 
   return axios(requestConfig);

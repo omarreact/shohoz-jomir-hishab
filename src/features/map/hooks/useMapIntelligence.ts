@@ -51,6 +51,15 @@ export const useMapIntelligence = () => {
 
       if (rs?.id) setSelectedRsId(rs.id);
       setInferredData({ rsData: rs, landuseData: landuse, floodData: flood });
+
+      // Dispatch event to sync with SearchPanel
+      if (typeof window !== "undefined" && rs) {
+        window.dispatchEvent(
+          new CustomEvent("map-intelligence-success", {
+            detail: { rsData: rs, landuseData: landuse, floodData: flood },
+          })
+        );
+      }
     } catch (err) {
       console.error("Inference Engine Error:", err);
     } finally {

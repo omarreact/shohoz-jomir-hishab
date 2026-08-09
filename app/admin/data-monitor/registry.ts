@@ -100,10 +100,10 @@ export const API_REGISTRY: ApiRow[] = [
   },
   {
     name: "Rajuk Token",
-    endpoint: "/api/rajuk-token",
-    type: "Firebase",
+    endpoint: "/api/admin/rajuk-config",
+    type: "Rajuk",
     status: "active",
-    note: "Token from Firebase config/rajuk_api",
+    note: "Token from Env/DB",
   },
   {
     name: "Open-Meteo Elevation",

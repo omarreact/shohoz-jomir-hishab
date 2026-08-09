@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 // GET /api/pages/[id]
 export async function GET(
@@ -25,6 +26,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const { id } = await params;
   try {
     const body = await req.json();
@@ -53,9 +57,12 @@ export async function PUT(
 
 // DELETE /api/pages/[id] — admin delete
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const { id } = await params;
   try {
     await prisma.customPage.delete({ where: { id } });

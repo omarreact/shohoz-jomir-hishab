@@ -14,23 +14,32 @@ export class SessionService {
 
     // In a real app we would parse User Agent to get device details.
     // For simplicity, we just use a hash or the raw string as device identifier.
-    let deviceId = "unknown-device";
+    let deviceFingerprint = "unknown-device";
     if (userAgentStr) {
-      deviceId = Buffer.from(userAgentStr).toString("base64").substring(0, 32);
+      deviceFingerprint = Buffer.from(userAgentStr).toString("base64").substring(0, 32);
     }
 
-    // Upsert device
-    const device = await prisma.device.upsert({
-      where: { id: deviceId },
-      update: { lastActive: new Date(), ipAddress, userAgent: userAgentStr },
-      create: {
-        id: deviceId,
-        userId,
-        deviceId: deviceId,
-        userAgent: userAgentStr,
-        ipAddress,
-      },
+    // Find existing device by fingerprint + userId, then upsert properly
+    const existingDevice = await prisma.device.findFirst({
+      where: { deviceId: deviceFingerprint, userId },
     });
+
+    let device;
+    if (existingDevice) {
+      device = await prisma.device.update({
+        where: { id: existingDevice.id },
+        data: { lastActive: new Date(), ipAddress, userAgent: userAgentStr },
+      });
+    } else {
+      device = await prisma.device.create({
+        data: {
+          userId,
+          deviceId: deviceFingerprint,
+          userAgent: userAgentStr,
+          ipAddress,
+        },
+      });
+    }
 
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 

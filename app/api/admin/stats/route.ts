@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 // GET /api/admin/stats — data monitor dashboard stats
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
   try {
     const [
       blogCount,

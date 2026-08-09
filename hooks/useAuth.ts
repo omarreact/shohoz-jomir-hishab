@@ -20,7 +20,9 @@ interface AuthState {
  * no signature verification — the server validates on every API call).
  * Provides login/logout helpers that call the existing /api/auth/* routes.
  */
-function parseJwtPayload(token: string): { userId: string; role: string; exp: number } | null {
+function parseJwtPayload(
+  token: string,
+): { userId: string; role: string; exp: number } | null {
   try {
     const base64 = token.split(".")[1];
     const json = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
@@ -63,6 +65,7 @@ export function useAuth(): AuthState & {
       try {
         const res = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
+          credentials: "same-origin",
         });
         if (res.ok) {
           const data = await res.json();
@@ -90,7 +93,10 @@ export function useAuth(): AuthState & {
 
   async function silentRefresh(): Promise<boolean> {
     try {
-      const res = await fetch("/api/auth/refresh", { method: "POST" });
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        credentials: "same-origin",
+      });
       if (!res.ok) return false;
       const data = await res.json();
       if (data.accessToken) {
@@ -106,7 +112,9 @@ export function useAuth(): AuthState & {
 
   function setAccessTokenCookie(token: string) {
     const payload = parseJwtPayload(token);
-    const maxAge = payload ? Math.floor((payload.exp * 1000 - Date.now()) / 1000) : 900;
+    const maxAge = payload
+      ? Math.floor((payload.exp * 1000 - Date.now()) / 1000)
+      : 900;
     document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
   }
 

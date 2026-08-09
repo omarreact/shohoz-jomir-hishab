@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 function generateSlug(text: string): string {
   return text
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/blogs — admin create (auth enforced by middleware)
 export async function POST(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const body = await req.json();
     const { title, coverImage, category, author, content } = body;

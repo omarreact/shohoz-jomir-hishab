@@ -1,10 +1,8 @@
+import "reflect-metadata";
 import { NextResponse } from "next/server";
 import { SearchService } from "@/src/modules/search/search.service";
-import "reflect-metadata";
 import { container } from "tsyringe";
 import { z } from "zod";
-
-const searchService = container.resolve(SearchService);
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -25,6 +23,7 @@ export async function GET(request: Request) {
 
     const validatedQuery = searchSchema.parse(query);
 
+    const searchService = container.resolve(SearchService);
     const result = await searchService.searchPlots(validatedQuery);
 
     return NextResponse.json(result);
@@ -36,7 +35,10 @@ export async function GET(request: Request) {
       );
     }
 
-    console.error("Search API Error");
+    console.error(
+      "Search API Error:",
+      error instanceof Error ? error.message : error,
+    );
     return NextResponse.json(
       { error: "Failed to perform search" },
       { status: 500 },

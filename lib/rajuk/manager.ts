@@ -71,18 +71,22 @@ export class RajukTokenManager {
    */
   private async refreshTokenSafe(): Promise<string> {
     const lockKey = "locks:rajuk:refresh";
-    const lock = await this.lockManager.acquire(lockKey, this.LOCK_TTL);
-    
-    if (!lock && env.REDIS_URL) {
-      // If we couldn't acquire lock but we have Redis, it means another instance is refreshing.
-      // We should wait briefly and check cache again.
-      logger.debug("Another instance is refreshing token, waiting for cache update");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const cached = await this.getCachedToken();
-      if (cached && this.isValid(cached.expires)) {
-        return cached.token;
+    let lock = null;
+
+    try {
+      lock = await this.lockManager.acquire(lockKey, this.LOCK_TTL);
+    } catch {
+      // Another instance holds the lock — wait briefly and check cache
+      if (env.REDIS_URL) {
+        logger.debug("Another instance is refreshing token, waiting for cache update");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const cached = await this.getCachedToken();
+        if (cached && this.isValid(cached.expires)) {
+          return cached.token;
+        }
       }
-      // If still not there, we just proceed directly (fallback safety)
+      // Proceed directly as fallback safety (lock not held by us, so no release needed)
+      return await this.executeTokenRefresh();
     }
 
     try {

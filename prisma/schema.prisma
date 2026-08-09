@@ -1,11 +1,14 @@
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
+
+// =============================================================================
+// 1. Auth & Identity
+// =============================================================================
 
 model User {
   id             String    @id @default(uuid())
@@ -14,15 +17,17 @@ model User {
   name           String?
   isVerified     Boolean   @default(false)
   role           String    @default("Basic User") // Enum in Phase 11
-  
-  // Security fields
+
+  // Security
   failedAttempts Int       @default(0)
   lockedUntil    DateTime?
   lastLogin      DateTime?
-  
+
+  // Timestamps
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // Relations
   sessions       Session[]
   devices        Device[]
   loginHistory   LoginHistory[]
@@ -33,96 +38,108 @@ model Session {
   id           String    @id @default(uuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   refreshToken String    @unique // Opaque token stored in HttpOnly cookie
   familyId     String    // Used for token rotation detection
   expiresAt    DateTime
-  
   isRevoked    Boolean   @default(false)
+
   deviceId     String?
   device       Device?   @relation(fields: [deviceId], references: [id])
-  
+
   createdAt    DateTime  @default(now())
 }
 
 model Device {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  deviceId     String    // Unique identifier for the client device
-  userAgent    String?
-  ipAddress    String?
-  lastActive   DateTime  @default(now())
-  
-  sessions     Session[]
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceId   String // Unique identifier for the client device
+  userAgent  String?
+  ipAddress  String?
+  lastActive DateTime @default(now())
+
+  sessions   Session[]
 }
 
 model LoginHistory {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  status       String    // "SUCCESS" | "FAILED"
-  ipAddress    String?
-  userAgent    String?
-  
-  createdAt    DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status    String // "SUCCESS" | "FAILED"
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
 }
+
+// =============================================================================
+// 2. User features
+// =============================================================================
+
+// Phase 7: Notification System
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR
+  isRead    Boolean  @default(false)
+  link      String?
+
+  createdAt DateTime @default(now())
+}
+
+// =============================================================================
+// 3. Domain — Land / RAJUK
+// =============================================================================
 
 // Phase 5: Search & Unified Caching
 model RajukPlot {
-  id           String    @id @default(uuid())
-  plotNo       String
-  ownerName    String?
-  mouza        String?
-  khatiyanNo   String?
-  landType     String?
-  area         Float?
-  
-  // JSON data to store the raw ESRI feature geometry or complex metadata
-  rawFeature   String?   
+  id         String  @id @default(uuid())
+  plotNo     String
+  khatiyanNo String?
+  mouza      String?
+  ownerName  String?
+  landType   String?
+  area       Float?
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  // JSON data to store the raw ESRI feature geometry or complex metadata
+  rawFeature String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([plotNo])
   @@index([khatiyanNo])
   @@index([mouza])
 }
 
-// Phase 7: Notification System
-model Notification {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  title        String
-  message      String
-  type         String    @default("INFO") // INFO, WARNING, SUCCESS, ERROR
-  isRead       Boolean   @default(false)
-  link         String?
-  
-  createdAt    DateTime  @default(now())
-}
+// =============================================================================
+// 4. CMS / Content
+// =============================================================================
 
 // Blog system (replaces Firestore "blogs" collection)
 model Blog {
-  id           String    @id @default(uuid())
+  id           String  @id @default(uuid())
   title        String
-  slug         String    @unique
+  slug         String  @unique
   excerpt      String?
   content      String
   coverImage   String?
-  author       String    @default("মো. ওমর ফারুক")
-  category     String    @default("সাধারণ")
-  categorySlug String    @default("general")
-  status       String    @default("Published") // Published | Draft
+  author       String  @default("মো. ওমর ফারুক")
+  category     String  @default("সাধারণ")
+  categorySlug String  @default("general")
+  status       String  @default("Published") // Published | Draft
   readingTime  String?
-  tags         String    @default("[]") // JSON array stored as string
+  tags         String  @default("[]") // JSON array stored as string
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   comments     BlogComment[]
 
@@ -136,8 +153,10 @@ model BlogComment {
   id        String   @id @default(uuid())
   blogId    String
   blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
   name      String
   text      String
+
   createdAt DateTime @default(now())
 
   @@index([blogId])

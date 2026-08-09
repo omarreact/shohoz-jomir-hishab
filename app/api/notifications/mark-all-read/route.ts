@@ -1,6 +1,6 @@
+import "reflect-metadata";
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import "reflect-metadata";
 import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 

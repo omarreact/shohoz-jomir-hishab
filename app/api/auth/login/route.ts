@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { LoginSchema } from "@/src/modules/auth/schemas";
 import { AuthService } from "@/src/modules/auth/auth.service";
+import { z } from "zod";
 
 export async function POST(req: Request) {
   try {
@@ -44,9 +45,9 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.message },
+        { error: "Validation failed", details: error.issues },
         { status: 400 },
       );
     }

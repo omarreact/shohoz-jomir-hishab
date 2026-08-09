@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 // Keys we persist in SiteSetting
 const ALLOWED_KEYS = [
@@ -13,7 +14,9 @@ const ALLOWED_KEYS = [
 ];
 
 // GET /api/admin/settings — returns all settings as a flat object
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
   try {
     const rows = await prisma.siteSetting.findMany({
       where: { key: { in: ALLOWED_KEYS } },
@@ -48,6 +51,8 @@ export async function GET() {
 
 // POST /api/admin/settings — upsert multiple settings at once
 export async function POST(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
   try {
     const body = await req.json();
 

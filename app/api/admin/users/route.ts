@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
 import { container } from "tsyringe";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 const roleSchema = z.object({
   userId: z.string().uuid(),
@@ -16,6 +17,9 @@ const suspendSchema = z.object({
 
 // GET /api/admin/users?page=1&limit=50
 export async function GET(request: NextRequest) {
+  const authResult = await requireAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminService = container.resolve(AdminService);
   try {
     const { searchParams } = new URL(request.url);
@@ -36,6 +40,9 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/admin/users - Update user role
 export async function PATCH(request: NextRequest) {
+  const authResult = await requireAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminService = container.resolve(AdminService);
   try {
     const body = await request.json();
@@ -60,6 +67,9 @@ export async function PATCH(request: NextRequest) {
 
 // POST /api/admin/users - Suspend or unsuspend user
 export async function POST(request: NextRequest) {
+  const authResult = await requireAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminService = container.resolve(AdminService);
   try {
     const body = await request.json();

@@ -18,87 +18,31 @@ export class RajukFeatureProvider extends BaseProvider {
     this.servicePath = servicePath;
   }
 
-  public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
-    const token = await TokenManager.getInstance().getToken();
+  /**
+   * Shared HTTP fetch+parse helper to avoid code duplication between
+   * the initial request and the retry-after-token-refresh path.
+   */
+  private async makeFetch(query: ProviderQuery, token: string) {
     const baseUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${this.servicePath}/query`;
 
     const params = new URLSearchParams({
       f: "json",
       where: query.where || "1=1",
-      outFields: query.outFields || "*",
-      returnGeometry: query.returnGeometry !== undefined ? query.returnGeometry.toString() : "true",
-      resultRecordCount: (query.limit || 100).toString(),
-      resultOffset: (query.offset || 0).toString(),
-      token: token,
+      outFields: (query.outFields as string) || "*",
+      returnGeometry: query.returnGeometry !== undefined ? String(query.returnGeometry) : "true",
+      resultRecordCount: String(query.limit || 100),
+      resultOffset: String(query.offset || 0),
+      token,
     });
 
-    if (query.geometry) params.append("geometry", query.geometry);
-    if (query.geometryType) params.append("geometryType", query.geometryType);
-    if (query.spatialRel) params.append("spatialRel", query.spatialRel);
-    if (query.inSR) params.append("inSR", query.inSR);
-    if (query.outSR) params.append("outSR", query.outSR);
-    if (query.returnDistinctValues !== undefined) params.append("returnDistinctValues", query.returnDistinctValues.toString());
-
-    const response = await fetch(baseUrl, {
-      method: "POST",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-        Referer: "https://masterplan.rajuk.gov.bd/",
-      },
-      body: params.toString(),
-      // Using Next.js fetch cache optionally, but we will rely on our unified CacheManager mostly.
-      cache: "no-store", 
-    });
-
-    if (!response.ok) {
-      throw new ApiError(`Rajuk API returned status ${response.status} ${response.statusText}`, response.status);
+    if (query.geometry) params.append("geometry", String(query.geometry));
+    if (query.geometryType) params.append("geometryType", String(query.geometryType));
+    if (query.spatialRel) params.append("spatialRel", String(query.spatialRel));
+    if (query.inSR) params.append("inSR", String(query.inSR));
+    if (query.outSR) params.append("outSR", String(query.outSR));
+    if (query.returnDistinctValues !== undefined) {
+      params.append("returnDistinctValues", String(query.returnDistinctValues));
     }
-
-    let data;
-    try {
-      const rawJson = await response.json();
-      data = RajukFeatureResponseSchema.parse(rawJson);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        throw new ApiError(`Rajuk API Parse/Validation Error: ${e.message}`, 500);
-      }
-      throw new ApiError("Rajuk API Parse Error", 500);
-    }
-
-    if (data.error) {
-      if (data.error.code === 498 || data.error.code === 499) {
-        // Token expired, force refresh and retry once
-        await TokenManager.getInstance().refreshToken();
-        return this.retryFetch(query);
-      }
-      throw new ApiError(`Rajuk API Error: ${data.error.message}`, data.error.code || 400);
-    }
-
-    return this.normalize(data);
-  }
-
-  private async retryFetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
-    const token = await TokenManager.getInstance().getToken();
-    const baseUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${this.servicePath}/query`;
-    
-    const params = new URLSearchParams({
-      f: "json",
-      where: query.where || "1=1",
-      outFields: query.outFields || "*",
-      returnGeometry: query.returnGeometry !== undefined ? query.returnGeometry.toString() : "true",
-      resultRecordCount: (query.limit || 100).toString(),
-      resultOffset: (query.offset || 0).toString(),
-      token: token,
-    });
-
-    if (query.geometry) params.append("geometry", query.geometry);
-    if (query.geometryType) params.append("geometryType", query.geometryType);
-    if (query.spatialRel) params.append("spatialRel", query.spatialRel);
-    if (query.inSR) params.append("inSR", query.inSR);
-    if (query.outSR) params.append("outSR", query.outSR);
-    if (query.returnDistinctValues !== undefined) params.append("returnDistinctValues", query.returnDistinctValues.toString());
 
     const response = await fetch(baseUrl, {
       method: "POST",
@@ -113,21 +57,52 @@ export class RajukFeatureProvider extends BaseProvider {
     });
 
     if (!response.ok) {
-      throw new ApiError(`Rajuk API returned status ${response.status} on retry`, response.status);
+      throw new ApiError(
+        `Rajuk API returned status ${response.status} ${response.statusText}`,
+        response.status,
+      );
     }
 
+    let rawJson: unknown;
     try {
-      const rawJson = await response.json();
-      const data = RajukFeatureResponseSchema.parse(rawJson);
-      
-      if (data.error) throw new ApiError(data.error.message || "Unknown error", data.error.code || 400);
-      return this.normalize(data);
+      rawJson = await response.json();
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        throw new ApiError(`Rajuk API Parse Error on retry: ${e.message}`, 500);
-      }
-      throw new ApiError("Rajuk API Parse Error on retry", 500);
+      throw new ApiError(
+        `Rajuk API JSON parse error: ${e instanceof Error ? e.message : "unknown"}`,
+        500,
+      );
     }
+
+    return RajukFeatureResponseSchema.parse(rawJson);
+  }
+
+  public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
+    const token = await TokenManager.getInstance().getToken();
+
+    let data;
+    try {
+      data = await this.makeFetch(query, token);
+    } catch (e: unknown) {
+      if (e instanceof ApiError) throw e;
+      throw new ApiError(`Rajuk API Error: ${e instanceof Error ? e.message : "unknown"}`, 500);
+    }
+
+    if (data.error) {
+      if (data.error.code === 498 || data.error.code === 499) {
+        // Token expired — refresh and retry once
+        logger.warn(`Token expired (${data.error.code}), refreshing and retrying`);
+        const newToken = await TokenManager.getInstance().refreshToken();
+        const retryData = await this.makeFetch(query, newToken);
+
+        if (retryData.error) {
+          throw new ApiError(retryData.error.message || "Unknown error after token refresh", retryData.error.code || 400);
+        }
+        return this.normalize(retryData);
+      }
+      throw new ApiError(`Rajuk API Error: ${data.error.message}`, data.error.code || 400);
+    }
+
+    return this.normalize(data);
   }
 
   public normalize(rawData: unknown): UnifiedFeature[] {
@@ -144,9 +119,10 @@ export class RajukFeatureProvider extends BaseProvider {
         geometry,
         metadata: {
           layerId: this.name,
-          spatialReference: (data as any).spatialReference,
+          spatialReference: (data as Record<string, unknown>).spatialReference,
         }
       };
     });
   }
 }
+

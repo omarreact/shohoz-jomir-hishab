@@ -12,6 +12,19 @@ export class UserService {
    * Returns FALSE if Redis is unavailable (graceful degradation).
    */
   static async isLockedOut(userId: string): Promise<boolean> {
+    // Check 1: DB-level suspension (set by admin)
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { lockedUntil: true },
+      });
+      if (user?.lockedUntil && user.lockedUntil > new Date()) {
+        return true;
+      }
+    } catch {
+      // DB error — proceed to Redis check
+    }
+
     try {
       const attempts = await RedisService.get<number>(
         `login_attempts:${userId}`,

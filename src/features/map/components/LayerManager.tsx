@@ -1,4 +1,5 @@
 import { LayersControl, TileLayer, FeatureGroup, Polygon, Tooltip } from "react-leaflet";
+import L from "leaflet";
 import { buildRajukTileProxyUrl } from "@/lib/api/rajukTiles";
 import { LayerRegistry } from "../layers/registry";
 import { getPolygonStyle, getTooltipStyle } from "../utils/styleUtils";
@@ -27,7 +28,14 @@ export function LayerManager({ token, rsPolygons, selectedRsId }: { token: strin
             {layer.id === "rs-plot-vector" && rsPolygons.map((feature: any, idx: number) => {
               if (!feature.geometry?.rings) return null;
               const ring = feature.geometry.rings[0];
-              const coords: [number, number][] = ring.map((pt: number[]) => [pt[1], pt[0]]);
+              const coords: [number, number][] = ring.map((pt: number[]) => {
+                let [x, y] = pt;
+                if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+                  const latLng = L.CRS.EPSG3857.unproject(L.point(x, y));
+                  return [latLng.lat, latLng.lng] as [number, number];
+                }
+                return [y, x] as [number, number];
+              });
               const attrs = feature.attributes || {};
               const label = attrs.rs_plot_no || attrs.plot_no;
               const isSelected = attrs.objectid === selectedRsId;

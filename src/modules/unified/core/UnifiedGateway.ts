@@ -3,7 +3,6 @@ import { ProviderQuery, UnifiedResponse, UnifiedResponseData, UnifiedFeature } f
 import { RajukFeatureProvider } from "../providers/RajukFeatureProvider";
 import { RajukPlotProvider } from "../providers/RajukPlotProvider";
 import { ElevationProvider } from "../providers/ElevationProvider";
-import { FirebaseProvider } from "../providers/FirebaseProvider";
 import { CacheManager } from "./CacheManager";
 
 export class UnifiedGateway {
@@ -16,22 +15,20 @@ export class UnifiedGateway {
   }
 
   private registerProviders() {
-    // Register the new virtual plot providers that handle Geometry + Info Table joining
+    // RS plots: Geometry (Layer 0) + Info Table (Layer 6)
     this.providers["plots"] = new RajukPlotProvider("plots", "RS");
+    // MS plots: Geometry (Layer 5) + Info Table (Layer 2)
     this.providers["msPlots"] = new RajukPlotProvider("msPlots", "MS");
-    
-    // Static endpoints
+
+    // Static location/district endpoint
     this.providers["location"] = new RajukFeatureProvider("location", "rajuk_db/Rajuk_dap_db/FeatureServer/1");
     this.providers["elevation"] = new ElevationProvider();
-    
-    // Add firebase provider for porcha
-    this.providers["porcha"] = new FirebaseProvider("porcha", "config", "porcha_api");
   }
 
   public async handleRequest(includes: string, query: ProviderQuery): Promise<UnifiedResponse> {
     const start = performance.now();
     const data: UnifiedResponseData = {};
-    const errors: Array<{ provider: string; message: string; details?: any }> = [];
+    const errors: Array<{ provider: string; message: string; details?: unknown }> = [];
 
     // 1. Determine which providers to run
     const keys = includes ? includes.split(",").map(k => k.trim()) : Object.keys(this.providers);
@@ -50,7 +47,7 @@ export class UnifiedGateway {
       const cacheKey = `unified:${key}:${JSON.stringify(query)}`;
       
       // Check Cache
-      const cached = this.cacheManager.get<any>(cacheKey);
+      const cached = this.cacheManager.get<UnifiedFeature[]>(cacheKey);
       if (cached) {
         return { key, data: cached };
       }
@@ -110,7 +107,8 @@ export class UnifiedGateway {
     const executionTime = Math.round(performance.now() - start);
 
     return {
-      success: errors.length < activeKeys.length || activeKeys.length === 0, // Success if at least one provider didn't fail
+      // success = no errors at all, OR partial success (at least one provider worked), OR no providers requested
+      success: activeKeys.length === 0 || errors.length === 0 || Object.keys(data).length > 0,
       generatedAt: new Date().toISOString(),
       executionTime,
       version: "2.0.0",
@@ -128,8 +126,8 @@ export class UnifiedGateway {
     return Object.keys(this.providers);
   }
 
-  public async getHealth(): Promise<Record<string, any>> {
-    const healthData: Record<string, any> = {};
+  public async getHealth(): Promise<Record<string, { status: string; latency?: number; error?: string }>> {
+    const healthData: Record<string, { status: string; latency?: number; error?: string }> = {};
     const promises = Object.keys(this.providers).map(async (key) => {
       const provider = this.providers[key];
       healthData[key] = await provider.health();

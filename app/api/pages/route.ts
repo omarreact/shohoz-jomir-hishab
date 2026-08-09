@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 // GET /api/pages — public list, or single page by ?slug=xxx
 export async function GET(req: NextRequest) {
@@ -24,6 +25,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/pages — admin create
 export async function POST(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const body = await req.json();
     const { title, slug, category, content } = body;

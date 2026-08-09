@@ -1,14 +1,17 @@
-import { NextResponse } from "next/server";
-import { AdminService } from "@/src/modules/admin/admin.service";
 import "reflect-metadata";
+import { NextRequest, NextResponse } from "next/server";
+import { AdminService } from "@/src/modules/admin/admin.service";
 import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
-
-const adminService = container.resolve(AdminService);
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 // GET /api/admin/health - System health check
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
+    const adminService = container.resolve(AdminService);
     const health = await adminService.getSystemHealth();
     return NextResponse.json(health);
   } catch (error) {

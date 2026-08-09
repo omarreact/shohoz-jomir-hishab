@@ -33,11 +33,7 @@ export async function GET(request: Request) {
       const tokenManager = container.resolve(RajukTokenManager);
       token = await tokenManager.getToken();
     } catch (err) {
-      logger.error({ err }, "Failed to acquire Rajuk token for tile proxy");
-      return NextResponse.json(
-        { error: "Failed to authenticate with tile service" },
-        { status: 502 },
-      );
+      logger.warn({ err }, "Rajuk token unavailable — proceeding without token (public services may work)");
     }
 
     const normalizedService = normalizeRajukService(service);

@@ -139,24 +139,27 @@ export default function NewBlogPage() {
                             className="flex-1"
                             {...field}
                           />
-                          <CldUploadWidget
-                            uploadPreset="smart_khatiyan_unsigned"
-                            onSuccess={(result: any) => {
-                              if (result.info?.secure_url) {
-                                form.setValue("coverImage", result.info.secure_url);
-                              }
-                            }}
-                          >
-                            {({ open }) => (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={(e) => { e.preventDefault(); open(); }}
-                              >
-                                Upload
-                              </Button>
-                            )}
-                          </CldUploadWidget>
+                          {process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
+                            process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME !== "your-cloudinary-cloud-name" && (
+                            <CldUploadWidget
+                              uploadPreset="smart_khatiyan_unsigned"
+                              onSuccess={(result: any) => {
+                                if (result.info?.secure_url) {
+                                  form.setValue("coverImage", result.info.secure_url);
+                                }
+                              }}
+                            >
+                              {({ open }) => (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={(e) => { e.preventDefault(); open(); }}
+                                >
+                                  Upload
+                                </Button>
+                              )}
+                            </CldUploadWidget>
+                          )}
                         </div>
                       </FormControl>
                       <FormMessage />

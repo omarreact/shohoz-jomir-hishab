@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, CheckCircle, Info, Layers, Loader, ShieldAlert, Waves } from "lucide-react";
+import { CheckCircle, Info, Layers, Loader, ShieldAlert, Waves } from "lucide-react";
 
 interface IntelligenceProps {
   plotData: any;
@@ -21,7 +21,7 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
     }
     
     // Extract properties directly from plotData since the Unified API already includes them
-    const props = plotData.properties || {};
+    const props = plotData.properties || plotData;
     
     // Map the landuse and flood zones directly
     if (props.luZoning || props.Landuse || props.LANDUSE) {

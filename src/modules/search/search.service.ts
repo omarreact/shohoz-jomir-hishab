@@ -1,10 +1,9 @@
 import "reflect-metadata";
 import { injectable } from "tsyringe";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/src/modules/database/prisma";
 import { RedisCacheWrapper } from "@/lib/rajuk/cache";
 import { getRedisClient } from "@/lib/redis";
-
-const prisma = new PrismaClient();
 
 export interface SearchQuery {
   q?: string;

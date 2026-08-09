@@ -8,7 +8,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PROXY_RATE_LIMIT_WINDOW: z.coerce.number().int().default(60000), // 1 minute
   PROXY_RATE_LIMIT_MAX: z.coerce.number().int().default(100), // 100 requests per window
-  RAJUK_TOKEN_ENDPOINT: z.string().url().optional(), // Make optional so dev doesn't crash immediately without it, but we can fail during use
+  RAJUK_PORTAL_TOKEN: z.string().optional(),
 });
 
 const parseEnv = () => {

@@ -12,7 +12,16 @@ export function InitialViewSetter({ initialData }: { initialData?: any }) {
       const processGeometry = (geom: any) => {
         if (geom?.rings) {
           geom.rings.forEach((ring: any) => {
-            ring.forEach((pt: any) => bounds.extend([pt[1], pt[0]]));
+            ring.forEach((pt: any) => {
+              let [x, y] = pt;
+              // If coordinates are in Web Mercator (meters), convert to LatLng
+              if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+                const latLng = L.CRS.EPSG3857.unproject(L.point(x, y));
+                bounds.extend([latLng.lat, latLng.lng]);
+              } else {
+                bounds.extend([y, x]);
+              }
+            });
           });
         }
       };

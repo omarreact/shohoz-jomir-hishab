@@ -90,27 +90,11 @@ export default function ConditionalShell({
 
   const isGisRoute = pathname?.startsWith("/dap-map");
 
-  if (isGisRoute) {
-    return (
-      <div
-        style={{
-          height: "100vh",
-          width: "100vw",
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
-        <GisNavbar />
-        <main className="w-100 h-100">{children}</main>
-      </div>
-    );
-  }
-
   return (
     <>
       <Navbar />
-      <main className="flex-grow-1">{children}</main>
-      <Footer />
+      <main className="flex-grow-1 d-flex flex-column">{children}</main>
+      {!isGisRoute && <Footer />}
     </>
   );
 }

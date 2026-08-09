@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/modules/database/prisma";
+import { requireAdmin } from "@/lib/middleware/requireAdmin";
 
 function generateSlug(text: string): string {
   return text
@@ -37,6 +38,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const { id } = await params;
   try {
     const body = await req.json();
@@ -76,9 +80,12 @@ export async function PUT(
 
 // DELETE /api/blogs/[id] — admin delete
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const { id } = await params;
   try {
     await prisma.blog.delete({ where: { id } });

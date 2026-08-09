@@ -18,7 +18,8 @@ function getTileUrl(servicePath: string, token: string): string {
 }
 
 export function RajukTileLayers({ token, isMS }: RajukTileLayersProps) {
-  if (!token) return null;
+  // We no longer require a client-side token because the backend proxy
+  // automatically handles authentication. We just pass an empty string.
 
   return (
     <>

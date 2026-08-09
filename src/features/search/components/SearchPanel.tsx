@@ -17,11 +17,15 @@ import { engToBdNum, formatKeyName, formatValue, IGNORED_KEYS } from "../utils/f
 
 interface SmartRajukSearchProps {
   onUseArea?: (decimalArea: number, dagNo: string, type: string) => void;
+  onPlotFound?: (plotData: any, type: string) => void;
+  onClose?: () => void;
   compact?: boolean;
 }
 
 export default function SearchPanel({
   onUseArea,
+  onPlotFound,
+  onClose,
   compact = false,
 }: SmartRajukSearchProps) {
   const { fetchLocation, smartSearch } = useRajukSearch();
@@ -47,6 +51,40 @@ export default function SearchPanel({
       setDistricts(dists);
     })();
   }, [fetchLocation]);
+
+  useEffect(() => {
+    const handleMapClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { rsData, landuseData, floodData } = customEvent.detail;
+      
+      if (rsData) {
+        const addressParts = rsData.address_search?.split(",").map((s: string) => s.trim()) || [];
+        
+        setSelectedDist(addressParts[0] || "");
+        setSelectedThana(addressParts[1] || "");
+        setSelectedMouza(addressParts[2] || "");
+        setSelectedType("rs_plot_no");
+        setDagNo(rsData.rs_plot_no || "");
+        
+        const enhanced = {
+          mDistrict: addressParts[0] || "",
+          upazilaPs: addressParts[1] || "",
+          mauza: addressParts[2] || "",
+          plotTypeCustom: "RS / সাধারণ দাগ",
+          ...rsData,
+          landuseData,
+          floodData,
+          properties: rsData
+        };
+        
+        setPlotData(enhanced);
+        setSearchStatus("found");
+      }
+    };
+    
+    window.addEventListener("map-intelligence-success", handleMapClick);
+    return () => window.removeEventListener("map-intelligence-success", handleMapClick);
+  }, []);
 
   const handleDistChange = async (val: string) => {
     setSelectedDist(val);
@@ -141,6 +179,9 @@ export default function SearchPanel({
 
       setPlotData(enhanced);
       setSearchStatus("found");
+      if (onPlotFound) {
+        onPlotFound(enhanced, selectedType);
+      }
     } else {
       setSearchStatus("not_found");
     }
@@ -177,7 +218,17 @@ export default function SearchPanel({
   const isDropdownLoading = searchStatus === "loading" && !plotData;
 
   return (
-    <div className="card-new overflow-hidden">
+    <div className="card-new overflow-hidden position-relative">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="position-absolute top-0 end-0 m-3 btn btn-sm btn-dark rounded-circle d-flex align-items-center justify-content-center"
+          style={{ width: "32px", height: "32px", zIndex: 100 }}
+          title="বন্ধ করুন"
+        >
+          <span className="fw-bold">✕</span>
+        </button>
+      )}
       <div className="bg-[var(--accent)] text-[var(--bg)] p-4 text-center">
         <h5 className="font-bold mb-1 flex items-center justify-center">
           <Database size={20} className="mr-2 text-yellow-300" />

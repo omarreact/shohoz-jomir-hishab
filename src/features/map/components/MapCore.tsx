@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MapContainer, Marker, Popup, useMapEvents } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
@@ -61,8 +62,6 @@ export default function MapCore({
 }: {
   initialData?: any;
 }) {
-  const [token, setToken] = useState<string>("");
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -143,7 +142,12 @@ export default function MapCore({
         
         const coords = plotData.geometry?.coordinates || plotData.geometry?.rings;
         if (coords?.[0]?.[0]) {
-          const [lng, lat] = coords[0][0];
+          let [lng, lat] = coords[0][0];
+          if (Math.abs(lng) > 180 || Math.abs(lat) > 90) {
+            const latLng = L.CRS.EPSG3857.unproject(L.point(lng, lat));
+            lat = latLng.lat;
+            lng = latLng.lng;
+          }
           setClickedPos({ lat, lng });
           setInferredData({
             rsData: plotData,
@@ -163,35 +167,6 @@ export default function MapCore({
 
   const position: [number, number] = [23.7937, 90.4066];
   const defaultZoom = 13;
-
-  useEffect(() => {
-    MapService.fetchRajukToken()
-      .then((token) => {
-        setToken(token);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("ম্যাপ লোড করতে সমস্যা হচ্ছে। রাজউক সার্ভার সংযোগ বিচ্ছিন্ন।");
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div
-        className="d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light"
-        style={{ minHeight: "80vh" }}
-      >
-        <Loader
-          className="spinner-border text-success mb-3"
-          style={{ width: "3rem", height: "3rem" }}
-        />
-        <h5 className="text-secondary fw-bold">
-          সার্ভার থেকে টোকেন সংগ্রহ করা হচ্ছে...
-        </h5>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -276,7 +251,7 @@ export default function MapCore({
         )}
 
         <LayerManager
-          token={token}
+          token={""}
           rsPolygons={rsPolygons}
           selectedRsId={selectedRsId}
         />

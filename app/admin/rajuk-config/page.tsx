@@ -3,25 +3,21 @@
 import React, { useState, useEffect } from "react";
 import {
   Database,
-  Key,
   CheckCircle,
   XCircle,
   Settings,
   RefreshCw,
-  Save,
 } from "lucide-react";
 
 export default function RajukConfig() {
   const [token, setToken] = useState("");
+  const [hasToken, setHasToken] = useState(false);
+  const [tokenSource, setTokenSource] = useState<string>("none");
   const [lastUpdated, setLastUpdated] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Auto Generator State
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-
   // Manual Save State
+  const [newToken, setNewToken] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -35,6 +31,8 @@ export default function RajukConfig() {
       if (!res.ok) throw new Error("Failed to fetch config");
       const data = await res.json();
       setToken(data.token ?? "");
+      setHasToken(data.hasToken ?? false);
+      setTokenSource(data.source ?? "none");
       if (data.updatedAt) {
         setLastUpdated(new Date(data.updatedAt).toLocaleString("bn-BD"));
       }
@@ -45,11 +43,11 @@ export default function RajukConfig() {
     }
   };
 
-  const saveToken = async (newToken: string) => {
+  const saveToken = async (tokenToSave: string) => {
     const res = await fetch("/api/admin/rajuk-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: newToken }),
+      body: JSON.stringify({ token: tokenToSave }),
     });
 
     if (!res.ok) {
@@ -59,6 +57,8 @@ export default function RajukConfig() {
 
     const data = await res.json();
     setToken(data.token);
+    setHasToken(data.hasToken ?? true);
+    setTokenSource(data.source ?? "database");
     if (data.updatedAt) {
       setLastUpdated(new Date(data.updatedAt).toLocaleString("bn-BD"));
     }
@@ -67,45 +67,17 @@ export default function RajukConfig() {
 
   const handleManualSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return alert("টোকেন দিন");
+    if (!newToken) return alert("টোকেন দিন");
 
     setIsSaving(true);
     try {
-      await saveToken(token);
+      await saveToken(newToken);
+      setNewToken("");
     } catch (error: any) {
       console.error("Error saving token:", error);
       alert(error.message || "টোকেন সেভ করতে সমস্যা হয়েছে।");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleAutoGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) return alert("ইউজারনেম এবং পাসওয়ার্ড দিন");
-
-    setIsGenerating(true);
-    try {
-      const res = await fetch("/api/rajuk-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        await saveToken(data.token);
-        setUsername("");
-        setPassword("");
-      } else {
-        alert(data.error?.message || "টোকেন জেনারেট করতে ব্যর্থ হয়েছে");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("সার্ভার ত্রুটি");
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -136,8 +108,8 @@ export default function RajukConfig() {
                         : "bg-red-500/10 text-red-500 border border-red-500/20"
                     }`}
                   >
-                    {token ? (
-                      <><CheckCircle size={16} className="mr-2" /> অ্যাক্টিভ</>
+                    {hasToken ? (
+                      <><CheckCircle size={16} className="mr-2" /> অ্যাক্টিভ ({tokenSource === "env" ? "ENV" : "DB"})</>
                     ) : (
                       <><XCircle size={16} className="mr-2" /> টোকেন নেই</>
                     )}
@@ -155,49 +127,17 @@ export default function RajukConfig() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Auto Generator */}
-          <div className="card-new p-6 md:p-8 border-t-4 border-t-green-500">
-            <h5 className="font-bold mb-4 flex items-center text-green-500 text-xl">
+          <div className="card-new p-6 md:p-8 border-t-4 border-t-gray-500 opacity-75">
+            <h5 className="font-bold mb-4 flex items-center text-gray-500 text-xl">
               <RefreshCw size={24} className="mr-3" /> অটোমেটিক টোকেন জেনারেটর
             </h5>
-            <p className="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">
-              রাজউকের ইউজারনেম এবং পাসওয়ার্ড দিয়ে অটোমেটিক টোকেন জেনারেট করুন।
-              এটি সবচেয়ে নিরাপদ এবং সহজ পদ্ধতি।
-            </p>
-
-            <form onSubmit={handleAutoGenerate} className="space-y-5">
-              <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">রাজউক ইউজারনেম</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">পাসওয়ার্ড</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-green-500 transition-colors shadow-sm"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isGenerating}
-                className="w-full bg-green-500 text-white font-bold rounded-xl px-4 py-3.5 shadow-md hover:-translate-y-0.5 transition-transform flex justify-center items-center mt-2 disabled:opacity-70 disabled:hover:translate-y-0 text-lg"
-              >
-                {isGenerating ? (
-                  <>
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></span>
-                    জেনারেট হচ্ছে...
-                  </>
-                ) : (
-                  "নতুন টোকেন তৈরি করুন"
-                )}
-              </button>
-            </form>
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+              <p className="text-yellow-600 dark:text-yellow-400 text-sm leading-relaxed">
+                ⚠️ এই ফিচারটি বর্তমানে অনুপলব্ধ। রাজউক পোর্টাল টোকেন ম্যানুয়ালি সংগ্রহ করে ডানপাশের ফর্মে পেস্ট করুন।
+                <br/><br/>
+                পোর্টাল টোকেন (AAPT...) অথবা সার্ভার টোকেন সরাসরি ব্যবহার করা যায়।
+              </p>
+            </div>
           </div>
 
           {/* Manual Entry */}
@@ -212,18 +152,25 @@ export default function RajukConfig() {
 
             <form onSubmit={handleManualSave} className="space-y-5 flex flex-col h-[calc(100%-100px)]">
               <div className="flex-1">
-                <label className="block text-[var(--text-primary)] font-bold mb-2">বর্তমান টোকেন</label>
+                <label className="block text-[var(--text-primary)] font-bold mb-2">বর্তমান অ্যাক্টিভ টোকেন (Masked)</label>
+                <div className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl px-4 py-3 mb-4 shadow-sm font-mono text-sm break-all">
+                  {token || "কোনো টোকেন নেই"}
+                </div>
+                
+                <label htmlFor="rajuk-token-input" className="block text-[var(--text-primary)] font-bold mb-2">নতুন টোকেন পেস্ট করুন</label>
                 <textarea
-                  rows={6}
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  id="rajuk-token-input"
+                  rows={4}
+                  value={newToken}
+                  onChange={(e) => setNewToken(e.target.value)}
                   placeholder="eyJhb..."
-                  className="w-full h-[180px] bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-yellow-500 transition-colors shadow-sm font-mono text-xs resize-none"
+                  className="w-full h-[120px] bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-yellow-500 transition-colors shadow-sm font-mono text-xs resize-none"
                 />
               </div>
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || tokenSource === "env"}
+                title={tokenSource === "env" ? "এনভায়রনমেন্ট ভেরিয়েবল দ্বারা নিয়ন্ত্রিত" : ""}
                 className="w-full bg-[var(--text-primary)] text-[var(--bg)] font-bold rounded-xl px-4 py-3.5 shadow-md hover:-translate-y-0.5 transition-transform flex justify-center items-center mt-auto disabled:opacity-70 disabled:hover:translate-y-0 text-lg"
               >
                 {isSaving ? (

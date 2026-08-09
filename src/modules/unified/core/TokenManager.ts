@@ -1,8 +1,20 @@
+import { prisma } from "@/src/modules/database/prisma";
+
+/**
+ * TokenManager — Rajuk ArcGIS Token Provider
+ *
+ * Token priority (highest to lowest):
+ *  1. RAJUK_MAP_TOKEN env var  (instant override, useful in dev)
+ *  2. SiteSetting DB key "rajuk_api_token"  (set via Admin → Rajuk Config page)
+ *
+ * No external calls at token-read time other than DB lookup.
+ */
 export class TokenManager {
   private static instance: TokenManager;
   private activeToken: string = "";
   private lastFetched: number = 0;
-  private readonly TOKEN_TTL = 1000 * 60 * 60 * 24; // 24 hours assuming long-lived tokens
+  /** Re-check DB every 10 minutes in case admin updated the token */
+  private readonly TOKEN_TTL = 1000 * 60 * 10;
 
   private constructor() {}
 
@@ -21,30 +33,38 @@ export class TokenManager {
   }
 
   public async refreshToken(): Promise<string> {
+    // Priority 1: environment variable (dev override)
+    const envToken = process.env.RAJUK_MAP_TOKEN;
+    if (envToken) {
+      this.activeToken = envToken;
+      this.lastFetched = Date.now();
+      return this.activeToken;
+    }
+
+    // Priority 2: admin-configured token from the DB.
     try {
-      // Lazy load firebase admin/firestore to keep edge compatible if possible
-      const { doc, getDoc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
-      
-      const docRef = doc(db, "config", "rajuk_api");
-      const docSnap = await getDoc(docRef);
-      
-      // If .env.local has a token, we prioritize it during local dev/debugging. 
-      // Otherwise use Firebase.
-      const envToken = process.env.RAJUK_MAP_TOKEN;
-      
-      if (envToken) {
-        this.activeToken = envToken;
+      const setting = await prisma.siteSetting.findUnique({
+        where: { key: "rajuk_api_token" },
+      });
+      if (setting?.value) {
+        this.activeToken = setting.value;
         this.lastFetched = Date.now();
-      } else if (docSnap.exists() && docSnap.data().token) {
-        this.activeToken = docSnap.data().token;
-        this.lastFetched = Date.now();
+        return this.activeToken;
       }
     } catch (error) {
-      console.error("TokenManager: Failed to refresh token from Firebase", error);
-      this.activeToken = process.env.RAJUK_MAP_TOKEN || "";
+      console.error("Failed to read Rajuk token from DB:", error);
     }
-    
+
+    // Fallback: empty token so caller can handle retry/refresh.
+    this.activeToken = "";
+    this.lastFetched = Date.now();
     return this.activeToken;
   }
+
+  /** Called by admin actions when a new token is saved, to force immediate refresh */
+  public invalidateCache(): void {
+    this.activeToken = "";
+    this.lastFetched = 0;
+  }
 }
+// Trigger hot reload

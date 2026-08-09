@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/src/modules/database/prisma";
 import { logger } from "@/lib/logger";
 
 export interface CreateNotificationDto {
@@ -23,8 +23,6 @@ export interface NotificationWhereInput {
   isRead?: boolean;
   type?: string;
 }
-
-const prisma = new PrismaClient();
 
 @injectable()
 export class NotificationService {
