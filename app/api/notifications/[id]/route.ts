@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import "reflect-metadata";
-import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 
-const notificationService = container.resolve(NotificationService);
+const notificationService = new NotificationService();
 
 // PATCH /api/notifications/[id]?userId=...  - Mark a notification as read
 export async function PATCH(

@@ -20,12 +20,18 @@ export class UnifiedGateway {
     this.providers["plots"] = new RajukPlotProvider("plots", "RS");
     this.providers["msPlots"] = new RajukPlotProvider("msPlots", "MS");
     
-    // Static endpoints
-    this.providers["location"] = new RajukFeatureProvider("location", "rajuk_db/Rajuk_dap_db/FeatureServer/1");
+    // Location endpoints
+    this.providers["districts"] = new RajukFeatureProvider("districts", "rajuk_db/Rajuk_dap_db/FeatureServer/10");
+    this.providers["thanas"] = new RajukFeatureProvider("thanas", "rajuk_db/Rajuk_dap_db/FeatureServer/9");
+    this.providers["mouzas"] = new RajukFeatureProvider("mouzas", "rajuk_db/Rajuk_dap_db/FeatureServer/1");
     this.providers["elevation"] = new ElevationProvider();
     
     // Add firebase provider for porcha
-    this.providers["porcha"] = new FirebaseProvider("porcha", "config", "porcha_api");
+    // Only register Firebase provider if real credentials are configured
+    const fbProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (fbProjectId && fbProjectId !== 'your-project-id' && !fbProjectId.startsWith('your-')) {
+      this.providers["porcha"] = new FirebaseProvider("porcha", "config", "porcha_api");
+    }
   }
 
   public async handleRequest(includes: string, query: ProviderQuery): Promise<UnifiedResponse> {

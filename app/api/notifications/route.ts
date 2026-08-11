@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import "reflect-metadata";
-import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 
-const notificationService = container.resolve(NotificationService);
+const notificationService = new NotificationService();
 
 const createSchema = z.object({
   userId: z.string().uuid(),

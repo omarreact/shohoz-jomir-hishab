@@ -38,6 +38,20 @@ export default function DapMapPage() {
   const [selectedType, setSelectedType] = useState("");
   const [dagNo, setDagNo] = useState("");
 
+  const [authStatus, setAuthStatus] = useState<string>("TOKEN_CHECKING");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/status");
+        const data = await res.json();
+        setAuthStatus(data.status);
+      } catch (e) {
+        setAuthStatus("TOKEN_ERROR");
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     (async () => {
       const dists = await fetchLocation("1=1", LAYER1_FIELDS.DIST);
@@ -285,40 +299,48 @@ export default function DapMapPage() {
           </Card>
         </div>
 
-        {/* Map Container - Only visible when a plot is selected */}
-        {selectedPlot && (
-          <div className="mb-10 animate-in slide-in-from-bottom-8 duration-500 fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-foreground">
-                ম্যাপ ভিউ: <span className="text-primary">{selectedPlot.title}</span>
-              </h3>
+        <div className="mb-10 animate-in slide-in-from-bottom-8 duration-500 fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-foreground">
+              ম্যাপ ভিউ {selectedPlot && <span className="text-primary">: {selectedPlot.title}</span>}
+            </h3>
+            {selectedPlot && (
               <Button variant="outline" onClick={() => setSelectedPlot(null)}>
                 বন্ধ করুন
               </Button>
-            </div>
-            <Card className="overflow-hidden border-border/50 shadow-xl relative flex flex-col">
-              <CardContent className="p-0 h-[65vh] min-h-[600px] relative flex flex-col">
-                <div className="w-full h-full relative z-0 bg-muted/10">
-                  <FullDapMap initialData={selectedPlot.data} />
-                </div>
-                
-                <div className="absolute top-6 left-6 z-10 pointer-events-none hidden md:block">
-                  <div className="bg-background/85 backdrop-blur-md border border-border rounded-xl p-5 shadow-lg">
-                    <h4 className="font-bold text-foreground mb-3 flex items-center text-lg">
-                      <Layers size={18} className="mr-2 text-primary" /> ল্যান্ড ইউজ (Land Use)
-                    </h4>
-                    <div className="flex flex-col gap-3 text-sm text-muted-foreground font-medium">
-                      <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#fde047] border border-[#ca8a04] shadow-inner mr-3"></span> আবাসিক এলাকা (Residential)</span>
-                      <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#f87171] border border-[#dc2626] shadow-inner mr-3"></span> বাণিজ্যিক এলাকা (Commercial)</span>
-                      <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#60a5fa] border border-[#2563eb] shadow-inner mr-3"></span> মিশ্র ব্যবহার (Mixed Use)</span>
-                      <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#4ade80] border border-[#16a34a] shadow-inner mr-3"></span> কৃষি/উন্মুক্ত স্থান (Agriculture)</span>
-                    </div>
+            )}
+          </div>
+          <Card className="overflow-hidden border-border/50 shadow-xl relative flex flex-col">
+            <CardContent className="p-0 h-[65vh] min-h-[600px] relative flex flex-col">
+              <div className="w-full h-full relative z-0 bg-muted/10">
+                <FullDapMap initialData={selectedPlot?.data} />
+              </div>
+              
+              <div className="absolute top-6 left-6 z-10 pointer-events-none hidden md:block">
+                <div className="bg-background/85 backdrop-blur-md border border-border rounded-xl p-5 shadow-lg">
+                  <h4 className="font-bold text-foreground mb-3 flex items-center text-lg">
+                    <Layers size={18} className="mr-2 text-primary" /> ল্যান্ড ইউজ (Land Use)
+                  </h4>
+                  <div className="flex flex-col gap-3 text-sm text-muted-foreground font-medium">
+                    <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#fde047] border border-[#ca8a04] shadow-inner mr-3"></span> আবাসিক এলাকা (Residential)</span>
+                    <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#f87171] border border-[#dc2626] shadow-inner mr-3"></span> বাণিজ্যিক এলাকা (Commercial)</span>
+                    <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#60a5fa] border border-[#2563eb] shadow-inner mr-3"></span> মিশ্র ব্যবহার (Mixed Use)</span>
+                    <span className="flex items-center"><span className="w-4 h-4 rounded-full bg-[#4ade80] border border-[#16a34a] shadow-inner mr-3"></span> কৃষি/উন্মুক্ত স্থান (Agriculture)</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            </CardContent>
+            <div className="bg-muted px-4 py-2 flex items-center justify-between text-xs border-t border-border">
+              <span className="font-semibold text-muted-foreground">লেয়ার স্ট্যাটাস:</span>
+              <div className="flex gap-4">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> পাবলিক</span>
+                {authStatus === "TOKEN_VALID" && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> প্রাইভেট</span>}
+                {authStatus === "TOKEN_CHECKING" && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> যাচাই করা হচ্ছে</span>}
+                {(authStatus === "TOKEN_INVALID" || authStatus === "PRIVATE_UNAVAILABLE" || authStatus === "TOKEN_ERROR") && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> প্রাইভেট অনুপলব্ধ</span>}
+              </div>
+            </div>
+          </Card>
+        </div>
         
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           <Card className="hover:shadow-md transition-shadow bg-muted/30">

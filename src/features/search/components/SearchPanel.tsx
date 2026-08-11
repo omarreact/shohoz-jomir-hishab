@@ -94,54 +94,50 @@ export default function SearchPanel({
     setSearchStatus("loading");
     setPlotData(null);
 
-    const clean = (s: string) => s.trim().toUpperCase().replace(/'/g, "''");
-    const coreMouza = clean(selectedMouza.split(" ")[0]);
-    const safeDag = clean(dagNo.replace(/^RS[-\s]?/, ""));
-    const isNum = /^\d+$/.test(safeDag);
+    try {
+      const url = new URL("/api/search/smart", window.location.origin);
+      url.searchParams.append("q", dagNo.trim());
+      url.searchParams.append("district", selectedDist);
+      url.searchParams.append("thana", selectedThana);
+      url.searchParams.append("mouza", selectedMouza);
+      url.searchParams.append("type", selectedType);
 
-    const queries: string[] = [];
-    let targetLayer: "msPlots" | "plots" = "plots";
+      const res = await fetch(url.toString());
+      const json = await res.json();
 
-    if (selectedType === "ms_plot_no") {
-      targetLayer = "msPlots";
-      queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`);
-      if (isNum) queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`);
-      queries.push(`plot_no='${safeDag}'`);
-    } else {
-      targetLayer = "plots";
-      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`);
-      queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`);
-      if (isNum) queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`);
-    }
+      if (json.success && json.results && json.results.length > 0) {
+        const feature = json.results[0].data;
+        const attributes = feature.properties || feature.metadata || {};
 
-    const result = await smartSearch(targetLayer, queries);
+        const {
+          mDistrict,
+          upazilaPs,
+          mauza,
+          district,
+          distMs,
+          thanaMs,
+          thana,
+          plotType,
+          ...rest
+        } = attributes;
 
-    if (result) {
-      const {
-        mDistrict,
-        upazilaPs,
-        mauza,
-        district,
-        distMs,
-        thanaMs,
-        thana,
-        plotType,
-        ...rest
-      } = result.attributes;
+        const enhanced = {
+          mDistrict: selectedDist,
+          upazilaPs: selectedThana,
+          mauza: selectedMouza,
+          plotTypeCustom:
+            selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
+          ...rest,
+          geometry: feature.geometry,
+        };
 
-      const enhanced = {
-        mDistrict: selectedDist,
-        upazilaPs: selectedThana,
-        mauza: selectedMouza,
-        plotTypeCustom:
-          selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
-        ...rest,
-        geometry: result.geometry,
-      };
-
-      setPlotData(enhanced);
-      setSearchStatus("found");
-    } else {
+        setPlotData(enhanced);
+        setSearchStatus("found");
+      } else {
+        setSearchStatus("not_found");
+      }
+    } catch (error) {
+      console.error("Search failed", error);
       setSearchStatus("not_found");
     }
   };

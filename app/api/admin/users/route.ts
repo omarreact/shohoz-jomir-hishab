@@ -1,7 +1,5 @@
-import "reflect-metadata";
 import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
-import { container } from "tsyringe";
 import { z } from "zod";
 
 const roleSchema = z.object({
@@ -16,7 +14,7 @@ const suspendSchema = z.object({
 
 // GET /api/admin/users?page=1&limit=50
 export async function GET(request: NextRequest) {
-  const adminService = container.resolve(AdminService);
+  const adminService = new AdminService();
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -36,7 +34,7 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/admin/users - Update user role
 export async function PATCH(request: NextRequest) {
-  const adminService = container.resolve(AdminService);
+  const adminService = new AdminService();
   try {
     const body = await request.json();
     const validated = roleSchema.parse(body);
@@ -60,7 +58,7 @@ export async function PATCH(request: NextRequest) {
 
 // POST /api/admin/users - Suspend or unsuspend user
 export async function POST(request: NextRequest) {
-  const adminService = container.resolve(AdminService);
+  const adminService = new AdminService();
   try {
     const body = await request.json();
     const { action, userId, durationHours } = body;

@@ -35,7 +35,7 @@ export class SearchEngine {
     this.providers.sort((a, b) => b.priority - a.priority);
   }
 
-  async execute(query: string): Promise<{ results: SearchResult[], analytics: SearchAnalytics }> {
+  async execute(query: string, filters?: Record<string, string>): Promise<{ results: SearchResult[], analytics: SearchAnalytics }> {
     const startTime = Date.now();
     const analytics: SearchAnalytics = {
       query,
@@ -56,7 +56,7 @@ export class SearchEngine {
     const promises = activeProviders.map(async (provider) => {
       const pStart = Date.now();
       try {
-        const res = await provider.search(query);
+        const res = await provider.search(query, filters);
         analytics.providerLatencies[provider.name] = Date.now() - pStart;
         return res;
       } catch (err) {

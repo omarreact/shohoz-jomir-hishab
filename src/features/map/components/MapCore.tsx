@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import { Loader, Maximize2, Minimize2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { ViewportPolygonFetcher } from "./ViewportPolygonFetcher";
 import { InitialViewSetter } from "./InitialViewSetter";
@@ -62,8 +63,6 @@ export default function MapCore({
   initialData?: any;
 }) {
   const [token, setToken] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const {
     clickedPos,
@@ -165,42 +164,18 @@ export default function MapCore({
   const defaultZoom = 13;
 
   useEffect(() => {
-    MapService.fetchRajukToken()
-      .then((token) => {
-        setToken(token);
-        setLoading(false);
+    fetch("/api/auth/status")
+      .then(res => res.json())
+      .then(data => {
+        if (!data.hasToken || data.status === "TOKEN_INVALID" || data.status === "PRIVATE_UNAVAILABLE") {
+          toast.warning("প্রাইভেট ডেটার টোকেন বৈধ নয়।", {
+            description: "বর্তমানে পাবলিক ডেটা প্রদর্শন করা হচ্ছে।",
+            duration: 10000,
+          });
+        }
       })
-      .catch(() => {
-        setError("ম্যাপ লোড করতে সমস্যা হচ্ছে। রাজউক সার্ভার সংযোগ বিচ্ছিন্ন।");
-        setLoading(false);
-      });
+      .catch(console.error);
   }, []);
-
-  if (loading) {
-    return (
-      <div
-        className="d-flex flex-column align-items-center justify-content-center w-100 h-100 bg-light"
-        style={{ minHeight: "80vh" }}
-      >
-        <Loader
-          className="spinner-border text-success mb-3"
-          style={{ width: "3rem", height: "3rem" }}
-        />
-        <h5 className="text-secondary fw-bold">
-          সার্ভার থেকে টোকেন সংগ্রহ করা হচ্ছে...
-        </h5>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-danger text-center m-4 p-5 rounded-4 border-0 shadow-sm">
-        <h4 className="fw-bold mb-3">{error}</h4>
-        <p className="mb-0">দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।</p>
-      </div>
-    );
-  }
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative", background: "#1e293b" }}>

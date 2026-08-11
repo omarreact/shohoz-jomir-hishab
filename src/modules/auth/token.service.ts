@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_super_secret_jwt_key_override_this_in_prod";
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-only-insecure-key-DO-NOT-USE-IN-PROD' : (() => { throw new Error('JWT_SECRET environment variable is required in production'); })());
 const JWT_EXPIRES_IN = "15m";
 
 export class TokenService {

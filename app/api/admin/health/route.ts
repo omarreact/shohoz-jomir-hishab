@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
-import "reflect-metadata";
-import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 
-const adminService = container.resolve(AdminService);
+const adminService = new AdminService();
 
 // GET /api/admin/health - System health check
 export async function GET() {

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import "reflect-metadata";
-import { container } from "tsyringe";
 import { logger } from "@/lib/logger";
 
-const notificationService = container.resolve(NotificationService);
+const notificationService = new NotificationService();
 
 // POST /api/notifications/mark-all-read - Mark all notifications as read
 export async function POST(request: NextRequest) {

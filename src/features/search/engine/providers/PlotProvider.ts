@@ -12,26 +12,48 @@ export class PlotProvider implements SearchProvider {
     return q.includes("rs") || q.includes("ms") || q.includes("cs") || q.includes("plot") || /^\d+$/.test(q);
   }
 
-  async search(query: string): Promise<SearchResult[]> {
+  async search(query: string, filters?: Record<string, string>): Promise<SearchResult[]> {
     if (!this.supports(query)) return [];
 
-    const cleanQuery = query.replace(/[^0-9]/g, "");
+    const cleanQuery = query.replace(/^RS[-\s]?/i, "").replace(/[^0-9a-zA-Z]/g, "").trim().toUpperCase();
     if (!cleanQuery) return [];
+    const isNum = /^\d+$/.test(cleanQuery);
 
     const gateway = new UnifiedGateway();
     
-    // In parallel, query RS and MS plots
-    const pQuery: ProviderQuery = { where: `rs_plot_no='${cleanQuery}' OR plot_no='${cleanQuery}'`, limit: 5 };
-    const pQueryMs: ProviderQuery = { where: `ms_plot_no='${cleanQuery}' OR plot_no='${cleanQuery}'`, limit: 5 };
+    let rsWhere = `rs_plot_no='${cleanQuery}' OR rs_plot_no='RS-${cleanQuery}' OR plot_no='${cleanQuery}'`;
+    let msWhere = `ms_plot_no='${cleanQuery}' OR plot_no='${cleanQuery}'`;
+    
+    if (isNum) {
+      rsWhere += ` OR rs_plot_no=${cleanQuery}`;
+      msWhere += ` OR plot_no=${cleanQuery}`;
+    }
 
-    const [rsRes, msRes] = await Promise.allSettled([
-      gateway.handleRequest("plots", pQuery),
-      gateway.handleRequest("msPlots", pQueryMs)
-    ]);
+    if (filters?.mouza) {
+      const coreMouza = filters.mouza.split(" ")[0].toUpperCase().replace(/'/g, "''");
+      rsWhere = `(UPPER(address_search) LIKE '%${coreMouza}%' OR UPPER(mauza) LIKE '%${coreMouza}%') AND (${rsWhere})`;
+      msWhere = `UPPER(mauza) LIKE '%${coreMouza}%' AND (${msWhere})`;
+    }
+
+    const promises = [];
+    
+    if (!filters?.type || filters.type === "rs_plot_no") {
+      promises.push(gateway.handleRequest("plots", { where: rsWhere, limit: 5 }));
+    } else {
+      promises.push(Promise.resolve(null));
+    }
+
+    if (!filters?.type || filters.type === "ms_plot_no") {
+      promises.push(gateway.handleRequest("msPlots", { where: msWhere, limit: 5 }));
+    } else {
+      promises.push(Promise.resolve(null));
+    }
+
+    const [rsRes, msRes] = await Promise.allSettled(promises);
 
     const results: SearchResult[] = [];
 
-    if (rsRes.status === "fulfilled" && rsRes.value.success && rsRes.value.data.plots) {
+    if (rsRes.status === "fulfilled" && rsRes.value && rsRes.value.success && rsRes.value.data.plots) {
       rsRes.value.data.plots.forEach((p) => {
         const attr = p.properties || p.metadata || {};
         const plotNo = attr.rs_plot_no || attr.plot_no || 'Unknown';
@@ -58,7 +80,7 @@ export class PlotProvider implements SearchProvider {
       });
     }
 
-    if (msRes.status === "fulfilled" && msRes.value.success && msRes.value.data.msPlots) {
+    if (msRes.status === "fulfilled" && msRes.value && msRes.value.success && msRes.value.data.msPlots) {
       msRes.value.data.msPlots.forEach((p) => {
         const attr = p.properties || p.metadata || {};
         const plotNo = attr.ms_plot_no || attr.plot_no || 'Unknown';

@@ -3,8 +3,7 @@ import {
   buildRajukTileServiceUrl,
   normalizeRajukService,
 } from "@/lib/api/rajukTiles";
-import { container } from "@/lib/di/container";
-import { RajukTokenManager } from "@/lib/rajuk/manager";
+import { TokenManager } from "@/src/modules/unified/core/TokenManager";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +29,7 @@ export async function GET(request: Request) {
     // Inject token server-side — never expose raw token to frontend
     let token: string | undefined;
     try {
-      const tokenManager = container.resolve(RajukTokenManager);
+      const tokenManager = TokenManager.getInstance();
       token = await tokenManager.getToken();
     } catch (err) {
       logger.error({ err }, "Failed to acquire Rajuk token for tile proxy");

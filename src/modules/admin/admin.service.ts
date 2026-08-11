@@ -1,5 +1,3 @@
-import "reflect-metadata";
-import { injectable } from "tsyringe";
 import { PrismaClient } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
@@ -21,7 +19,6 @@ export interface UserMetrics {
 
 const prisma = new PrismaClient();
 
-@injectable()
 export class AdminService {
   /**
    * Get system health status.

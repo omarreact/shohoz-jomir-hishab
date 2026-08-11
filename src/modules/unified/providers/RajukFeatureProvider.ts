@@ -29,8 +29,11 @@ export class RajukFeatureProvider extends BaseProvider {
       returnGeometry: query.returnGeometry !== undefined ? query.returnGeometry.toString() : "true",
       resultRecordCount: (query.limit || 100).toString(),
       resultOffset: (query.offset || 0).toString(),
-      token: token,
     });
+
+    if (token) {
+      params.append("token", token);
+    }
 
     if (query.geometry) params.append("geometry", query.geometry);
     if (query.geometryType) params.append("geometryType", query.geometryType);
@@ -90,8 +93,11 @@ export class RajukFeatureProvider extends BaseProvider {
       returnGeometry: query.returnGeometry !== undefined ? query.returnGeometry.toString() : "true",
       resultRecordCount: (query.limit || 100).toString(),
       resultOffset: (query.offset || 0).toString(),
-      token: token,
     });
+
+    if (token) {
+      params.append("token", token);
+    }
 
     if (query.geometry) params.append("geometry", query.geometry);
     if (query.geometryType) params.append("geometryType", query.geometryType);

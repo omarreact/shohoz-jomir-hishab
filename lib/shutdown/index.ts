@@ -1,5 +1,4 @@
 import { logger } from "@/lib/logger";
-import { stopTokenRefreshCron } from "@/lib/rajuk/cron";
 import { getRedisClient } from "@/lib/redis";
 
 const shutdownHandlers: Array<() => Promise<void> | void> = [];
@@ -10,9 +9,6 @@ export const registerShutdownHandler = (handler: () => Promise<void> | void) => 
 
 export const gracefulShutdown = async (signal: string) => {
   logger.info(`Received ${signal}, starting graceful shutdown...`);
-  
-  // Stop background cron jobs
-  stopTokenRefreshCron();
   
   // Execute all registered shutdown handlers
   for (const handler of shutdownHandlers) {

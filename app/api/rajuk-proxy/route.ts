@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 const cache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 3600000; // ১ ঘণ্টা
 

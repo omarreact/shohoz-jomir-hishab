@@ -1,11 +1,9 @@
-import "reflect-metadata";
 import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
-import { container } from "tsyringe";
 
 // GET /api/admin/login-history?page=1&limit=50
 export async function GET(request: NextRequest) {
-  const adminService = container.resolve(AdminService);
+  const adminService = new AdminService();
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");

@@ -107,7 +107,8 @@ export function useAuth(): AuthState & {
   function setAccessTokenCookie(token: string) {
     const payload = parseJwtPayload(token);
     const maxAge = payload ? Math.floor((payload.exp * 1000 - Date.now()) / 1000) : 900;
-    document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    const isSecure = window.location.protocol === 'https:';
+    document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   }
 
   useEffect(() => {

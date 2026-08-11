@@ -6,7 +6,7 @@ import { jwtVerify } from "jose";
 const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "default_super_secret_jwt_key_override_this_in_prod"
+  process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-only-insecure-key-DO-NOT-USE-IN-PROD' : (() => { throw new Error('JWT_SECRET environment variable is required in production'); })())
 );
 
 /**
@@ -93,6 +93,7 @@ export async function proxy(request: NextRequest) {
     "/api/landbd",
     "/api/porcha",
     "/api/rajuk",
+    "/api/unified",       // Core Unified API
     "/api/pages",         // public custom pages (footer links)
     "/api/blogs",         // public blog list + individual posts
     "/api/comments",      // public blog comments

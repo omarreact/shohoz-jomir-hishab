@@ -1,4 +1,3 @@
-import { injectable } from "tsyringe";
 import { PrismaClient } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
@@ -26,7 +25,6 @@ export interface NotificationWhereInput {
 
 const prisma = new PrismaClient();
 
-@injectable()
 export class NotificationService {
   /**
    * Create a new notification for a user.
