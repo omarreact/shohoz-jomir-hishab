@@ -20,7 +20,7 @@ export default function DapSearchWizard({
   onPlotSelected,
   onMouzaSelected,
 }: WizardProps) {
-  const { fetchLocation } = useRajukSearch();
+  const { fetchLocation, smartSearch } = useRajukSearch();
 
   const [districts, setDistricts] = useState<string[]>([]);
   const [thanas, setThanas] = useState<string[]>([]);
@@ -97,20 +97,29 @@ export default function DapSearchWizard({
     setSearchStatus("loading");
 
     try {
-      const url = new URL("/api/search/smart", window.location.origin);
-      url.searchParams.append("q", dagNo.trim());
-      url.searchParams.append("district", selectedDist);
-      url.searchParams.append("thana", selectedThana);
-      url.searchParams.append("mouza", selectedMouza);
-      url.searchParams.append("type", selectedType);
+      const clean = (s: string) => s.trim().toUpperCase().replace(/'/g, "''");
+      const coreMouza = clean(selectedMouza.split(" ")[0]);
+      const safeDag = clean(dagNo.replace(/^RS[-\s]?/, ""));
+      const isNum = /^\d+$/.test(safeDag);
 
-      const res = await fetch(url.toString());
-      const json = await res.json();
+      const queries: string[] = [];
+      let targetLayer: "msPlots" | "plots" = "plots";
 
-      if (json.success && json.results && json.results.length > 0) {
-        const feature = json.results[0].data;
-        const attributes = feature.properties || feature.metadata || {};
+      if (selectedType === "ms_plot_no") {
+        targetLayer = "msPlots";
+        queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safeDag}'`);
+        if (isNum) queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safeDag}`);
+        queries.push(`plot_no='${safeDag}'`);
+      } else {
+        targetLayer = "plots";
+        queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safeDag}'`);
+        queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safeDag}'`);
+        if (isNum) queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safeDag}`);
+      }
 
+      const result = await smartSearch(targetLayer, queries);
+
+      if (result) {
         const {
           mDistrict,
           upazilaPs,
@@ -121,7 +130,7 @@ export default function DapSearchWizard({
           thana,
           plotType,
           ...rest
-        } = attributes;
+        } = result.attributes;
 
         const enhanced = {
           mDistrict: selectedDist,
@@ -130,7 +139,7 @@ export default function DapSearchWizard({
           plotTypeCustom:
             selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
           ...rest,
-          geometry: feature.geometry,
+          geometry: result.geometry,
         };
 
         setSearchStatus("idle");

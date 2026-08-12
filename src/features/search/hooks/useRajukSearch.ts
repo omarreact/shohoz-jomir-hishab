@@ -10,13 +10,13 @@ export const useRajukSearch = () => {
   const [localCache, setLocalCache] = useState<Record<string, any>>({});
 
   const fetchLocation = useCallback(
-    async (where: string, outField: string, type: "districts" | "thanas" | "mouzas" = "mouzas"): Promise<string[]> => {
-      const cacheKey = `location-${where}-${outField}-${type}`;
+    async (where: string, outField: string): Promise<string[]> => {
+      const cacheKey = `location-${where}-${outField}`;
       if (localCache[cacheKey]) return localCache[cacheKey];
 
       try {
         const url = new URL("/api/unified", window.location.origin);
-        url.searchParams.append("include", type);
+        url.searchParams.append("include", "location");
         url.searchParams.append("where", where);
         url.searchParams.append("outFields", outField);
         url.searchParams.append("returnGeometry", "false");
@@ -25,10 +25,10 @@ export const useRajukSearch = () => {
         const res = await fetch(url.toString());
         const json = await res.json();
         
-        if (!json.success || !json.data[type]) throw new Error();
+        if (!json.success || !json.data.location) throw new Error();
         
         const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
-        const results = json.data[type]
+        const results = json.data.location
           .map((f: any) => f.properties[camelOutField] || f.properties[outField])
           .filter(Boolean);
         
