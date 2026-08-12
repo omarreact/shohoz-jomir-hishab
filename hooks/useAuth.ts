@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, getIdToken } from "firebase/auth";
+import { auth } from "@/src/modules/database/firebaseClient";
 
 export interface AuthUser {
   id: string;
@@ -15,12 +17,7 @@ interface AuthState {
   loading: boolean;
 }
 
-/**
- * Reads the access_token cookie, decodes the JWT payload (client-side,
- * no signature verification — the server validates on every API call).
- * Provides login/logout helpers that call the existing /api/auth/* routes.
- */
-function parseJwtPayload(token: string): { userId: string; role: string; exp: number } | null {
+function parseJwtPayload(token: string): any {
   try {
     const base64 = token.split(".")[1];
     const json = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
@@ -28,19 +25,6 @@ function parseJwtPayload(token: string): { userId: string; role: string; exp: nu
   } catch {
     return null;
   }
-}
-
-function getAccessToken(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function isTokenValid(token: string): boolean {
-  const payload = parseJwtPayload(token);
-  if (!payload) return false;
-  // Give a 10-second buffer before expiry
-  return payload.exp * 1000 > Date.now() + 10_000;
 }
 
 export function useAuth(): AuthState & {
@@ -54,99 +38,83 @@ export function useAuth(): AuthState & {
     loading: true,
   });
 
-  const loadFromToken = useCallback(async () => {
-    const token = getAccessToken();
+  const setAccessTokenCookie = useCallback((token: string) => {
+    const payload = parseJwtPayload(token);
+    const maxAge = payload ? Math.floor((payload.exp * 1000 - Date.now()) / 1000) : 3600;
+    const isSecure = window.location.protocol === 'https:';
+    document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+  }, []);
 
-    if (token && isTokenValid(token)) {
-      const payload = parseJwtPayload(token)!;
-      // Fetch full user profile from the server
-      try {
-        const res = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setState({ user: data.user, isLoggedIn: true, loading: false });
-          return;
-        }
-      } catch {
-        // fall through to payload-only mode
-      }
-      // Fallback: use JWT payload directly (no name/email available)
-      setState({
-        user: { id: payload.userId, email: "", name: null, role: payload.role },
-        isLoggedIn: true,
-        loading: false,
-      });
+  const loadFromToken = useCallback(async (firebaseUser: any) => {
+    if (!firebaseUser) {
+      setState({ user: null, isLoggedIn: false, loading: false });
+      document.cookie = "access_token=; path=/; max-age=0";
       return;
     }
 
-    // No valid token — try to silently refresh
-    const refreshed = await silentRefresh();
-    if (!refreshed) {
+    try {
+      const token = await getIdToken(firebaseUser, true);
+      setAccessTokenCookie(token);
+
+      const payload = parseJwtPayload(token);
+      
+      // We assume role based on email or custom claims for now
+      const role = payload?.role || (firebaseUser.email?.includes('admin') ? 'Admin' : 'User');
+
+      setState({
+        user: { 
+          id: firebaseUser.uid, 
+          email: firebaseUser.email || "", 
+          name: firebaseUser.displayName || null, 
+          role 
+        },
+        isLoggedIn: true,
+        loading: false,
+      });
+    } catch (e) {
       setState({ user: null, isLoggedIn: false, loading: false });
     }
-  }, []);
-
-  async function silentRefresh(): Promise<boolean> {
-    try {
-      const res = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!res.ok) return false;
-      const data = await res.json();
-      if (data.accessToken) {
-        setAccessTokenCookie(data.accessToken);
-        await loadFromToken();
-        return true;
-      }
-    } catch {
-      // ignore
-    }
-    return false;
-  }
-
-  function setAccessTokenCookie(token: string) {
-    const payload = parseJwtPayload(token);
-    const maxAge = payload ? Math.floor((payload.exp * 1000 - Date.now()) / 1000) : 900;
-    const isSecure = window.location.protocol === 'https:';
-    document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
-  }
+  }, [setAccessTokenCookie]);
 
   useEffect(() => {
-    loadFromToken();
-    // Re-check on tab focus (token may have been refreshed in another tab)
-    const onFocus = () => loadFromToken();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      loadFromToken(user);
+    });
+
+    return () => unsubscribe();
   }, [loadFromToken]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "লগিন ব্যর্থ হয়েছে");
-
-    setAccessTokenCookie(data.accessToken);
-    setState({
-      user: data.user,
-      isLoggedIn: true,
-      loading: false,
-    });
-  }, []);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await getIdToken(userCredential.user, true);
+      setAccessTokenCookie(token);
+      await loadFromToken(userCredential.user);
+    } catch (error: any) {
+      throw new Error(error.message || "লগিন ব্যর্থ হয়েছে");
+    }
+  }, [setAccessTokenCookie, loadFromToken]);
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await signOut(auth);
     } catch {
-      // ignore network errors
+      // ignore
     }
-    // Clear cookie
     document.cookie = "access_token=; path=/; max-age=0";
     setState({ user: null, isLoggedIn: false, loading: false });
   }, []);
 
-  return { ...state, login, logout, refresh: () => silentRefresh() };
+  const refresh = useCallback(async () => {
+    if (!auth.currentUser) return false;
+    try {
+      const token = await getIdToken(auth.currentUser, true);
+      setAccessTokenCookie(token);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [setAccessTokenCookie]);
+
+  return { ...state, login, logout, refresh };
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/comments?blogId=xxx
 export async function GET(req: NextRequest) {
@@ -9,10 +9,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "blogId is required" }, { status: 400 });
     }
 
-    const comments = await prisma.blogComment.findMany({
-      where: { blogId },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, blogId: true, name: true, text: true, createdAt: true },
+    const snapshot = await collections.comments
+      .where("blogId", "==", blogId)
+      .orderBy("createdAt", "desc")
+      .get();
+      
+    const comments = snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      return { id: doc.id, blogId: data.blogId, name: data.name, text: data.text, createdAt: data.createdAt };
     });
 
     return NextResponse.json({ comments }, { status: 200 });
@@ -31,9 +35,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "blogId, name, and text are required" }, { status: 400 });
     }
 
-    const comment = await prisma.blogComment.create({
-      data: { blogId, name: name.trim(), text: text.trim() },
-    });
+    const now = new Date().toISOString();
+    const data = {
+      blogId,
+      name: name.trim(),
+      text: text.trim(),
+      createdAt: now,
+    };
+
+    const ref = await collections.comments.add(data);
+    const doc = await ref.get();
+    const comment = { id: doc.id, ...doc.data() };
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error: any) {

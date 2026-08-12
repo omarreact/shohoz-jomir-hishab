@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 /**
  * Public endpoint — no auth required.
@@ -8,12 +8,8 @@ import { prisma } from "@/src/modules/database/prisma";
  */
 export async function GET() {
   try {
-    // We store site-wide settings as key/value pairs.
-    // If you haven't added a Settings model yet, this simply returns false.
-    // To enable maintenance mode, insert a row: key="maintenanceMode", value="true"
-    const setting = await prisma.siteSetting
-      .findUnique({ where: { key: "maintenanceMode" } })
-      .catch(() => null);
+    const settingDoc = await collections.settings.doc("maintenanceMode").get();
+    const setting = settingDoc.data();
 
     const isMaintenanceMode = setting?.value === "true";
     return NextResponse.json(
@@ -21,7 +17,7 @@ export async function GET() {
       { status: 200 },
     );
   } catch {
-    // Table doesn't exist yet — site is live
+    // Collection doesn't exist yet — site is live
     return NextResponse.json({ maintenanceMode: false }, { status: 200 });
   }
 }

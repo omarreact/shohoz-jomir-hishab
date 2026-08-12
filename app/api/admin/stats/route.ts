@@ -1,30 +1,34 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/admin/stats — data monitor dashboard stats
 export async function GET() {
   try {
     const [
-      blogCount,
-      pageCount,
-      userCount,
-      rajukToken,
-      maintenanceSetting,
-      announcement,
+      blogCountRes,
+      pageCountRes,
+      userCountRes,
+      rajukTokenDoc,
+      maintenanceSettingDoc,
+      announcementDoc,
     ] = await Promise.all([
-      prisma.blog.count(),
-      prisma.customPage.count(),
-      prisma.user.count(),
-      prisma.siteSetting.findUnique({ where: { key: "rajuk_api_token" } }),
-      prisma.siteSetting.findUnique({ where: { key: "maintenanceMode" } }),
-      prisma.siteSetting.findUnique({ where: { key: "announcement" } }),
+      collections.blogs.count().get(),
+      collections.pages.count().get(),
+      collections.users.count().get(),
+      collections.settings.doc("rajuk_api_token").get(),
+      collections.settings.doc("maintenanceMode").get(),
+      collections.settings.doc("announcement").get(),
     ]);
+
+    const rajukToken = rajukTokenDoc.data();
+    const maintenanceSetting = maintenanceSettingDoc.data();
+    const announcement = announcementDoc.data();
 
     return NextResponse.json(
       {
-        blogCount,
-        pageCount,
-        userCount,
+        blogCount: blogCountRes.data().count,
+        pageCount: pageCountRes.data().count,
+        userCount: userCountRes.data().count,
         rajukTokenSet: !!rajukToken?.value,
         maintenanceMode: maintenanceSetting?.value === "true",
         announcement: announcement?.value ?? "",

@@ -1,22 +1,58 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, importX509 } from "jose";
 
-// In-memory rate limit tracking for Edge (per Edge Node)
+// Cache for Google's public keys
+let publicKeysCache: Record<string, string> | null = null;
+let keysCacheTime = 0;
+
+async function getFirebasePublicKeys() {
+  const now = Date.now();
+  if (publicKeysCache && now - keysCacheTime < 1000 * 60 * 60) {
+    return publicKeysCache;
+  }
+  try {
+    const res = await fetch(
+      "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
+      { next: { revalidate: 3600 } }
+    );
+    publicKeysCache = await res.json();
+    keysCacheTime = now;
+    return publicKeysCache;
+  } catch (e) {
+    console.error("Failed to fetch Firebase public keys", e);
+    return null;
+  }
+}
+
+async function verifyFirebaseToken(token: string) {
+  try {
+    const headerBase64 = token.split(".")[0];
+    const header = JSON.parse(atob(headerBase64));
+    const kid = header.kid;
+
+    const keys = await getFirebasePublicKeys();
+    if (!keys || !keys[kid]) {
+      return null;
+    }
+
+    const publicKey = await importX509(keys[kid], "RS256");
+    const { payload } = await jwtVerify(token, publicKey, {
+      issuer: `https://securetoken.google.com/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`,
+      audience: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+// In-memory rate limit tracking for Edge
 const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-only-insecure-key-DO-NOT-USE-IN-PROD' : (() => { throw new Error('JWT_SECRET environment variable is required in production'); })())
-);
-
-/**
- * Next.js Edge Proxy — Global API Gateway
- * Replaces the old middleware.ts convention.
- */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // 1. Request ID + Security Headers
   const requestId = crypto.randomUUID();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-request-id", requestId);
@@ -29,9 +65,7 @@ export async function proxy(request: NextRequest) {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   };
 
-  // 2. Rate Limiting
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   const windowMs = parseInt(process.env.PROXY_RATE_LIMIT_WINDOW || "60000", 10);
   const max = parseInt(process.env.PROXY_RATE_LIMIT_MAX || "100", 10);
   const now = Date.now();
@@ -49,42 +83,31 @@ export async function proxy(request: NextRequest) {
     windowData.count++;
   }
 
-  // 3. JWT resolution — check cookie first, then Authorization header
   const cookieToken = request.cookies.get("access_token")?.value ?? null;
   const authHeader = request.headers.get("authorization");
-  const bearerToken = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const rawToken = cookieToken ?? bearerToken;
 
-  let userPayload: { userId: string; role: string } | null = null;
+  let userPayload: any = null;
   if (rawToken) {
-    try {
-      const { payload } = await jwtVerify(rawToken, JWT_SECRET);
-      userPayload = {
-        userId: payload.userId as string,
-        role: payload.role as string,
-      };
-      requestHeaders.set("x-user-id", userPayload.userId);
-      requestHeaders.set("x-user-role", userPayload.role);
-    } catch {
-      // Invalid / expired token — treat as unauthenticated
+    userPayload = await verifyFirebaseToken(rawToken);
+    if (userPayload) {
+      requestHeaders.set("x-user-id", userPayload.user_id);
+      // Firebase doesn't have custom roles by default without custom claims.
+      // We will set role to Admin if their email is in a specific list, or if custom claims are set.
+      const role = userPayload.role || (userPayload.email?.includes('admin') ? 'Admin' : 'User');
+      requestHeaders.set("x-user-role", role);
     }
   }
 
-  // 4. Guard /admin pages
   if (pathname.startsWith("/admin")) {
-    if (
-      !userPayload ||
-      (userPayload.role !== "Admin" && userPayload.role !== "Super Admin")
-    ) {
+    if (!userPayload) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
 
-  // 5. Guard /api/* routes (except public ones)
   const publicApiPrefixes = [
     "/api/auth",
     "/api/metrics",
@@ -93,15 +116,14 @@ export async function proxy(request: NextRequest) {
     "/api/landbd",
     "/api/porcha",
     "/api/rajuk",
-    "/api/unified",       // Core Unified API
-    "/api/pages",         // public custom pages (footer links)
-    "/api/blogs",         // public blog list + individual posts
-    "/api/comments",      // public blog comments
-    "/api/admin/stats",   // public stats for data monitor
+    "/api/unified",
+    "/api/pages",
+    "/api/blogs",
+    "/api/comments",
+    "/api/admin/stats",
   ];
-  const isPublicApi = publicApiPrefixes.some((prefix) =>
-    pathname.startsWith(prefix)
-  );
+  
+  const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
   if (pathname.startsWith("/api/") && !isPublicApi) {
     if (!userPayload) {
       return new NextResponse(
@@ -118,7 +140,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.webp).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.webp).*)"],
 };

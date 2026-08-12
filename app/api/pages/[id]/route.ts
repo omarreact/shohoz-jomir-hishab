@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/pages/[id]
 export async function GET(
@@ -8,9 +8,11 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const page = await prisma.customPage.findUnique({ where: { id } });
-    if (!page)
+    const doc = await collections.pages.doc(id).get();
+    if (!doc.exists)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+      
+    const page = { id: doc.id, ...doc.data() };
     return NextResponse.json({ page }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -30,20 +32,28 @@ export async function PUT(
     const body = await req.json();
     const { title, slug, category, content } = body;
 
-    const page = await prisma.customPage.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(slug && { slug: slug.toLowerCase().replace(/\s+/g, "-") }),
-        ...(category && { category }),
-        ...(content && { content }),
-      },
-    });
+    const data: any = {
+      ...(title && { title }),
+      ...(slug && { slug: slug.toLowerCase().replace(/\s+/g, "-") }),
+      ...(category && { category }),
+      ...(content && { content }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const docRef = collections.pages.doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await docRef.update(data);
+    
+    const updatedDoc = await docRef.get();
+    const page = { id: updatedDoc.id, ...updatedDoc.data() };
 
     return NextResponse.json({ page }, { status: 200 });
   } catch (error: unknown) {
-    if (error instanceof Error && (error as { code?: string }).code === "P2025")
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
@@ -58,11 +68,16 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    await prisma.customPage.delete({ where: { id } });
+    const docRef = collections.pages.doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    
+    await docRef.delete();
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
-    if (error instanceof Error && (error as { code?: string }).code === "P2025")
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

@@ -1,4 +1,4 @@
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 import { logger } from "@/lib/logger";
 
 export interface CreateNotificationDto {
@@ -17,36 +17,30 @@ export interface NotificationFilter {
   limit?: number;
 }
 
-export interface NotificationWhereInput {
-  userId: string;
-  isRead?: boolean;
-  type?: string;
-}
-
-
-
 export class NotificationService {
   /**
    * Create a new notification for a user.
    */
   async create(dto: CreateNotificationDto) {
     try {
-      const notification = await prisma.notification.create({
-        data: {
-          userId: dto.userId,
-          title: dto.title,
-          message: dto.message,
-          type: dto.type || "INFO",
-          link: dto.link || null,
-        },
-      });
+      const data = {
+        userId: dto.userId,
+        title: dto.title,
+        message: dto.message,
+        type: dto.type || "INFO",
+        link: dto.link || null,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      const ref = await collections.notifications.add(data);
+      const doc = await ref.get();
 
       logger.info(
-        { userId: dto.userId, notificationId: notification.id, type: dto.type },
+        { userId: dto.userId, notificationId: doc.id, type: dto.type },
         "Notification created",
       );
 
-      return notification;
+      return { id: doc.id, ...doc.data() };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
       logger.error(
@@ -65,29 +59,39 @@ export class NotificationService {
       const { userId, isRead, type, page = 1, limit = 20 } = filter;
       const skip = (page - 1) * limit;
 
-      const where: NotificationWhereInput = { userId };
+      let query = collections.notifications.where("userId", "==", userId);
 
       if (isRead !== undefined) {
-        where.isRead = isRead;
+        query = query.where("isRead", "==", isRead);
       }
 
       if (type) {
-        where.type = type;
+        query = query.where("type", "==", type);
       }
 
-      const [total, notifications] = await Promise.all([
-        prisma.notification.count({ where }),
-        prisma.notification.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: Number(limit),
-        }),
-      ]);
+      // Pagination is limited in Firestore without cursors, but for small limits we can fetch everything or just use simple skip
+      // For this simple implementation, we'll order and use offset (note: offset is not optimal for large datasets in Firestore)
+      const countSnapshot = await query.count().get();
+      const total = countSnapshot.data().count;
 
-      const unreadCount = await prisma.notification.count({
-        where: { userId, isRead: false },
-      });
+      const notificationsSnapshot = await query
+        .orderBy("createdAt", "desc")
+        .offset(skip)
+        .limit(Number(limit))
+        .get();
+
+      const notifications = notificationsSnapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      const unreadCountSnapshot = await collections.notifications
+        .where("userId", "==", userId)
+        .where("isRead", "==", false)
+        .count()
+        .get();
+        
+      const unreadCount = unreadCountSnapshot.data().count;
 
       return {
         data: notifications,
@@ -114,18 +118,16 @@ export class NotificationService {
    */
   async markAsRead(notificationId: string, userId: string) {
     try {
-      const notification = await prisma.notification.findFirst({
-        where: { id: notificationId, userId },
-      });
+      const docRef = collections.notifications.doc(notificationId);
+      const doc = await docRef.get();
 
-      if (!notification) {
+      if (!doc.exists || doc.data()?.userId !== userId) {
         throw new Error("Notification not found");
       }
 
-      return await prisma.notification.update({
-        where: { id: notificationId },
-        data: { isRead: true },
-      });
+      await docRef.update({ isRead: true });
+      const updated = await docRef.get();
+      return { id: updated.id, ...updated.data() };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
       logger.error(
@@ -141,12 +143,23 @@ export class NotificationService {
    */
   async markAllAsRead(userId: string) {
     try {
-      const result = await prisma.notification.updateMany({
-        where: { userId, isRead: false },
-        data: { isRead: true },
+      const snapshot = await collections.notifications
+        .where("userId", "==", userId)
+        .where("isRead", "==", false)
+        .get();
+
+      if (snapshot.empty) {
+        return { count: 0 };
+      }
+
+      const batch = collections.notifications.firestore.batch();
+      snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { isRead: true });
       });
 
-      return { count: result.count };
+      await batch.commit();
+
+      return { count: snapshot.size };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
       logger.error(
@@ -162,17 +175,14 @@ export class NotificationService {
    */
   async delete(notificationId: string, userId: string) {
     try {
-      const notification = await prisma.notification.findFirst({
-        where: { id: notificationId, userId },
-      });
+      const docRef = collections.notifications.doc(notificationId);
+      const doc = await docRef.get();
 
-      if (!notification) {
+      if (!doc.exists || doc.data()?.userId !== userId) {
         throw new Error("Notification not found");
       }
 
-      await prisma.notification.delete({
-        where: { id: notificationId },
-      });
+      await docRef.delete();
 
       return { success: true };
     } catch (error) {
@@ -190,11 +200,13 @@ export class NotificationService {
    */
   async getUnreadCount(userId: string) {
     try {
-      const count = await prisma.notification.count({
-        where: { userId, isRead: false },
-      });
+      const countSnapshot = await collections.notifications
+        .where("userId", "==", userId)
+        .where("isRead", "==", false)
+        .count()
+        .get();
 
-      return { count };
+      return { count: countSnapshot.data().count };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
       logger.error({ err: msg, userId }, "Failed to get unread count");

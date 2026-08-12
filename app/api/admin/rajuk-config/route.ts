@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 const RAJUK_TOKEN_KEY = "rajuk_api_token";
 
 // GET /api/admin/rajuk-config — get current token
 export async function GET() {
   try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: RAJUK_TOKEN_KEY },
-    });
+    const settingDoc = await collections.settings.doc(RAJUK_TOKEN_KEY).get();
+    const setting = settingDoc.data();
 
     return NextResponse.json(
       {
@@ -34,14 +33,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "token is required" }, { status: 400 });
     }
 
-    const setting = await prisma.siteSetting.upsert({
-      where: { key: RAJUK_TOKEN_KEY },
-      update: { value: token },
-      create: { key: RAJUK_TOKEN_KEY, value: token },
-    });
+    const updatedAt = new Date().toISOString();
+    await collections.settings.doc(RAJUK_TOKEN_KEY).set(
+      { key: RAJUK_TOKEN_KEY, value: token, updatedAt },
+      { merge: true }
+    );
 
     return NextResponse.json(
-      { token: setting.value, updatedAt: setting.updatedAt },
+      { token, updatedAt },
       { status: 200 },
     );
   } catch (error: unknown) {

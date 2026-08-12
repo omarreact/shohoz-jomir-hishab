@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 function generateSlug(text: string): string {
   return text
@@ -17,12 +17,18 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const blog = await prisma.blog.findUnique({
-      where: { id },
-      include: { comments: { orderBy: { createdAt: "desc" } } },
-    });
-    if (!blog)
+    const doc = await collections.blogs.doc(id).get();
+    if (!doc.exists)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+      
+    const commentsSnapshot = await collections.comments
+      .where("blogId", "==", doc.id)
+      .orderBy("createdAt", "desc")
+      .get();
+      
+    const comments = commentsSnapshot.docs.map((c: any) => ({ id: c.id, ...c.data() }));
+    
+    const blog = { id: doc.id, ...doc.data(), comments };
     return NextResponse.json({ blog }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -51,22 +57,30 @@ export async function PUT(
         : plainText
       : undefined;
 
-    const blog = await prisma.blog.update({
-      where: { id },
-      data: {
-        ...(title && { title, slug }),
-        ...(coverImage !== undefined && { coverImage }),
-        ...(category && { category, categorySlug }),
-        ...(author && { author }),
-        ...(content && { content, excerpt }),
-        status: "Published",
-      },
-    });
+    const data: any = {
+      ...(title && { title, slug }),
+      ...(coverImage !== undefined && { coverImage }),
+      ...(category && { category, categorySlug }),
+      ...(author && { author }),
+      ...(content && { content, excerpt }),
+      status: "Published",
+      updatedAt: new Date().toISOString(),
+    };
+
+    const docRef = collections.blogs.doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await docRef.update(data);
+    
+    const updatedDoc = await docRef.get();
+    const blog = { id: updatedDoc.id, ...updatedDoc.data() };
 
     return NextResponse.json({ blog }, { status: 200 });
   } catch (error: unknown) {
-    if (error instanceof Error && (error as { code?: string }).code === "P2025")
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
@@ -81,11 +95,16 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    await prisma.blog.delete({ where: { id } });
+    const docRef = collections.blogs.doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    
+    await docRef.delete();
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
-    if (error instanceof Error && (error as { code?: string }).code === "P2025")
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 function generateSlug(text: string): string {
   return text
@@ -19,31 +19,47 @@ export async function GET(req: NextRequest) {
 
     // Single blog by slug
     if (slug) {
-      const blog = await prisma.blog.findUnique({
-        where: { slug },
-        include: { comments: { orderBy: { createdAt: "desc" } } },
-      });
-      if (!blog) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const snapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
+      if (snapshot.empty) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      
+      const doc = snapshot.docs[0];
+      const blogData = doc.data();
+      
+      const commentsSnapshot = await collections.comments
+        .where("blogId", "==", doc.id)
+        .orderBy("createdAt", "desc")
+        .get();
+        
+      const comments = commentsSnapshot.docs.map((c: any) => ({ id: c.id, ...c.data() }));
+
+      const blog = { id: doc.id, ...blogData, comments };
       return NextResponse.json({ blog }, { status: 200 });
     }
 
-    const blogs = await prisma.blog.findMany({
-      where: status ? { status } : undefined,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        author: true,
-        category: true,
-        categorySlug: true,
-        status: true,
-        readingTime: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    let query: any = collections.blogs;
+    if (status) {
+      query = query.where("status", "==", status);
+    }
+    
+    query = query.orderBy("createdAt", "desc");
+    
+    const snapshot = await query.get();
+    const blogs = snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        slug: data.slug,
+        excerpt: data.excerpt,
+        coverImage: data.coverImage,
+        author: data.author,
+        category: data.category,
+        categorySlug: data.categorySlug,
+        status: data.status,
+        readingTime: data.readingTime,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
     });
 
     return NextResponse.json({ blogs }, { status: 200 });
@@ -63,29 +79,37 @@ export async function POST(req: NextRequest) {
     }
 
     const slug = generateSlug(title);
+    
+    const existingSnapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
+    if (!existingSnapshot.empty) {
+      return NextResponse.json({ error: "A blog with this title already exists" }, { status: 409 });
+    }
+
     const categorySlug = generateSlug(category || "general");
     const plainText = content.replace(/<[^>]+>/g, "");
     const excerpt = plainText.length > 150 ? plainText.slice(0, 150) + "..." : plainText;
+    const now = new Date().toISOString();
 
-    const blog = await prisma.blog.create({
-      data: {
-        title,
-        slug,
-        excerpt,
-        content,
-        coverImage: coverImage || null,
-        author: author || "মো. ওমর ফারুক",
-        category: category || "সাধারণ",
-        categorySlug,
-        status: "Published",
-      },
-    });
+    const data = {
+      title,
+      slug,
+      excerpt,
+      content,
+      coverImage: coverImage || null,
+      author: author || "মো. ওমর ফারুক",
+      category: category || "সাধারণ",
+      categorySlug,
+      status: "Published",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const ref = await collections.blogs.add(data);
+    const doc = await ref.get();
+    const blog = { id: doc.id, ...doc.data() };
 
     return NextResponse.json({ blog }, { status: 201 });
   } catch (error: any) {
-    if (error.code === "P2002") {
-      return NextResponse.json({ error: "A blog with this title already exists" }, { status: 409 });
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 import { logger } from "@/lib/logger";
 
 export interface SystemHealth {
@@ -17,20 +17,17 @@ export interface UserMetrics {
   newUsersToday: number;
 }
 
-
-
 export class AdminService {
   /**
    * Get system health status.
    */
   async getSystemHealth(): Promise<SystemHealth> {
-    const start = Date.now();
     let dbConnected = false;
     let dbLatency = 0;
 
     try {
       const dbStart = Date.now();
-      await prisma.$queryRaw`SELECT 1`;
+      await collections.users.limit(1).get();
       dbLatency = Date.now() - dbStart;
       dbConnected = true;
     } catch (error: unknown) {
@@ -68,29 +65,25 @@ export class AdminService {
     todayStart.setHours(0, 0, 0, 0);
 
     const [
-      totalUsers,
-      verifiedUsers,
-      activeSessions,
-      failedLogins24h,
-      newUsersToday,
+      totalUsersRes,
+      verifiedUsersRes,
+      activeSessionsRes,
+      failedLogins24hRes,
+      newUsersTodayRes,
     ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { isVerified: true } }),
-      prisma.session.count({
-        where: { isRevoked: false, expiresAt: { gte: new Date() } },
-      }),
-      prisma.loginHistory.count({
-        where: { status: "FAILED", createdAt: { gte: twentyFourHoursAgo } },
-      }),
-      prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
+      collections.users.count().get(),
+      collections.users.where("isVerified", "==", true).count().get(),
+      collections.sessions.where("isRevoked", "==", false).where("expiresAt", ">=", new Date()).count().get(),
+      collections.loginHistory.where("status", "==", "FAILED").where("createdAt", ">=", twentyFourHoursAgo).count().get(),
+      collections.users.where("createdAt", ">=", todayStart).count().get(),
     ]);
 
     return {
-      totalUsers,
-      verifiedUsers,
-      activeSessions,
-      failedLogins24h,
-      newUsersToday,
+      totalUsers: totalUsersRes.data().count,
+      verifiedUsers: verifiedUsersRes.data().count,
+      activeSessions: activeSessionsRes.data().count,
+      failedLogins24h: failedLogins24hRes.data().count,
+      newUsersToday: newUsersTodayRes.data().count,
     };
   }
 
@@ -100,19 +93,36 @@ export class AdminService {
   async getLoginHistory(page: number = 1, limit: number = 50) {
     const skip = (page - 1) * limit;
 
-    const [total, logins] = await Promise.all([
-      prisma.loginHistory.count(),
-      prisma.loginHistory.findMany({
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: Number(limit),
-        include: {
-          user: {
-            select: { id: true, email: true, name: true },
-          },
-        },
-      }),
-    ]);
+    const totalRes = await collections.loginHistory.count().get();
+    const total = totalRes.data().count;
+
+    const loginsSnapshot = await collections.loginHistory
+      .orderBy("createdAt", "desc")
+      .offset(skip)
+      .limit(Number(limit))
+      .get();
+
+    const logins = [];
+    for (const doc of loginsSnapshot.docs) {
+      const data = doc.data();
+      let user = null;
+      if (data.userId) {
+        const userDoc = await collections.users.doc(data.userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          user = {
+            id: userDoc.id,
+            email: userData?.email,
+            name: userData?.name,
+          };
+        }
+      }
+      logins.push({
+        id: doc.id,
+        ...data,
+        user,
+      });
+    }
 
     return {
       data: logins,
@@ -131,25 +141,29 @@ export class AdminService {
   async getUsers(page: number = 1, limit: number = 50) {
     const skip = (page - 1) * limit;
 
-    const [total, users] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          isVerified: true,
-          lastLogin: true,
-          failedAttempts: true,
-          lockedUntil: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: Number(limit),
-      }),
-    ]);
+    const totalRes = await collections.users.count().get();
+    const total = totalRes.data().count;
+
+    const usersSnapshot = await collections.users
+      .orderBy("createdAt", "desc")
+      .offset(skip)
+      .limit(Number(limit))
+      .get();
+
+    const users = usersSnapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+        isVerified: data.isVerified,
+        lastLogin: data.lastLogin,
+        failedAttempts: data.failedAttempts,
+        lockedUntil: data.lockedUntil,
+        createdAt: data.createdAt,
+      };
+    });
 
     return {
       data: users,
@@ -172,52 +186,69 @@ export class AdminService {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userDoc = await collections.users.doc(userId).get();
 
-    if (!user) {
+    if (!userDoc.exists) {
       throw new Error("User not found");
     }
 
-    return await prisma.user.update({
-      where: { id: userId },
-      data: { role },
-      select: { id: true, email: true, name: true, role: true },
-    });
+    await collections.users.doc(userId).update({ role });
+    
+    const updatedDoc = await collections.users.doc(userId).get();
+    const updatedData = updatedDoc.data()!;
+
+    return {
+      id: updatedDoc.id,
+      email: updatedData.email,
+      name: updatedData.name,
+      role: updatedData.role,
+    };
   }
 
   /**
    * Suspend a user by locking their account.
    */
   async suspendUser(userId: string, durationHours: number = 24) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userDoc = await collections.users.doc(userId).get();
 
-    if (!user) {
+    if (!userDoc.exists) {
       throw new Error("User not found");
     }
 
     const lockedUntil = new Date(Date.now() + durationHours * 60 * 60 * 1000);
 
-    return await prisma.user.update({
-      where: { id: userId },
-      data: { lockedUntil, failedAttempts: 5 },
-      select: { id: true, email: true, name: true, lockedUntil: true },
-    });
+    await collections.users.doc(userId).update({ lockedUntil, failedAttempts: 5 });
+
+    const updatedDoc = await collections.users.doc(userId).get();
+    const updatedData = updatedDoc.data()!;
+
+    return {
+      id: updatedDoc.id,
+      email: updatedData.email,
+      name: updatedData.name,
+      lockedUntil: updatedData.lockedUntil,
+    };
   }
 
   /**
    * Unsuspend a user.
    */
   async unsuspendUser(userId: string) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userDoc = await collections.users.doc(userId).get();
 
-    if (!user) {
+    if (!userDoc.exists) {
       throw new Error("User not found");
     }
 
-    return await prisma.user.update({
-      where: { id: userId },
-      data: { lockedUntil: null, failedAttempts: 0 },
-      select: { id: true, email: true, name: true },
-    });
+    await collections.users.doc(userId).update({ lockedUntil: null, failedAttempts: 0 });
+
+    const updatedDoc = await collections.users.doc(userId).get();
+    const updatedData = updatedDoc.data()!;
+
+    return {
+      id: updatedDoc.id,
+      email: updatedData.email,
+      name: updatedData.name,
+    };
   }
 }

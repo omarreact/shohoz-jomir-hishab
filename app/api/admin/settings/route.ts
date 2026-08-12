@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // Keys we persist in SiteSetting
 const ALLOWED_KEYS = [
@@ -15,9 +15,8 @@ const ALLOWED_KEYS = [
 // GET /api/admin/settings — returns all settings as a flat object
 export async function GET() {
   try {
-    const rows = await prisma.siteSetting.findMany({
-      where: { key: { in: ALLOWED_KEYS } },
-    });
+    const settingsSnapshot = await collections.settings.where("key", "in", ALLOWED_KEYS).get();
+    const rows = settingsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
     const result: Record<string, string | boolean> = {
       siteName: "LandBD",
@@ -54,11 +53,10 @@ export async function POST(req: NextRequest) {
     const ops = Object.entries(body)
       .filter(([key]) => ALLOWED_KEYS.includes(key))
       .map(([key, val]) =>
-        prisma.siteSetting.upsert({
-          where: { key },
-          update: { value: String(val) },
-          create: { key, value: String(val) },
-        }),
+        collections.settings.doc(key).set(
+          { key, value: String(val) },
+          { merge: true }
+        )
       );
 
     await Promise.all(ops);

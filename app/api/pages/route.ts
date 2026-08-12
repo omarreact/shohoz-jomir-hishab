@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/pages — public list, or single page by ?slug=xxx
 export async function GET(req: NextRequest) {
@@ -7,14 +7,18 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get("slug");
 
     if (slug) {
-      const page = await prisma.customPage.findUnique({ where: { slug } });
-      if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
+      if (snapshot.empty) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      
+      const doc = snapshot.docs[0];
+      const page = { id: doc.id, ...doc.data() };
       return NextResponse.json({ page }, { status: 200 });
     }
 
-    const pages = await prisma.customPage.findMany({
-      orderBy: { createdAt: "asc" },
-      select: { id: true, title: true, slug: true, category: true, createdAt: true },
+    const snapshot = await collections.pages.orderBy("createdAt", "asc").get();
+    const pages = snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      return { id: doc.id, title: data.title, slug: data.slug, category: data.category, createdAt: data.createdAt };
     });
     return NextResponse.json({ pages }, { status: 200 });
   } catch (error: any) {
@@ -32,20 +36,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "title, slug, and content are required" }, { status: 400 });
     }
 
-    const page = await prisma.customPage.create({
-      data: {
-        title,
-        slug: slug.toLowerCase().replace(/\s+/g, "-"),
-        category: category || "সাধারণ (General)",
-        content,
-      },
-    });
+    const formattedSlug = slug.toLowerCase().replace(/\s+/g, "-");
+
+    const existingSnapshot = await collections.pages.where("slug", "==", formattedSlug).limit(1).get();
+    if (!existingSnapshot.empty) {
+      return NextResponse.json({ error: "A page with this slug already exists" }, { status: 409 });
+    }
+
+    const now = new Date().toISOString();
+    const data = {
+      title,
+      slug: formattedSlug,
+      category: category || "সাধারণ (General)",
+      content,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const ref = await collections.pages.add(data);
+    const doc = await ref.get();
+    const page = { id: doc.id, ...doc.data() };
 
     return NextResponse.json({ page }, { status: 201 });
   } catch (error: any) {
-    if (error.code === "P2002") {
-      return NextResponse.json({ error: "A page with this slug already exists" }, { status: 409 });
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

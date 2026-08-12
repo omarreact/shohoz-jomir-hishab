@@ -1,6 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { redis } from "@/src/modules/redis/redis.client";
-import { prisma } from "@/src/modules/database/prisma";
+import { collections } from "@/src/modules/database/firebaseAdmin";
 import Redis from "ioredis";
 // Assuming Pino logger is available, or use console for now
 import pino from "pino";
@@ -40,12 +40,20 @@ export const tokenCleanupWorker = new Worker(
   "token-cleanup-queue",
   async () => {
     logger.info("Running token cleanup job...");
-    const result = await prisma.session.deleteMany({
-      where: {
-        expiresAt: { lt: new Date() },
-      },
+    const snapshot = await collections.sessions.where('expiresAt', '<', new Date()).get();
+    
+    if (snapshot.empty) {
+      logger.info(`Deleted 0 expired sessions.`);
+      return;
+    }
+
+    const batch = collections.sessions.firestore.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
     });
-    logger.info(`Deleted ${result.count} expired sessions.`);
+    
+    await batch.commit();
+    logger.info(`Deleted ${snapshot.size} expired sessions.`);
   },
   { connection },
 );
