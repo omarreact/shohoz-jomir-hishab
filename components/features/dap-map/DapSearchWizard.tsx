@@ -1,309 +1,301 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin } from "lucide-react";
-import { toBn } from "@/lib/utils";
+import {
+  MapPin,
+  Search,
+  Hash,
+  Database,
+  Info,
+} from "lucide-react";
+import { useRajukSearch, LAYER1_FIELDS } from "@/src/features/search/hooks/useRajukSearch";
+import { engToBdNum } from "@/src/features/search/utils/formatters";
 
 interface WizardProps {
   onPlotSelected: (plotData: any) => void;
-  onMouzaSelected?: (features: any[]) => void;
+  onMouzaSelected?: (mouza: string) => void;
 }
 
-const SERVICES = {
-  LOCATION: "rajuk_db/Rajuk_dap_db/FeatureServer/1",
-  RS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/0",
-  MS_BASE: "rajuk_db/Rajuk_dap_db/FeatureServer/2",
-};
+export default function DapSearchWizard({
+  onPlotSelected,
+  onMouzaSelected,
+}: WizardProps) {
+  const { fetchLocation } = useRajukSearch();
 
-const LAYER1_FIELDS = {
-  DIST: "m_district",
-  THANA: "upazila_ps",
-  MOUZA: "mauza",
-};
-
-export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: WizardProps) {
-  // Location states
   const [districts, setDistricts] = useState<string[]>([]);
   const [thanas, setThanas] = useState<string[]>([]);
   const [mouzas, setMouzas] = useState<string[]>([]);
-  
-  // Selection states
+
   const [selectedDist, setSelectedDist] = useState("");
   const [selectedThana, setSelectedThana] = useState("");
   const [selectedMouza, setSelectedMouza] = useState("");
   const [selectedType, setSelectedType] = useState("");
-  const [dagInput, setDagInput] = useState("");
-  
-  // App states
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [dagNo, setDagNo] = useState("");
 
-  // 1. Initial Load: Fetch Districts
+  const [searchStatus, setSearchStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+
   useEffect(() => {
-    initRajuk();
-  }, []);
+    (async () => {
+      const dists = await fetchLocation("1=1", LAYER1_FIELDS.DIST);
+      setDistricts(dists);
+    })();
+  }, [fetchLocation]);
 
-  const fetchLocationData = async (where: string, outField: string) => {
-    try {
-      const url = new URL("/api/unified", window.location.origin);
-      url.searchParams.append("include", "location");
-      url.searchParams.append("where", where);
-      url.searchParams.append("outFields", outField);
-      url.searchParams.append("returnGeometry", "false");
-      url.searchParams.append("limit", "2000");
-
-      const res = await fetch(url.toString());
-      const json = await res.json();
-      
-      if (!json.success || !json.data.location) throw new Error();
-      
-      const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
-      const results = json.data.location
-        .map((f: any) => f.properties[camelOutField] || f.properties[outField])
-        .filter(Boolean);
-      return [...new Set(results)].sort() as string[];
-    } catch (e) {
-      return [];
-    }
-  };
-
-  const initRajuk = async () => {
-    try {
-      setDistricts(await fetchLocationData("1=1", LAYER1_FIELDS.DIST));
-    } catch (e) {}
-  };
-
-  const onDistChange = async (val: string) => {
+  const handleDistChange = async (val: string) => {
     setSelectedDist(val);
     setThanas([]);
     setMouzas([]);
+    setSelectedThana("");
+    setSelectedMouza("");
     setSelectedType("");
-    setDagInput("");
+    setDagNo("");
+    setSearchStatus("idle");
     if (!val) return;
-    setLoading(true);
+    setSearchStatus("loading");
     setThanas(
-      await fetchLocationData(
+      await fetchLocation(
         `${LAYER1_FIELDS.DIST}='${val}'`,
         LAYER1_FIELDS.THANA,
       ),
     );
-    setLoading(false);
+    setSearchStatus("idle");
   };
 
-  const onThanaChange = async (val: string) => {
+  const handleThanaChange = async (val: string) => {
     setSelectedThana(val);
     setMouzas([]);
+    setSelectedMouza("");
     setSelectedType("");
-    setDagInput("");
+    setDagNo("");
+    setSearchStatus("idle");
     if (!val) return;
-    setLoading(true);
+    setSearchStatus("loading");
     setMouzas(
-      await fetchLocationData(
+      await fetchLocation(
         `${LAYER1_FIELDS.DIST}='${selectedDist}' AND ${LAYER1_FIELDS.THANA}='${val}'`,
         LAYER1_FIELDS.MOUZA,
       ),
     );
-    setLoading(false);
+    setSearchStatus("idle");
   };
 
-  const onMouzaChange = (val: string) => {
+  const handleMouzaChange = (val: string) => {
     setSelectedMouza(val);
-    setSelectedType("rs_plot_no");
-    setDagInput("");
-    if (val) {
-      // Auto-trigger type change to open map immediately (or setup UI)
-      setTimeout(() => onTypeChange("rs_plot_no", val), 0);
+    setSelectedType("");
+    setDagNo("");
+    setSearchStatus("idle");
+    if (val && onMouzaSelected) {
+      onMouzaSelected(val);
     }
   };
 
-  const onTypeChange = (val: string, overrideMouza?: string) => {
-    setSelectedType(val);
-    setDagInput("");
-    setError(null);
-  };
+  const handleSearch = async () => {
+    if (!dagNo.trim() || !selectedType || !selectedMouza) return;
 
-  const handleDagSearch = async () => {
-    setError(null);
-    const val = dagInput.trim();
-    if (!val || !selectedType || !selectedMouza) return;
-
-    setLoading(true);
+    setSearchStatus("loading");
 
     try {
-      const clean = (str: string) => str.trim().toUpperCase().replace(/'/g, "''");
-      const coreMouza = clean(selectedMouza.split(" ")[0]);
-      const safePlotValue = clean(val.replace(/^RS[-\s]?/, ""));
-      const isNum = /^\d+$/.test(safePlotValue);
+      const url = new URL("/api/search/smart", window.location.origin);
+      url.searchParams.append("q", dagNo.trim());
+      url.searchParams.append("district", selectedDist);
+      url.searchParams.append("thana", selectedThana);
+      url.searchParams.append("mouza", selectedMouza);
+      url.searchParams.append("type", selectedType);
 
-      let targetLayer: "msPlots" | "plots" = "plots";
-      const queries: string[] = [];
+      const res = await fetch(url.toString());
+      const json = await res.json();
 
-      if (selectedType === "ms_plot_no") {
-        targetLayer = "msPlots";
-        queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no='${safePlotValue}'`);
-        if (isNum) queries.push(`UPPER(mauza) LIKE '%${coreMouza}%' AND plot_no=${safePlotValue}`);
-        queries.push(`plot_no='${safePlotValue}'`);
-      } else {
-        targetLayer = "plots";
-        queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='${safePlotValue}'`);
-        queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no='RS-${safePlotValue}'`);
-        if (isNum) queries.push(`UPPER(address_search) LIKE '%${coreMouza}%' AND rs_plot_no=${safePlotValue}`);
-      }
+      if (json.success && json.results && json.results.length > 0) {
+        const feature = json.results[0].data;
+        const attributes = feature.properties || feature.metadata || {};
 
-      const executeQueries = async (layer: "msPlots" | "plots", qList: string[]) => {
-        for (const q of qList) {
-          const url = new URL("/api/unified", window.location.origin);
-          url.searchParams.append("include", layer);
-          url.searchParams.append("where", q);
-          url.searchParams.append("limit", "1");
-          try {
-            const res = await fetch(url.toString());
-            const json = await res.json();
-            if (json.success && json.data[layer] && json.data[layer].length > 0)
-              return json.data[layer][0];
-          } catch (e) {}
-        }
-        return null;
-      };
+        const {
+          mDistrict,
+          upazilaPs,
+          mauza,
+          district,
+          distMs,
+          thanaMs,
+          thana,
+          plotType,
+          ...rest
+        } = attributes;
 
-      const foundPlot = await executeQueries(targetLayer, queries);
-
-      if (foundPlot) {
-        // Enhance data with location info for the map popup
-        const enhancedData = {
+        const enhanced = {
           mDistrict: selectedDist,
           upazilaPs: selectedThana,
           mauza: selectedMouza,
-          plotTypeCustom: selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
-          ...foundPlot.properties,
-          geometry: foundPlot.geometry,
+          plotTypeCustom:
+            selectedType === "rs_plot_no" ? "RS / সাধারণ দাগ" : "MS দাগ",
+          ...rest,
+          geometry: feature.geometry,
         };
-        onPlotSelected(enhancedData);
+
+        setSearchStatus("idle");
+        onPlotSelected(enhanced);
       } else {
-        setError("এই দাগ নম্বরটি রাজউকের ডেটাবেসে পাওয়া যায়নি।");
+        setSearchStatus("error");
       }
-    } catch (e) {
-      setError("সার্ভারে ত্রুটি হয়েছে।");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Search failed", error);
+      setSearchStatus("error");
     }
   };
 
-  return (
-    <div className="card border-0 shadow rounded-3 p-3 bg-white mx-auto" style={{ maxWidth: 1000 }}>
-      <h6 className="fw-bold text-success mb-3 text-center d-flex align-items-center justify-content-center">
-        <MapPin size={18} className="me-2" />
-        রাজউকের ম্যাপ থেকে সরাসরি দাগ খুঁজুন
-      </h6>
-      
-      {error && (
-        <div className="alert alert-danger py-1 px-2 small rounded-2 mb-3 text-center fw-bold">
-          {error}
-        </div>
-      )}
+  const isDropdownLoading = searchStatus === "loading" && !dagNo;
 
-      <div className="row g-2">
-        <div className="col-md-3 col-sm-6">
-          <select
-            className="form-select form-select-sm rounded-pill"
-            value={selectedDist}
-            onChange={(e) => onDistChange(e.target.value)}
-            disabled={districts.length === 0}
-          >
-            <option value="">১. জেলা...</option>
-            {districts.map((d) => (
-              <option key={d} value={d}>
-                {toBn(d)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-3 col-sm-6">
-          <select
-            className="form-select form-select-sm rounded-pill"
-            value={selectedThana}
-            onChange={(e) => onThanaChange(e.target.value)}
-            disabled={thanas.length === 0 || loading}
-          >
-            <option value="">২. থানা...</option>
-            {thanas.map((t) => (
-              <option key={t} value={t}>
-                {toBn(t)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-3 col-sm-6">
-          <select
-            className="form-select form-select-sm rounded-pill"
-            value={selectedMouza}
-            onChange={(e) => onMouzaChange(e.target.value)}
-            disabled={mouzas.length === 0 || loading}
-          >
-            <option value="">৩. মৌজা...</option>
-            {mouzas.map((m) => (
-              <option key={m} value={m}>
-                {toBn(m)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-3 col-sm-6">
-          <select
-            className="form-select form-select-sm rounded-pill text-success fw-bold"
-            value={selectedType}
-            onChange={(e) => onTypeChange(e.target.value)}
-            disabled={!selectedMouza || loading}
-          >
-            <option value="">৪. দাগের ধরন...</option>
-            <option value="rs_plot_no">RS মৌজা হাই-রেজ (282 Scale)</option>
-            <option value="ms_plot_no">MS দাগ</option>
-          </select>
-        </div>
+  return (
+    <div className="card-new overflow-hidden">
+      <div className="bg-[var(--accent)] text-[var(--bg)] p-4 text-center">
+        <h5 className="font-bold mb-1 flex items-center justify-center">
+          <Database size={20} className="mr-2 text-yellow-300" />
+          রাজউক মাস্টারপ্ল্যান (DAP) ডাটাবেস
+        </h5>
+        <small className="opacity-80">
+          সরাসরি রাজউক সার্ভার থেকে রিয়েল-টাইম ডাটা
+        </small>
       </div>
 
-      {selectedType && (
-        <div className="row justify-content-center mt-3 fade-in">
-          <div className="col-md-8 col-lg-6">
-            <div className="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
-              <span className="input-group-text bg-white border-0 fw-bold px-3">
-                ৫. দাগ নম্বর:
+      <div className="p-4 md:p-6 bg-[var(--bg)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+              ১. জেলা
+            </label>
+            <select
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              value={selectedDist}
+              onChange={(e) => handleDistChange(e.target.value)}
+              disabled={districts.length === 0}
+            >
+              <option value="">
+                {districts.length === 0 ? "লোড হচ্ছে..." : "নির্বাচন করুন..."}
+              </option>
+              {districts.map((d) => (
+               <option key={d} value={d}>
+                  {engToBdNum(d)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+              ২. থানা
+            </label>
+            <select
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              value={selectedThana}
+              onChange={(e) => handleThanaChange(e.target.value)}
+              disabled={thanas.length === 0 || isDropdownLoading}
+            >
+              <option value="">নির্বাচন করুন...</option>
+              {thanas.map((t) => (
+                <option key={t} value={t}>
+                  {engToBdNum(t)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+              ৩. মৌজা
+            </label>
+            <select
+              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              value={selectedMouza}
+              onChange={(e) => handleMouzaChange(e.target.value)}
+              disabled={mouzas.length === 0 || isDropdownLoading}
+            >
+              <option value="">নির্বাচন করুন...</option>
+              {mouzas.map((m) => (
+                <option key={m} value={m}>
+                  {engToBdNum(m)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[var(--text-primary)] text-sm font-bold mb-2">
+              ৪. দাগের ধরন
+            </label>
+            <select
+              className="w-full bg-[var(--surface)] border-2 border-[var(--text-primary)] text-[var(--text-primary)] font-bold rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/30 transition-colors shadow-sm"
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setDagNo("");
+                setSearchStatus("idle");
+              }}
+              disabled={!selectedMouza || isDropdownLoading}
+            >
+              <option value="">ধরন নির্বাচন করুন...</option>
+              <option value="rs_plot_no">RS / সাধারণ দাগ</option>
+              <option value="ms_plot_no">MS দাগ</option>
+            </select>
+          </div>
+        </div>
+
+        {selectedType && (
+          <div className="mt-4 fade-in visible">
+            <label className="block text-[var(--text-primary)] font-bold mb-3">
+              ৫. দাগ নম্বর লিখুন:
+            </label>
+            <div className="flex rounded-xl overflow-hidden shadow-sm border border-[var(--border)] focus-within:border-[var(--accent)] transition-colors">
+              <span className="bg-[var(--surface)] border-r border-[var(--border)] px-4 flex items-center justify-center">
+                <Hash size={20} className="text-[var(--text-secondary)]" />
               </span>
               <input
                 type="text"
-                className="form-control border-0 text-center fw-bold"
+                className="flex-1 bg-[var(--bg)] text-[var(--text-primary)] font-bold px-4 py-3 outline-none min-w-0"
                 placeholder="যেমন: ১২৩ বা 123"
-                value={dagInput}
+                value={dagNo}
                 onChange={(e) => {
-                  setDagInput(e.target.value);
-                  setError(null);
+                  setDagNo(e.target.value);
+                  setSearchStatus("idle");
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleDagSearch();
+                  if (e.key === "Enter") handleSearch();
                 }}
-                disabled={loading}
+                disabled={searchStatus === "loading"}
               />
               <button
-                className="btn btn-success fw-bold px-4 rounded-end-pill"
-                onClick={handleDagSearch}
-                disabled={!dagInput.trim() || loading}
+                className="bg-[var(--accent)] text-[var(--bg)] font-bold px-6 py-3 disabled:opacity-50 flex items-center justify-center shrink-0"
+                onClick={handleSearch}
+                disabled={!dagNo.trim() || searchStatus === "loading"}
               >
-                {loading ? <span className="spinner-border spinner-border-sm" /> : "সার্চ"}
+                {searchStatus === "loading" ? (
+                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <>
+                    <Search size={18} className="mr-2 hidden sm:block" /> সার্চ
+                  </>
+                )}
               </button>
             </div>
-            <div className="text-center mt-1 text-success fw-bold" style={{ fontSize: "0.75rem" }}>
-              সার্চ করলে সাথে সাথেই ম্যাপ আসবে।
+          </div>
+        )}
+
+        {isDropdownLoading && (
+          <div className="text-center text-[var(--accent)] font-bold mt-4 text-sm flex items-center justify-center">
+            <span className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mr-2" />
+            ডাটা লোড হচ্ছে...
+          </div>
+        )}
+
+        {searchStatus === "error" && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl p-3 mt-4 text-sm flex items-start fade-in visible">
+            <Info size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              দাগটি পাওয়া যায়নি। নম্বরটি সঠিক কিনা যাচাই করুন।
             </div>
           </div>
-        </div>
-      )}
-
-      {loading && (
-        <div className="text-center text-success fw-bold mt-2" style={{ fontSize: "0.85rem" }}>
-          <span className="spinner-border spinner-border-sm me-2" style={{ width: "1rem", height: "1rem" }}></span>
-          ডেটাবেস থেকে তথ্য আনা হচ্ছে...
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
