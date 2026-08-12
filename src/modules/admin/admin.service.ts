@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/src/modules/database/prisma";
 import { logger } from "@/lib/logger";
 
 export interface SystemHealth {
@@ -17,7 +17,7 @@ export interface UserMetrics {
   newUsersToday: number;
 }
 
-const prisma = new PrismaClient();
+
 
 export class AdminService {
   /**

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/src/modules/database/prisma";
 import { logger } from "@/lib/logger";
 
 export interface CreateNotificationDto {
@@ -23,7 +23,7 @@ export interface NotificationWhereInput {
   type?: string;
 }
 
-const prisma = new PrismaClient();
+
 
 export class NotificationService {
   /**
