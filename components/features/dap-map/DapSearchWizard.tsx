@@ -190,15 +190,7 @@ export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: Wiz
   };
 
   return (
-    <div 
-      className="card border-0 shadow-lg rounded-4 p-3 mx-auto" 
-      style={{ 
-        background: "rgba(255, 255, 255, 0.85)", 
-        backdropFilter: "blur(12px)", 
-        WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.3)"
-      }}
-    >
+    <div className="card border-0 shadow rounded-3 p-3 bg-white mx-auto" style={{ maxWidth: 1000 }}>
       <h6 className="fw-bold text-success mb-3 text-center d-flex align-items-center justify-content-center">
         <MapPin size={18} className="me-2" />
         রাজউকের ম্যাপ থেকে সরাসরি দাগ খুঁজুন
@@ -210,8 +202,8 @@ export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: Wiz
         </div>
       )}
 
-      <div className="row g-2 mb-2">
-        <div className="col-6 col-md-3">
+      <div className="row g-2">
+        <div className="col-md-3 col-sm-6">
           <select
             className="form-select form-select-sm rounded-pill"
             value={selectedDist}
@@ -226,7 +218,7 @@ export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: Wiz
             ))}
           </select>
         </div>
-        <div className="col-6 col-md-3">
+        <div className="col-md-3 col-sm-6">
           <select
             className="form-select form-select-sm rounded-pill"
             value={selectedThana}
@@ -241,7 +233,7 @@ export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: Wiz
             ))}
           </select>
         </div>
-        <div className="col-6 col-md-3">
+        <div className="col-md-3 col-sm-6">
           <select
             className="form-select form-select-sm rounded-pill"
             value={selectedMouza}
@@ -256,64 +248,62 @@ export default function DapSearchWizard({ onPlotSelected, onMouzaSelected }: Wiz
             ))}
           </select>
         </div>
-        <div className="col-6 col-md-3">
+        <div className="col-md-3 col-sm-6">
           <select
             className="form-select form-select-sm rounded-pill text-success fw-bold"
             value={selectedType}
             onChange={(e) => onTypeChange(e.target.value)}
             disabled={!selectedMouza || loading}
           >
-            <option value="">৪. ধরন...</option>
-            <option value="rs_plot_no">RS মৌজা হাই-রেজ</option>
+            <option value="">৪. দাগের ধরন...</option>
+            <option value="rs_plot_no">RS মৌজা হাই-রেজ (282 Scale)</option>
             <option value="ms_plot_no">MS দাগ</option>
           </select>
         </div>
       </div>
 
-      <div className="row justify-content-center mt-2 fade-in">
-        <div className="col-12 col-md-8">
-          <div className="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border bg-white">
-            <span className="input-group-text bg-transparent border-0 fw-bold px-3">
-              ৫. দাগ নম্বর:
-            </span>
-            <input
-              type="text"
-              className="form-control border-0 text-center fw-bold bg-transparent"
-              placeholder="যেমন: ১২৩ বা 123"
-              value={dagInput}
-              onChange={(e) => {
-                setDagInput(e.target.value);
-                setError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleDagSearch();
-              }}
-              disabled={loading || !selectedType}
-            />
-            {dagInput && (
-              <button 
-                className="btn btn-light px-3 border-0 text-muted" 
-                onClick={() => {
-                  setDagInput("");
+      {selectedType && (
+        <div className="row justify-content-center mt-3 fade-in">
+          <div className="col-md-8 col-lg-6">
+            <div className="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
+              <span className="input-group-text bg-white border-0 fw-bold px-3">
+                ৫. দাগ নম্বর:
+              </span>
+              <input
+                type="text"
+                className="form-control border-0 text-center fw-bold"
+                placeholder="যেমন: ১২৩ বা 123"
+                value={dagInput}
+                onChange={(e) => {
+                  setDagInput(e.target.value);
                   setError(null);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleDagSearch();
+                }}
+                disabled={loading}
+              />
+              <button
+                className="btn btn-success fw-bold px-4 rounded-end-pill"
+                onClick={handleDagSearch}
+                disabled={!dagInput.trim() || loading}
               >
-                ✕
+                {loading ? <span className="spinner-border spinner-border-sm" /> : "সার্চ"}
               </button>
-            )}
-            <button
-              className="btn btn-success fw-bold px-4 rounded-end-pill"
-              onClick={handleDagSearch}
-              disabled={!dagInput.trim() || loading || !selectedType}
-            >
-              {loading ? <span className="spinner-border spinner-border-sm" /> : "সার্চ"}
-            </button>
-          </div>
-          <div className="text-center mt-1 text-success fw-bold" style={{ fontSize: "0.75rem" }}>
-            সার্চ করলে সাথে সাথেই ম্যাপ আসবে।
+            </div>
+            <div className="text-center mt-1 text-success fw-bold" style={{ fontSize: "0.75rem" }}>
+              সার্চ করলে সাথে সাথেই ম্যাপ আসবে।
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {loading && (
+        <div className="text-center text-success fw-bold mt-2" style={{ fontSize: "0.85rem" }}>
+          <span className="spinner-border spinner-border-sm me-2" style={{ width: "1rem", height: "1rem" }}></span>
+          ডেটাবেস থেকে তথ্য আনা হচ্ছে...
+        </div>
+      )}
     </div>
   );
 }
