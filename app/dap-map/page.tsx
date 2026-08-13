@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import DapSearchWizard from "@/components/features/dap-map/DapSearchWizard";
 
-// Lazy load the heavy Leaflet map — never loaded until user selects a plot
+// Lazy load the heavy Leaflet map — never loaded until user selects a plots
 const FullDapMap = dynamic(() => import("@/components/FullDapMap"), {
   ssr: false,
   loading: () => <LoadingSpinner label="ম্যাপ লোড হচ্ছে..." size="lg" />,
