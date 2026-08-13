@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 const RAJUK_TOKEN_KEY = "rajuk_api_token";
 
 // GET /api/admin/rajuk-config — get current token
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    await verifyAdminAuth(req);
     const settingDoc = await collections.settings.doc(RAJUK_TOKEN_KEY).get();
     const setting = settingDoc.data();
 
@@ -16,9 +18,13 @@ export async function GET() {
       },
       { status: 200 },
     );
-  } catch (error: unknown) {
+  } catch (error: any) {
+    console.error("Failed to get rajuk config:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "রাজউক কনফিগারেশন লোড করা যায়নি।" },
       { status: 500 },
     );
   }
@@ -27,10 +33,11 @@ export async function GET() {
 // POST /api/admin/rajuk-config — save token
 export async function POST(req: NextRequest) {
   try {
+    await verifyAdminAuth(req);
     const { token } = await req.json();
 
     if (!token) {
-      return NextResponse.json({ error: "token is required" }, { status: 400 });
+      return NextResponse.json({ error: "টোকেন প্রয়োজন" }, { status: 400 });
     }
 
     const updatedAt = new Date().toISOString();
@@ -43,9 +50,13 @@ export async function POST(req: NextRequest) {
       { token, updatedAt },
       { status: 200 },
     );
-  } catch (error: unknown) {
+  } catch (error: any) {
+    console.error("Failed to save rajuk config:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "রাজউক টোকেন সেভ করা যায়নি।" },
       { status: 500 },
     );
   }

@@ -76,9 +76,11 @@ export default function SingleBlogPage() {
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
+    setErrorMsg(null);
 
     // Try by slug first, fall back to id lookup
     fetch(`/api/blogs?slug=${encodeURIComponent(slug)}`)
@@ -88,19 +90,25 @@ export default function SingleBlogPage() {
       })
       .then((r) => {
         if (r.status === 404) { setNotFound(true); return null; }
-        if (!r.ok) throw new Error("Failed");
+        if (r.status === 500) throw new Error("সার্ভারের সাথে সংযোগ করা যাচ্ছে না।");
+        if (!r.ok) throw new Error("ব্লগ লোড করতে সমস্যা হয়েছে।");
         return r.json();
       })
-      .then((data) => {
-        if (!data) return;
-        const blog = data.blog;
+      .then((json) => {
+        if (!json) return;
+        if (!json.success) {
+          throw new Error(json.message || "ব্লগ লোড করতে সমস্যা হয়েছে।");
+        }
+        
+        const blog = json.data.blog;
         setPost(apiBlogToPost(blog));
 
         // Fetch related posts (same category)
         if (blog.category) {
           fetch(`/api/blogs?status=Published`)
-            .then((r) => r.ok ? r.json() : { blogs: [] })
-            .then(({ blogs }: { blogs: ApiBlog[] }) => {
+            .then((r) => r.ok ? r.json() : { data: { blogs: [] } })
+            .then((resJson) => {
+              const blogs: ApiBlog[] = resJson?.data?.blogs || [];
               const related = blogs
                 .filter((b) => b.category === blog.category && b.id !== blog.id)
                 .slice(0, 3)
@@ -130,7 +138,7 @@ export default function SingleBlogPage() {
       })
       .catch((err) => {
         console.error("Error fetching blog post:", err);
-        setNotFound(true);
+        setErrorMsg(err.message || "ব্লগ লোড করতে সমস্যা হয়েছে।");
       })
       .finally(() => setIsLoading(false));
   }, [slug]);
@@ -139,6 +147,18 @@ export default function SingleBlogPage() {
     return (
       <div className="bg-[var(--bg)] min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="bg-[var(--bg)] min-h-screen flex flex-col items-center justify-center gap-4">
+        <h1 className="text-3xl font-bold text-red-500">ত্রুটি</h1>
+        <p className="text-[var(--text-secondary)]">{errorMsg}</p>
+        <Link href="/blog" className="inline-flex items-center gap-2 text-[var(--accent)] hover:underline font-bold">
+          <ArrowLeft size={18} /> জার্নালে ফিরে যান
+        </Link>
       </div>
     );
   }

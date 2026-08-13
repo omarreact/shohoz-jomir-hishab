@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/pages — public list, or single page by ?slug=xxx
@@ -8,11 +9,11 @@ export async function GET(req: NextRequest) {
 
     if (slug) {
       const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
-      if (snapshot.empty) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      if (snapshot.empty) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
       
       const doc = snapshot.docs[0];
       const page = { id: doc.id, ...doc.data() };
-      return NextResponse.json({ page }, { status: 200 });
+      return NextResponse.json({ success: true, data: { page } }, { status: 200 });
     }
 
     const snapshot = await collections.pages.orderBy("createdAt", "asc").get();
@@ -20,9 +21,9 @@ export async function GET(req: NextRequest) {
       const data = doc.data();
       return { id: doc.id, title: data.title, slug: data.slug, category: data.category, createdAt: data.createdAt };
     });
-    return NextResponse.json({ pages }, { status: 200 });
+    return NextResponse.json({ success: true, data: { pages } }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
@@ -33,14 +34,14 @@ export async function POST(req: NextRequest) {
     const { title, slug, category, content } = body;
 
     if (!title || !slug || !content) {
-      return NextResponse.json({ error: "title, slug, and content are required" }, { status: 400 });
+      return NextResponse.json({ success: false, message: "title, slug, and content are required" }, { status: 400 });
     }
 
     const formattedSlug = slug.toLowerCase().replace(/\s+/g, "-");
 
     const existingSnapshot = await collections.pages.where("slug", "==", formattedSlug).limit(1).get();
     if (!existingSnapshot.empty) {
-      return NextResponse.json({ error: "A page with this slug already exists" }, { status: 409 });
+      return NextResponse.json({ success: false, message: "A page with this slug already exists" }, { status: 409 });
     }
 
     const now = new Date().toISOString();
@@ -56,9 +57,11 @@ export async function POST(req: NextRequest) {
     const ref = await collections.pages.add(data);
     const doc = await ref.get();
     const page = { id: doc.id, ...doc.data() };
+    
+    revalidatePath("/", "layout");
 
-    return NextResponse.json({ page }, { status: 201 });
+    return NextResponse.json({ success: true, data: { page } }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

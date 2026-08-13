@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, getIdToken } from "firebase/auth";
-import { auth } from "@/src/modules/database/firebaseClient";
+import { auth, db } from "@/src/modules/database/firebaseClient";
+import { doc, getDoc } from "firebase/firestore";
 
 export interface AuthUser {
   id: string;
@@ -58,8 +59,21 @@ export function useAuth(): AuthState & {
 
       const payload = parseJwtPayload(token);
       
-      // We assume role based on email or custom claims for now
-      const role = payload?.role || (firebaseUser.email?.includes('admin') ? 'Admin' : 'User');
+      // Securely fetch role from custom claims or Firestore
+      let role = payload?.role;
+      if (!role) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            role = userDoc.data().role;
+          }
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+        }
+      }
+      
+      // Fallback to User if no role found in claims or DB
+      role = role || 'User';
 
       setState({
         user: { 
@@ -67,6 +81,7 @@ export function useAuth(): AuthState & {
           email: firebaseUser.email || "", 
           name: firebaseUser.displayName || null, 
           role 
+
         },
         isLoggedIn: true,
         loading: false,

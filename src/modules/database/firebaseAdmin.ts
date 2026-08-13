@@ -5,12 +5,29 @@ import { getAuth } from 'firebase-admin/auth';
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
   try {
-    initializeApp({
-      // Application Default Credentials will be used when deployed to Vercel/GCP
-      // Or you can configure specific certs here if FIREBASE_PRIVATE_KEY is set.
-    });
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (projectId && clientEmail && privateKey) {
+      initializeApp({
+        projectId,
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+    } else {
+      console.warn("FirebaseAdmin Init: Missing credentials.", { 
+        projectId: projectId, 
+        hasClientEmail: !!clientEmail, 
+        hasPrivateKey: !!privateKey 
+      });
+      initializeApp({ projectId });
+    }
   } catch (error: any) {
-    console.error('Firebase admin initialization error', error.stack);
+    console.error('Firebase admin initialization error:', error.message);
   }
 }
 

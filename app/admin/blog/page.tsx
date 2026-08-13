@@ -39,8 +39,9 @@ export default function BlogManagementPage() {
     try {
       const res = await fetch("/api/blogs");
       if (!res.ok) throw new Error("Failed to fetch blogs");
-      const data = await res.json();
-      setBlogs(data.blogs ?? []);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      setBlogs(json.data.blogs ?? []);
     } catch (error) {
       console.error("Error fetching blogs:", error);
     } finally {
@@ -54,10 +55,12 @@ export default function BlogManagementPage() {
     try {
       const res = await fetch(`/api/blogs/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed to delete");
       setBlogs((prev) => prev.filter((b) => b.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting blog:", error);
-      alert("ব্লগ মুছতে সমস্যা হয়েছে।");
+      alert(error.message || "ব্লগ মুছতে সমস্যা হয়েছে।");
     }
   };
 

@@ -23,10 +23,11 @@ import {
 } from "lucide-react";
 
 export interface ApiRow {
+  id?: string;
   name: string;
   endpoint: string;
-  type: "Rajuk" | "Firebase" | "External";
-  status: "active" | "unknown";
+  type: "Rajuk" | "Firebase" | "External" | "Imported";
+  status: "active" | "unknown" | "error";
   note: string;
 }
 
@@ -182,6 +183,7 @@ export default function DataMonitorPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedApis, setSelectedApis] = useState<number[]>([]);
   const [generatedLink, setGeneratedLink] = useState<string>("");
+  const [dynamicApis, setDynamicApis] = useState<ApiRow[]>([]);
 
   const handleCheckboxChange = (index: number) => {
     setSelectedApis((prev) =>
@@ -197,7 +199,7 @@ export default function DataMonitorPage() {
   };
 
   const selectAll = () =>
-    setSelectedApis(API_REGISTRY.map((_, index) => index));
+    setSelectedApis(combinedApiRegistry.map((_, index) => index));
   const unselectAll = () => setSelectedApis([]);
 
   useEffect(() => {
@@ -255,9 +257,36 @@ export default function DataMonitorPage() {
     };
 
     fetchStats();
+    
+    // Fetch dynamically imported APIs
+    const fetchDynamicApis = async () => {
+       try {
+          const res = await fetch("/api/admin/rajuk-discovery/list");
+          if (res.ok) {
+             const data = await res.json();
+             if (data.apis && Array.isArray(data.apis)) {
+                const mapped: ApiRow[] = data.apis.map((api: any) => ({
+                   id: api.id,
+                   name: api.name || "Unknown Service",
+                   endpoint: api.url,
+                   type: "Imported",
+                   status: "active",
+                   note: `Imported via HAR (${api.serviceType})`
+                }));
+                setDynamicApis(mapped);
+             }
+          }
+       } catch (err) {
+          console.error("Failed to fetch dynamic APIs:", err);
+       }
+    };
+    
+    fetchDynamicApis();
   }, [refreshKey]);
 
-  const filteredApis = API_REGISTRY.filter(
+  const combinedApiRegistry = [...API_REGISTRY, ...dynamicApis];
+
+  const filteredApis = combinedApiRegistry.filter(
     (row) => typeFilter === "all" || row.type === typeFilter,
   )
     .filter(
@@ -276,7 +305,7 @@ export default function DataMonitorPage() {
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
   );
-  const activeApis = API_REGISTRY.filter(
+  const activeApis = combinedApiRegistry.filter(
     (row) => row.status === "active",
   ).length;
 
@@ -379,6 +408,7 @@ export default function DataMonitorPage() {
                 <option value="Rajuk">Rajuk</option>
                 <option value="Firebase">Firebase</option>
                 <option value="External">External</option>
+                <option value="Imported">Imported (HAR)</option>
               </select>
             </div>
             <button
@@ -416,8 +446,8 @@ export default function DataMonitorPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {pageSlice.map((row) => (
-                <tr key={row.name} className="hover:bg-[var(--surface)] transition-colors">
+              {pageSlice.map((row, idx) => (
+                <tr key={`${row.name}-${idx}`} className="hover:bg-[var(--surface)] transition-colors">
                   <td className="px-6 py-4 font-bold text-[var(--text-primary)] text-sm">
                     {row.name}
                   </td>
@@ -428,7 +458,9 @@ export default function DataMonitorPage() {
                           ? "bg-green-500/10 text-green-500" 
                           : row.type === "Firebase" 
                             ? "bg-yellow-500/10 text-yellow-500" 
-                            : "bg-blue-500/10 text-blue-500"
+                            : row.type === "Imported"
+                              ? "bg-purple-500/10 text-purple-500"
+                              : "bg-blue-500/10 text-blue-500"
                       }`}
                     >
                       {row.type}
@@ -492,7 +524,7 @@ export default function DataMonitorPage() {
           </div>
           <div className="flex gap-3 flex-wrap items-center">
             <span className="text-sm font-bold text-blue-500 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
-              Selected APIs: {selectedApis.length} of {API_REGISTRY.length}
+              Selected APIs: {selectedApis.length} of {combinedApiRegistry.length}
             </span>
             <button
               onClick={selectAll}
@@ -528,7 +560,7 @@ export default function DataMonitorPage() {
                         variable: [
                           { key: "baseUrl", value: window.location.origin },
                         ],
-                        item: API_REGISTRY.map((api) => ({
+                        item: combinedApiRegistry.map((api) => ({
                           name: api.name,
                           request: {
                             method: "GET",
@@ -561,7 +593,7 @@ export default function DataMonitorPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-            {API_REGISTRY.map((api, index) => (
+            {combinedApiRegistry.map((api, index) => (
               <div
                 key={index}
                 className={`border rounded-xl p-4 flex flex-col select-none transition-all cursor-pointer ${

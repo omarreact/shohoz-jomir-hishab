@@ -45,8 +45,9 @@ export default function CustomPagesDashboard() {
     try {
       const res = await fetch("/api/pages");
       if (!res.ok) throw new Error("Failed to load pages");
-      const data = await res.json();
-      setPages(data.pages ?? []);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      setPages(json.data.pages ?? []);
     } catch (error) {
       console.error("Error fetching pages:", error);
     } finally {
@@ -82,9 +83,9 @@ export default function CustomPagesDashboard() {
             body: JSON.stringify(pageData),
           });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "সেভ করতে সমস্যা হয়েছে");
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "সেভ করতে সমস্যা হয়েছে");
       }
 
       alert(editingId ? "পেজ আপডেট হয়েছে!" : "নতুন পেজ তৈরি হয়েছে!");
@@ -111,9 +112,9 @@ export default function CustomPagesDashboard() {
     // Fetch full content for the editor
     try {
       const res = await fetch(`/api/pages/${page.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setContent(data.page.content ?? "");
+      const json = await res.json();
+      if (json.success) {
+        setContent(json.data.page.content ?? "");
       }
     } catch {
       setContent("");
@@ -130,10 +131,12 @@ export default function CustomPagesDashboard() {
     if (!confirm(`"${pageTitle}" পেজটি কি আপনি সত্যিই ডিলিট করতে চান?`)) return;
     try {
       const res = await fetch(`/api/pages/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("ডিলিট করতে সমস্যা হয়েছে");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "ডিলিট করতে সমস্যা হয়েছে");
       fetchPages();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting page:", error);
+      alert(error.message);
     }
   };
 

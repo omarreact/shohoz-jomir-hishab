@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 // GET /api/admin/stats — data monitor dashboard stats
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    await verifyAdminAuth(req);
     const [
       blogCountRes,
       pageCountRes,
@@ -35,9 +37,13 @@ export async function GET() {
       },
       { status: 200 },
     );
-  } catch (error: unknown) {
+  } catch (error: any) {
+    console.error("Failed to load stats:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "স্ট্যাটস লোড করা যায়নি।" },
       { status: 500 },
     );
   }

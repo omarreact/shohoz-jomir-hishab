@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
 import { z } from "zod";
-
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 const roleSchema = z.object({
   userId: z.string().uuid(),
   role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]),
@@ -14,19 +14,22 @@ const suspendSchema = z.object({
 
 // GET /api/admin/users?page=1&limit=50
 export async function GET(request: NextRequest) {
-  const adminService = new AdminService();
   try {
+    await verifyAdminAuth(request);
+    const adminService = new AdminService();
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
 
     const result = await adminService.getUsers(page, limit);
-    return NextResponse.json(result);
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to fetch users");
+    return NextResponse.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error("Failed to fetch users:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ success: false, message: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { success: false, message: "ব্যবহারকারীদের তথ্য লোড করা যায়নি।" },
       { status: 500 },
     );
   }
@@ -34,37 +37,41 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/admin/users - Update user role
 export async function PATCH(request: NextRequest) {
-  const adminService = new AdminService();
   try {
+    await verifyAdminAuth(request);
+    const adminService = new AdminService();
     const body = await request.json();
     const validated = roleSchema.parse(body);
     const result = await adminService.updateUserRole(
       validated.userId,
       validated.role,
     );
-    return NextResponse.json(result);
-  } catch (error: unknown) {
+    return NextResponse.json({ success: true, data: result });
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.issues },
+        { success: false, message: "অবৈধ ইনপুট", error: error.issues },
         { status: 400 },
       );
     }
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to update user role");
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("Failed to update user role:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ success: false, message: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
+    return NextResponse.json({ success: false, message: "ভূমিকা পরিবর্তন করা যায়নি।" }, { status: 500 });
   }
 }
 
 // POST /api/admin/users - Suspend or unsuspend user
 export async function POST(request: NextRequest) {
-  const adminService = new AdminService();
   try {
+    await verifyAdminAuth(request);
+    const adminService = new AdminService();
     const body = await request.json();
     const { action, userId, durationHours } = body;
 
     if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+      return NextResponse.json({ success: false, message: "userId প্রয়োজন" }, { status: 400 });
     }
 
     if (action === "suspend") {
@@ -73,25 +80,27 @@ export async function POST(request: NextRequest) {
         validated.userId,
         validated.durationHours,
       );
-      return NextResponse.json(result);
+      return NextResponse.json({ success: true, data: result });
     } else if (action === "unsuspend") {
       const result = await adminService.unsuspendUser(userId);
-      return NextResponse.json(result);
+      return NextResponse.json({ success: true, data: result });
     } else {
       return NextResponse.json(
-        { error: "Invalid action. Use 'suspend' or 'unsuspend'" },
+        { success: false, message: "অবৈধ অ্যাকশন" },
         { status: 400 },
       );
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.issues },
+        { success: false, message: "অবৈধ ইনপুট", error: error.issues },
         { status: 400 },
       );
     }
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to process user action");
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("Failed to process user action:", error);
+    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
+      return NextResponse.json({ success: false, message: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
+    return NextResponse.json({ success: false, message: "অ্যাকশন সম্পন্ন করা যায়নি।" }, { status: 500 });
   }
 }

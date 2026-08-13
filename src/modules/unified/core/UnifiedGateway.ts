@@ -9,6 +9,7 @@ import { CacheManager } from "./CacheManager";
 export class UnifiedGateway {
   private providers: Record<string, BaseProvider> = {};
   private cacheManager: CacheManager;
+  private dynamicLoaded: boolean = false;
 
   constructor() {
     this.cacheManager = CacheManager.getInstance();
@@ -34,8 +35,40 @@ export class UnifiedGateway {
     }
   }
 
+  private async loadDynamicProviders() {
+    if (this.dynamicLoaded) return;
+    this.dynamicLoaded = true;
+
+    try {
+      const fbProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      if (fbProjectId && fbProjectId !== 'your-project-id' && !fbProjectId.startsWith('your-')) {
+         const { db } = await import("@/src/modules/database/firebaseAdmin");
+         if (db) {
+            const snapshot = await db.collection("rajuk_discovered_apis").where("status", "==", "ইমপোর্ট করা হয়েছে").get();
+            snapshot.forEach(doc => {
+               const api = doc.data();
+               const providerId = `dynamic_${doc.id}`;
+               if (!this.providers[providerId]) {
+                 // For now, treat ArcGIS endpoints as RajukFeatureProvider
+                 if (api.serviceType.includes("Server")) {
+                   const pathParts = new URL(api.url).pathname.split("/rest/services/")[1];
+                   if (pathParts) {
+                     this.providers[providerId] = new RajukFeatureProvider(api.name || providerId, pathParts);
+                   }
+                 }
+               }
+            });
+         }
+      }
+    } catch (e) {
+      console.warn("UnifiedGateway: Failed to load dynamic APIs from Firebase", e);
+    }
+  }
+
   public async handleRequest(includes: string, query: ProviderQuery): Promise<UnifiedResponse> {
     const start = performance.now();
+    await this.loadDynamicProviders();
+
     const data: UnifiedResponseData = {};
     const errors: Array<{ provider: string; message: string; details?: any }> = [];
 
@@ -109,6 +142,7 @@ export class UnifiedGateway {
   }
 
   public async getHealth(): Promise<Record<string, any>> {
+    await this.loadDynamicProviders();
     const healthData: Record<string, any> = {};
     const promises = Object.keys(this.providers).map(async (key) => {
       const provider = this.providers[key];

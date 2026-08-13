@@ -98,13 +98,13 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/users?limit=100");
-      if (!res.ok) throw new Error("Failed to fetch users");
-      const data = await res.json();
-      const usersList = Array.isArray(data.data)
-        ? data.data
-        : Array.isArray(data.users)
-          ? data.users
-          : [];
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      const usersList = Array.isArray(json.data?.data)
+        ? json.data.data
+        : Array.isArray(json.data?.users)
+          ? json.data.users
+          : Array.isArray(json.data) ? json.data : [];
       setUsers(usersList);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -122,12 +122,13 @@ export default function UserManagement() {
     if (!editingUser) return;
     setIsEditSubmitting(true);
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "PATCH",
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: editingUser.id, role: editRole }),
+        body: JSON.stringify({ role: editRole }),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed to update");
       setEditingUser(null);
       showSuccess(
         `✅ "${editingUser.name || editingUser.email}" আপডেট হয়েছে!`,
@@ -154,7 +155,8 @@ export default function UserManagement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, userId: user.id, durationHours: 72 }),
       });
-      if (!res.ok) throw new Error("Failed");
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed");
       showSuccess(`✅ "${user.name || user.email}" ${label} করা হয়েছে।`);
       fetchUsers();
     } catch (error: any) {
@@ -165,11 +167,10 @@ export default function UserManagement() {
   const handleCreateUser = async () => {
     setIsCreateSubmitting(true);
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "create",
           email: createEmail,
           name: createName,
           password: createPassword,
@@ -177,9 +178,9 @@ export default function UserManagement() {
         }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData?.error || "Failed to create user");
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "Failed to create user");
       }
 
       setIsCreateOpen(false);

@@ -72,8 +72,9 @@ export default function EditBlogPage() {
     const fetchBlog = async () => {
       try {
         const res = await fetch(`/api/blogs/${id}`);
-        if (!res.ok) throw new Error("Not found");
-        const { blog } = await res.json();
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || "Not found");
+        const { blog } = json.data;
         form.reset({
           title: blog.title || "",
           coverImage: blog.coverImage || "",
@@ -101,9 +102,9 @@ export default function EditBlogPage() {
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "আপডেট করতে সমস্যা হয়েছে।");
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "আপডেট করতে সমস্যা হয়েছে।");
       }
 
       router.push("/admin/blog");
@@ -176,7 +177,7 @@ export default function EditBlogPage() {
                             {...field}
                           />
                           <CldUploadWidget
-                            uploadPreset="smart_khatiyan_unsigned"
+                            signatureEndpoint="/api/cloudinary/sign"
                             onSuccess={(result: any) => {
                               if (result.info?.secure_url) {
                                 form.setValue("coverImage", result.info.secure_url);

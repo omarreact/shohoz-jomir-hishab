@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 
 // GET /api/pages/[id]
@@ -10,13 +11,13 @@ export async function GET(
   try {
     const doc = await collections.pages.doc(id).get();
     if (!doc.exists)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
       
     const page = { id: doc.id, ...doc.data() };
-    return NextResponse.json({ page }, { status: 200 });
+    return NextResponse.json({ success: true, data: { page } }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     );
   }
@@ -44,18 +45,20 @@ export async function PUT(
     const docSnap = await docRef.get();
     
     if (!docSnap.exists) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     }
 
     await docRef.update(data);
     
     const updatedDoc = await docRef.get();
     const page = { id: updatedDoc.id, ...updatedDoc.data() };
+    
+    revalidatePath("/", "layout");
 
-    return NextResponse.json({ page }, { status: 200 });
+    return NextResponse.json({ success: true, data: { page } }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     );
   }
@@ -72,14 +75,17 @@ export async function DELETE(
     const docSnap = await docRef.get();
     
     if (!docSnap.exists) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     }
     
     await docRef.delete();
+    
+    revalidatePath("/", "layout");
+    
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     );
   }

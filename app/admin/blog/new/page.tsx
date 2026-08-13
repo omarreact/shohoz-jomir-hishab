@@ -73,9 +73,9 @@ export default function NewBlogPage() {
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "ব্লগ তৈরি করতে সমস্যা হয়েছে।");
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "ব্লগ তৈরি করতে সমস্যা হয়েছে।");
       }
 
       router.push("/admin/blog");
@@ -140,7 +140,7 @@ export default function NewBlogPage() {
                             {...field}
                           />
                           <CldUploadWidget
-                            uploadPreset="smart_khatiyan_unsigned"
+                            signatureEndpoint="/api/cloudinary/sign"
                             onSuccess={(result: any) => {
                               if (result.info?.secure_url) {
                                 form.setValue("coverImage", result.info.secure_url);

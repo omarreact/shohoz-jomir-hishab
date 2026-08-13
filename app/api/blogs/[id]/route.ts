@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 
 function generateSlug(text: string): string {
@@ -19,23 +20,24 @@ export async function GET(
   try {
     const doc = await collections.blogs.doc(id).get();
     if (!doc.exists)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
       
-    const commentsSnapshot = await collections.comments
-      .where("blogId", "==", doc.id)
-      .orderBy("createdAt", "desc")
-      .get();
+      const commentsSnapshot = await collections.comments
+        .where("blogId", "==", doc.id)
+        .get();
+        
+      const comments = commentsSnapshot.docs
+        .map((c: any) => ({ id: c.id, ...c.data() }))
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
-    const comments = commentsSnapshot.docs.map((c: any) => ({ id: c.id, ...c.data() }));
-    
-    const blog = { id: doc.id, ...doc.data(), comments };
-    return NextResponse.json({ blog }, { status: 200 });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    );
-  }
+      const blog = { id: doc.id, ...doc.data(), comments };
+      return NextResponse.json({ success: true, data: { blog } }, { status: 200 });
+    } catch (error: unknown) {
+      return NextResponse.json(
+        { success: false, message: error instanceof Error ? error.message : "Unknown error" },
+        { status: 500 },
+      );
+    }
 }
 
 // PUT /api/blogs/[id] — admin update
@@ -71,18 +73,20 @@ export async function PUT(
     const docSnap = await docRef.get();
     
     if (!docSnap.exists) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     }
 
     await docRef.update(data);
     
     const updatedDoc = await docRef.get();
     const blog = { id: updatedDoc.id, ...updatedDoc.data() };
+    
+    revalidatePath("/", "layout");
 
-    return NextResponse.json({ blog }, { status: 200 });
+    return NextResponse.json({ success: true, data: { blog } }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     );
   }
@@ -99,14 +103,17 @@ export async function DELETE(
     const docSnap = await docRef.get();
     
     if (!docSnap.exists) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     }
     
     await docRef.delete();
+    
+    revalidatePath("/", "layout");
+    
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
     );
   }
