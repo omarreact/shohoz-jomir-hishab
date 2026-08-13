@@ -72,7 +72,8 @@ export class RajukFeatureProvider extends BaseProvider {
 
     if (data.error) {
       if (data.error.code === 498 || data.error.code === 499) {
-        // Token expired, force refresh and retry once
+        // Token expired, clear from cache, refresh from DB and retry once
+        TokenManager.getInstance().reportTokenFailure(data.error.code);
         await TokenManager.getInstance().refreshToken();
         return this.retryFetch(query);
       }

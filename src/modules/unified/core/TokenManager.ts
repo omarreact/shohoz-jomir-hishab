@@ -38,12 +38,11 @@ export class TokenManager {
   }
 
   public async getToken(): Promise<string> {
-    // If we already know the token is invalid and we haven't hit TTL to try again, just return empty
-    if (this.authState === AuthState.TOKEN_INVALID || this.authState === AuthState.PRIVATE_UNAVAILABLE) {
+    if (this.authState === AuthState.PRIVATE_UNAVAILABLE) {
       return "";
     }
 
-    if (this.activeToken && Date.now() - this.lastFetched < this.TOKEN_TTL) {
+    if (this.activeToken && this.authState !== AuthState.TOKEN_INVALID && Date.now() - this.lastFetched < this.TOKEN_TTL) {
       this.authState = AuthState.TOKEN_VALID;
       return this.activeToken;
     }
@@ -60,13 +59,11 @@ export class TokenManager {
       
       let fbToken = "";
       if (fbProjectId && fbProjectId !== 'your-project-id' && !fbProjectId.startsWith('your-')) {
-        const { doc, getDoc } = await import("firebase/firestore");
-        const { db } = await import("@/src/modules/database/firebaseClient");
-        
-        const docRef = doc(db, "config", "rajuk_api");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().token) {
-          fbToken = docSnap.data().token;
+        const { collections } = await import("@/src/modules/database/firebaseAdmin");
+        const RAJUK_TOKEN_KEY = "rajuk_api_token";
+        const docSnap = await collections.settings.doc(RAJUK_TOKEN_KEY).get();
+        if (docSnap.exists) {
+          fbToken = docSnap.data()?.value || "";
         }
       }
       

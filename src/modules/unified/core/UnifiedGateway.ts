@@ -45,19 +45,42 @@ export class UnifiedGateway {
          const { db } = await import("@/src/modules/database/firebaseAdmin");
          if (db) {
             const snapshot = await db.collection("rajuk_discovered_apis").where("status", "==", "ইমপোর্ট করা হয়েছে").get();
+            
+            const rsOverrides: Record<string, string> = {};
+            const msOverrides: Record<string, string> = {};
+
             snapshot.forEach(doc => {
                const api = doc.data();
                const providerId = `dynamic_${doc.id}`;
                if (!this.providers[providerId]) {
-                 // For now, treat ArcGIS endpoints as RajukFeatureProvider
-                 if (api.serviceType.includes("Server")) {
+                 if (api.serviceType && api.serviceType.includes("Server")) {
                    const pathParts = new URL(api.url).pathname.split("/rest/services/")[1];
                    if (pathParts) {
                      this.providers[providerId] = new RajukFeatureProvider(api.name || providerId, pathParts);
+                     
+                     // Detect if this overrides a standard layer based on layerId and serviceName
+                     if (api.serviceType === "FeatureServer") {
+                       if (api.layerId === "0") rsOverrides["geometry"] = pathParts;
+                       if (api.layerId === "6") rsOverrides["info"] = pathParts;
+                       if (api.layerId === "7") rsOverrides["landuse"] = pathParts;
+                       if (api.layerId === "8") rsOverrides["flood"] = pathParts;
+                       
+                       if (api.layerId === "5") msOverrides["geometry"] = pathParts;
+                       if (api.layerId === "2") msOverrides["info"] = pathParts;
+                       if (api.layerId === "3") msOverrides["landuse"] = pathParts;
+                       if (api.layerId === "4") msOverrides["flood"] = pathParts;
+                     }
                    }
                  }
                }
             });
+
+            if (Object.keys(rsOverrides).length > 0 && this.providers["plots"]) {
+               (this.providers["plots"] as RajukPlotProvider).updateProviders(rsOverrides);
+            }
+            if (Object.keys(msOverrides).length > 0 && this.providers["msPlots"]) {
+               (this.providers["msPlots"] as RajukPlotProvider).updateProviders(msOverrides);
+            }
          }
       }
     } catch (e) {

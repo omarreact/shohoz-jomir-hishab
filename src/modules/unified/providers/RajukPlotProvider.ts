@@ -27,6 +27,21 @@ export class RajukPlotProvider extends BaseProvider {
     }
   }
 
+  public updateProviders(overrides: Record<string, string>) {
+    if (overrides["geometry"]) {
+      this.geometryProvider = new RajukFeatureProvider(this.name + "Geometry", overrides["geometry"]);
+    }
+    if (overrides["info"]) {
+      this.infoProvider = new RajukFeatureProvider(this.name + "Info", overrides["info"]);
+    }
+    if (overrides["landuse"]) {
+      this.landuseProvider = new RajukFeatureProvider(this.name + "Landuse", overrides["landuse"]);
+    }
+    if (overrides["flood"]) {
+      this.floodProvider = new RajukFeatureProvider(this.name + "Flood", overrides["flood"]);
+    }
+  }
+
   public normalize(rawData: unknown): UnifiedFeature[] {
     return [];
   }
