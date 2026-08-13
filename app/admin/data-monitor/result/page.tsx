@@ -15,11 +15,11 @@ import {
   Loader,
 } from "lucide-react";
 import Link from "next/link";
-import DynamicApiTable from "@/components/features/admin/DynamicApiTable";
-import { resolveApiRequestUrl } from "@/lib/api/rajukTiles";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import DynamicApiTable from "@/src/features/admin/components/DynamicApiTable";
+import { resolveApiRequestUrl } from "@/src/shared/http/api/rajukTiles";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
+import { Alert, AlertDescription, AlertTitle } from "@/src/shared/ui/alert";
+import LoadingSpinner from "@/src/shared/ui/LoadingSpinner";
 
 interface TestResult {
   apiIndex: number;

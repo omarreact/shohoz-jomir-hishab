@@ -1,5 +1,5 @@
 import { collections } from "@/src/modules/database/firebaseAdmin";
-import { logger } from "@/lib/logger";
+import { logger } from "@/src/shared/logger";
 
 export interface SystemHealth {
   status: "healthy" | "degraded" | "unhealthy";

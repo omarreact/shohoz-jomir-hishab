@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePopup } from "@/src/features/map/providers/PopupProvider";
 import { X, Layers, Share2, Bookmark, MapPin, Navigation, Info, TreePine, Building2, Download } from "lucide-react";
-import { toBn } from "@/lib/utils";
+import { toBn } from "@/src/shared/utils";
 import { ShareModal } from "@/src/features/map/components/ShareModal";
 
 export default function GisIntelligencePanel() {

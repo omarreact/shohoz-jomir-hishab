@@ -1,8 +1,8 @@
 "use client";
 
-import AppHeader from "@/components/shared/AppHeader";
+import AppHeader from "@/src/shared/components/AppHeader";
 import { HelpCircle } from "lucide-react";
-import LatestBlogs from "../../components/shared/LatestBlogs";
+import LatestBlogs from "@/src/shared/components/LatestBlogs";
 
 export default function FAQPage() {
   const faqs = [

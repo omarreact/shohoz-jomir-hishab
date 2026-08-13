@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Save, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/shared/ui/button";
 import {
   Form,
   FormControl,
@@ -16,9 +16,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/Input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+} from "@/src/shared/ui/form";
+import { Input } from "@/src/shared/ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { CldUploadWidget } from "next-cloudinary";

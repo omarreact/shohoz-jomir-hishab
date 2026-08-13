@@ -19,7 +19,7 @@ export class FirebaseProvider extends BaseProvider {
   public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
     try {
       const { doc, getDoc } = await import("firebase/firestore");
-      const { db } = await import("@/lib/firebase");
+      const { db } = await import("@/src/modules/database/firebaseClient");
       
       const docRef = doc(db, this.collectionName, this.documentId);
       const docSnap = await getDoc(docRef);

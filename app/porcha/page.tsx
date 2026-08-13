@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Search, FileText, Download, X } from "lucide-react";
-import { toBn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { toBn } from "@/src/shared/utils";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 interface PorchaData {
   JOMIHUB: number | string;

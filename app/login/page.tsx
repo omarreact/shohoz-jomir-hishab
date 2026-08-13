@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, LogIn } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 function LoginForm() {
   const [username, setUsername] = useState("");

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/shared/ui/button";
 import {
   Table,
   TableBody,
@@ -11,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+} from "@/src/shared/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { format } from "date-fns";
 
 type Blog = {

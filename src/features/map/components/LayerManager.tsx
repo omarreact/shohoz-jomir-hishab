@@ -1,5 +1,5 @@
 import { LayersControl, TileLayer, FeatureGroup, Polygon, Tooltip } from "react-leaflet";
-import { buildRajukTileProxyUrl } from "@/lib/api/rajukTiles";
+import { buildRajukTileProxyUrl } from "@/src/shared/http/api/rajukTiles";
 import { LayerRegistry } from "../layers/registry";
 import { getPolygonStyle, getTooltipStyle } from "../utils/styleUtils";
 

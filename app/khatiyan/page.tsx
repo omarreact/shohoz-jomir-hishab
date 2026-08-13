@@ -3,19 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { List, Zap, Calculator, Trash2, Database } from "lucide-react";
-import { FULL_UNIT_TIL } from "@/lib/constants";
-import { toBn, toEn, makeBanglaStr } from "@/lib/utils";
-import { buildDetailedResults } from "@/lib/khatiyan/calculations";
-import PrintStyles from "@/components/shared/PrintStyles";
-import DetailedCalculator from "@/components/khatiyan/DetailedCalculator";
-import QuickCalculator from "@/components/khatiyan/QuickCalculator";
-import LatestBlogs from "@/components/shared/LatestBlogs";
+import { FULL_UNIT_TIL } from "@/src/shared/constants";
+import { toBn, toEn, makeBanglaStr } from "@/src/shared/utils";
+import { buildDetailedResults } from "@/src/modules/khatiyan/calculations";
+import PrintStyles from "@/src/shared/components/PrintStyles";
+import DetailedCalculator from "@/src/features/khatiyan/components/DetailedCalculator";
+import QuickCalculator from "@/src/features/khatiyan/components/QuickCalculator";
+import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import SearchPanel from "@/src/features/search/components/SearchPanel";
-import HeroBanner from "@/components/ui/HeroBanner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import HeroBanner from "@/src/shared/ui/HeroBanner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/shared/ui/tabs";
 
 const ResultSection = dynamic(
-  () => import("@/components/khatiyan/ResultSection"),
+  () => import("@/src/features/khatiyan/components/ResultSection"),
   {
     ssr: false,
     loading: () => (
@@ -36,7 +36,7 @@ type Plot = {
   t: string;
   a: string;
 };
-import type { RelationTypeBn } from "@/lib/types";
+import type { RelationTypeBn } from "@/src/shared/types";
 
 type Owner = {
   id: number;

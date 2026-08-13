@@ -10,9 +10,9 @@ import {
   CommandGroup,
   CommandItem,
   CommandSeparator,
-} from "@/components/ui/command";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/Badge";
+} from "@/src/shared/ui/command";
+import { Button } from "@/src/shared/ui/button";
+import { Badge } from "@/src/shared/ui/Badge";
 
 interface SmartSearchPaletteProps {
   onClose: () => void;

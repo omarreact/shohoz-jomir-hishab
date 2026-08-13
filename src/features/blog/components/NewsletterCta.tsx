@@ -1,6 +1,6 @@
 import { Mail } from "lucide-react";
 import { t } from "@/src/locales";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/shared/ui/button";
 
 export default function NewsletterCta() {
   return (

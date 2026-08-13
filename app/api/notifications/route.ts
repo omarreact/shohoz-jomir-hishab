@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
-import { logger } from "@/lib/logger";
+import { logger } from "@/src/shared/logger";
 import { z } from "zod";
 
 const notificationService = new NotificationService();

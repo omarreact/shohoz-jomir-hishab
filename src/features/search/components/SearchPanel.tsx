@@ -10,8 +10,8 @@ import {
   Database,
   Info,
 } from "lucide-react";
-import RajukIntelligenceReport from "@/components/RajukIntelligenceReport";
-import DapMiniMap from "@/components/DapMiniMap";
+import RajukIntelligenceReport from "@/src/features/map/components/RajukIntelligenceReport";
+import DapMiniMap from "@/src/features/map/components/DapMiniMap";
 import { useRajukSearch, LAYER1_FIELDS } from "../hooks/useRajukSearch";
 import { engToBdNum, formatKeyName, formatValue, IGNORED_KEYS } from "../utils/formatters";
 

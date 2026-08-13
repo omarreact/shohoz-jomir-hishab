@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/src/shared/ui/Card";
+import { Button } from "@/src/shared/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/src/shared/ui/alert";
 
 export default function KhatiyanError({
   error,

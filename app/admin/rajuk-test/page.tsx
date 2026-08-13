@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
+import { Button } from "@/src/shared/ui/button";
 import { CheckCircle2, XCircle, Clock, Database, AlertTriangle, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 

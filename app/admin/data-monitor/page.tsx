@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { resolveApiRequestUrl } from "@/lib/api/rajukTiles";
+import { resolveApiRequestUrl } from "@/src/shared/http/api/rajukTiles";
 import {
   Database,
   Users,

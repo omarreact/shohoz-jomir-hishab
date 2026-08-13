@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Clock, User } from "lucide-react";
-import { Card, CardBody } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { Card, CardBody } from "@/src/shared/ui/Card";
+import { Badge } from "@/src/shared/ui/Badge";
 
 export interface BlogPost {
   slug: string;

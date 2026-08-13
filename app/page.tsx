@@ -2,17 +2,17 @@
 
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import HeroSection from "@/components/features/home/HeroSection";
-import ServicesSection from "@/components/features/home/ServicesSection";
-import MapPreviewSection from "@/components/features/home/MapPreviewSection";
-import StatisticsSection from "@/components/features/home/StatisticsSection";
-import HowItWorksSection from "@/components/features/home/HowItWorksSection";
-import BlogPreviewSection from "@/components/features/home/BlogPreviewSection";
-import FaqSection from "@/components/features/home/FaqSection";
-import ContactSection from "@/components/features/home/ContactSection";
-import AnnouncementBanner from "@/components/features/home/AnnouncementBanner";
-import { useAnnouncement } from "@/lib/hooks/useAnnouncement";
+import LoadingSpinner from "@/src/shared/ui/LoadingSpinner";
+import HeroSection from "@/src/features/home/components/HeroSection";
+import ServicesSection from "@/src/features/home/components/ServicesSection";
+import MapPreviewSection from "@/src/features/home/components/MapPreviewSection";
+import StatisticsSection from "@/src/features/home/components/StatisticsSection";
+import HowItWorksSection from "@/src/features/home/components/HowItWorksSection";
+import BlogPreviewSection from "@/src/features/home/components/BlogPreviewSection";
+import FaqSection from "@/src/features/home/components/FaqSection";
+import ContactSection from "@/src/features/home/components/ContactSection";
+import AnnouncementBanner from "@/src/features/home/components/AnnouncementBanner";
+import { useAnnouncement } from "@/src/shared/hooks/useAnnouncement";
 
 export default function HomePage() {
   const announcement = useAnnouncement();

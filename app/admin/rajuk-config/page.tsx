@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
-import HarImporter from "@/components/admin/HarImporter";
+import HarImporter from "@/src/features/admin/components/HarImporter";
 
 export default function RajukConfig() {
   const [token, setToken] = useState("");

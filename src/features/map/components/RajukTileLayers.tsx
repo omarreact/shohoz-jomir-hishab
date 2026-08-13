@@ -1,6 +1,6 @@
 import React from "react";
 import { TileLayer, LayersControl } from "react-leaflet";
-import { buildRajukTileProxyUrl } from "@/lib/api/rajukTiles";
+import { buildRajukTileProxyUrl } from "@/src/shared/http/api/rajukTiles";
 
 interface RajukTileLayersProps {
   token: string;

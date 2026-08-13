@@ -8,12 +8,12 @@ import {
 } from "next/font/google";
 
 import "./globals.css";
-import ConditionalShell from "@/components/shared/ConditionalShell";
+import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { TooltipProvider } from "@/src/shared/ui/tooltip";
+import { Toaster } from "@/src/shared/ui/sonner";
+import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

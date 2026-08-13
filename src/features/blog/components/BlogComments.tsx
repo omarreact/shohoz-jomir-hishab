@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Clock, Loader2, Send, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/src/shared/ui/button";
+import { Input } from "@/src/shared/ui/Input";
 
 type Comment = {
   id: string;

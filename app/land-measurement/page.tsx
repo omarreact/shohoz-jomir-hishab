@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AppHeader from "@/components/shared/AppHeader";
-import AdBanner from "@/components/shared/AdBanner";
+import AppHeader from "@/src/shared/components/AppHeader";
+import AdBanner from "@/src/shared/components/AdBanner";
 import {
   Ruler,
   Map,
@@ -24,15 +24,15 @@ import {
   calcPentagon,
   calcCircle,
   MeasurementResult,
-} from "@/lib/land/geometry";
-import { toBn } from "@/lib/utils";
-import LatestBlogs from "../../components/shared/LatestBlogs";
-import DapMiniMap from "@/components/DapMiniMap";
-import HeroBanner from "@/components/ui/HeroBanner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/Input";
+} from "@/src/modules/land/geometry";
+import { toBn } from "@/src/shared/utils";
+import LatestBlogs from "@/src/shared/components/LatestBlogs";
+import DapMiniMap from "@/src/features/map/components/DapMiniMap";
+import HeroBanner from "@/src/shared/ui/HeroBanner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/shared/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
+import { Button } from "@/src/shared/ui/button";
+import { Input } from "@/src/shared/ui/Input";
 
 type ShapeType = "rect" | "triangle" | "quad" | "pentagon" | "circle";
 

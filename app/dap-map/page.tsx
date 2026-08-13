@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Layers } from "lucide-react";
 import dynamic from "next/dynamic";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import DapSearchWizard from "@/components/features/dap-map/DapSearchWizard";
+import LoadingSpinner from "@/src/shared/ui/LoadingSpinner";
+import DapSearchWizard from "@/src/features/map/components/DapSearchWizard";
 
 // Lazy load the heavy Leaflet map — never loaded until user selects a plots
-const FullDapMap = dynamic(() => import("@/components/FullDapMap"), {
+const FullDapMap = dynamic(() => import("@/src/features/map/components/FullDapMap"), {
   ssr: false,
   loading: () => <LoadingSpinner label="ম্যাপ লোড হচ্ছে..." size="lg" />,
 });

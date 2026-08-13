@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
-import { logger } from "@/lib/logger";
+import { logger } from "@/src/shared/logger";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 const adminService = new AdminService();

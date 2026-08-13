@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   buildRajukTileServiceUrl,
   normalizeRajukService,
-} from "@/lib/api/rajukTiles";
+} from "@/src/shared/http/api/rajukTiles";
 import { TokenManager } from "@/src/modules/unified/core/TokenManager";
-import { logger } from "@/lib/logger";
+import { logger } from "@/src/shared/logger";
 
 export const dynamic = "force-dynamic";
 

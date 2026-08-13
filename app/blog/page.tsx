@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import BlogCard, { BlogPost } from "@/src/features/blog/components/BlogCard";
 import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
 import { Search, Loader2 } from "lucide-react";
-import HeroBanner from "@/components/ui/HeroBanner";
+import HeroBanner from "@/src/shared/ui/HeroBanner";
 
 type ApiBlog = {
   id: string;

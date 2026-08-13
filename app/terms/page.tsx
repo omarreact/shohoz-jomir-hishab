@@ -1,4 +1,4 @@
-import AppHeader from "@/components/shared/AppHeader";
+import AppHeader from "@/src/shared/components/AppHeader";
 import { FileText } from "lucide-react";
 
 export default function TermsOfService() {

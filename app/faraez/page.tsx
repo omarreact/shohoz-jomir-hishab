@@ -1,27 +1,27 @@
 "use client";
 
 import { useState, useRef } from "react";
-import AppHeader from "@/components/shared/AppHeader";
-import AdBanner from "@/components/shared/AdBanner";
-import AssetInput from "@/components/faraez/AssetInput";
-import FamilyTreeInput from "@/components/faraez/FamilyTreeInput";
+import AppHeader from "@/src/shared/components/AppHeader";
+import AdBanner from "@/src/shared/components/AdBanner";
+import AssetInput from "@/src/features/faraez/components/AssetInput";
+import FamilyTreeInput from "@/src/features/faraez/components/FamilyTreeInput";
 import {
   Religion,
   DeceasedGender,
   HeirsInput,
   HeirResult,
   AssetsInput,
-} from "@/lib/faraez/types";
-import { calculateMuslimFaraez } from "@/lib/faraez/muslim-law";
-import { calculateHinduDayabhaga } from "@/lib/faraez/hindu-law";
+} from "@/src/modules/faraez/types";
+import { calculateMuslimFaraez } from "@/src/modules/faraez/muslim-law";
+import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { Calculator, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import LatestBlogs from "../../components/shared/LatestBlogs";
+import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import dynamic from "next/dynamic";
-import HeroBanner from "@/components/ui/HeroBanner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/Card";
+import HeroBanner from "@/src/shared/ui/HeroBanner";
+import { Button } from "@/src/shared/ui/button";
+import { Card, CardContent } from "@/src/shared/ui/Card";
 
-const FaraezResult = dynamic(() => import("@/components/faraez/FaraezResult"), {
+const FaraezResult = dynamic(() => import("@/src/features/faraez/components/FaraezResult"), {
   ssr: false,
   loading: () => (
     <div className="text-center p-5 mt-4">

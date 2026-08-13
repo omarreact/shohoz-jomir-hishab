@@ -21,9 +21,9 @@ import {
   ChevronRight,
   PenTool,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/shared/ui/button";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 export default function AdminLayout({
   children,

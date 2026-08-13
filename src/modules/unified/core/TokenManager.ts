@@ -61,7 +61,7 @@ export class TokenManager {
       let fbToken = "";
       if (fbProjectId && fbProjectId !== 'your-project-id' && !fbProjectId.startsWith('your-')) {
         const { doc, getDoc } = await import("firebase/firestore");
-        const { db } = await import("@/lib/firebase");
+        const { db } = await import("@/src/modules/database/firebaseClient");
         
         const docRef = doc(db, "config", "rajuk_api");
         const docSnap = await getDoc(docRef);
