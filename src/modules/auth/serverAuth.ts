@@ -10,43 +10,39 @@ export interface ServerUser {
 
 /**
  * Validates the request's access_token cookie or Bearer token.
- * Throws an error if invalid.
+ * The Firestore user role is authoritative when present; the Firebase
+ * custom `admin: true` claim is accepted as an Admin fallback so the
+ * server and proxy use the same authorization model.
  */
 export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
   const cookieToken = req.cookies.get("access_token")?.value ?? null;
   const authHeader = req.headers.get("authorization");
-  const bearerToken = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   const token = cookieToken ?? bearerToken;
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
+  if (!token) throw new Error("Unauthorized");
 
   const decodedToken = await auth.verifyIdToken(token);
-  if (!decodedToken) {
-    throw new Error("Invalid or expired token");
-  }
-
   const userDoc = await collections.users.doc(decodedToken.uid).get();
-  
+
+  const claimRole = decodedToken.role as string | undefined;
+  const claimIsAdmin = decodedToken.admin === true;
+
   if (!userDoc.exists) {
-    // If not in firestore yet, default to User
-    return { 
-      id: decodedToken.uid, 
-      email: decodedToken.email || "", 
+    return {
+      id: decodedToken.uid,
+      email: decodedToken.email || "",
       name: decodedToken.name || null,
-      role: 'User'
+      role: claimRole || (claimIsAdmin ? "Admin" : "User"),
     };
   }
 
   const userData = userDoc.data()!;
   return {
     id: userDoc.id,
-    email: userData.email,
-    name: userData.name,
-    role: userData.role || 'User',
+    email: userData.email || decodedToken.email || "",
+    name: userData.name ?? decodedToken.name ?? null,
+    role: userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
   };
 }
 
@@ -55,7 +51,7 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
  */
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (user.role !== 'Admin' && user.role !== 'Super Admin') {
+  if (user.role !== "Admin" && user.role !== "Super Admin") {
     throw new Error("Forbidden: Admin access required");
   }
   return user;
