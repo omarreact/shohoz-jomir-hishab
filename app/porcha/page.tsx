@@ -105,8 +105,8 @@ export default function PorchaPage() {
   if (authChecking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-        <p className="mt-4 text-[var(--text-secondary)] font-bold">
+        <div className="w-12 h-12 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-slate-500 dark:text-slate-400 font-bold">
           যাচাই করা হচ্ছে...
         </p>
       </div>
@@ -122,15 +122,15 @@ export default function PorchaPage() {
               <div className="bg-red-500/10 text-red-500 rounded-full inline-flex p-4 mb-6">
                 <Search size={48} />
               </div>
-              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                 অ্যাক্সেস ডিনাইড
               </h3>
-              <p className="text-[var(--text-secondary)] mb-8">
+              <p className="text-slate-500 dark:text-slate-400 mb-8">
                 পর্চা খুঁজতে অনুগ্রহ করে লগিন করুন।
               </p>
               <a
                 href="/login"
-                className="cta-gradient text-[var(--bg)] font-bold px-8 py-3 rounded-full shadow-lg block w-full"
+                className="cta-gradient text-white font-bold px-8 py-3 rounded-full shadow-lg block w-full"
               >
                 লগিন করুন
               </a>
@@ -145,23 +145,23 @@ export default function PorchaPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible">
       <div className="flex justify-center mb-12">
         <div className="w-full max-w-2xl text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 flex items-center justify-center text-[var(--text-primary)]">
-            <FileText size={32} className="mr-3 text-[var(--accent)]" /> ডিজিটাল
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 flex items-center justify-center text-slate-900 dark:text-white">
+            <FileText size={32} className="mr-3 text-[#006a4e]" /> ডিজিটাল
             খতিয়ান (পর্চা) সংগ্রহ
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg mb-8">
+          <p className="text-slate-500 dark:text-slate-400 text-lg mb-8">
             আপনার কাঙ্ক্ষিত খতিয়ান, দাগ নম্বর বা মালিকের নাম লিখে সার্চ করুন।
           </p>
           <div className="relative">
             <input
               type="text"
-              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-full px-6 py-4 pl-14 shadow-sm focus:outline-none focus:border-[var(--accent)] transition-colors text-lg"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-full px-6 py-4 pl-14 shadow-sm focus:outline-none focus:border-[#006a4e] transition-colors text-lg"
               placeholder="খতিয়ান নং, দাগ নং বা মালিকের নাম..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Search
-              className="absolute text-[var(--text-secondary)] top-1/2 left-5 -translate-y-1/2"
+              className="absolute text-slate-500 dark:text-slate-400 top-1/2 left-5 -translate-y-1/2"
               size={24}
             />
           </div>
@@ -170,8 +170,8 @@ export default function PorchaPage() {
 
       {loading ? (
         <div className="text-center py-16">
-          <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-[var(--text-secondary)] font-bold">
+          <div className="w-12 h-12 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-slate-500 dark:text-slate-400 font-bold">
             সার্ভার থেকে তথ্য খোঁজা হচ্ছে...
           </p>
         </div>
@@ -185,24 +185,24 @@ export default function PorchaPage() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <span className="bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-bold rounded-full px-4 py-1 border border-[var(--accent)]/20">
+                    <span className="bg-[#006a4e]/10 text-[#006a4e] text-sm font-bold rounded-full px-4 py-1 border border-[#006a4e]/20">
                       খতিয়ান নং: {item.JOMIHUB ? toBn(item.JOMIHUB) : "-"}
                     </span>
                   </div>
-                  <h6 className="text-lg font-bold text-[var(--text-primary)] mb-2 line-clamp-2">
+                  <h6 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">
                     মালিক: {item.Column2 || "অজ্ঞাত"}
                   </h6>
-                  <p className="text-[var(--text-secondary)] text-sm mb-6">
-                    <strong className="text-[var(--text-primary)]">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                    <strong className="text-slate-900 dark:text-white">
                       দাগ নং:
                     </strong>{" "}
                     {item.Column4 ? toBn(item.Column4) : "অজ্ঞাত"}
                   </p>
                 </div>
-                <div className="pt-4 border-t border-[var(--border)] mt-auto">
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-auto">
                   <button
                     onClick={() => setSelectedPorcha(item)}
-                    className="w-full py-2 px-4 rounded-full border border-[var(--accent)] text-[var(--accent)] font-bold flex items-center justify-center hover:bg-[var(--accent)] hover:text-[var(--bg)] transition-colors"
+                    className="w-full py-2 px-4 rounded-full border border-[#006a4e] text-[#006a4e] font-bold flex items-center justify-center hover:bg-[#006a4e] hover:text-white transition-colors"
                   >
                     <Download size={18} className="mr-2" /> ভিউ ও ডাউনলোড
                   </button>
@@ -211,7 +211,7 @@ export default function PorchaPage() {
             ))}
             {filteredData.length === 0 && searchQuery && (
               <div className="col-span-full text-center py-16">
-                <p className="text-[var(--text-secondary)] text-xl">
+                <p className="text-slate-500 dark:text-slate-400 text-xl">
                   কোনো খতিয়ান পাওয়া যায়নি!
                 </p>
               </div>
@@ -223,11 +223,11 @@ export default function PorchaPage() {
               <button
                 onClick={loadMore}
                 disabled={isLoadingMore}
-                className="px-8 py-3 rounded-full cta-gradient text-[var(--bg)] font-bold shadow-lg flex items-center mx-auto"
+                className="px-8 py-3 rounded-full cta-gradient text-white font-bold shadow-lg flex items-center mx-auto"
               >
                 {isLoadingMore ? (
                   <>
-                    <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2" />
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     লোড হচ্ছে...
                   </>
                 ) : (
@@ -241,14 +241,14 @@ export default function PorchaPage() {
 
       {selectedPorcha && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col relative">
-            <div className="flex justify-between items-center p-6 border-b border-[var(--border)]">
-              <h3 className="text-xl font-bold text-[var(--text-primary)]">
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col relative">
+            <div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                 পর্চা প্রিভিউ
               </h3>
               <button
                 onClick={() => setSelectedPorcha(null)}
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--surface)] rounded-full p-2"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white bg-white dark:bg-slate-900 rounded-full p-2"
               >
                 <X size={24} />
               </button>
@@ -318,14 +318,14 @@ export default function PorchaPage() {
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)] flex justify-center rounded-b-2xl">
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-center rounded-b-2xl">
               <button
                 onClick={downloadPDF}
                 disabled={isDownloading}
-                className="cta-gradient text-[var(--bg)] px-8 py-3 rounded-full font-bold shadow-lg flex items-center hover:opacity-90 disabled:opacity-50"
+                className="cta-gradient text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center hover:opacity-90 disabled:opacity-50"
               >
                 {isDownloading ? (
-                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-2" />
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 ) : (
                   <Download size={20} className="mr-2" />
                 )}

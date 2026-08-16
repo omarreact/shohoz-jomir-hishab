@@ -201,15 +201,15 @@ export default function UserManagement() {
     <div className="fade-in visible" data-admin-panel="true">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             ইউজার ম্যানেজমেন্ট
           </h1>
-          <p className="text-[var(--text-secondary)]">
+          <p className="text-slate-500 dark:text-slate-400">
             সিস্টেমে মোট {users.length} জন ইউজার আছেন
           </p>
         </div>
         <button
-          className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 font-semibold shadow-md transition-colors"
+          className="rounded-full bg-[#006a4e] hover:bg-[#00523b] text-white px-5 py-3 font-semibold shadow-md transition-colors"
           onClick={() => setIsCreateOpen(true)}
         >
           নতুন ইউজার তৈরি করুন
@@ -227,12 +227,12 @@ export default function UserManagement() {
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <span className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span className="w-12 h-12 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : users.length === 0 ? (
-        <div className="card-new py-16 text-center text-[var(--text-secondary)]">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm py-16 text-center text-slate-500 dark:text-slate-400">
           <Users size={64} className="mx-auto mb-4 opacity-25" />
-          <h4 className="font-bold text-[var(--text-primary)] text-2xl mb-2">
+          <h4 className="font-bold text-slate-900 dark:text-white text-2xl mb-2">
             কোনো ইউজার পাওয়া যায়নি
           </h4>
           <p>ব্যবহারকারীরা রেজিস্ট্রেশন করলে এখানে দেখা যাবে।</p>
@@ -245,7 +245,7 @@ export default function UserManagement() {
             return (
               <div
                 key={user.id}
-                className="card-new overflow-hidden group hover:border-[var(--accent)] transition-all relative"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden group hover:border-[#006a4e] hover:shadow-md transition-all relative"
               >
                 <div
                   className="absolute top-0 left-0 h-full w-1.5"
@@ -260,7 +260,7 @@ export default function UserManagement() {
                     <div className="flex gap-4 items-center">
                       <AvatarCircle name={user.name} role={user.role} />
                       <div>
-                        <h5 className="font-bold text-[var(--text-primary)] text-lg mb-1 flex items-center flex-wrap gap-2">
+                        <h5 className="font-bold text-slate-900 dark:text-white text-lg mb-1 flex items-center flex-wrap gap-2">
                           {user.name || "(নাম নেই)"}
                           {isSuspended && (
                             <span className="bg-red-500/10 text-red-500 border border-red-500/20 rounded-full font-bold text-[10px] px-2 py-0.5 tracking-wider uppercase">
@@ -268,7 +268,7 @@ export default function UserManagement() {
                             </span>
                           )}
                         </h5>
-                        <div className="text-[var(--text-secondary)] font-medium text-sm flex items-center break-all">
+                        <div className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center break-all">
                           <Mail
                             size={14}
                             className="mr-2 opacity-75 shrink-0"
@@ -280,7 +280,7 @@ export default function UserManagement() {
                     <div className="flex gap-2 shrink-0">
                       <button
                         onClick={() => openEdit(user)}
-                        className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-colors shadow-sm"
+                        className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#006a4e] flex items-center justify-center hover:bg-[#006a4e] hover:text-white hover:border-[#006a4e] transition-colors shadow-sm"
                         title="রোল পরিবর্তন করুন"
                       >
                         <Edit size={18} />
@@ -288,7 +288,7 @@ export default function UserManagement() {
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-[var(--border)] flex items-center justify-between flex-wrap gap-3">
+                  <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-3">
                     <span
                       className={`${ROLE_COLORS[user.role] || "bg-gray-500"} text-white rounded-full flex items-center px-3 py-1 text-sm font-bold shadow-sm`}
                     >
@@ -298,8 +298,8 @@ export default function UserManagement() {
                       onClick={() => handleSuspend(user)}
                       className={`border rounded-full px-4 py-2 font-bold text-sm flex items-center transition-colors ${
                         isSuspended
-                          ? "border-green-500/30 text-green-500 hover:bg-green-500/10"
-                          : "border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg)] hover:border-red-400 hover:text-red-400"
+                          ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                          : "border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-950 hover:border-red-400 hover:text-red-500 dark:hover:text-red-400"
                       }`}
                     >
                       <KeyRound size={16} className="mr-2" />
@@ -316,21 +316,21 @@ export default function UserManagement() {
       {/* Edit Role Modal */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in visible">
-          <div className="card-new w-full max-w-md overflow-hidden shadow-2xl bg-[var(--surface)]">
-            <div className="px-6 py-5 border-b border-[var(--border)] flex items-start justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <AvatarCircle name={editingUser.name} role={editingUser.role} />
                 <div>
-                  <h5 className="font-bold text-[var(--text-primary)] text-xl mb-1">
+                  <h5 className="font-bold text-slate-900 dark:text-white text-xl mb-1">
                     রোল পরিবর্তন
                   </h5>
-                  <p className="text-[var(--text-secondary)] font-medium text-sm mb-0">
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-0">
                     {editingUser.email}
                   </p>
                 </div>
               </div>
               <button
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-1"
                 onClick={() => setEditingUser(null)}
               >
                 <X size={24} />
@@ -338,13 +338,13 @@ export default function UserManagement() {
             </div>
 
             <div className="p-6">
-              <label className="block text-[var(--text-primary)] font-bold mb-2">
+              <label className="block text-slate-900 dark:text-white font-bold mb-2">
                 অ্যাক্সেস রোল
               </label>
               <select
                 value={editRole}
                 onChange={(e) => setEditRole(e.target.value)}
-                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
               >
                 <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
                 <option value="Admin">🛡️ অ্যাডমিন</option>
@@ -353,15 +353,15 @@ export default function UserManagement() {
               </select>
             </div>
 
-            <div className="px-6 py-4 border-t border-[var(--border)] bg-black/5 dark:bg-white/5 flex gap-3 justify-end">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex gap-3 justify-end">
               <button
-                className="px-6 py-2.5 rounded-full font-bold border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors"
+                className="px-6 py-2.5 rounded-full font-bold border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 onClick={() => setEditingUser(null)}
               >
                 বাতিল
               </button>
               <button
-                className="px-6 py-2.5 rounded-full font-bold bg-[var(--text-primary)] text-[var(--bg)] hover:scale-105 transition-transform flex items-center disabled:opacity-70 disabled:hover:scale-100 shadow-md"
+                className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:scale-105 transition-transform flex items-center disabled:opacity-70 disabled:hover:scale-100 shadow-md"
                 onClick={handleEditSave}
                 disabled={isEditSubmitting}
               >
@@ -374,18 +374,18 @@ export default function UserManagement() {
 
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in visible">
-          <div className="card-new w-full max-w-lg overflow-hidden shadow-2xl bg-[var(--surface)]">
-            <div className="px-6 py-5 border-b border-[var(--border)] flex items-start justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between">
               <div>
-                <h5 className="font-bold text-[var(--text-primary)] text-xl mb-1">
+                <h5 className="font-bold text-slate-900 dark:text-white text-xl mb-1">
                   নতুন ইউজার তৈরি করুন
                 </h5>
-                <p className="text-[var(--text-secondary)] text-sm">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
                   নতুন ব্যবহারকারীকে একটি রোলের সাথে তৈরি করুন।
                 </p>
               </div>
               <button
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-1"
                 onClick={() => setIsCreateOpen(false)}
               >
                 <X size={24} />
@@ -394,52 +394,52 @@ export default function UserManagement() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                <label className="block text-slate-900 dark:text-white font-bold mb-2">
                   ইমেল
                 </label>
                 <input
                   type="email"
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                   placeholder="user@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                <label className="block text-slate-900 dark:text-white font-bold mb-2">
                   নাম (ঐচ্ছিক)
                 </label>
                 <input
                   type="text"
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                   placeholder="Example Name"
                 />
               </div>
 
               <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                <label className="block text-slate-900 dark:text-white font-bold mb-2">
                   পাসওয়ার্ড
                 </label>
                 <input
                   type="password"
                   value={createPassword}
                   onChange={(e) => setCreatePassword(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                   placeholder="At least 8 characters"
                 />
               </div>
 
               <div>
-                <label className="block text-[var(--text-primary)] font-bold mb-2">
+                <label className="block text-slate-900 dark:text-white font-bold mb-2">
                   রোল
                 </label>
                 <select
                   value={createRole}
                   onChange={(e) => setCreateRole(e.target.value)}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                 >
                   <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
                   <option value="Admin">🛡️ অ্যাডমিন</option>
@@ -449,15 +449,15 @@ export default function UserManagement() {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-[var(--border)] bg-black/5 dark:bg-white/5 flex gap-3 justify-end">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex gap-3 justify-end">
               <button
-                className="px-6 py-2.5 rounded-full font-bold border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors"
+                className="px-6 py-2.5 rounded-full font-bold border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 onClick={() => setIsCreateOpen(false)}
               >
                 বাতিল
               </button>
               <button
-                className="px-6 py-2.5 rounded-full font-bold bg-[var(--text-primary)] text-[var(--bg)] hover:scale-105 transition-transform disabled:opacity-70 disabled:hover:scale-100 shadow-md"
+                className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:scale-105 transition-transform disabled:opacity-70 disabled:hover:scale-100 shadow-md"
                 onClick={handleCreateUser}
                 disabled={isCreateSubmitting}
               >

@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { X, CheckCircle2, AlertCircle, Info } from "lucide-react";
-import { Button } from "./button";
 
 export type ModalVariant = "standard" | "success" | "dark";
 
@@ -61,27 +60,27 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   // Determine styles based on variant
-  let textColor = "text-body";
-  let descColor = "text-muted";
-  let borderClass = "border-bottom border-secondary border-opacity-25";
-  let iconContainerClass = "bg-primary bg-opacity-10 text-primary";
-  let closeBtnClass = "btn-close btn-close-white";
-  let customBg = "var(--card-bg)";
+  let textColor = "text-slate-900 dark:text-white";
+  let descColor = "text-slate-500 dark:text-slate-400";
+  let borderClass = "border-b border-slate-200 dark:border-slate-800";
+  let iconContainerClass = "bg-[#006a4e]/10 text-[#006a4e]";
+  let customBg = "bg-white dark:bg-slate-900";
 
   if (variant === "success") {
-    iconContainerClass = "bg-success bg-opacity-10 text-success";
+    iconContainerClass = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   } else if (variant === "dark") {
     textColor = "text-white";
-    descColor = "text-light opacity-75";
-    iconContainerClass = "bg-primary bg-opacity-25 text-primary";
-    customBg = "var(--card-bg-secondary)";
+    descColor = "text-slate-300";
+    iconContainerClass = "bg-blue-500/20 text-blue-400";
+    customBg = "bg-slate-900";
+    borderClass = "border-b border-slate-800";
   }
 
   // Determine size
   let maxWidthClass = "max-w-md";
   if (size === "sm") maxWidthClass = "max-w-sm";
-  if (size === "lg") maxWidthClass = "max-w-lg";
-  if (size === "xl") maxWidthClass = "max-w-xl";
+  if (size === "lg") maxWidthClass = "max-w-2xl";
+  if (size === "xl") maxWidthClass = "max-w-5xl";
 
   const defaultIcon =
     variant === "success" ? (
@@ -94,59 +93,40 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="position-fixed top-0 start-0 w-100 h-100 z-3 d-flex align-items-center justify-content-center"
-      style={{
-        backgroundColor: "rgba(15, 23, 42, 0.6)",
-        backdropFilter: "blur(4px)",
-        zIndex: 1050,
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className={`card border-0 shadow-lg animate-slide-up`}
-        style={{
-          backgroundColor: customBg,
-          width: "90%",
-          maxWidth:
-            size === "sm"
-              ? "400px"
-              : size === "lg"
-                ? "800px"
-                : size === "xl"
-                  ? "1140px"
-                  : "500px",
-          borderRadius: "var(--radius-xl)",
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className={`w-full ${maxWidthClass} ${customBg} rounded-3xl shadow-xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200`}
       >
         {/* Header */}
-        <div className={`p-4 d-flex align-items-start gap-3 ${borderClass}`}>
+        <div className={`p-6 flex items-start gap-4 ${borderClass}`}>
           <div
-            className={`rounded-circle d-flex align-items-center justify-content-center p-2 flex-shrink-0 ${iconContainerClass}`}
+            className={`rounded-full flex items-center justify-center p-3 shrink-0 ${iconContainerClass}`}
           >
             {icon || defaultIcon}
           </div>
-          <div className="flex-grow-1">
-            <h5 className={`fw-bold mb-1 ${textColor}`}>{title}</h5>
+          <div className="flex-grow pt-1">
+            <h5 className={`font-bold text-xl mb-1 ${textColor}`}>{title}</h5>
             {description && (
-              <p className={`mb-0 small ${descColor}`}>{description}</p>
+              <p className={`text-sm m-0 ${descColor}`}>{description}</p>
             )}
           </div>
           <button
             type="button"
-            className={closeBtnClass}
+            className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors shrink-0"
             onClick={onClose}
             aria-label="Close"
-          ></button>
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Body */}
         <div
-          className={`p-4 overflow-auto ${textColor}`}
+          className={`p-6 overflow-y-auto ${textColor}`}
           style={{ flex: "1 1 auto" }}
         >
           {children}
@@ -155,7 +135,11 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Footer */}
         {footer && (
           <div
-            className={`p-4 ${variant === "dark" ? "border-top border-secondary border-opacity-25" : "border-top bg-light bg-opacity-50"} rounded-bottom-4 d-flex justify-content-end gap-2`}
+            className={`p-6 ${
+              variant === "dark"
+                ? "border-t border-slate-800"
+                : "border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+            } rounded-b-3xl flex justify-end gap-3`}
           >
             {footer}
           </div>

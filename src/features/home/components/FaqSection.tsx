@@ -9,9 +9,9 @@ export default function FaqSection() {
 
   const faqs = [
     {
-      question: "LandBD 3.0 কী?",
+      question: "সহজ জমির হিসাব কী?",
       answer:
-        "LandBD 3.0 হলো বাংলাদেশের প্রথম আধুনিক জিআইএস ভিত্তিক ডিজিটাল ভূমি ইন্টেলিজেন্স প্ল্যাটফর্ম। এর মাধ্যমে আপনি যেকোনো জমির খতিয়ান, দাগ এবং জোনিং ডাটা অনলাইনে দেখতে পারেন।",
+        "সহজ জমির হিসাব হলো বাংলাদেশের একটি ডিজিটাল প্ল্যাটফর্ম যার মাধ্যমে আপনি যেকোনো জমির খতিয়ান, দাগ এবং জোনিং ডাটা অনলাইনে দেখতে পারেন এবং ফারায়েজ হিসাব করতে পারেন।",
     },
     {
       question: "আমি কীভাবে আমার দাগ বা জমির তথ্য খুঁজবো?",
@@ -24,9 +24,9 @@ export default function FaqSection() {
         "ইসলামিক উত্তরাধিকার আইন অনুযায়ী স্বয়ংক্রিয়ভাবে জমির অংশীদারিত্ব হিসাব করার জন্য ফারায়েজ ক্যালকুলেটর ব্যবহার করতে পারেন। শুধু ওয়ারিশদের সংখ্যা নির্বাচন করুন, এটি বাকি হিসাব করে দেবে।",
     },
     {
-      question: "LandBD-এর তথ্য কতটা নির্ভুল?",
+      question: "এর তথ্য কতটা নির্ভুল?",
       answer:
-        "LandBD সরকারি সূত্র, পরিকল্পনা কর্তৃপক্ষ এবং ডিজিটাল জরিপ ডাটা সমন্বয় করে কাজ করে, তাই এর তথ্য শতভাগ নির্ভরযোগ্য। তবে আইনি প্রক্রিয়ার জন্য মূল নথির সাথে মিলিয়ে নেওয়া বাঞ্ছনীয়।",
+        "এটি সরকারি সূত্র, পরিকল্পনা কর্তৃপক্ষ এবং ডিজিটাল জরিপ ডাটা সমন্বয় করে কাজ করে, তাই এর তথ্য শতভাগ নির্ভরযোগ্য। তবে আইনি প্রক্রিয়ার জন্য মূল নথির সাথে মিলিয়ে নেওয়া বাঞ্ছনীয়।",
     },
   ];
 
@@ -35,13 +35,13 @@ export default function FaqSection() {
   };
 
   return (
-    <section className="py-24 bg-[var(--bg)]">
+    <section className="py-24 bg-slate-50 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 fade-in visible">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[var(--text-primary)]">
-            সচরাচর <span className="accent-text">জিজ্ঞাস্য</span>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white">
+            সচরাচর <span className="text-[#006a4e]">জিজ্ঞাস্য</span>
           </h2>
-          <p className="text-[var(--text-secondary)]">
+          <p className="text-slate-500 dark:text-slate-400 text-lg">
             আপনাদের সাধারণ প্রশ্নগুলোর উত্তর এখানে দেওয়া হলো।
           </p>
         </div>
@@ -52,8 +52,8 @@ export default function FaqSection() {
             return (
               <div
                 key={index}
-                className={`border border-c rounded-2xl overflow-hidden transition-all duration-300 ${
-                  isOpen ? "bg-[var(--surface)] shadow-md" : "bg-[var(--bg)]"
+                className={`border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-all duration-300 ${
+                  isOpen ? "bg-white dark:bg-slate-900 shadow-md" : "bg-white dark:bg-slate-950"
                 }`}
               >
                 <button
@@ -63,8 +63,8 @@ export default function FaqSection() {
                   <h3
                     className={`font-bold m-0 flex-1 text-lg transition-colors ${
                       isOpen
-                        ? "text-[var(--accent)]"
-                        : "text-[var(--text-primary)] group-hover:text-[var(--accent)]"
+                        ? "text-[#006a4e]"
+                        : "text-slate-900 dark:text-white group-hover:text-[#006a4e]"
                     }`}
                   >
                     {faq.question}
@@ -72,8 +72,8 @@ export default function FaqSection() {
                   <div
                     className={`transition-transform duration-300 ml-4 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                       isOpen
-                        ? "bg-[var(--accent)] text-[var(--bg)] rotate-180"
-                        : "bg-[var(--surface)] text-[var(--text-secondary)]"
+                        ? "bg-[#006a4e] text-white rotate-180"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                     }`}
                   >
                     <ChevronDown size={18} />
@@ -86,7 +86,7 @@ export default function FaqSection() {
                     opacity: isOpen ? 1 : 0,
                   }}
                 >
-                  <div className="px-6 pb-6 pt-0 text-[var(--text-secondary)] text-base leading-relaxed mt-2 border-t border-c">
+                  <div className="px-6 pb-6 pt-0 text-slate-500 dark:text-slate-400 text-base leading-relaxed mt-2 border-t border-slate-100 dark:border-slate-800">
                     {faq.answer}
                   </div>
                 </div>

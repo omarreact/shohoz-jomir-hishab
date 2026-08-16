@@ -13,7 +13,7 @@ import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
 import { usePolygonGeometry } from "@/src/features/map/hooks/usePolygonGeometry";
-import { useRajukToken } from "@/src/features/map/hooks/useRajukToken";
+
 import { RajukTileLayers } from "@/src/features/map/components/RajukTileLayers";
 import { MapFitter } from "@/src/features/map/components/MapFitter";
 
@@ -45,7 +45,6 @@ export default function DapMiniMapContent({
   plotData,
 }: DapMiniMapContentProps) {
   const polygonCoords = usePolygonGeometry(plotData);
-  const { token } = useRajukToken();
 
   const plotLabel = plotData?.rs_plot_no || plotData?.plot_no || "RS দাগ";
   const isMS =
@@ -54,7 +53,7 @@ export default function DapMiniMapContent({
 
   if (!polygonCoords) {
     return (
-      <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-muted">
+      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500">
         ম্যাপ ডেটা উপলব্ধ নয়
       </div>
     );
@@ -90,7 +89,7 @@ export default function DapMiniMapContent({
           </LayersControl.BaseLayer>
 
           {/* RAJUK Overlays */}
-          <RajukTileLayers token={token} isMS={isMS} />
+          <RajukTileLayers isMS={isMS} />
         </LayersControl>
 
         {/* The Plot Polygon with Label */}
@@ -106,7 +105,7 @@ export default function DapMiniMapContent({
           <Tooltip
             direction="center"
             permanent
-            className="bg-transparent border-0 shadow-none text-danger fw-bolder fs-5 label-text-shadow"
+            className="bg-transparent border-0 shadow-none text-red-600 fw-bolder text-lg label-text-shadow"
           >
             {plotLabel}
           </Tooltip>

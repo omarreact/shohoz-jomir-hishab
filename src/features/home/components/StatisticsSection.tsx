@@ -57,20 +57,20 @@ function toBengaliNum(num: number): string {
 
 export default function StatisticsSection() {
   const stats = [
-    { label: t.stats.plots || "খতিয়ান", end: 125000, suffix: "+", icon: <MapPin size={32} className="accent-text" /> },
-    { label: t.stats.districts || "জেলা", end: 64, suffix: "", icon: <Activity size={32} className="accent-text" /> },
-    { label: t.stats.mouzas || "মৌজা", end: 15000, suffix: "+", icon: <Database size={32} className="accent-text" /> },
-    { label: t.stats.maps || "ম্যাপ", end: 350, suffix: "+", icon: <Users size={32} className="accent-text" /> },
+    { label: t.stats.plots || "খতিয়ান", end: 125000, suffix: "+", icon: MapPin },
+    { label: t.stats.districts || "জেলা", end: 64, suffix: "", icon: Activity },
+    { label: t.stats.mouzas || "মৌজা", end: 15000, suffix: "+", icon: Database },
+    { label: t.stats.maps || "ম্যাপ", end: 350, suffix: "+", icon: Users },
   ];
 
   return (
-    <section className="py-24 bg-[var(--bg)] border-y border-c overflow-hidden relative">
+    <section className="py-24 bg-white dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16 fade-in visible">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[var(--text-primary)]">
-            <span className="accent-text">পরিসংখ্যানে</span> LandBD
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white">
+            <span className="text-[#006a4e]">পরিসংখ্যানে</span> সহজ জমির হিসাব
           </h2>
-          <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
             সারাদেশের লক্ষাধিক মানুষ প্রতিদিন আমাদের সেবা ব্যবহার করছেন।
           </p>
         </div>
@@ -79,14 +79,14 @@ export default function StatisticsSection() {
           {stats.map((stat, i) => {
             const { count, nodeRef } = useCountUp(stat.end, 2000);
             return (
-              <div key={i} className="fade-in visible" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="w-16 h-16 rounded-2xl bg-[var(--surface)] border border-c flex items-center justify-center mx-auto mb-6 shadow-sm">
-                  {stat.icon}
+              <div key={i} className="fade-in visible group" style={{ transitionDelay: `${i * 100}ms` }}>
+                <div className="w-20 h-20 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:bg-[#006a4e]/10 group-hover:border-[#006a4e]/20 transition-colors duration-300">
+                  <stat.icon size={36} className="text-[#006a4e]" />
                 </div>
-                <div ref={nodeRef} className="stat-num mb-2">
+                <div ref={nodeRef} className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
                   {toBengaliNum(count)}{stat.suffix}
                 </div>
-                <div className="text-[var(--text-secondary)] font-medium">
+                <div className="text-slate-500 dark:text-slate-400 font-medium text-lg">
                   {stat.label}
                 </div>
               </div>

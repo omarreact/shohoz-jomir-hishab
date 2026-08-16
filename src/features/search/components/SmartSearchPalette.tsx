@@ -48,6 +48,7 @@ export default function SmartSearchPalette({ onClose, onSelectResult }: SmartSea
       url.searchParams.set("q", rawQuery);
 
       const res = await fetch(url.toString());
+      if (!res.ok) throw new Error("Search API response not ok");
       const data = await res.json();
       
       if (data.success) {

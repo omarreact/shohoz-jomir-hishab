@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Calculator, ShieldCheck, FileText, HelpCircle, Map } from "lucide-react";
+import { Calculator, ShieldCheck, FileText, HelpCircle } from "lucide-react";
 
 type FooterPage = { id: string; title: string; slug: string };
 
@@ -19,116 +19,81 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#0F172A] border-t border-[#1E293B] py-16 px-4 sm:px-6 lg:px-8 mt-auto">
-      <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+    <footer className="bg-slate-900 text-white pt-12 pb-8 mt-auto border-t border-[#006a4e]/25">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          
+          {/* Brand Section */}
+          <div className="mb-6 lg:mb-0">
+            <Link href="/" className="flex items-center text-white no-underline mb-4">
+              <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[40px] h-[40px] shrink-0">
+                <Calculator size={20} />
+              </div>
+              <h4 className="font-bold text-xl m-0">সহজ জমির হিসাব</h4>
+            </Link>
+            <p className="text-white/75 text-sm m-0 leading-loose max-w-[350px]">
+              খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার (ফারায়েজ) বন্টনের সবচেয়ে স্মার্ট এবং নির্ভরযোগ্য ডিজিটাল সমাধান।
+            </p>
+          </div>
+          
+          {/* Quick Links */}
+          <div className="mb-6 lg:mb-0 lg:col-span-1">
+            <h6 className="font-bold text-[#006a4e] mb-4 uppercase text-sm tracking-wider">কুইক লিংক</h6>
+            <ul className="list-none p-0 m-0 space-y-3">
+              <li><Link href="/khatiyan" className="text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">খতিয়ান হিসাব</Link></li>
+              <li><Link href="/faraez" className="text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">ফারায়েজ হিসাব</Link></li>
+              <li><Link href="/land-measurement" className="text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">জমি পরিমাপ</Link></li>
+              <li><Link href="/blog" className="text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">আইন বিষয়ক ব্লগ</Link></li>
+            </ul>
+          </div>
 
-        {/* Brand */}
-        <div>
-          <Link href="/" className="flex items-center gap-2 no-underline mb-4">
-            <div className="w-8 h-8 rounded-lg accent-bg flex items-center justify-center text-[#0F172A] shadow-sm flex-shrink-0">
-              <Map size={18} />
-            </div>
-            <h4 className="font-bold text-white text-lg m-0">
-              LandBD <span className="accent-text">3.0</span>
-            </h4>
-          </Link>
-          <p className="text-slate-400 text-sm mb-4 leading-relaxed" style={{ maxWidth: "300px" }}>
-            খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট
-            এবং নির্ভরযোগ্য জিআইএস প্ল্যাটফর্ম।
+          {/* Legal Pages (Terms & Privacy) */}
+          <div className="mb-6 lg:mb-0 lg:col-span-1">
+            <h6 className="font-bold text-[#006a4e] mb-4 uppercase text-sm tracking-wider">গুরুত্বপূর্ণ পেজ</h6>
+            <ul className="list-none p-0 m-0 space-y-3">
+              <li>
+                <Link href="/privacy" className="flex items-center text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">
+                  <ShieldCheck size={16} className="mr-2 text-[#006a4e] shrink-0"/> প্রাইভেসি পলিসি
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="flex items-center text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">
+                  <FileText size={16} className="mr-2 text-[#006a4e] shrink-0"/> ব্যবহারের শর্তাবলী
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="flex items-center text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">
+                  <HelpCircle size={16} className="mr-2 text-[#006a4e] shrink-0"/> সাধারণ জিজ্ঞাসা
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Dynamic Pages (From Admin Panel) */}
+          <div className="lg:col-span-1">
+            <h6 className="font-bold text-[#006a4e] mb-4 uppercase text-sm tracking-wider">সাইট ম্যাপ</h6>
+            <ul className="list-none p-0 m-0 space-y-3">
+              {dynamicPages.map(page => (
+                <li key={page.id}>
+                  <Link href={`/p/${page.slug}`} className="text-white/75 no-underline hover:text-[#006a4e] transition-all text-sm">
+                    {page.title}
+                  </Link>
+                </li>
+              ))}
+              {dynamicPages.length === 0 && (
+                <li className="text-white/50 text-sm">কোনো পেজ যুক্ত করা হয়নি।</li>
+              )}
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Copyright */}
+        <div className="text-center text-white/50 text-xs mt-12 pt-6 border-t border-white/10">
+          <p className="m-0">
+            &copy; {currentYear} সহজ জমির হিসাব। সর্বস্বত্ব সংরক্ষিত।
           </p>
         </div>
-
-        {/* Quick Links */}
-        <div>
-          <h4 className="font-semibold text-white mb-4">
-            কুইক লিংক
-          </h4>
-          <ul className="list-none p-0 m-0 space-y-2">
-            {[
-              { href: "/khatiyan", label: "খতিয়ান হিসাব" },
-              { href: "/faraez", label: "ফারায়েজ হিসাব" },
-              { href: "/land-measurement", label: "জমি পরিমাপ" },
-              { href: "/blog", label: "আইন বিষয়ক ব্লগ" },
-            ].map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="text-slate-400 text-sm no-underline hover:text-[#f6c343] transition-colors duration-200"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Legal Pages */}
-        <div>
-          <h4 className="font-semibold text-white mb-4">
-            গুরুত্বপূর্ণ পেজ
-          </h4>
-          <ul className="list-none p-0 m-0 space-y-2">
-            <li>
-              <Link
-                href="/privacy"
-                className="flex items-center gap-2 text-slate-400 text-sm no-underline hover:text-[#f6c343] transition-colors duration-200"
-              >
-                <ShieldCheck size={15} className="accent-text flex-shrink-0" />
-                প্রাইভেসি পলিসি
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/terms"
-                className="flex items-center gap-2 text-slate-400 text-sm no-underline hover:text-[#f6c343] transition-colors duration-200"
-              >
-                <FileText size={15} className="accent-text flex-shrink-0" />
-                ব্যবহারের শর্তাবলী
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/faq"
-                className="flex items-center gap-2 text-slate-400 text-sm no-underline hover:text-[#f6c343] transition-colors duration-200"
-              >
-                <HelpCircle size={15} className="accent-text flex-shrink-0" />
-                সাধারণ জিজ্ঞাসা
-              </Link>
-            </li>
-          </ul>
-        </div>
-
-        {/* Dynamic Pages / Sitemap */}
-        <div>
-          <h4 className="font-semibold text-white mb-4">
-            সাইট ম্যাপ
-          </h4>
-          <ul className="list-none p-0 m-0 space-y-2">
-            {dynamicPages.map((page) => (
-              <li key={page.id}>
-                <Link
-                  href={`/p/${page.slug}`}
-                  className="text-slate-400 text-sm no-underline hover:text-[#f6c343] transition-colors duration-200"
-                >
-                  {page.title}
-                </Link>
-              </li>
-            ))}
-            {dynamicPages.length === 0 && (
-              <li className="text-slate-400 text-sm">কোনো পেজ যুক্ত করা হয়নি।</li>
-            )}
-          </ul>
-        </div>
-      </div>
-
-      {/* Copyright */}
-      <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-[#1E293B] flex flex-col sm:flex-row justify-between items-center gap-3">
-        <p className="m-0 text-slate-400 text-xs">
-          &copy; {currentYear} LandBD. সর্বস্বত্ব সংরক্ষিত।
-        </p>
-        <p className="m-0 text-slate-400 text-xs">
-          কারিগরি সহযোগিতায় <span className="font-medium text-white">Omar Faruk</span>
-        </p>
       </div>
     </footer>
   );

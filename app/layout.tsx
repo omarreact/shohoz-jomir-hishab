@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {
   Geist,
   Geist_Mono,
+  Tiro_Bangla,
   Noto_Sans_Bengali,
   Hind_Siliguri,
 } from "next/font/google";
@@ -25,6 +26,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const tiroBangla = Tiro_Bangla({
+  weight: "400",
+  style: ["normal", "italic"],
+  subsets: ["bengali", "latin"],
+  variable: "--font-tiro-bangla",
+});
+
 const notoBengali = Noto_Sans_Bengali({
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["bengali"],
@@ -38,9 +46,9 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  title: "LandBD - বাংলাদেশ ভূমি তথ্য প্ল্যাটফর্ম",
+  title: "সহজ জমির হিসাব | Shohoz Jomir Hishab",
   description:
-    "বাংলাদেশের সবচেয়ে আধুনিক ন্যাশনাল ল্যান্ড ইন্টেলিজেন্স প্ল্যাটফর্ম। খতিয়ান অনুসন্ধান, ম্যাপ বিশ্লেষণ, উত্তরাধিকার বণ্টন এবং ভূমি রেকর্ড সংক্রান্ত সকল সেবা দ্রুত ও নিরাপদে।",
+    "বাংলাদেশের সবচেয়ে নির্ভুল ডিজিটাল ভূমি পরিমাপ, খতিয়ানের আনা-গন্ডা হিসাব এবং মুসলিম ও হিন্দু ফারায়েজ (উত্তরাধিকার) ক্যালকুলেটর।",
   keywords: [
     "খতিয়ান ক্যালকুলেটর",
     "ফারায়েজ ক্যালকুলেটর",
@@ -49,15 +57,15 @@ export const metadata: Metadata = {
     "khatiyan calculator",
     "faraez calculator bangladesh",
     "vumi jorip",
-    "LandBD",
+    "shohoz jomir hishab",
   ],
   authors: [{ name: "Md. Omar Faruk Khan" }],
   openGraph: {
-    title: "LandBD - বাংলাদেশ ভূমি তথ্য প্ল্যাটফর্ম",
+    title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
     description:
-      "বাংলাদেশের সবচেয়ে আধুনিক ন্যাশনাল ল্যান্ড ইন্টেলিজেন্স প্ল্যাটফর্ম। খতিয়ান অনুসন্ধান, ম্যাপ বিশ্লেষণ, উত্তরাধিকার বণ্টন এবং ভূমি রেকর্ড সংক্রান্ত সকল সেবা দ্রুত ও নিরাপদে।",
+      "খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট সমাধান।",
     url: "https://shohoz-jomir-hishab.vercel.app/", // আপনার আসল ডোমেইন দিন
-    siteName: "LandBD",
+    siteName: "Shohoz Jomir Hishab",
     locale: "bn_BD",
     type: "website",
   },
@@ -72,7 +80,7 @@ export default function RootLayout({
     <html lang="bn" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}
+        className={`${geistSans.variable} ${geistMono.variable} ${tiroBangla.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}
         style={{
           display: "flex",
           flexDirection: "column",

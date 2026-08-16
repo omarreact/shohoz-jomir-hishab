@@ -117,6 +117,7 @@ export async function proxy(request: NextRequest) {
     "/api/porcha",
     "/api/rajuk",
     "/api/unified",
+    "/api/tiles",
     "/api/pages",
     "/api/blogs",
     "/api/comments",

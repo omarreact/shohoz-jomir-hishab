@@ -48,20 +48,20 @@ export default function BlogPreviewSection() {
   ];
 
   return (
-    <section className="py-24 border-t border-c bg-[var(--bg)]">
+    <section className="py-24 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-end mb-12 gap-4 fade-in ${isLoaded ? "visible" : ""}`}>
           <div>
-            <h2 className="text-3xl font-bold mb-4 text-[var(--text-primary)]">
-              আইন বিষয়ক <span className="accent-text">ব্লগ</span>
+            <h2 className="text-3xl font-bold mb-4 text-slate-900 dark:text-white">
+              আইন বিষয়ক <span className="text-[#006a4e]">ব্লগ</span>
             </h2>
-            <p className="text-[var(--text-secondary)] m-0">
+            <p className="text-slate-500 dark:text-slate-400 m-0 text-lg">
               ভূমি সংক্রান্ত গুরুত্বপূর্ণ আইনি পরামর্শ এবং টিপস।
             </p>
           </div>
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-[var(--accent)] font-medium hover:underline no-underline shrink-0"
+            className="inline-flex items-center gap-2 text-[#006a4e] font-medium hover:underline no-underline shrink-0"
           >
             সবগুলো দেখুন <ArrowRight size={16} />
           </Link>
@@ -72,7 +72,7 @@ export default function BlogPreviewSection() {
             <Link
               href={`/blog/${post.categorySlug || 'general'}/${post.slug || post.id}`}
               key={post.id}
-              className={`card-new overflow-hidden p-0 fade-in group no-underline ${
+              className={`bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 p-0 fade-in group no-underline hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${
                 isLoaded ? "visible" : ""
               }`}
               style={{ transitionDelay: post.delay }}
@@ -81,8 +81,8 @@ export default function BlogPreviewSection() {
                 className="h-48 w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                 style={{ backgroundImage: `url('${post.image}')` }}
               ></div>
-              <div className="p-6 relative bg-[var(--surface)]">
-                <div className="flex items-center gap-4 text-[var(--text-secondary)] text-xs mb-3">
+              <div className="p-6 relative bg-white dark:bg-slate-900">
+                <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-xs mb-3">
                   <div className="flex items-center gap-1">
                     <User size={14} />
                     {post.author}
@@ -92,13 +92,13 @@ export default function BlogPreviewSection() {
                     {post.date}
                   </div>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-[#006a4e] transition-colors leading-snug">
                   {post.title}
                 </h3>
-                <p className="text-[var(--text-secondary)] text-sm mb-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 leading-relaxed">
                   {post.excerpt}
                 </p>
-                <div className="text-[var(--accent)] font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                <div className="text-[#006a4e] font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
                   আরও পড়ুন <ArrowRight size={14} />
                 </div>
               </div>

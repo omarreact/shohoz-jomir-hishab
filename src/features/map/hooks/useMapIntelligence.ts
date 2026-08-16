@@ -43,6 +43,7 @@ export const useMapIntelligence = () => {
       url.searchParams.append("spatialRel", "esriSpatialRelIntersects");
 
       const res = await fetch(url.toString());
+      if (!res.ok) throw new Error("Unified API response not ok");
       const json = await res.json();
 
       const rs = json.data?.plots?.[0]?.properties || null;

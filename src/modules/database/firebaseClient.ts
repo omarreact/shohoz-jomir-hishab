@@ -12,6 +12,14 @@ const firebaseConfig = {
 };
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+if (!firebaseConfig.apiKey) {
+  console.error(
+    "🔥 FIREBASE ERROR: NEXT_PUBLIC_FIREBASE_API_KEY is missing in your environment variables! " +
+    "Please check your .env file and RESTART your Next.js dev server."
+  );
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 

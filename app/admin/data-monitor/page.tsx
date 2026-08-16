@@ -147,13 +147,7 @@ export const API_REGISTRY: ApiRow[] = [
     status: "active",
     note: "Proposed points of interest",
   },
-  {
-    name: "Rajuk Token",
-    endpoint: "/api/rajuk-token",
-    type: "Firebase",
-    status: "active",
-    note: "Token from Firebase config/rajuk_api",
-  },
+
   {
     name: "Open-Meteo Elevation",
     endpoint:
@@ -313,13 +307,13 @@ export default function DataMonitorPage() {
     <div className="fade-in visible" data-admin-panel="true">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">ডেটা মনিটর</h1>
-          <p className="text-[var(--text-secondary)]">API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা করুন।</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">ডেটা মনিটর</h1>
+          <p className="text-slate-500 dark:text-slate-400">API, Firebase এবং কনফিগারেশন সবকিছু এক জায়গায় দেখুন এবং পরিচালনা করুন।</p>
         </div>
         <div className="flex gap-4 flex-wrap">
           <button
             onClick={() => setRefreshKey((value) => value + 1)}
-            className="px-6 py-2.5 rounded-full font-bold border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)] transition-colors flex items-center"
+            className="px-6 py-2.5 rounded-full font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center shadow-sm"
           >
             <RefreshCw size={18} className="mr-2" /> রিফ্রেশ
           </button>
@@ -327,7 +321,7 @@ export default function DataMonitorPage() {
             href="/admin/data-monitor/result"
             className="text-decoration-none"
           >
-            <button className="px-6 py-2.5 rounded-full font-bold bg-[var(--text-primary)] text-[var(--bg)] hover:scale-105 transition-transform shadow-md">
+            <button className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:bg-[#00523b] hover:-translate-y-0.5 transition-all shadow-md">
               রেজাল্ট পেজ
             </button>
           </Link>
@@ -335,50 +329,50 @@ export default function DataMonitorPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="bg-blue-500 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
-          <div className="text-sm font-medium opacity-80 mb-2">সক্রিয় API</div>
+        <div className="bg-blue-500 rounded-3xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-90 mb-2">সক্রিয় API</div>
           <div className="text-4xl font-bold">{activeApis}</div>
         </div>
-        <div className="bg-green-500 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
-          <div className="text-sm font-medium opacity-80 mb-2">ফায়ারবেস ডেটা</div>
+        <div className="bg-emerald-500 rounded-3xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-90 mb-2">ফায়ারবেস ডেটা</div>
           <div className="text-4xl font-bold">{firebaseData.length}</div>
         </div>
-        <div className="bg-yellow-500 rounded-2xl p-6 shadow-sm text-gray-900 flex flex-col justify-between">
-          <div className="text-sm font-medium opacity-80 mb-2">Rajuk + Landbd</div>
+        <div className="bg-amber-500 rounded-3xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-90 mb-2">Rajuk + Landbd</div>
           <div className="text-4xl font-bold">2 সেবা</div>
         </div>
-        <div className="bg-gray-800 rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
-          <div className="text-sm font-medium opacity-80 mb-2">অ্যাপ সেটিংস</div>
+        <div className="bg-slate-800 dark:bg-slate-900 border dark:border-slate-800 rounded-3xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div className="text-sm font-medium opacity-90 mb-2">অ্যাপ সেটিংস</div>
           <div className="text-4xl font-bold">Live</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         {loading ? (
-          <div className="col-span-full text-center py-10 text-[var(--text-secondary)] font-medium flex items-center justify-center">
-            <span className="w-5 h-5 border-2 border-[var(--text-secondary)] border-t-transparent rounded-full animate-spin mr-3"></span>
+          <div className="col-span-full text-center py-10 text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center">
+            <span className="w-5 h-5 border-2 border-slate-500 dark:border-slate-400 border-t-transparent rounded-full animate-spin mr-3"></span>
             ফায়ারবেস ডেটা লোড হচ্ছে...
           </div>
         ) : (
           firebaseData.map((item) => (
-            <div key={item.label} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 flex flex-col justify-between hover:border-[var(--accent)] transition-colors">
-              <div className="flex items-center gap-3 mb-4 text-[var(--text-secondary)]">
-                <div className="bg-[var(--bg)] p-2 rounded-lg">
+            <div key={item.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:border-[#006a4e]/50 dark:hover:border-[#006a4e]/50 transition-colors">
+              <div className="flex items-center gap-3 mb-4 text-slate-500 dark:text-slate-400">
+                <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
                   {item.icon}
                 </div>
                 <span className="text-sm font-bold">{item.label}</span>
               </div>
-              <div className="text-2xl font-bold text-[var(--text-primary)]">{item.value}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">{item.value}</div>
             </div>
           ))
         )}
       </div>
 
-      <div className="card-new mb-8">
-        <div className="p-6 md:p-8 border-b border-[var(--border)] flex flex-wrap gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm mb-8 overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 items-center justify-between">
           <div>
-            <h6 className="font-bold text-xl text-[var(--text-primary)] mb-1">API রেজিস্ট্রি</h6>
-            <p className="text-sm text-[var(--text-secondary)] mb-0">
+            <h6 className="font-bold text-xl text-slate-900 dark:text-white mb-1">API রেজিস্ট্রি</h6>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-0">
               Rajuk, Firebase, External এবং Landbd API-র তালিকা দেখুন।
             </p>
           </div>
@@ -392,7 +386,7 @@ export default function DataMonitorPage() {
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)] transition-colors text-sm"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-all text-sm"
               />
             </div>
             <div className="w-40">
@@ -402,7 +396,7 @@ export default function DataMonitorPage() {
                   setTypeFilter(event.target.value);
                   setPage(1);
                 }}
-                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)] transition-colors text-sm"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-all text-sm"
               >
                 <option value="all">সব ধরন</option>
                 <option value="Rajuk">Rajuk</option>
@@ -417,7 +411,7 @@ export default function DataMonitorPage() {
                   direction === "asc" ? "desc" : "asc",
                 )
               }
-              className="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-medium flex items-center"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium flex items-center bg-white dark:bg-slate-900"
             >
               নাম {sortDir === "asc" ? "↑" : "↓"}
             </button>
@@ -427,57 +421,57 @@ export default function DataMonitorPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
-              <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
-                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+              <tr className="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
+                <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
                   নাম
                 </th>
-                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
                   ধরন
                 </th>
-                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
                   এন্ডপয়েন্ট
                 </th>
-                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
                   স্ট্যাটাস
                 </th>
-                <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
                   নোট
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border)]">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {pageSlice.map((row, idx) => (
-                <tr key={`${row.name}-${idx}`} className="hover:bg-[var(--surface)] transition-colors">
-                  <td className="px-6 py-4 font-bold text-[var(--text-primary)] text-sm">
+                <tr key={`${row.name}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-950/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-white text-sm">
                     {row.name}
                   </td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
                         row.type === "Rajuk" 
-                          ? "bg-green-500/10 text-green-500" 
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
                           : row.type === "Firebase" 
-                            ? "bg-yellow-500/10 text-yellow-500" 
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" 
                             : row.type === "Imported"
-                              ? "bg-purple-500/10 text-purple-500"
-                              : "bg-blue-500/10 text-blue-500"
+                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                              : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                       }`}
                     >
                       {row.type}
                     </span>
                   </td>
                   <td
-                    className="px-6 py-4 text-[var(--text-secondary)] text-sm font-mono break-all max-w-xs"
+                    className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm font-mono break-all max-w-xs"
                   >
                     {row.endpoint}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center bg-green-500/20 text-green-500 rounded-full px-3 py-1 text-xs font-bold">
+                    <span className="inline-flex items-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-3 py-1 text-xs font-bold">
                       <CheckCircle2 size={12} className="mr-1.5" />
                       active
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-[var(--text-secondary)] text-sm">
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                     {row.note}
                   </td>
                 </tr>
@@ -486,8 +480,8 @@ export default function DataMonitorPage() {
           </table>
         </div>
 
-        <div className="p-4 border-t border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
-          <span className="text-sm text-[var(--text-secondary)] font-medium">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
+          <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             {(page - 1) * PAGE_SIZE + 1}–
             {Math.min(page * PAGE_SIZE, filteredApis.length)} /{" "}
             {filteredApis.length}
@@ -496,11 +490,11 @@ export default function DataMonitorPage() {
             <button
               onClick={() => setPage((value) => Math.max(1, value - 1))}
               disabled={page === 1}
-              className="p-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg)] disabled:opacity-50 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors bg-white dark:bg-slate-900"
             >
               <ChevronLeft size={18} />
             </button>
-            <span className="px-4 py-2 text-sm font-bold text-[var(--text-primary)]">
+            <span className="px-4 py-2 text-sm font-bold text-slate-900 dark:text-white">
               {page} / {totalPages}
             </span>
             <button
@@ -508,7 +502,7 @@ export default function DataMonitorPage() {
                 setPage((value) => Math.min(totalPages, value + 1))
               }
               disabled={page === totalPages}
-              className="p-2 rounded-lg border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg)] disabled:opacity-50 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors bg-white dark:bg-slate-900"
             >
               <ChevronRight size={18} />
             </button>
@@ -516,25 +510,25 @@ export default function DataMonitorPage() {
         </div>
       </div>
 
-      <div className="card-new">
-        <div className="p-6 md:p-8 border-b border-[var(--border)] flex flex-wrap gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 items-center justify-between">
           <div className="flex items-center gap-3">
-            <Terminal size={24} className="text-[var(--accent)]" />
-            <h6 className="font-bold text-xl text-[var(--text-primary)] mb-0">API Selection Panel</h6>
+            <Terminal size={24} className="text-[#006a4e]" />
+            <h6 className="font-bold text-xl text-slate-900 dark:text-white mb-0">API Selection Panel</h6>
           </div>
           <div className="flex gap-3 flex-wrap items-center">
-            <span className="text-sm font-bold text-blue-500 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
+            <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
               Selected APIs: {selectedApis.length} of {combinedApiRegistry.length}
             </span>
             <button
               onClick={selectAll}
-              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold"
+              className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-bold"
             >
               Select All
             </button>
             <button
               onClick={unselectAll}
-              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold"
+              className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-bold"
             >
               Unselect All
             </button>
@@ -542,7 +536,7 @@ export default function DataMonitorPage() {
         </div>
         <div className="p-6 md:p-8">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            <p className="text-sm text-[var(--text-secondary)] mb-0">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-0">
               একটি সমন্বিত লিঙ্ক তৈরি করতে একাধিক API নির্বাচন করুন।
             </p>
             <button
@@ -586,7 +580,7 @@ export default function DataMonitorPage() {
                 anchor.click();
                 anchor.remove();
               }}
-              className="px-4 py-2 rounded-full border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors text-sm font-bold flex items-center"
+              className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-bold flex items-center"
             >
               <Database size={16} className="mr-2" /> Download Postman Collection
             </button>
@@ -596,10 +590,10 @@ export default function DataMonitorPage() {
             {combinedApiRegistry.map((api, index) => (
               <div
                 key={index}
-                className={`border rounded-xl p-4 flex flex-col select-none transition-all cursor-pointer ${
+                className={`border rounded-2xl p-4 flex flex-col select-none transition-all cursor-pointer ${
                   selectedApis.includes(index) 
                     ? "bg-blue-500/10 border-blue-500" 
-                    : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]"
+                    : "bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-[#006a4e]/50 dark:hover:border-[#006a4e]/50"
                 }`}
                 onClick={() => handleCheckboxChange(index)}
               >
@@ -610,19 +604,19 @@ export default function DataMonitorPage() {
                     checked={selectedApis.includes(index)}
                     onChange={() => {}}
                   />
-                  <span className="font-bold text-[var(--text-primary)] truncate block flex-1" title={api.name}>
+                  <span className="font-bold text-slate-900 dark:text-white truncate block flex-1" title={api.name}>
                     {api.name}
                   </span>
                   <span
                     className={`ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                      api.status === "active" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
+                      api.status === "active" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
                     }`}
                   >
                     {api.status}
                   </span>
                 </div>
                 <div
-                  className="pl-7 text-xs text-[var(--text-secondary)] font-mono truncate"
+                  className="pl-7 text-xs text-slate-500 dark:text-slate-400 font-mono truncate"
                   title={api.endpoint}
                 >
                   {api.endpoint}
@@ -631,7 +625,7 @@ export default function DataMonitorPage() {
             ))}
           </div>
 
-          <div className="border-t border-[var(--border)] pt-8 flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             <button
               onClick={() => {
                 if (selectedApis.length === 0) return;
@@ -642,24 +636,24 @@ export default function DataMonitorPage() {
                 setGeneratedLink(url.toString());
               }}
               disabled={selectedApis.length === 0}
-              className="cta-gradient text-[var(--bg)] font-bold px-6 py-3 rounded-xl disabled:opacity-50 whitespace-nowrap shadow-md hover:-translate-y-0.5 transition-transform"
+              className="bg-[#006a4e] hover:bg-[#00523b] text-white font-bold px-6 py-3 rounded-full disabled:opacity-50 whitespace-nowrap shadow-md hover:-translate-y-0.5 transition-transform"
             >
               Generate Combined Link
             </button>
 
             {generatedLink && (
               <div
-                className="flex items-stretch rounded-xl overflow-hidden border border-[var(--border)] shadow-sm w-full lg:w-auto flex-1"
+                className="flex items-stretch rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm w-full lg:w-auto flex-1"
               >
                 <input
                   type="text"
-                  className="flex-1 bg-[var(--surface)] border-0 text-sm text-[var(--text-secondary)] px-4 min-w-[200px]"
+                  className="flex-1 bg-slate-50 dark:bg-slate-950 border-0 text-sm text-slate-500 dark:text-slate-400 px-6 min-w-[200px]"
                   value={generatedLink}
                   readOnly
                 />
                 <button
                   onClick={copyLink}
-                  className="px-4 font-bold text-[var(--text-primary)] bg-[var(--bg)] border-l border-[var(--border)] hover:bg-[var(--surface)] transition-colors"
+                  className="px-6 font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Copy
                 </button>
@@ -667,9 +661,9 @@ export default function DataMonitorPage() {
                   href={generatedLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 font-bold text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center gap-2 whitespace-nowrap"
+                  className="px-6 font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center gap-2 whitespace-nowrap"
                 >
-                  <PlayCircle size={18} /> Open in New Tab
+                  <PlayCircle size={18} /> Open
                 </a>
               </div>
             )}

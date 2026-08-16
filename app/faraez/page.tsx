@@ -25,8 +25,8 @@ const FaraezResult = dynamic(() => import("@/src/features/faraez/components/Fara
   ssr: false,
   loading: () => (
     <div className="text-center p-5 mt-4">
-      <div className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p className="mt-4 text-[var(--text-secondary)] font-bold">বন্টননামা প্রস্তুত করা হচ্ছে...</p>
+      <div className="w-10 h-10 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p className="mt-4 text-slate-500 dark:text-slate-400 font-bold">বন্টননামা প্রস্তুত করা হচ্ছে...</p>
     </div>
   ),
 });
@@ -291,7 +291,7 @@ export default function FaraezPage() {
           <div className="text-center mt-12 mb-8">
             <button
               onClick={handleCalculate}
-              className="px-8 py-4 cta-gradient text-[var(--bg)] font-bold rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center mx-auto text-lg hover:-translate-y-1"
+              className="px-8 py-4 cta-gradient text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center mx-auto text-lg hover:-translate-y-1"
             >
               <Calculator size={24} className="mr-3" /> সম্পত্তি বন্টন করুন
             </button>

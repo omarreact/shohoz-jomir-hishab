@@ -40,7 +40,7 @@ export default function DynamicPageViewer({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <span className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <span className="w-10 h-10 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -48,10 +48,10 @@ export default function DynamicPageViewer({
   if (notFound || !pageData) {
     return (
       <div className="text-center py-20">
-        <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-4">৪০৪ — পেজটি পাওয়া যায়নি</h3>
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">৪০৪ — পেজটি পাওয়া যায়নি</h3>
         <Link
           href="/"
-          className="inline-block mt-4 px-6 py-3 rounded-full bg-[var(--accent)] text-[var(--bg)] font-bold"
+          className="inline-block mt-4 px-6 py-3 rounded-full bg-[#006a4e] text-white font-bold"
         >
           হোমপেজে যান
         </Link>

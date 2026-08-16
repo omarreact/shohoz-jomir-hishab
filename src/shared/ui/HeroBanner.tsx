@@ -45,7 +45,7 @@ export default function HeroBanner({
           width: "600px",
           height: "600px",
           background:
-            "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+            "radial-gradient(circle, #006a4e 0%, transparent 70%)",
           filter: "blur(40px)",
         }}
       />
@@ -88,23 +88,23 @@ export default function HeroBanner({
               <div
                 className={`mb-4 flex ${isCenter ? "justify-center" : "justify-start"}`}
               >
-                <div className="inline-block bg-[var(--surface)] text-[var(--text-secondary)] px-4 py-2 rounded-full text-sm font-medium border border-c">
+                <div className="inline-block bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-full text-sm font-medium border border-c">
                   {badge}
                 </div>
               </div>
             )}
 
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight text-[var(--text-primary)]">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight text-slate-900 dark:text-white">
               {title}
             </h1>
 
             {subtitle && (
-              <h3 className="text-xl text-[var(--text-primary)] font-medium mb-3">{subtitle}</h3>
+              <h3 className="text-xl text-slate-900 dark:text-white font-medium mb-3">{subtitle}</h3>
             )}
 
             {description && (
               <div
-                className={`text-[var(--text-secondary)] mb-8 text-lg leading-relaxed ${
+                className={`text-slate-500 dark:text-slate-400 mb-8 text-lg leading-relaxed ${
                   isCenter ? "mx-auto" : ""
                 }`}
                 style={{ maxWidth: "600px" }}
@@ -135,7 +135,7 @@ export default function HeroBanner({
               <div className="relative">
                 <div
                   className="absolute inset-0 rounded-full opacity-10 pointer-events-none"
-                  style={{ background: "var(--accent)", filter: "blur(60px)" }}
+                  style={{ background: "#006a4e", filter: "blur(60px)" }}
                 />
                 <div className="relative z-10">{illustration}</div>
               </div>

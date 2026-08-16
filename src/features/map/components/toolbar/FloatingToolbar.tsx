@@ -16,15 +16,7 @@ export function FloatingToolbar() {
     <div 
       role="toolbar"
       aria-label="GIS Tools"
-      className="position-absolute z-3 rounded-4 shadow-lg d-flex flex-column align-items-center py-2 gap-2 animate-fade-in"
-      style={{
-        top: "90px",
-        left: "20px",
-        width: "56px",
-        border: "1px solid var(--border-color)",
-        backgroundColor: "var(--card-bg)",
-        pointerEvents: "auto"
-      }}
+      className="absolute z-3 rounded-xl shadow-lg flex flex-col items-center py-2 gap-2 animate-fade-in bg-white dark:bg-slate-900"
     >
       <ToolButton 
         icon={<Search size={20} />} 
@@ -48,7 +40,7 @@ export function FloatingToolbar() {
         onClick={() => handleToggle("basemap")} 
       />
       
-      <hr className="w-75 my-1 border-secondary opacity-25" />
+      <hr className="w-75 my-1 border-slate-500 opacity-25" />
       
       <ToolButton 
         icon={<Bookmark size={20} />} 
@@ -57,7 +49,7 @@ export function FloatingToolbar() {
         onClick={() => handleToggle("bookmarks")} 
       />
       
-      <hr className="w-75 my-1 border-secondary opacity-25" />
+      <hr className="w-75 my-1 border-slate-500 opacity-25" />
 
       {/* Measurement tools */}
       <ToolButton 
@@ -67,12 +59,12 @@ export function FloatingToolbar() {
         onClick={() => handleToggle("tools")} 
       />
       
-      <hr className="w-75 my-1 border-secondary opacity-25" />
+      <hr className="w-75 my-1 border-slate-500 opacity-25" />
       
       <ToolButton icon={<Printer size={20} />} label="Print" onClick={() => {}} className="opacity-50" />
       <ToolButton icon={<Download size={20} />} label="Export" onClick={() => {}} className="opacity-50" />
       
-      <hr className="w-75 my-1 border-secondary opacity-25" />
+      <hr className="w-75 my-1 border-slate-500 opacity-25" />
       
       <ToolButton icon={<Settings size={20} />} label="Settings" onClick={() => {}} className="opacity-50" />
     </div>

@@ -156,20 +156,20 @@ function CombinedResultContent() {
         <div>
           <Link
             href="/admin/data-monitor"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+            className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-3"
           >
             <ArrowLeft size={14} /> Back to Registry
           </Link>
-          <h4 className="text-2xl font-bold flex items-center gap-2 text-foreground">
-            <Activity size={24} className="text-primary" />
+          <h4 className="text-2xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <Activity size={24} className="text-[#006a4e]" />
             Combined API Viewer
           </h4>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Previewing multiple API responses in a unified dashboard.
           </p>
         </div>
         {loading && (
-          <div className="flex items-center gap-2 text-primary font-medium bg-primary/10 px-4 py-2 rounded-full text-sm">
+          <div className="flex items-center gap-2 text-[#006a4e] font-medium bg-[#006a4e]/10 px-4 py-2 rounded-full text-sm">
             <Loader className="h-4 w-4 animate-spin" /> Fetching APIs...
           </div>
         )}
@@ -180,30 +180,30 @@ function CombinedResultContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="text-muted-foreground text-xs font-semibold mb-2 flex items-center gap-1">
+              <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold mb-2 flex items-center gap-1">
                 <Terminal size={14} /> Selected APIs
               </div>
-              <div className="text-2xl font-bold text-foreground">{results.length}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">{results.length}</div>
             </CardContent>
           </Card>
           
           <Card>
             <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="text-muted-foreground text-xs font-semibold mb-2 flex items-center gap-1">
+              <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold mb-2 flex items-center gap-1">
                 <Database size={14} /> Total Records
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-[#006a4e]">
                 {totalRecords.toLocaleString()}
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-green-500/10 border-green-500/20">
+          <Card className="bg-emerald-500/10 border-emerald-500/20">
             <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="text-green-600 dark:text-green-400 text-xs font-semibold mb-2 flex items-center gap-1">
+              <div className="text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-2 flex items-center gap-1">
                 <CheckCircle2 size={14} /> Successful
               </div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {successfulCount}
               </div>
             </CardContent>
@@ -240,23 +240,23 @@ function CombinedResultContent() {
           </div>
         ) : (
           results.map((res, index) => (
-            <Card key={index} className="overflow-hidden border-border/50 shadow-sm">
-              <CardHeader className="bg-muted/30 border-b border-border/50 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <Card key={index} className="overflow-hidden border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+              <CardHeader className="bg-slate-50/30 dark:bg-slate-950/30 border-b border-slate-200/50 dark:border-slate-800/50 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-lg font-bold mb-1">{res.name}</CardTitle>
-                  <div className="text-xs text-muted-foreground font-mono truncate max-w-[300px] md:max-w-md lg:max-w-2xl">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate max-w-[300px] md:max-w-md lg:max-w-2xl">
                     {res.endpoint}
                   </div>
                 </div>
                 <div className="flex gap-3 items-center">
-                  <span className="text-xs text-muted-foreground font-semibold flex items-center">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center">
                     <Clock size={12} className="mr-1" />
                     {res.timeMs} ms
                   </span>
                   <span
                     className={`text-xs font-bold px-3 py-1.5 rounded-full ${
                       res.status === 200 
-                        ? "bg-green-500/10 text-green-600 dark:text-green-400" 
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
                         : "bg-red-500/10 text-red-600 dark:text-red-400"
                     }`}
                   >

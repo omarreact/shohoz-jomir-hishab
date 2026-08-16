@@ -153,14 +153,14 @@ export default function CustomPagesDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">কাস্টম পেজ ম্যানেজমেন্ট</h1>
-          <p className="text-[var(--text-secondary)]">সিস্টেমে মোট {pages.length} টি পেজ আছে</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">কাস্টম পেজ ম্যানেজমেন্ট</h1>
+          <p className="text-slate-500 dark:text-slate-400">সিস্টেমে মোট {pages.length} টি পেজ আছে</p>
         </div>
         <button
           className={`px-6 py-2.5 rounded-full font-bold transition-all shadow-md ${
             showCreateForm && !editingId
-              ? "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border)] scale-95"
-              : "cta-gradient text-[var(--bg)] hover:scale-105"
+              ? "bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 scale-95"
+              : "bg-[#006a4e] text-white hover:bg-[#00523b] hover:scale-105"
           }`}
           onClick={() => {
             if (showCreateForm && editingId) {
@@ -175,16 +175,16 @@ export default function CustomPagesDashboard() {
 
       {/* Creator Form */}
       {showCreateForm && (
-        <div className="card-new mb-10 overflow-hidden border-t-4 border-t-[var(--accent)] fade-in visible">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm mb-10 overflow-hidden border-t-4 border-t-[#006a4e] fade-in visible">
           <div className="p-6 md:p-8">
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--border)]">
-              <h5 className="font-bold text-xl text-[var(--text-primary)] mb-0 flex items-center">
-                <FileText className="mr-3 text-[var(--accent)]" size={24} />
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <h5 className="font-bold text-xl text-slate-900 dark:text-white mb-0 flex items-center">
+                <FileText className="mr-3 text-[#006a4e]" size={24} />
                 {editingId ? "পেজ আপডেট করুন" : "নতুন কাস্টম পেজ লিখুন"}
               </h5>
               {editingId && (
                 <button
-                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-1"
                   onClick={resetForm}
                 >
                   <X size={24} />
@@ -195,20 +195,20 @@ export default function CustomPagesDashboard() {
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label className="block text-[var(--text-primary)] font-bold mb-2">পেজের টাইটেল</label>
+                  <label className="block text-slate-900 dark:text-white font-bold mb-2">পেজের টাইটেল</label>
                   <input
                     type="text"
                     placeholder="যেমন: Privacy Policy"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[var(--text-primary)] font-bold mb-2">পেজের লিংক (Slug)</label>
-                  <div className="flex rounded-xl overflow-hidden shadow-sm border border-[var(--border)] focus-within:border-[var(--accent)] transition-colors">
-                    <span className="bg-[var(--surface)] border-r border-[var(--border)] px-4 flex items-center justify-center font-bold text-[var(--text-secondary)]">
+                  <label className="block text-slate-900 dark:text-white font-bold mb-2">পেজের লিংক (Slug)</label>
+                  <div className="flex rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 focus-within:border-[#006a4e] transition-colors">
+                    <span className="bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 px-4 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400">
                       /p/
                     </span>
                     <input
@@ -217,16 +217,16 @@ export default function CustomPagesDashboard() {
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
                       required
-                      className="flex-1 bg-[var(--bg)] text-[var(--text-primary)] px-4 py-3 outline-none"
+                      className="flex-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 outline-none"
                     />
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[var(--text-primary)] font-bold mb-2">পেজের ক্যাটাগরি</label>
+                  <label className="block text-slate-900 dark:text-white font-bold mb-2">পেজের ক্যাটাগরি</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                   >
                     <option value="সাধারণ (General)">সাধারণ (General)</option>
                     <option value="আইন বিষয়ক (Legal)">আইন বিষয়ক (Legal)</option>
@@ -238,14 +238,14 @@ export default function CustomPagesDashboard() {
 
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-[var(--text-secondary)] font-bold text-sm tracking-wide uppercase">
+                  <label className="text-slate-500 dark:text-slate-400 font-bold text-sm tracking-wide uppercase">
                     ডিজাইন ও কন্টেন্ট (HTML)
                   </label>
-                  <span className="text-[var(--accent)] font-medium text-xs">
+                  <span className="text-[#006a4e] font-medium text-xs">
                     Tailwind CSS / HTML allowed
                   </span>
                 </div>
-                <div className="h-[400px] rounded-xl overflow-hidden border border-[var(--border)]">
+                <div className="h-[400px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                   <Editor
                     height="100%"
                     defaultLanguage="html"
@@ -263,15 +263,15 @@ export default function CustomPagesDashboard() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-[var(--border)]">
+              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-[var(--text-primary)] text-[var(--bg)] font-bold rounded-xl px-8 py-3.5 shadow-md hover:-translate-y-0.5 transition-transform flex items-center disabled:opacity-70 disabled:hover:translate-y-0"
+                  className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl px-8 py-3.5 shadow-md hover:-translate-y-0.5 transition-transform flex items-center disabled:opacity-70 disabled:hover:translate-y-0"
                 >
                   {isSubmitting ? (
                     <>
-                      <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin mr-3"></span>
+                      <span className="w-5 h-5 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin mr-3"></span>
                       সেভ হচ্ছে...
                     </>
                   ) : editingId ? (
@@ -292,43 +292,43 @@ export default function CustomPagesDashboard() {
           <span className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
         </div>
       ) : pages.length === 0 ? (
-        <div className="card-new py-16 text-center text-[var(--text-secondary)]">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm py-16 text-center text-slate-500 dark:text-slate-400">
           <List size={64} className="mx-auto mb-4 opacity-25" />
-          <h4 className="font-bold text-[var(--text-primary)] text-2xl mb-2">কোনো পেজ তৈরি করা হয়নি</h4>
+          <h4 className="font-bold text-slate-900 dark:text-white text-2xl mb-2">কোনো পেজ তৈরি করা হয়নি</h4>
           <p>উপরের বাটনটি ব্যবহার করে নতুন পেজ তৈরি করুন</p>
         </div>
       ) : (
-        <div className="card-new overflow-hidden">
-          <div className="p-6 border-b border-[var(--border)] bg-black/5 dark:bg-white/5">
-            <h5 className="font-bold mb-0 text-[var(--text-primary)] text-lg">প্রকাশিত পেজসমূহ</h5>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+            <h5 className="font-bold mb-0 text-slate-900 dark:text-white text-lg">প্রকাশিত পেজসমূহ</h5>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">পেজের টাইটেল</th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">লিংক (URL)</th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">ক্যাটাগরি</th>
-                  <th className="px-6 py-4 text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider text-right">অ্যাকশন</th>
+                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                  <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">পেজের টাইটেল</th>
+                  <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">লিংক (URL)</th>
+                  <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">ক্যাটাগরি</th>
+                  <th className="px-6 py-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider text-right">অ্যাকশন</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border)]">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {pages.map((page) => (
-                  <tr key={page.id} className="hover:bg-[var(--surface)] transition-colors">
+                  <tr key={page.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="bg-[var(--bg)] border border-[var(--border)] text-[var(--accent)] w-10 h-10 rounded-xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[#006a4e] w-10 h-10 rounded-xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
                           <FileText size={20} />
                         </div>
-                        <span className="font-bold text-[var(--text-primary)] text-base">{page.title}</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-base">{page.title}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <Link
                         href={`/p/${page.slug}`}
                         target="_blank"
-                        className="inline-flex items-center px-4 py-1.5 rounded-full border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors font-medium text-sm"
+                        className="inline-flex items-center px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-[#006a4e] hover:border-[#006a4e] transition-colors font-medium text-sm"
                       >
                         /p/{page.slug}
                         <ExternalLink size={14} className="ml-2" />
@@ -344,14 +344,14 @@ export default function CustomPagesDashboard() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEdit(page)}
-                          className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-colors shadow-sm"
+                          className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#006a4e] flex items-center justify-center hover:bg-[#006a4e] hover:text-white hover:border-[#006a4e] transition-colors shadow-sm"
                           title="এডিট করুন"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(page.id, page.title)}
-                          className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors shadow-sm"
+                          className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors shadow-sm"
                           title="ডিলিট করুন"
                         >
                           <Trash2 size={18} />

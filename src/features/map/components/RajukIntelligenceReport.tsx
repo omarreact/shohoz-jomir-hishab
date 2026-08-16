@@ -51,9 +51,9 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
 
   if (loading) {
     return (
-      <div className="card shadow-sm border-0 rounded-4 p-4 mt-3 text-center bg-light fade-in">
-        <Loader className="spinner-border spinner-border-sm text-success me-2" />
-        <span className="text-muted fw-bold">রাজউক সার্ভার থেকে উন্নত বিশ্লেষণ করা হচ্ছে...</span>
+      <div className="card shadow-sm border-0 rounded-xl p-6 mt-6 text-center bg-slate-100 fade-in">
+        <Loader className="spinner-border spinner-border-sm text-green-600 mr-2" />
+        <span className="text-slate-500 font-bold">রাজউক সার্ভার থেকে উন্নত বিশ্লেষণ করা হচ্ছে...</span>
       </div>
     );
   }
@@ -71,51 +71,51 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
   // If no advanced data was fetched, show a fallback message instead of a blank report
   if (!isFloodProne && !hasRoads && landuse.length === 0 && error) {
     return (
-      <div className="alert alert-warning shadow-sm border-0 rounded-4 mt-3 fade-in d-flex align-items-center">
-        <Info size={24} className="me-3 flex-shrink-0" />
+      <div className="alert alert-warning shadow-sm border-0 rounded-xl mt-6 fade-in flex items-center">
+        <Info size={24} className="mr-4 shrink-0" />
         <div>
           <strong>উন্নত বিশ্লেষণ উপলব্ধ নয়</strong>
-          <div className="small mt-1">{error}</div>
+          <div className="text-sm mt-1">{error}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="card border-0 shadow-sm rounded-4 mt-3 overflow-hidden fade-in">
-      <div className="card-header bg-dark text-white p-3 text-center">
-        <h6 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
-          <Layers size={18} className="me-2 text-warning" />
+    <div className="card border-0 shadow-sm rounded-xl mt-6 overflow-hidden fade-in">
+      <div className="card-header bg-slate-900 text-white p-6 text-center">
+        <h6 className="font-bold mb-0 flex items-center justify-center">
+          <Layers size={18} className="mr-2 text-yellow-500" />
           স্মার্ট ড্যাপ (DAP) এনালাইসিস রিপোর্ট
         </h6>
       </div>
 
-      <div className="card-body bg-white p-4">
+      <div className="card-body bg-white p-6">
         {/* Detailed Landuse Breakdown */}
-        <div className="p-3 rounded-4 bg-light border mb-4 shadow-sm">
-          <div className="d-flex align-items-center mb-3">
-            <div className={`p-2 rounded-circle me-3 ${primaryZone !== 'অজানা' ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary'}`}>
+        <div className="p-6 rounded-xl bg-slate-100 border mb-6 shadow-sm">
+          <div className="flex items-center mb-6">
+            <div className={`p-2 rounded-full mr-4 ${primaryZone !== 'অজানা' ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary'}`}>
               <CheckCircle size={24} />
             </div>
             <div>
-              <div className="text-muted small fw-bold">রাজউক প্রস্তাবিত ভূমি ব্যবহার (Landuse)</div>
-              <h5 className="fw-bolder mb-0 text-dark">
+              <div className="text-slate-500 text-sm font-bold">রাজউক প্রস্তাবিত ভূমি ব্যবহার (Landuse)</div>
+              <h5 className="fw-bolder mb-0 text-slate-900">
                 {primaryZone}
               </h5>
             </div>
           </div>
           
           {landuse.length > 1 && (
-            <div className="mt-2 border-top pt-2">
-              <small className="text-muted fw-bold d-block mb-1">একাধিক জোনে বিভক্ত:</small>
+            <div className="mt-2 border-t pt-2">
+              <small className="text-slate-500 font-bold block mb-1">একাধিক জোনে বিভক্ত:</small>
               {landuse.map((lu, idx) => {
                 const name = lu.luZoning || lu.lu_zoning || lu.Landuse || lu.LANDUSE;
                 const percent = lu.percentage ? parseFloat(lu.percentage).toFixed(2) : null;
                 if (!name) return null;
                 return (
-                  <div key={idx} className="d-flex justify-content-between align-items-center small mb-1 bg-white p-2 rounded border">
-                    <span className="fw-semibold text-dark">{name}</span>
-                    {percent && <span className="badge bg-success bg-opacity-10 text-success border border-success">{engToBdNum(percent)}%</span>}
+                  <div key={idx} className="flex justify-between items-center text-sm mb-1 bg-white p-2 rounded border">
+                    <span className="font-semibold text-slate-900">{name}</span>
+                    {percent && <span className="badge bg-green-600 bg-opacity-10 text-green-600 border border-green-600">{engToBdNum(percent)}%</span>}
                   </div>
                 );
               })}
@@ -124,19 +124,19 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
         </div>
 
         {/* DAP Detailed Info Grid */}
-        <div className="row g-3 mb-4">
+        <div className="row g-3 mb-6">
           <div className="col-md-6">
-            <div className="h-100 p-3 rounded-4 border bg-white">
-              <div className="d-flex align-items-start">
-                <Ruler size={20} className="me-2 text-primary mt-1" />
+            <div className="h-full p-6 rounded-xl border bg-white">
+              <div className="flex items-start">
+                <Ruler size={20} className="mr-2 text-blue-600 mt-1" />
                 <div>
-                  <div className="text-muted small fw-bold">ইমারত বিধিমালা (FAR ও উচ্চতা)</div>
+                  <div className="text-slate-500 text-sm font-bold">ইমারত বিধিমালা (FAR ও উচ্চতা)</div>
                   <div className="mt-1">
-                    <div className="fw-bold text-dark">
-                      FAR: <span className="text-primary">{plotData.properties?.areaFar || plotData.properties?.areaFarDbl || plotData.properties?.area_far || "অজানা"}</span>
+                    <div className="font-bold text-slate-900">
+                      FAR: <span className="text-blue-600">{plotData.properties?.areaFar || plotData.properties?.areaFarDbl || plotData.properties?.area_far || "অজানা"}</span>
                     </div>
-                    <div className="fw-bold text-dark">
-                      সর্বোচ্চ উচ্চতা: <span className="text-primary">{plotData.properties?.maximumHeightM || plotData.properties?.maximumHe || "অজানা"} {plotData.properties?.maximumHeightM || plotData.properties?.maximumHe ? 'মিটার' : ''}</span>
+                    <div className="font-bold text-slate-900">
+                      সর্বোচ্চ উচ্চতা: <span className="text-blue-600">{plotData.properties?.maximumHeightM || plotData.properties?.maximumHe || "অজানা"} {plotData.properties?.maximumHeightM || plotData.properties?.maximumHe ? 'মিটার' : ''}</span>
                     </div>
                   </div>
                 </div>
@@ -144,17 +144,17 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
             </div>
           </div>
           <div className="col-md-6">
-            <div className="h-100 p-3 rounded-4 border bg-white">
-              <div className="d-flex align-items-start">
-                <Map size={20} className="me-2 text-info mt-1" />
+            <div className="h-full p-6 rounded-xl border bg-white">
+              <div className="flex items-start">
+                <Map size={20} className="mr-2 text-cyan-500 mt-1" />
                 <div>
-                  <div className="text-muted small fw-bold">রাজউক অঞ্চল (Region/Zone)</div>
+                  <div className="text-slate-500 text-sm font-bold">রাজউক অঞ্চল (Region/Zone)</div>
                   <div className="mt-1">
-                    <div className="fw-bold text-dark">
-                      জোন: <span className="text-info">{plotData.properties?.rajukZone || plotData.properties?.rajuk_zone || "অজানা"}</span>
+                    <div className="font-bold text-slate-900">
+                      জোন: <span className="text-cyan-500">{plotData.properties?.rajukZone || plotData.properties?.rajuk_zone || "অজানা"}</span>
                     </div>
-                    <div className="fw-bold text-dark">
-                      সাবজোন: <span className="text-info">{plotData.properties?.rajukSubzone || plotData.properties?.rajuk_subzone || "অজানা"}</span>
+                    <div className="font-bold text-slate-900">
+                      সাবজোন: <span className="text-cyan-500">{plotData.properties?.rajukSubzone || plotData.properties?.rajuk_subzone || "অজানা"}</span>
                     </div>
                   </div>
                 </div>
@@ -167,14 +167,14 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
         <div className="row g-3">
           {/* Flood Warning */}
           <div className="col-md-6">
-            <div className={`h-100 p-3 rounded-4 border ${isFloodProne ? 'border-danger bg-danger bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`}>
-              <div className="d-flex align-items-start">
-                <Waves size={24} className={`me-3 mt-1 ${isFloodProne ? 'text-danger' : 'text-success'}`} />
+            <div className={`h-full p-6 rounded-xl border ${isFloodProne ? 'border-danger bg-red-600 bg-opacity-10' : 'border-success bg-green-600 bg-opacity-10'}`}>
+              <div className="flex items-start">
+                <Waves size={24} className={`mr-4 mt-1 ${isFloodProne ? 'text-danger' : 'text-success'}`} />
                 <div>
-                  <h6 className={`fw-bold mb-1 ${isFloodProne ? 'text-danger' : 'text-success'}`}>
+                  <h6 className={`font-bold mb-1 ${isFloodProne ? 'text-danger' : 'text-success'}`}>
                     {isFloodProne ? "বন্যা প্লাবন এলাকা / জলাশয়" : "বন্যা ঝুঁকি মুক্ত"}
                   </h6>
-                  <p className="small text-muted mb-0">
+                  <p className="text-sm text-slate-500 mb-0">
                     {isFloodProne 
                       ? "সতর্কতা: এই জমিটি ড্যাপ এর বন্যা প্লাবন বা জলাশয় জোনে অবস্থিত। এখানে স্থাপনা নির্মাণ নিষিদ্ধ হতে পারে!" 
                       : "জমিটি রাজউকের বন্যা প্লাবন এলাকার বাইরে অবস্থিত।"}
@@ -186,14 +186,14 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
 
           {/* Road Warning */}
           <div className="col-md-6">
-            <div className={`h-100 p-3 rounded-4 border ${hasRoads ? 'border-warning bg-warning bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`}>
-              <div className="d-flex align-items-start">
-                <ShieldAlert size={24} className={`me-3 mt-1 ${hasRoads ? 'text-warning' : 'text-success'}`} />
+            <div className={`h-full p-6 rounded-xl border ${hasRoads ? 'border-warning bg-yellow-500 bg-opacity-10' : 'border-success bg-green-600 bg-opacity-10'}`}>
+              <div className="flex items-start">
+                <ShieldAlert size={24} className={`mr-4 mt-1 ${hasRoads ? 'text-warning' : 'text-success'}`} />
                 <div>
-                  <h6 className={`fw-bold mb-1 ${hasRoads ? 'text-warning' : 'text-success'}`}>
+                  <h6 className={`font-bold mb-1 ${hasRoads ? 'text-warning' : 'text-success'}`}>
                     {hasRoads ? "প্রস্তাবিত সড়ক অধিগ্রহণ" : "সড়ক অধিগ্রহণ মুক্ত"}
                   </h6>
-                  <p className="small text-muted mb-0">
+                  <p className="text-sm text-slate-500 mb-0">
                     {hasRoads 
                       ? "সতর্কতা: রাজউকের প্রস্তাবিত সড়ক এই জমির উপর বা পাশ দিয়ে অতিক্রম করেছে!" 
                       : "এই জমিতে রাজউকের নতুন কোনো সড়কের প্রস্তাবনা নেই।"}
@@ -209,12 +209,12 @@ export default function RajukIntelligenceReport({ plotData }: IntelligenceProps)
             plotData.properties?.hatirjheelSpecialArea === 'Yes' || plotData.properties?.hatirjheel_special_area === 'Yes' ||
             plotData.properties?.hazaribagRegenerationSite === 'Yes' || plotData.properties?.hazaribag_regeneration_site === 'Yes') && (
             <div className="col-md-12">
-              <div className="h-100 p-3 rounded-4 border border-danger bg-danger bg-opacity-10">
-                <div className="d-flex align-items-start">
-                  <AlertOctagon size={24} className="me-3 mt-1 text-danger" />
+              <div className="h-full p-6 rounded-xl border border-red-600 bg-red-600 bg-opacity-10">
+                <div className="flex items-start">
+                  <AlertOctagon size={24} className="mr-4 mt-1 text-red-600" />
                   <div>
-                    <h6 className="fw-bold mb-1 text-danger">বিশেষ সংরক্ষিত এলাকা</h6>
-                    <ul className="small text-danger mb-0 ps-3">
+                    <h6 className="font-bold mb-1 text-red-600">বিশেষ সংরক্ষিত এলাকা</h6>
+                    <ul className="text-sm text-red-600 mb-0 pl-4">
                       {(plotData.properties?.heritageSite === 'Yes' || plotData.properties?.heritage_site === 'Yes') && <li>হেরিটেজ সাইট (Heritage Site)</li>}
                       {(plotData.properties?.kpiPolygon === 'Yes' || plotData.properties?.kpi_polygon === 'Yes') && <li>কেপিআই (KPI / Key Point Installation) এলাকা</li>}
                       {(plotData.properties?.hatirjheelSpecialArea === 'Yes' || plotData.properties?.hatirjheel_special_area === 'Yes') && <li>হাতিরঝিল বিশেষ এলাকা</li>}

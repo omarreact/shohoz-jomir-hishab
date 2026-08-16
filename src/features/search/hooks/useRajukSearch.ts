@@ -16,7 +16,7 @@ export const useRajukSearch = () => {
 
       try {
         const url = new URL("/api/unified", window.location.origin);
-        url.searchParams.append("include", "location");
+        url.searchParams.append("include", "mouzas");
         url.searchParams.append("where", where);
         url.searchParams.append("outFields", outField);
         url.searchParams.append("returnGeometry", "false");
@@ -25,10 +25,10 @@ export const useRajukSearch = () => {
         const res = await fetch(url.toString());
         const json = await res.json();
         
-        if (!json.success || !json.data.location) throw new Error();
+        if (!json.success || !json.data.mouzas) throw new Error();
         
         const camelOutField = outField.replace(/_([a-z0-9])/g, (g) => g[1].toUpperCase());
-        const results = json.data.location
+        const results = json.data.mouzas
           .map((f: any) => f.properties[camelOutField] || f.properties[outField])
           .filter(Boolean);
         

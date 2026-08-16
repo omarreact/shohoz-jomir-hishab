@@ -7,6 +7,7 @@ import {
   Hash,
   Database,
   Info,
+  X,
 } from "lucide-react";
 import { useRajukSearch, LAYER1_FIELDS } from "@/src/features/search/hooks/useRajukSearch";
 import { engToBdNum } from "@/src/features/search/utils/formatters";
@@ -22,6 +23,8 @@ export default function DapSearchWizard({
 }: WizardProps) {
   const { fetchLocation, smartSearch } = useRajukSearch();
 
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const [districts, setDistricts] = useState<string[]>([]);
   const [thanas, setThanas] = useState<string[]>([]);
   const [mouzas, setMouzas] = useState<string[]>([]);
@@ -37,11 +40,12 @@ export default function DapSearchWizard({
   >("idle");
 
   useEffect(() => {
+    if (!isExpanded) return;
     (async () => {
       const dists = await fetchLocation("1=1", LAYER1_FIELDS.DIST);
       setDistricts(dists);
     })();
-  }, [fetchLocation]);
+  }, [fetchLocation, isExpanded]);
 
   const handleDistChange = async (val: string) => {
     setSelectedDist(val);
@@ -144,6 +148,7 @@ export default function DapSearchWizard({
 
         setSearchStatus("idle");
         onPlotSelected(enhanced);
+        setIsExpanded(false); // Collapse on success
       } else {
         setSearchStatus("error");
       }
@@ -155,9 +160,30 @@ export default function DapSearchWizard({
 
   const isDropdownLoading = searchStatus === "loading" && !dagNo;
 
+  if (!isExpanded) {
+    return (
+      <button 
+        onClick={() => setIsExpanded(true)}
+        className="bg-white rounded-sm shadow-sm flex items-center justify-between px-3 py-2 text-slate-500 w-full border"
+        style={{ minWidth: "260px", textAlign: "left", borderColor: "#cbd5e1" }}
+      >
+        <span>Search Plot, Mouza (e.g...</span>
+        <Search size={16} className="text-slate-500 ml-2 shrink-0" />
+      </button>
+    );
+  }
+
   return (
-    <div className="card-new overflow-hidden">
-      <div className="bg-[var(--accent)] text-[var(--bg)] p-4 text-center">
+    <div className="card-new overflow-hidden shadow-lg relative">
+      <button 
+        aria-label="Close search wizard"
+        onClick={() => setIsExpanded(false)}
+        className="absolute border-0 bg-transparent text-white cursor-pointer hover:opacity-75 transition-opacity"
+        style={{ top: "10px", right: "10px", zIndex: 10 }}
+      >
+        <X size={20} />
+      </button>
+      <div className="bg-[#006a4e] text-white p-6 text-center">
         <h5 className="font-bold mb-1 flex items-center justify-center">
           <Database size={20} className="mr-2 text-yellow-300" />
           রাজউক মাস্টারপ্ল্যান (DAP) ডাটাবেস
@@ -167,14 +193,14 @@ export default function DapSearchWizard({
         </small>
       </div>
 
-      <div className="p-4 md:p-6 bg-[var(--bg)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="p-6 md:p-6 bg-slate-50 dark:bg-slate-950">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+            <label className="block text-slate-500 dark:text-slate-400 text-sm font-bold mb-2">
               ১. জেলা
             </label>
             <select
-              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] transition-colors shadow-sm"
               value={selectedDist}
               onChange={(e) => handleDistChange(e.target.value)}
               disabled={districts.length === 0}
@@ -191,11 +217,11 @@ export default function DapSearchWizard({
           </div>
 
           <div>
-            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+            <label className="block text-slate-500 dark:text-slate-400 text-sm font-bold mb-2">
               ২. থানা
             </label>
             <select
-              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] transition-colors shadow-sm"
               value={selectedThana}
               onChange={(e) => handleThanaChange(e.target.value)}
               disabled={thanas.length === 0 || isDropdownLoading}
@@ -210,11 +236,11 @@ export default function DapSearchWizard({
           </div>
 
           <div>
-            <label className="block text-[var(--text-secondary)] text-sm font-bold mb-2">
+            <label className="block text-slate-500 dark:text-slate-400 text-sm font-bold mb-2">
               ৩. মৌজা
             </label>
             <select
-              className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] transition-colors shadow-sm"
               value={selectedMouza}
               onChange={(e) => handleMouzaChange(e.target.value)}
               disabled={mouzas.length === 0 || isDropdownLoading}
@@ -229,11 +255,11 @@ export default function DapSearchWizard({
           </div>
 
           <div>
-            <label className="block text-[var(--text-primary)] text-sm font-bold mb-2">
+            <label className="block text-slate-900 dark:text-white text-sm font-bold mb-2">
               ৪. দাগের ধরন
             </label>
             <select
-              className="w-full bg-[var(--surface)] border-2 border-[var(--text-primary)] text-[var(--text-primary)] font-bold rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/30 transition-colors shadow-sm"
+              className="w-full bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-white text-slate-900 dark:text-white font-bold rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-slate-900/30 dark:focus:ring-white/30 transition-colors shadow-sm"
               value={selectedType}
               onChange={(e) => {
                 setSelectedType(e.target.value);
@@ -250,17 +276,18 @@ export default function DapSearchWizard({
         </div>
 
         {selectedType && (
-          <div className="mt-4 fade-in visible">
-            <label className="block text-[var(--text-primary)] font-bold mb-3">
+          <div className="mt-6 fade-in visible">
+            <label className="block text-slate-900 dark:text-white font-bold mb-6">
               ৫. দাগ নম্বর লিখুন:
             </label>
-            <div className="flex rounded-xl overflow-hidden shadow-sm border border-[var(--border)] focus-within:border-[var(--accent)] transition-colors">
-              <span className="bg-[var(--surface)] border-r border-[var(--border)] px-4 flex items-center justify-center">
-                <Hash size={20} className="text-[var(--text-secondary)]" />
+            <div className="flex rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 focus-within:border-[#006a4e] transition-colors">
+              <span className="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 px-4 flex items-center justify-center">
+                <Hash size={20} className="text-slate-500 dark:text-slate-400" />
               </span>
               <input
                 type="text"
-                className="flex-1 bg-[var(--bg)] text-[var(--text-primary)] font-bold px-4 py-3 outline-none min-w-0"
+                aria-label="দাগ নম্বর লিখুন"
+                className="flex-1 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold px-4 py-3 outline-none min-w-0"
                 placeholder="যেমন: ১২৩ বা 123"
                 value={dagNo}
                 onChange={(e) => {
@@ -273,12 +300,12 @@ export default function DapSearchWizard({
                 disabled={searchStatus === "loading"}
               />
               <button
-                className="bg-[var(--accent)] text-[var(--bg)] font-bold px-6 py-3 disabled:opacity-50 flex items-center justify-center shrink-0"
+                className="bg-[#006a4e] text-white font-bold px-6 py-3 disabled:opacity-50 flex items-center justify-center shrink-0"
                 onClick={handleSearch}
                 disabled={!dagNo.trim() || searchStatus === "loading"}
               >
                 {searchStatus === "loading" ? (
-                  <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin"></span>
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 ) : (
                   <>
                     <Search size={18} className="mr-2 hidden sm:block" /> সার্চ
@@ -290,15 +317,15 @@ export default function DapSearchWizard({
         )}
 
         {isDropdownLoading && (
-          <div className="text-center text-[var(--accent)] font-bold mt-4 text-sm flex items-center justify-center">
-            <span className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mr-2" />
+          <div className="text-center text-[#006a4e] font-bold mt-6 text-sm flex items-center justify-center">
+            <span className="w-4 h-4 border-2 border-[#006a4e] border-t-transparent rounded-full animate-spin mr-2" />
             ডাটা লোড হচ্ছে...
           </div>
         )}
 
         {searchStatus === "error" && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl p-3 mt-4 text-sm flex items-start fade-in visible">
-            <Info size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+          <div className="bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl p-6 mt-6 text-sm flex items-start fade-in visible">
+            <Info size={18} className="mr-2 shrink-0 mt-0.5" />
             <div>
               দাগটি পাওয়া যায়নি। নম্বরটি সঠিক কিনা যাচাই করুন।
             </div>

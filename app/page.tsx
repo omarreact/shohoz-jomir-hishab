@@ -25,33 +25,25 @@ export default function HomePage() {
       <HeroSection />
 
       {/* 2. Service Cards / Features */}
-      <div className="bg-alt-1">
-        <ServicesSection />
-      </div>
+      <ServicesSection />
 
       {/* 3. Interactive Map Preview / Search */}
       <MapPreviewSection />
 
       {/* 4. Statistics */}
-      <div className="bg-alt-1">
-        <StatisticsSection />
-      </div>
+      <StatisticsSection />
 
       {/* 5. How It Works */}
       <HowItWorksSection />
 
       {/* 6. Blog Preview */}
-      <div className="bg-alt-2">
-        <BlogPreviewSection />
-      </div>
+      <BlogPreviewSection />
 
       {/* 7. FAQ */}
       <FaqSection />
 
       {/* 8. Contact Form */}
-      <div className="bg-alt-1">
-        <ContactSection />
-      </div>
+      <ContactSection />
     </div>
   );
 }

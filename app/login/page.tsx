@@ -58,21 +58,21 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] py-20 px-4 flex items-center justify-center fade-in visible">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-20 px-4 flex items-center justify-center fade-in visible">
       <div className="w-full max-w-md">
-        <div className="card-new p-8 md:p-10 border-t-4 border-t-[var(--accent)] relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-8 md:p-10 border-t-4 border-t-[#006a4e] relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            <Lock size={120} className="text-[var(--text-primary)]" />
+            <Lock size={120} className="text-slate-900 dark:text-white" />
           </div>
 
           <div className="relative z-10 text-center mb-8">
-            <div className="bg-[var(--accent)]/10 text-[var(--accent)] rounded-full inline-flex p-4 mb-4 shadow-sm">
+            <div className="bg-[#006a4e]/10 text-[#006a4e] rounded-full inline-flex p-4 mb-4 shadow-sm">
               <Lock size={32} />
             </div>
-            <h3 className="font-bold text-[var(--text-primary)] text-2xl mb-2">
+            <h3 className="font-bold text-slate-900 dark:text-white text-2xl mb-2">
               অ্যাডমিন লগিন
             </h3>
-            <p className="text-[var(--text-secondary)] font-medium">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
               শুধুমাত্র অনুমোদিত ইউজারদের জন্য
             </p>
           </div>
@@ -85,7 +85,7 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} className="space-y-5 relative z-10">
             <div>
-              <label className="block text-[var(--text-primary)] font-bold mb-2">
+              <label className="block text-slate-900 dark:text-white font-bold mb-2">
                 ইমেইল বা ইউজারনেম
               </label>
               <input
@@ -95,12 +95,12 @@ function LoginForm() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
-                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] transition-colors shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-[var(--text-primary)] font-bold mb-2">
+              <label className="block text-slate-900 dark:text-white font-bold mb-2">
                 পাসওয়ার্ড
               </label>
               <input
@@ -110,17 +110,17 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] transition-colors shadow-sm"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full cta-gradient text-[var(--bg)] font-bold rounded-xl px-4 py-3.5 shadow-md hover:-translate-y-0.5 transition-all flex justify-center items-center mt-4 disabled:opacity-70 disabled:hover:translate-y-0 text-lg"
+              className="w-full bg-[#006a4e] hover:bg-[#00523b] text-white font-bold rounded-xl px-4 py-3.5 shadow-md hover:-translate-y-0.5 transition-all flex justify-center items-center mt-4 disabled:opacity-70 disabled:hover:translate-y-0 text-lg"
             >
               {loading ? (
-                <span className="w-5 h-5 border-2 border-[var(--bg)] border-t-transparent rounded-full animate-spin" />
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   <LogIn size={20} className="mr-2" /> লগিন করুন
@@ -138,8 +138,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
-          <span className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+          <span className="w-8 h-8 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

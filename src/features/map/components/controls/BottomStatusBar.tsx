@@ -40,29 +40,28 @@ export function BottomStatusBar() {
     <div 
       role="contentinfo"
       aria-label="Map Status Bar"
-      className="position-absolute bottom-0 start-0 w-100 border-top border-secondary border-opacity-25 d-flex align-items-center justify-content-between px-3 z-3 animate-slide-up"
-      style={{ height: "32px", fontSize: "0.75rem", pointerEvents: "auto", userSelect: "none", backgroundColor: "var(--card-bg)" }}
+      className="absolute bottom-0 start-0 w-full border-t border-slate-500 border-opacity-25 flex items-center justify-between px-3 z-3 animate-slide-up bg-white dark:bg-slate-900"
     >
-      <div className="d-flex align-items-center gap-4 text-secondary fw-bold">
+      <div className="flex items-center gap-4 text-slate-500 font-bold">
         <button 
-          className="btn btn-link p-0 text-secondary text-decoration-none fw-bold d-flex align-items-center gap-1 hover-text-primary transition-colors"
+          className="text-blue-600 hover:underline bg-transparent border-0 p-0 text-slate-500 text-decoration-none font-bold flex items-center gap-1 hover-text-primary transition-colors"
           onClick={toggleFormat}
           title="Click to toggle DD/DMS"
           aria-label={`Current coordinates: ${displayCoords}. Click to toggle format.`}
         >
           <span>{displayCoords}</span>
         </button>
-        <div className="d-none d-md-block">
+        <div className="hidden d-md-block">
           Zoom: {zoom}
         </div>
-        <div className="d-none d-md-block">
+        <div className="hidden d-md-block">
           WGS 84
         </div>
       </div>
 
-      <div className="d-flex align-items-center gap-3 text-secondary fw-bold">
-        <span className="d-flex align-items-center gap-2">
-          <span className="spinner-grow spinner-grow-sm text-primary" style={{ width: "8px", height: "8px" }} />
+      <div className="flex items-center gap-3 text-slate-500 font-bold">
+        <span className="flex items-center gap-2">
+          <span className="spinner-grow spinner-grow-sm text-blue-600" style={{ width: "8px", height: "8px" }} />
           System Active
         </span>
       </div>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Layers } from "lucide-react";
 import dynamic from "next/dynamic";
 import LoadingSpinner from "@/src/shared/ui/LoadingSpinner";
+import { ChevronDown, Map as MapIcon } from "lucide-react";
 import DapSearchWizard from "@/src/features/map/components/DapSearchWizard";
 
-// Lazy load the heavy Leaflet map — never loaded until user selects a plots
+// Lazy load the heavy Leaflet map
 const FullDapMap = dynamic(() => import("@/src/features/map/components/FullDapMap"), {
   ssr: false,
   loading: () => <LoadingSpinner label="ম্যাপ লোড হচ্ছে..." size="lg" />,
@@ -14,51 +14,56 @@ const FullDapMap = dynamic(() => import("@/src/features/map/components/FullDapMa
 
 export default function DapMapPage() {
   const [selectedPlot, setSelectedPlot] = useState<any | null>(null);
-  const [showMap, setShowMap] = useState(false);
-
-  const handlePlotSelected = (plot: any) => {
-    setSelectedPlot(plot);
-    setShowMap(true);
-  };
 
   return (
-    <div className="d-flex flex-column" style={{ height: "calc(100vh - 75px)" }}>
-      {/* Top bar */}
-      <div className="bg-dark text-white p-2 px-3 d-flex align-items-center justify-content-between shadow-sm flex-shrink-0">
-        <h5 className="mb-0 d-flex align-items-center fw-bold" style={{ fontSize: 16 }}>
-          <Layers size={18} className="me-2 text-success" />
-          ফুল ড্যাপ ম্যাপ (Full DAP Map)
-        </h5>
-        <span className="badge bg-success bg-opacity-25 text-success rounded-pill px-3 py-2 border border-success border-opacity-25">
-          সম্পূর্ণ রাজউক ডেটাবেস সংযুক্ত
-        </span>
-      </div>
-
-      {/* Content area */}
-      <div className="flex-grow-1 d-flex flex-column bg-light">
-        {/* Fixed Search Wizard at the top */}
-        <div className="bg-white border-bottom shadow-sm z-1 position-relative" style={{ zIndex: 10 }}>
-          <div className="container-fluid py-3 px-4">
-            <DapSearchWizard onPlotSelected={handlePlotSelected} onMouzaSelected={handlePlotSelected} />
+    <div className="flex flex-col bg-slate-50 dark:bg-slate-950 w-full" style={{ height: "calc(100vh - 75px)", overflow: "hidden" }}>
+      {/* ── Official RAJUK Style Header ── */}
+      <div 
+        className="bg-white dark:bg-slate-900 px-4 md:px-6 flex items-center justify-between shrink-0 h-[60px] border-b border-slate-200 dark:border-slate-800 shadow-sm z-[1050]"
+      >
+        <div className="flex items-center h-full">
+          {/* Mock Logo / Branding */}
+          <div className="flex items-center justify-center border rounded-full border-blue-600/25 bg-slate-50 dark:bg-slate-800 w-10 h-10">
+            <MapIcon size={22} className="text-blue-600 dark:text-blue-500" />
+          </div>
+          <div className="ml-3 pl-3 border-l border-slate-200 dark:border-slate-700 h-full flex flex-col justify-center">
+            <h5 className="m-0 font-bold text-[#1e3a8a] dark:text-blue-400 text-lg leading-tight">
+              Masterplan, RAJUK
+            </h5>
+            <small className="text-slate-500 dark:text-slate-400 font-medium text-xs">
+              Detailed Area Plan 2022 - 2035
+            </small>
           </div>
         </div>
 
-        {/* Map Area */}
-        <div className="flex-grow-1 position-relative">
-          {!showMap ? (
-            <div className="d-flex flex-column align-items-center justify-content-center h-100 p-4 text-center">
-              <div className="badge bg-success bg-opacity-25 text-success rounded-pill px-3 py-2 mb-3 border border-success border-opacity-25">
-                Smart DAP Search
-              </div>
-              <h2 className="text-secondary fw-bolder mb-2">ম্যাপ দেখার জন্য একটি মৌজা নির্বাচন করুন</h2>
-              <p className="text-secondary opacity-75">
-                মৌজা নির্বাচন করলেই ম্যাপ স্বয়ংক্রিয়ভাবে লোড হবে এবং আপনি দাগ নম্বর দিয়ে খুঁজতে পারবেন।
-              </p>
-            </div>
-          ) : (
-            <FullDapMap initialData={selectedPlot} />
-          )}
+        <div className="flex items-center">
+          <button className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 flex items-center font-medium text-sm transition-colors">
+            Help <ChevronDown size={14} className="ml-1" />
+          </button>
         </div>
+      </div>
+
+      {/* ── Main Content Area ── */}
+      <div className="relative grow w-full">
+        <FullDapMap initialData={selectedPlot} />
+        
+        {/* ── Floating Search Wizard ── */}
+        <div 
+          className="absolute top-4 right-4 z-[1050] w-full max-w-[400px]"
+        >
+          <DapSearchWizard onPlotSelected={setSelectedPlot} onMouzaSelected={setSelectedPlot} />
+        </div>
+      </div>
+
+      {/* ── Official RAJUK Style Footer ── */}
+      <div 
+        className="bg-white dark:bg-slate-900 px-4 md:px-6 flex items-center justify-between shrink-0 h-[36px] border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 z-[1050]"
+      >
+        <span>© 2025 Rajuk</span>
+        <span className="flex items-center">
+          Developed by 
+          <strong className="ml-1 text-slate-900 dark:text-white">esri Bangladesh</strong>
+        </span>
       </div>
     </div>
   );

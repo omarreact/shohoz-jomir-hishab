@@ -14,15 +14,15 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       "rounded-2xl overflow-hidden relative transition-all duration-300";
 
     const variantClasses = {
-      default: "bg-card text-card-foreground border border-border shadow-md",
+      default: "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-sm",
       glass:
         "border border-white/10 shadow-md backdrop-blur-md bg-white/5",
-      outline: "border border-border bg-transparent",
+      outline: "border border-slate-200 dark:border-slate-800 bg-transparent",
       flat: "bg-transparent border-0",
     }[variant];
 
     const hoverClass = hoverEffect
-      ? "hover:-translate-y-1 hover:shadow-xl hover:border-[#f6c343]/30"
+      ? "hover:-translate-y-1 hover:shadow-md hover:border-[#006a4e]/30"
       : "";
 
     return (
@@ -45,7 +45,7 @@ export const CardHeader = React.forwardRef<
 >(({ className = "", children, ...props }, ref) => (
   <div
     ref={ref}
-    className={`p-4 border-b border-border flex flex-col space-y-1.5 ${className}`}
+    className={`p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col space-y-1.5 ${className}`}
     {...props}
   >
     {children}
@@ -59,7 +59,7 @@ export const CardTitle = React.forwardRef<
 >(({ className = "", children, ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-xl font-semibold leading-none tracking-tight ${className}`}
+    className={`text-xl font-semibold leading-none tracking-tight text-slate-900 dark:text-white ${className}`}
     {...props}
   >
     {children}
@@ -73,7 +73,7 @@ export const CardDescription = React.forwardRef<
 >(({ className = "", children, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-sm text-muted-foreground ${className}`}
+    className={`text-sm text-slate-500 dark:text-slate-400 ${className}`}
     {...props}
   >
     {children}
@@ -85,7 +85,7 @@ export const CardBody = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className = "", children, ...props }, ref) => (
-  <div ref={ref} className={`p-4 ${className}`} {...props}>
+  <div ref={ref} className={`p-4 md:p-6 ${className}`} {...props}>
     {children}
   </div>
 ));
@@ -100,7 +100,7 @@ export const CardFooter = React.forwardRef<
 >(({ className = "", children, ...props }, ref) => (
   <div
     ref={ref}
-    className={`p-4 border-t border-border flex items-center ${className}`}
+    className={`p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 flex items-center ${className}`}
     {...props}
   >
     {children}

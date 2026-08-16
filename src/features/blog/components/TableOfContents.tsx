@@ -19,9 +19,9 @@ export default function TableOfContents() {
 
   return (
     <div className="sticky top-24">
-      <div className="card-new overflow-hidden border-l-4 border-l-[var(--accent)]">
+      <div className="card-new overflow-hidden border-l-4 border-l-[#006a4e]">
         <div className="p-6">
-          <h5 className="font-bold mb-5 text-[var(--text-primary)] text-xl border-b border-[var(--border)] pb-3">সূচিপত্র</h5>
+          <h5 className="font-bold mb-5 text-slate-900 dark:text-white text-xl border-b border-slate-200 dark:border-slate-800 pb-3">সূচিপত্র</h5>
           <nav className="flex flex-col gap-2">
             {dummyHeaders.map((header) => (
               <a
@@ -29,8 +29,8 @@ export default function TableOfContents() {
                 href={`#${header.id}`}
                 className={`transition-colors p-3 rounded-lg font-medium ${
                   activeId === header.id 
-                  ? "bg-[var(--accent)]/10 text-[var(--accent)]" 
-                  : "text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text-primary)]"
+                  ? "bg-[#006a4e]/10 text-[#006a4e]" 
+                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:bg-slate-800 hover:text-slate-900 dark:text-white"
                 }`}
                 onClick={() => setActiveId(header.id)}
               >

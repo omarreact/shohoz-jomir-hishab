@@ -58,6 +58,11 @@ export class UnifiedGateway {
                    if (pathParts) {
                      this.providers[providerId] = new RajukFeatureProvider(api.name || providerId, pathParts);
                      
+                     // Skip restricted mapservers/feature servers known to fail without special auth
+                     if (pathParts.toLowerCase().includes("rajuk_smart_inspections")) {
+                       return;
+                     }
+                     
                      // Detect if this overrides a standard layer based on layerId and serviceName
                      if (api.serviceType === "FeatureServer") {
                        if (api.layerId === "0") rsOverrides["geometry"] = pathParts;

@@ -15,11 +15,7 @@ export function ToolButton({ icon, label, isActive, onClick, className = "" }: T
       title={label}
       aria-label={label}
       aria-pressed={isActive}
-      className={`btn d-flex align-items-center justify-content-center p-2 rounded-3 border-0 transition-colors transition-transform ${
-        isActive 
-          ? "bg-primary text-dark shadow-sm hover-shadow" 
-          : "bg-transparent text-white bg-opacity-10"
-      } ${className}`}
+      className={`flex items-center justify-center p-2 rounded-lg border-0 transition-colors transition-transform ${ isActive ? "bg-primary text-slate-900 shadow-sm hover-shadow" : "bg-transparent text-white bg-opacity-10" } ${className}`}
       style={{
         width: "40px",
         height: "40px",

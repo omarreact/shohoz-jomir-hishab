@@ -14,17 +14,17 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const isInvalid = !!error;
 
     return (
-      <div className={`mb-3 ${className}`}>
+      <div className={`mb-4 w-full ${className}`}>
         {label && (
-          <label htmlFor={inputId} className="form-label fw-medium text-body-secondary small mb-1">
+          <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             {label}
-            {props.required && <span className="text-danger ms-1">*</span>}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
         
-        <div className="position-relative">
+        <div className="relative">
           {leftIcon && (
-            <div className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
               {leftIcon}
             </div>
           )}
@@ -32,26 +32,30 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`form-control focus-ring transition-all ${leftIcon ? "ps-5" : ""} ${rightIcon ? "pe-5" : ""} ${isInvalid ? "is-invalid" : ""}`}
+            className={`flex h-10 w-full rounded-md border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors ${
+              isInvalid 
+                ? "border-red-500 focus-visible:ring-red-500/20" 
+                : "border-slate-200 dark:border-slate-800 focus-visible:border-[#006a4e] focus-visible:ring-[#006a4e]/20"
+            } ${leftIcon ? "pl-10" : ""} ${rightIcon ? "pr-10" : ""}`}
             aria-invalid={isInvalid}
             aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
             {...props}
           />
           
           {rightIcon && (
-            <div className="position-absolute top-50 end-0 translate-middle-y me-3 text-muted">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
               {rightIcon}
             </div>
           )}
         </div>
 
         {error && (
-          <div id={`${inputId}-error`} className="invalid-feedback d-block mt-1">
+          <div id={`${inputId}-error`} className="text-red-500 text-sm font-medium mt-1.5">
             {error}
           </div>
         )}
         {helperText && !error && (
-          <div id={`${inputId}-helper`} className="form-text mt-1">
+          <div id={`${inputId}-helper`} className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">
             {helperText}
           </div>
         )}

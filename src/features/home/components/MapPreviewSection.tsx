@@ -20,7 +20,7 @@ export default function MapPreviewSection() {
   };
 
   return (
-    <section id="search" className="py-24 relative bg-[var(--bg)]">
+    <section id="search" className="py-24 relative bg-white dark:bg-slate-950">
       {/* Background Pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none"
@@ -32,34 +32,34 @@ export default function MapPreviewSection() {
       ></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="bg-[var(--surface)] rounded-3xl border border-c p-8 md:p-12 shadow-2xl">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 md:p-12 shadow-2xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Form */}
             <div className={`fade-in ${isLoaded ? "visible" : ""}`}>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[var(--text-primary)]">
-                মৌজা ও খতিয়ান <span className="accent-text">অনুসন্ধান</span>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-900 dark:text-white">
+                মৌজা ও খতিয়ান <span className="text-[#006a4e]">অনুসন্ধান</span>
               </h2>
-              <p className="text-[var(--text-secondary)] mb-8 text-lg">
+              <p className="text-slate-500 dark:text-slate-400 mb-8 text-lg">
                 আপনার নির্দিষ্ট মৌজা এবং দাগ নম্বর দিয়ে বিস্তারিত খতিয়ান তথ্য খুঁজুন। সম্পূর্ণ বাংলাদেশের ম্যাপ ডাটাবেস।
               </p>
 
               <form onSubmit={handleSearch} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                    <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                       বিভাগ
                     </label>
-                    <select className="w-full bg-[var(--bg)] border border-c rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]">
+                    <select className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]">
                       <option>ঢাকা</option>
                       <option>চট্টগ্রাম</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                    <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                       জেলা
                     </label>
-                    <select className="w-full bg-[var(--bg)] border border-c rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]">
+                    <select className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]">
                       <option>ঢাকা</option>
                       <option>গাজীপুর</option>
                     </select>
@@ -67,19 +67,19 @@ export default function MapPreviewSection() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                  <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                     মৌজা / জে.এল নম্বর
                   </label>
                   <input
                     type="text"
                     placeholder="মৌজার নাম বা নম্বর লিখুন"
-                    className="w-full bg-[var(--bg)] border border-c rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full cta-gradient text-[var(--bg)] font-bold text-lg py-4 rounded-xl mt-4 hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
+                  className="w-full bg-[#006a4e] text-white font-bold text-lg py-4 rounded-xl mt-4 hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
                 >
                   <Search size={20} />
                   অনুসন্ধান করুন
@@ -89,7 +89,7 @@ export default function MapPreviewSection() {
 
             {/* Right Map Preview */}
             <div className={`fade-in lg:ml-auto w-full ${isLoaded ? "visible" : ""}`} style={{ transitionDelay: "200ms" }}>
-              <div className="relative rounded-2xl overflow-hidden border border-c shadow-lg aspect-[4/3] bg-[var(--bg)] group">
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg aspect-[4/3] bg-slate-100 dark:bg-slate-950 group">
                 {/* Fallback image if real map isn't rendering */}
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-80 group-hover:scale-105 transition-transform duration-700"
@@ -98,31 +98,31 @@ export default function MapPreviewSection() {
                       "url('https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop')",
                   }}
                 ></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface)] to-transparent opacity-90"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-90"></div>
 
                 {/* Map UI overlays */}
                 <div className="absolute inset-0 p-6 flex flex-col justify-between">
                   <div className="flex justify-end">
-                    <div className="bg-[var(--surface)] p-2 rounded-lg shadow-md border border-c">
-                      <Map className="text-[var(--text-primary)]" size={20} />
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-lg shadow-md border border-slate-200 dark:border-slate-800">
+                      <Map className="text-slate-900 dark:text-white" size={20} />
                     </div>
                   </div>
 
-                  <div className="card-new p-4 backdrop-blur-md bg-opacity-90 dark:bg-opacity-80">
+                  <div className="bg-white/90 dark:bg-slate-900/80 p-4 rounded-2xl backdrop-blur-md shadow-lg border border-slate-200 dark:border-slate-800">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-[var(--text-primary)] text-sm font-bold">
+                        <span className="text-slate-900 dark:text-white text-sm font-bold">
                           লাইভ ম্যাপ সার্ভার
                         </span>
                       </div>
-                      <span className="text-xs text-[var(--text-secondary)]">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         Syncing...
                       </span>
                     </div>
-                    <div className="w-full bg-[var(--border)] h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[var(--accent)] rounded-full animate-[progress_2s_ease-in-out_infinite]"
+                        className="h-full bg-[#006a4e] rounded-full animate-[progress_2s_ease-in-out_infinite]"
                         style={{ width: "60%" }}
                       ></div>
                     </div>

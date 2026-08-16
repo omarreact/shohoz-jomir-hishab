@@ -145,18 +145,18 @@ export default function SingleBlogPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-[var(--bg)] min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#006a4e]" />
       </div>
     );
   }
 
   if (errorMsg) {
     return (
-      <div className="bg-[var(--bg)] min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4">
         <h1 className="text-3xl font-bold text-red-500">ত্রুটি</h1>
-        <p className="text-[var(--text-secondary)]">{errorMsg}</p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[var(--accent)] hover:underline font-bold">
+        <p className="text-slate-500 dark:text-slate-400">{errorMsg}</p>
+        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-bold">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -165,10 +165,10 @@ export default function SingleBlogPage() {
 
   if (notFound || !post) {
     return (
-      <div className="bg-[var(--bg)] min-h-screen flex flex-col items-center justify-center gap-4">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">পোস্ট পাওয়া যায়নি</h1>
-        <p className="text-[var(--text-secondary)]">আপনার অনুরোধকৃত ব্লগ পোস্টটি খুঁজে পাওয়া যায়নি।</p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[var(--accent)] hover:underline font-bold">
+      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">পোস্ট পাওয়া যায়নি</h1>
+        <p className="text-slate-500 dark:text-slate-400">আপনার অনুরোধকৃত ব্লগ পোস্টটি খুঁজে পাওয়া যায়নি।</p>
+        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-bold">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -176,7 +176,7 @@ export default function SingleBlogPage() {
   }
 
   return (
-    <div className="bg-[var(--bg)] min-h-screen">
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen">
       <ReadingProgress />
 
       {/* Hero Banner */}
@@ -185,33 +185,33 @@ export default function SingleBlogPage() {
           className="absolute inset-0 w-full h-full opacity-20"
           style={{ backgroundImage: `url(${post.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
         />
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/80 to-transparent" />
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent" />
 
         <div className="max-w-4xl mx-auto px-4 relative z-10 text-center mt-10">
-          <Link href="/blog" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors mb-6 font-bold">
+          <Link href="/blog" className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#006a4e] transition-colors mb-6 font-bold">
             <ArrowLeft size={18} /> জার্নালে ফিরে যান
           </Link>
           <div className="mb-6">
-            <span className="bg-[var(--accent)] text-[var(--bg)] text-sm font-bold px-4 py-1.5 rounded-full shadow-md inline-block">
+            <span className="bg-[#006a4e] text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-md inline-block">
               {post.category}
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 mx-auto text-[var(--text-primary)] leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 mx-auto text-slate-900 dark:text-white leading-tight">
             {post.title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-[var(--text-secondary)] font-medium">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-slate-500 dark:text-slate-400 font-medium">
             <div className="flex items-center gap-3">
-              <div className="bg-[var(--border)] rounded-full w-10 h-10 flex-shrink-0" />
+              <div className="bg-slate-200 dark:bg-slate-800 rounded-full w-10 h-10 flex-shrink-0" />
               <div className="text-left">
-                <div className="font-bold text-[var(--text-primary)]">{post.author.name}</div>
+                <div className="font-bold text-slate-900 dark:text-white">{post.author.name}</div>
                 <div className="text-xs">{post.author.role}</div>
               </div>
             </div>
-            <div className="w-px h-8 bg-[var(--border)] hidden md:block" />
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden md:block" />
             <div>{post.date}</div>
-            <div className="w-px h-8 bg-[var(--border)] hidden md:block" />
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden md:block" />
             <div className="flex items-center gap-2">
-              <Clock size={18} className="text-[var(--accent)]" /> {post.readingTime}
+              <Clock size={18} className="text-[#006a4e]" /> {post.readingTime}
             </div>
           </div>
         </div>
@@ -222,30 +222,30 @@ export default function SingleBlogPage() {
           {/* Main Content */}
           <div className="lg:col-span-8 lg:col-start-1">
             <article
-              className="prose prose-lg prose-invert max-w-none prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--accent)] prose-strong:text-[var(--text-primary)] prose-li:text-[var(--text-secondary)]"
+              className="prose prose-lg prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-white prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-a:text-[#006a4e] prose-strong:text-slate-900 dark:prose-strong:text-white prose-li:text-slate-600 dark:prose-li:text-slate-400"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
             {/* Share and Tags */}
-            <div className="flex flex-col md:flex-row justify-between items-center py-6 mt-12 border-t border-b border-[var(--border)] gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-center py-6 mt-12 border-t border-b border-slate-200 dark:border-slate-800 gap-6">
               <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag, i) => (
-                  <span key={i} className="bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)] px-3 py-1 rounded-full text-sm font-medium">
+                  <span key={i} className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full text-sm font-medium">
                     {tag}
                   </span>
                 ))}
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-bold text-[var(--text-secondary)] text-sm uppercase tracking-wider">শেয়ার করুন:</span>
-                <button className="w-10 h-10 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400 hover:bg-blue-400/10 transition-colors">
+                <span className="font-bold text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">শেয়ার করুন:</span>
+                <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:border-blue-400 hover:bg-blue-400/10 transition-colors">
                   <Share2 size={18} />
                 </button>
-                <button className="w-10 h-10 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-green-400 hover:border-green-400 hover:bg-green-400/10 transition-colors">
+                <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-green-400 hover:border-green-400 hover:bg-green-400/10 transition-colors">
                   <MessageCircle size={18} />
                 </button>
                 <button
                   onClick={() => navigator.clipboard.writeText(window.location.href)}
-                  className="w-10 h-10 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors"
+                  className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-900 transition-colors"
                 >
                   <LinkIcon size={18} />
                 </button>
@@ -253,12 +253,12 @@ export default function SingleBlogPage() {
             </div>
 
             {/* Author Box */}
-            <div className="card-new my-12 p-8 flex flex-col md:flex-row gap-6 items-center md:items-start border-l-4 border-l-blue-500">
-              <div className="bg-[var(--border)] rounded-full w-24 h-24 flex-shrink-0" />
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm my-12 p-8 flex flex-col md:flex-row gap-6 items-center md:items-start border-l-4 border-l-blue-500">
+              <div className="bg-slate-200 dark:bg-slate-800 rounded-full w-24 h-24 flex-shrink-0" />
               <div className="text-center md:text-left">
-                <h4 className="text-2xl font-bold mb-1 text-[var(--text-primary)]">{post.author.name}</h4>
-                <p className="text-[var(--accent)] font-bold uppercase text-sm tracking-wider mb-4">{post.author.role}</p>
-                <p className="text-[var(--text-secondary)] mb-0 leading-relaxed text-lg">{post.excerpt}</p>
+                <h4 className="text-2xl font-bold mb-1 text-slate-900 dark:text-white">{post.author.name}</h4>
+                <p className="text-[#006a4e] font-bold uppercase text-sm tracking-wider mb-4">{post.author.role}</p>
+                <p className="text-slate-500 dark:text-slate-400 mb-0 leading-relaxed text-lg">{post.excerpt}</p>
               </div>
             </div>
 
@@ -268,7 +268,7 @@ export default function SingleBlogPage() {
 
             {relatedPosts.length > 0 && (
               <section className="mt-16">
-                <h4 className="text-2xl font-bold mb-6 text-[var(--text-primary)] border-l-4 border-[var(--accent)] pl-4">
+                <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
                   সম্পর্কিত পোস্ট
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -21,12 +21,9 @@ export function ReadingProgress() {
   }, []);
 
   return (
-    <div 
-      className="position-fixed top-0 start-0 w-100 z-3" 
-      style={{ height: "4px", backgroundColor: "var(--card-bg-secondary)" }}
-    >
+    <div className="fixed top-0 left-0 w-full z-[1030] h-1 bg-slate-200 dark:bg-slate-800">
       <div 
-        className="h-100 bg-primary transition-all" 
+        className="h-full bg-[#006a4e] transition-all duration-300 ease-out" 
         style={{ width: `${progress}%` }}
       />
     </div>

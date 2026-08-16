@@ -17,15 +17,15 @@ export default function ErrorBoundary({
   }, [error]);
 
   return (
-    <div className="bg-[var(--bg)] min-h-screen flex flex-col items-center justify-center gap-6 p-4 text-center">
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-6 p-4 text-center">
       <div className="bg-destructive/10 p-4 rounded-full">
         <AlertCircle className="w-12 h-12 text-destructive" />
       </div>
       <div className="max-w-md space-y-2">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
           কোথাও কোনো সমস্যা হয়েছে!
         </h2>
-        <p className="text-[var(--text-secondary)]">
+        <p className="text-slate-500 dark:text-slate-400">
           {error.message || "পেইজটি লোড করার সময় একটি ত্রুটি দেখা দিয়েছে।"}
         </p>
       </div>

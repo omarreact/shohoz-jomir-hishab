@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const limit = 20; // একবারে কয়টি ডাটা দেখাবে
 
   try {
-    const filePath = path.join(process.cwd(), "lib", "porcha.json");
+    const filePath = path.join(process.cwd(), "src", "modules", "porcha", "data", "porcha.json");
     const fileContents = fs.readFileSync(filePath, "utf8");
     const data = JSON.parse(fileContents);
 

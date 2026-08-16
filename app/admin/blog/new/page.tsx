@@ -97,8 +97,8 @@ export default function NewBlogPage() {
           </Button>
         </Link>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">নতুন ব্লগ</h2>
-          <p className="text-muted-foreground mt-1">একটি নতুন ব্লগ পোস্ট তৈরি করুন</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">নতুন ব্লগ</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">একটি নতুন ব্লগ পোস্ট তৈরি করুন</p>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export default function NewBlogPage() {
                       <FormLabel>বিভাগ (Category)</FormLabel>
                       <FormControl>
                         <select
-                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={field.value}
                           onChange={field.onChange}
                         >
@@ -210,13 +210,13 @@ export default function NewBlogPage() {
                   <FormItem>
                     <FormLabel>বিস্তারিত (Content)</FormLabel>
                     <FormControl>
-                      <div className="bg-background rounded-md [&_.ql-toolbar]:rounded-t-md [&_.ql-container]:rounded-b-md [&_.ql-toolbar]:border-border [&_.ql-container]:border-border [&_.ql-editor]:min-h-[400px]">
+                      <div className="bg-white dark:bg-slate-900 rounded-md [&_.ql-toolbar]:rounded-t-md [&_.ql-container]:rounded-b-md [&_.ql-toolbar]:border-slate-200 dark:[&_.ql-toolbar]:border-slate-800 [&_.ql-container]:border-slate-200 dark:[&_.ql-container]:border-slate-800 [&_.ql-editor]:min-h-[400px]">
                         <ReactQuill
                           theme="snow"
                           value={field.value}
                           onChange={field.onChange}
                           modules={modules}
-                          className="dark:text-foreground"
+                          className="text-slate-900 dark:text-white"
                         />
                       </div>
                     </FormControl>
@@ -225,8 +225,8 @@ export default function NewBlogPage() {
                 )}
               />
 
-              <div className="flex justify-end pt-4 border-t border-border">
-                <Button type="submit" disabled={isSubmitting} className="px-8">
+              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                <Button type="submit" disabled={isSubmitting} className="px-8 bg-[#006a4e] text-white hover:bg-[#00523b]">
                   {isSubmitting ? "সংরক্ষণ হচ্ছে..." : <><Save size={16} className="mr-2" /> সংরক্ষণ করুন</>}
                 </Button>
               </div>

@@ -20,7 +20,7 @@ export function BasemapSelectorPanel() {
       title="Basemaps" 
       icon={<Map size={18} />} 
       onClose={() => setActivePanel("none")}
-      className="position-absolute z-3"
+      className="absolute z-3"
       style={{
         top: "90px",
         left: "86px",
@@ -36,15 +36,13 @@ export function BasemapSelectorPanel() {
                 onClick={() => setActiveBasemap(basemap.id)}
                 aria-pressed={isActive}
                 aria-label={`Select ${basemap.displayName} basemap`}
-                className={`btn w-100 p-2 border rounded-3 transition-colors hover-shadow d-flex flex-column align-items-center gap-2 ${
-                  isActive ? "border-success bg-success bg-opacity-10" : "bg-white hover-bg-light"
-                }`}
+                className={`w-full p-2 border rounded-lg transition-colors hover-shadow flex flex-col items-center gap-2 ${ isActive ? "border-success bg-green-600 bg-opacity-10" : "bg-white hover-bg-light" }`}
                 style={{
                   height: "100px"
                 }}
               >
                 <div 
-                  className="w-100 rounded-2 flex-grow-1" 
+                  className="w-full rounded grow" 
                   style={{
                     background: "#e2e8f0", 
                     backgroundImage: `url(${basemap.id === 'satellite' ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3506/6166' : 'https://a.tile.openstreetmap.org/13/6166/3506.png'})`,
@@ -52,7 +50,7 @@ export function BasemapSelectorPanel() {
                     backgroundPosition: "center"
                   }}
                 />
-                <span className={`small fw-bold ${isActive ? "text-success" : "text-dark"}`}>
+                <span className={`text-sm font-bold ${isActive ? "text-success" : "text-dark"}`}>
                   {basemap.displayName}
                 </span>
               </button>

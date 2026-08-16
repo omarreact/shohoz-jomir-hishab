@@ -38,7 +38,7 @@ export function LayerManagerPanel() {
           const opacity = opacities[layer.id] ?? 1.0;
 
           return (
-            <div key={layer.id} className="p-3 rounded-3 border-0" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
+            <div key={layer.id} className="p-3 rounded-3 border-0 bg-slate-50 dark:bg-slate-950">
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <div className="d-flex align-items-center gap-2">
                   <button 

@@ -68,8 +68,8 @@ export default function BlogManagementPage() {
     <div className="space-y-6 fade-in visible">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">ব্লগ ম্যানেজমেন্ট</h2>
-          <p className="text-muted-foreground mt-2">আপনার ওয়েবসাইটের সমস্ত ব্লগ পোস্ট পরিচালনা করুন।</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">ব্লগ ম্যানেজমেন্ট</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">আপনার ওয়েবসাইটের সমস্ত ব্লগ পোস্ট পরিচালনা করুন।</p>
         </div>
         <Link href="/admin/blog/new">
           <Button className="flex items-center gap-2">
@@ -85,10 +85,10 @@ export default function BlogManagementPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#006a4e]"></div>
             </div>
           ) : blogs.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-border rounded-xl">
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
               কোনো ব্লগ পাওয়া যায়নি। নতুন ব্লগ তৈরি করুন।
             </div>
           ) : (
@@ -117,8 +117,8 @@ export default function BlogManagementPage() {
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             blog.status === "Published"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
                           }`}
                         >
                           {blog.status === "Published" ? "পাবলিশড" : "ড্রাফট"}

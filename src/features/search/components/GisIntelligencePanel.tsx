@@ -55,24 +55,17 @@ export default function GisIntelligencePanel() {
       role="dialog"
       aria-label="GIS Intelligence Panel"
       aria-hidden={!isOpen}
-      className={`position-absolute top-0 end-0 h-100 shadow-lg d-flex flex-column z-3 transition-transform`}
-      style={{ 
-        width: "400px",
-        transform: isOpen ? "translateX(0)" : "translateX(100%)",
-        borderLeft: "1px solid var(--border-color)",
-        backgroundColor: "var(--card-bg)",
-        pointerEvents: "auto"
-      }}
+      className={`${`absolute top-0 end-0 h-full shadow-lg flex flex-col z-3 transition-transform`} bg-white dark:bg-slate-900`}
     >
       {/* Header */}
-      <div className="p-3 border-bottom border-secondary border-opacity-25 d-flex align-items-center justify-content-between" style={{ backgroundColor: "var(--card-bg-secondary)" }} data-html2canvas-ignore>
-        <h6 className="fw-bold mb-0 d-flex align-items-center gap-2 text-white">
-          <Layers size={18} className="text-primary" />
+      <div className="p-6 border-b border-slate-500 border-opacity-25 flex items-center justify-between bg-slate-50 dark:bg-slate-950" data-html2canvas-ignore>
+        <h6 className="font-bold mb-0 flex items-center gap-2 text-white">
+          <Layers size={18} className="text-blue-600" />
           GIS Intelligence
         </h6>
-        <div className="d-flex gap-2">
+        <div className="flex gap-2">
           <button 
-            className="btn btn-sm btn-link text-secondary p-1 border-0 hover-text-primary transition-colors" 
+            className="px-3 py-1.5 text-sm text-blue-600 hover:underline bg-transparent border-0 text-slate-500 p-1 border-0 hover-text-primary transition-colors" 
             title="Download Report"
             onClick={handleDownloadReport}
             disabled={isDownloading}
@@ -80,7 +73,7 @@ export default function GisIntelligencePanel() {
             {isDownloading ? <div className="spinner-border spinner-border-sm" role="status"></div> : <Download size={16} />}
           </button>
           <button 
-            className="btn btn-sm btn-link text-secondary p-1 border-0 hover-text-primary transition-colors" 
+            className="px-3 py-1.5 text-sm text-blue-600 hover:underline bg-transparent border-0 text-slate-500 p-1 border-0 hover-text-primary transition-colors" 
             onClick={clearPopup}
             aria-label="Close Panel"
           >
@@ -90,84 +83,84 @@ export default function GisIntelligencePanel() {
       </div>
 
       {/* Body */}
-      <div className="flex-grow-1 overflow-hidden d-flex flex-column bg-transparent">
+      <div className="grow overflow-hidden flex flex-col bg-transparent">
         {isInferring ? (
-          <div className="d-flex flex-column align-items-center justify-content-center h-100 text-secondary animate-fade-in p-4 text-center">
-            <div className="spinner-border text-primary mb-3" role="status" aria-hidden="true" style={{ width: "2.5rem", height: "2.5rem", borderWidth: "0.2rem" }}></div>
-            <span className="fw-bold fs-6 text-white">Analyzing location...</span>
-            <span className="small mt-2 opacity-75">Querying spatial databases for plot, elevation, and facility data.</span>
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 animate-fade-in p-6 text-center">
+            <div className="spinner-border text-blue-600 mb-6" role="status" aria-hidden="true" style={{ width: "2.5rem", height: "2.5rem", borderWidth: "0.2rem" }}></div>
+            <span className="font-bold text-base text-white">Analyzing location...</span>
+            <span className="text-sm mt-2 opacity-75">Querying spatial databases for plot, elevation, and facility data.</span>
           </div>
         ) : (
           <>
             {/* Tabs */}
-            <div className="d-flex border-bottom border-secondary border-opacity-25" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
+            <div className="flex border-b border-slate-500 border-opacity-25 bg-slate-50 dark:bg-slate-950">
               <button 
-                className={`flex-grow-1 bg-transparent border-0 py-2 small fw-bold transition-colors ${activeTab === "overview" ? "text-primary border-bottom border-primary border-2" : "text-secondary hover-text-white"}`}
+                className={`grow bg-transparent border-0 py-2 text-sm font-bold transition-colors ${activeTab === "overview" ? "text-primary border-b border-blue-600 border-2" : "text-secondary hover-text-white"}`}
                 onClick={() => setActiveTab("overview")}
               >
-                <Info size={14} className="me-1" /> Overview
+                <Info size={14} className="mr-1" /> Overview
               </button>
               <button 
-                className={`flex-grow-1 bg-transparent border-0 py-2 small fw-bold transition-colors ${activeTab === "environment" ? "text-primary border-bottom border-primary border-2" : "text-secondary hover-text-white"}`}
+                className={`grow bg-transparent border-0 py-2 text-sm font-bold transition-colors ${activeTab === "environment" ? "text-primary border-b border-blue-600 border-2" : "text-secondary hover-text-white"}`}
                 onClick={() => setActiveTab("environment")}
               >
-                <TreePine size={14} className="me-1" /> Environment
+                <TreePine size={14} className="mr-1" /> Environment
               </button>
               <button 
-                className={`flex-grow-1 bg-transparent border-0 py-2 small fw-bold transition-colors ${activeTab === "facilities" ? "text-primary border-bottom border-primary border-2" : "text-secondary hover-text-white"}`}
+                className={`grow bg-transparent border-0 py-2 text-sm font-bold transition-colors ${activeTab === "facilities" ? "text-primary border-b border-blue-600 border-2" : "text-secondary hover-text-white"}`}
                 onClick={() => setActiveTab("facilities")}
               >
-                <Building2 size={14} className="me-1" /> Facilities
+                <Building2 size={14} className="mr-1" /> Facilities
               </button>
             </div>
 
-            <div className="flex-grow-1 overflow-auto p-3 text-white fade-in">
+            <div className="grow overflow-auto p-6 text-white fade-in">
               {/* Quick Actions (Always Visible at top of scroll) */}
-              <div className="d-flex gap-2 mb-3" data-html2canvas-ignore>
+              <div className="flex gap-2 mb-6" data-html2canvas-ignore>
                 <button 
-                  className="btn btn-outline-primary btn-sm flex-grow-1 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-1"
+                  className="border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1.5 text-sm grow rounded-pill font-bold flex items-center justify-center gap-1"
                   onClick={() => setIsShareOpen(true)}
                 >
                   <Share2 size={14} /> Share
                 </button>
-                <button className="btn btn-outline-secondary btn-sm flex-grow-1 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-1 text-white border-secondary border-opacity-25" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
+                <button className="border border-slate-500 text-slate-500 hover:bg-slate-500 hover:text-white px-3 py-1.5 text-sm grow rounded-pill font-bold flex items-center justify-center gap-1 text-white border-slate-500 border-opacity-25 bg-slate-50 dark:bg-slate-950">
                   <Bookmark size={14} /> Save
                 </button>
               </div>
 
               {/* OVERVIEW TAB */}
               {activeTab === "overview" && (
-                <div className="d-flex flex-column gap-3 animate-fade-in">
-                  <div className="card border border-secondary border-opacity-25 bg-transparent rounded-3 p-3 text-white">
-                    <div className="d-flex align-items-center gap-2 mb-2 text-primary fw-bold">
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="card border border-slate-500 border-opacity-25 bg-transparent rounded-lg p-6 text-white">
+                    <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold">
                       <MapPin size={16} /> Location Info
                     </div>
-                    <div className="d-flex justify-content-between align-items-center small mb-1">
-                      <span className="text-secondary">Coordinates</span>
-                      <span className="fw-bold user-select-all">
+                    <div className="flex justify-between items-center text-sm mb-1">
+                      <span className="text-slate-500">Coordinates</span>
+                      <span className="font-bold user-select-all">
                         {clickedPos?.lat.toFixed(6)}, {clickedPos?.lng.toFixed(6)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="card border-primary border-opacity-25 shadow-sm rounded-3 overflow-hidden bg-transparent text-white">
-                    <div className="card-header border-bottom border-secondary border-opacity-25 py-2" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
-                      <span className="fw-bold text-primary d-flex align-items-center gap-2">
+                  <div className="card border-blue-600 border-opacity-25 shadow-sm rounded-lg overflow-hidden bg-transparent text-white">
+                    <div className="card-header border-b border-slate-500 border-opacity-25 py-2 bg-slate-50 dark:bg-slate-950">
+                      <span className="font-bold text-blue-600 flex items-center gap-2">
                         <Navigation size={14} /> RS / General Plot
                       </span>
                     </div>
-                    <div className="card-body p-3 bg-transparent">
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="text-secondary small fw-bold">Plot Number</span>
-                        <span className="fw-bold">{toBn(rsPlot)}</span>
+                    <div className="card-body p-6 bg-transparent">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-slate-500 text-sm font-bold">Plot Number</span>
+                        <span className="font-bold">{toBn(rsPlot)}</span>
                       </div>
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="text-secondary small fw-bold">Area (Acre)</span>
-                        <span className="fw-bold">{toBn(rsArea)}</span>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-slate-500 text-sm font-bold">Area (Acre)</span>
+                        <span className="font-bold">{toBn(rsArea)}</span>
                       </div>
-                      <div className="d-flex justify-content-between">
-                        <span className="text-secondary small fw-bold">Mouza</span>
-                        <span className="fw-bold text-end text-truncate" style={{maxWidth: "150px"}}>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 text-sm font-bold">Mouza</span>
+                        <span className="font-bold text-right text-truncate" style={{maxWidth: "150px"}}>
                           {toBn(rsData?.mauza || "N/A")}
                         </span>
                       </div>
@@ -178,55 +171,55 @@ export default function GisIntelligencePanel() {
 
               {/* ENVIRONMENT TAB */}
               {activeTab === "environment" && (
-                <div className="d-flex flex-column gap-3 animate-fade-in">
-                  <div className="card border-info border-opacity-25 shadow-sm rounded-3 overflow-hidden bg-transparent text-white">
-                    <div className="card-header border-bottom border-secondary border-opacity-25 py-2" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
-                      <span className="fw-bold text-info d-flex align-items-center gap-2">
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="card border-cyan-500 border-opacity-25 shadow-sm rounded-lg overflow-hidden bg-transparent text-white">
+                    <div className="card-header border-b border-slate-500 border-opacity-25 py-2 bg-slate-50 dark:bg-slate-950">
+                      <span className="font-bold text-cyan-500 flex items-center gap-2">
                         <Layers size={14} /> DAP Details
                       </span>
                     </div>
-                    <div className="card-body p-3 bg-transparent">
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="text-secondary small fw-bold">Landuse</span>
-                        <span className="fw-bold">{landuseType}</span>
+                    <div className="card-body p-6 bg-transparent">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-slate-500 text-sm font-bold">Landuse</span>
+                        <span className="font-bold">{landuseType}</span>
                       </div>
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="text-secondary small fw-bold">DAP Zone</span>
-                        <span className="fw-bold text-end" style={{maxWidth: "150px"}}>{dapZone}</span>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-slate-500 text-sm font-bold">DAP Zone</span>
+                        <span className="font-bold text-right" style={{maxWidth: "150px"}}>{dapZone}</span>
                       </div>
-                      <div className="d-flex justify-content-between">
-                        <span className="text-secondary small fw-bold">F.A.R.</span>
-                        <span className="fw-bold">{far}</span>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 text-sm font-bold">F.A.R.</span>
+                        <span className="font-bold">{far}</span>
                       </div>
                     </div>
                   </div>
 
                   {floodData && (
-                    <div className="card border-warning border-opacity-25 shadow-sm rounded-3 overflow-hidden bg-transparent text-white">
-                      <div className="card-header border-bottom border-secondary border-opacity-25 py-2" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
-                        <span className="fw-bold text-warning d-flex align-items-center gap-2">
+                    <div className="card border-yellow-500 border-opacity-25 shadow-sm rounded-lg overflow-hidden bg-transparent text-white">
+                      <div className="card-header border-b border-slate-500 border-opacity-25 py-2 bg-slate-50 dark:bg-slate-950">
+                        <span className="font-bold text-yellow-500 flex items-center gap-2">
                           <Layers size={14} /> Flood Flow Zone
                         </span>
                       </div>
-                      <div className="card-body p-3 bg-transparent">
-                        <div className="d-flex justify-content-between">
-                          <span className="text-secondary small fw-bold">Zone Type</span>
-                          <span className="fw-bold">{floodData.zone || "N/A"}</span>
+                      <div className="card-body p-6 bg-transparent">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 text-sm font-bold">Zone Type</span>
+                          <span className="font-bold">{floodData.zone || "N/A"}</span>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="card border-success border-opacity-25 shadow-sm rounded-3 overflow-hidden bg-transparent text-white">
-                    <div className="card-header border-bottom border-secondary border-opacity-25 py-2" style={{ backgroundColor: "var(--card-bg-secondary)" }}>
-                      <span className="fw-bold text-success d-flex align-items-center gap-2">
+                  <div className="card border-green-600 border-opacity-25 shadow-sm rounded-lg overflow-hidden bg-transparent text-white">
+                    <div className="card-header border-b border-slate-500 border-opacity-25 py-2 bg-slate-50 dark:bg-slate-950">
+                      <span className="font-bold text-green-600 flex items-center gap-2">
                         <TreePine size={14} /> Terrain
                       </span>
                     </div>
-                    <div className="card-body p-3 bg-transparent">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-secondary small fw-bold">Elevation</span>
-                        <span className="fw-bold">
+                    <div className="card-body p-6 bg-transparent">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 text-sm font-bold">Elevation</span>
+                        <span className="font-bold">
                           {elevation !== null ? `${elevation.toFixed(2)}m` : "Loading..."}
                         </span>
                       </div>
@@ -237,13 +230,13 @@ export default function GisIntelligencePanel() {
 
               {/* FACILITIES TAB (Placeholder for Phase 7 implementation) */}
               {activeTab === "facilities" && (
-                <div className="d-flex flex-column gap-3 animate-fade-in">
-                  <div className="card border border-secondary border-opacity-25 bg-transparent rounded-3 p-3 text-center py-5">
-                    <Building2 size={32} className="mx-auto text-secondary mb-3 opacity-50" />
-                    <h6 className="text-white fw-bold mb-1">Nearby Points of Interest</h6>
-                    <p className="text-secondary small mb-0">Querying nearby schools, hospitals, and infrastructure...</p>
-                    <div className="mt-3">
-                      <span className="badge bg-secondary bg-opacity-25 text-white border border-secondary border-opacity-50 me-2">Coming Soon</span>
+                <div className="flex flex-col gap-3 animate-fade-in">
+                  <div className="card border border-slate-500 border-opacity-25 bg-transparent rounded-lg p-6 text-center py-5">
+                    <Building2 size={32} className="mx-auto text-slate-500 mb-6 opacity-50" />
+                    <h6 className="text-white font-bold mb-1">Nearby Points of Interest</h6>
+                    <p className="text-slate-500 text-sm mb-0">Querying nearby schools, hospitals, and infrastructure...</p>
+                    <div className="mt-6">
+                      <span className="badge bg-slate-500 bg-opacity-25 text-white border border-slate-500 border-opacity-50 mr-2">Coming Soon</span>
                     </div>
                   </div>
                 </div>

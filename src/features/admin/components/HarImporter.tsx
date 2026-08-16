@@ -378,18 +378,18 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
   });
 
   return (
-    <div className="card-new mt-8">
-      <div className="p-6 md:p-8 border-b border-[var(--border)]">
-        <h5 className="font-bold text-xl text-[var(--text-primary)] mb-2 flex items-center">
-          <FileJson size={24} className="mr-3 text-[var(--accent)]" />
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm mt-8">
+      <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-800">
+        <h5 className="font-bold text-xl text-slate-900 dark:text-white mb-2 flex items-center">
+          <FileJson size={24} className="mr-3 text-[#006a4e]" />
           RAJUK HAR ফাইল ইমপোর্ট
         </h5>
-        <p className="text-sm text-[var(--text-secondary)] mb-6">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
           ব্রাউজার থেকে এক্সপোর্ট করা .har ফাইল আপলোড করে RAJUK API এবং টোকেন আবিষ্কার করুন।
         </p>
 
         {!summary && (
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-xl p-10 bg-[var(--surface)] transition-colors hover:border-[var(--accent)] cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-10 bg-slate-50 dark:bg-slate-950 transition-colors hover:border-[#006a4e] cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -397,9 +397,9 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
               onChange={handleFileChange} 
               className="hidden" 
             />
-            <Upload size={40} className="text-[var(--text-secondary)] mb-4" />
-            <h6 className="font-bold text-lg mb-2 text-[var(--text-primary)]">হার ফাইল নির্বাচন করুন</h6>
-            <p className="text-sm text-[var(--text-secondary)] text-center max-w-md">
+            <Upload size={40} className="text-slate-500 dark:text-slate-400 mb-4" />
+            <h6 className="font-bold text-lg mb-2 text-slate-900 dark:text-white">হার ফাইল নির্বাচন করুন</h6>
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center max-w-md">
               {file ? file.name : "ক্লিক করে অথবা ড্র্যাগ-এন্ড-ড্রপ করে ফাইল নির্বাচন করুন। (Max: 50MB)"}
             </p>
             {error && (
@@ -411,7 +411,7 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
             <button 
               onClick={(e) => { e.stopPropagation(); parseHarFile(); }} 
               disabled={!file || isParsing}
-              className="mt-6 bg-[var(--text-primary)] text-[var(--bg)] font-bold rounded-xl px-6 py-3 shadow-md hover:-translate-y-0.5 transition-transform flex justify-center items-center disabled:opacity-50 disabled:hover:translate-y-0"
+              className="mt-6 bg-[#006a4e] text-white hover:bg-[#00523b] font-bold rounded-xl px-6 py-3 shadow-md hover:-translate-y-0.5 transition-transform flex justify-center items-center disabled:opacity-50 disabled:hover:translate-y-0"
             >
               {isParsing ? <><Loader2 size={18} className="animate-spin mr-2" /> ফাইল বিশ্লেষণ হচ্ছে...</> : "হার ফাইল বিশ্লেষণ করুন"}
             </button>
@@ -421,28 +421,28 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
 
       {summary && (
         <div className="p-6 md:p-8">
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 mb-8">
-            <h6 className="font-bold text-lg mb-4 border-b border-[var(--border)] pb-2 text-[var(--text-primary)]">HAR বিশ্লেষণ সম্পন্ন</h6>
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 mb-8">
+            <h6 className="font-bold text-lg mb-4 border-b border-slate-200 dark:border-slate-800 pb-2 text-slate-900 dark:text-white">HAR বিশ্লেষণ সম্পন্ন</h6>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="p-3 bg-[var(--bg)] rounded-lg">
-                <span className="block text-[var(--text-secondary)]">মোট Request</span>
-                <span className="font-bold text-lg text-[var(--text-primary)]">{summary.totalRequests}</span>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                <span className="block text-slate-500 dark:text-slate-400">মোট Request</span>
+                <span className="font-bold text-lg text-slate-900 dark:text-white">{summary.totalRequests}</span>
               </div>
-              <div className="p-3 bg-[var(--bg)] rounded-lg">
-                <span className="block text-[var(--text-secondary)]">RAJUK Request</span>
-                <span className="font-bold text-lg text-[var(--text-primary)]">{summary.rajukRequests}</span>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                <span className="block text-slate-500 dark:text-slate-400">RAJUK Request</span>
+                <span className="font-bold text-lg text-slate-900 dark:text-white">{summary.rajukRequests}</span>
               </div>
-              <div className="p-3 bg-[var(--bg)] rounded-lg">
-                <span className="block text-[var(--text-secondary)]">ArcGIS Service</span>
-                <span className="font-bold text-lg text-[var(--text-primary)]">{summary.arcgisServices}</span>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                <span className="block text-slate-500 dark:text-slate-400">ArcGIS Service</span>
+                <span className="font-bold text-lg text-slate-900 dark:text-white">{summary.arcgisServices}</span>
               </div>
-              <div className="p-3 bg-[var(--bg)] rounded-lg">
-                <span className="block text-[var(--text-secondary)]">Unique API</span>
-                <span className="font-bold text-lg text-[var(--text-primary)]">{summary.uniqueApis}</span>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                <span className="block text-slate-500 dark:text-slate-400">Unique API</span>
+                <span className="font-bold text-lg text-slate-900 dark:text-white">{summary.uniqueApis}</span>
               </div>
-              <div className="p-3 bg-[var(--bg)] rounded-lg">
-                <span className="block text-[var(--text-secondary)]">Token পাওয়া গেছে</span>
-                <span className="font-bold text-lg text-yellow-500">{summary.tokensFound}</span>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+                <span className="block text-slate-500 dark:text-slate-400">Token পাওয়া গেছে</span>
+                <span className="font-bold text-lg text-amber-500">{summary.tokensFound}</span>
               </div>
             </div>
             <button 
@@ -456,31 +456,31 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
           {/* Tokens Table */}
           {tokens.length > 0 && (
              <div className="mb-10">
-                <h6 className="font-bold text-xl mb-4 text-[var(--text-primary)] flex items-center border-b border-[var(--border)] pb-2">
-                   <Key size={20} className="mr-2 text-yellow-500" /> আবিষ্কৃত টোকেন
+                <h6 className="font-bold text-xl mb-4 text-slate-900 dark:text-white flex items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                   <Key size={20} className="mr-2 text-amber-500" /> আবিষ্কৃত টোকেন
                 </h6>
-                <div className="overflow-x-auto border border-[var(--border)] rounded-xl">
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
-                          <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Type</th>
-                          <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Host</th>
-                          <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Masked Token</th>
-                          <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Status</th>
-                          <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold text-right">Actions</th>
+                        <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                          <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Type</th>
+                          <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Host</th>
+                          <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Masked Token</th>
+                          <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Status</th>
+                          <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[var(--border)]">
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                         {tokens.map((token, idx) => (
-                           <tr key={idx} className="hover:bg-[var(--surface)]">
-                              <td className="px-4 py-3 text-sm font-bold">{token.type}</td>
-                              <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{token.host}</td>
-                              <td className="px-4 py-3 text-sm font-mono">{token.maskedToken}</td>
+                           <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-950">
+                              <td className="px-4 py-3 text-sm font-bold text-slate-900 dark:text-white">{token.type}</td>
+                              <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{token.host}</td>
+                              <td className="px-4 py-3 text-sm font-mono text-slate-900 dark:text-white">{token.maskedToken}</td>
                               <td className="px-4 py-3 text-sm">
                                 <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                  token.status === 'বৈধ' ? 'bg-green-500/20 text-green-500' :
-                                  token.status === 'অবৈধ' ? 'bg-red-500/20 text-red-500' :
-                                  'bg-yellow-500/20 text-yellow-500'
+                                  token.status === 'বৈধ' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                  token.status === 'অবৈধ' ? 'bg-red-500/20 text-red-600 dark:text-red-400' :
+                                  'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                 }`}>
                                   {token.status}
                                 </span>
@@ -489,13 +489,13 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
                                 <button 
                                   onClick={() => validateToken(token.id)}
                                   disabled={isValidatingToken === token.id}
-                                  className="px-3 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-bold hover:bg-[var(--bg)] disabled:opacity-50"
+                                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold hover:bg-white dark:hover:bg-slate-900 disabled:opacity-50 text-slate-900 dark:text-white"
                                 >
                                   {isValidatingToken === token.id ? 'যাচাই হচ্ছে...' : 'যাচাই করুন'}
                                 </button>
                                 <button 
                                   onClick={() => importToken(token.id)}
-                                  className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 shadow-sm"
+                                  className="px-3 py-1.5 bg-[#006a4e] text-white rounded-lg text-sm font-bold hover:bg-[#00523b] shadow-sm"
                                 >
                                   সংরক্ষণ করুন
                                 </button>
@@ -511,7 +511,7 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
           {/* APIs Table */}
           <div>
             <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
-              <h6 className="font-bold text-xl text-[var(--text-primary)] flex items-center">
+              <h6 className="font-bold text-xl text-slate-900 dark:text-white flex items-center">
                  <Database size={20} className="mr-2 text-blue-500" /> আবিষ্কৃত API
               </h6>
               <div className="flex items-center gap-3">
@@ -520,12 +520,12 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
                    placeholder="খুঁজুন..." 
                    value={search}
                    onChange={e => setSearch(e.target.value)}
-                   className="px-3 py-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)]"
+                   className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] text-slate-900 dark:text-white"
                  />
                  <select 
                    value={filter} 
                    onChange={e => setFilter(e.target.value)}
-                   className="px-3 py-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:border-[var(--accent)]"
+                   className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] text-slate-900 dark:text-white"
                  >
                    <option value="all">সব API</option>
                    <option value="arcgis">ArcGIS API</option>
@@ -534,63 +534,63 @@ export default function HarImporter({ onImportComplete }: { onImportComplete?: (
               </div>
             </div>
 
-            <div className="overflow-x-auto border border-[var(--border)] rounded-xl mb-4">
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl mb-4">
               <table className="w-full text-left border-collapse">
                  <thead>
-                   <tr className="bg-[var(--surface)] border-b border-[var(--border)]">
+                   <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                      <th className="px-4 py-3 w-10">
                        <input 
                          type="checkbox" 
                          checked={selectedApis.size === filteredApis.length && filteredApis.length > 0} 
                          onChange={(e) => e.target.checked ? selectAll() : clearSelection()} 
-                         className="rounded"
+                         className="rounded text-[#006a4e] focus:ring-[#006a4e]"
                        />
                      </th>
-                     <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">API নাম</th>
-                     <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Type</th>
-                     <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Auth</th>
-                     <th className="px-4 py-3 text-[var(--text-secondary)] text-xs uppercase font-bold">Status</th>
+                     <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">API নাম</th>
+                     <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Type</th>
+                     <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Auth</th>
+                     <th className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">Status</th>
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-[var(--border)]">
+                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                    {filteredApis.map(api => (
-                      <tr key={api.id} className="hover:bg-[var(--surface)] cursor-pointer" onClick={() => toggleApiSelection(api.id)}>
+                      <tr key={api.id} className="hover:bg-slate-50 dark:hover:bg-slate-950 cursor-pointer" onClick={() => toggleApiSelection(api.id)}>
                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                             <input 
                               type="checkbox" 
                               checked={selectedApis.has(api.id)}
                               onChange={() => toggleApiSelection(api.id)}
-                              className="rounded"
+                              className="rounded text-[#006a4e] focus:ring-[#006a4e]"
                             />
                          </td>
                          <td className="px-4 py-3">
-                           <div className="font-bold text-sm text-[var(--text-primary)]">{api.name}</div>
-                           <div className="text-xs text-[var(--text-secondary)] font-mono truncate max-w-sm mt-1">{api.url}</div>
+                           <div className="font-bold text-sm text-slate-900 dark:text-white">{api.name}</div>
+                           <div className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate max-w-sm mt-1">{api.url}</div>
                          </td>
-                         <td className="px-4 py-3 text-sm">{api.serviceType}</td>
+                         <td className="px-4 py-3 text-sm text-slate-900 dark:text-white">{api.serviceType}</td>
                          <td className="px-4 py-3 text-sm">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${api.requiresToken ? 'bg-yellow-500/20 text-yellow-600' : 'bg-green-500/20 text-green-500'}`}>
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${api.requiresToken ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
                                {api.requiresToken ? 'Token' : 'Public'}
                             </span>
                          </td>
-                         <td className="px-4 py-3 text-sm font-bold">{api.status}</td>
+                         <td className="px-4 py-3 text-sm font-bold text-slate-900 dark:text-white">{api.status}</td>
                       </tr>
                    ))}
                    {filteredApis.length === 0 && (
-                     <tr><td colSpan={5} className="text-center py-6 text-[var(--text-secondary)]">কোনো ডেটা পাওয়া যায়নি</td></tr>
+                     <tr><td colSpan={5} className="text-center py-6 text-slate-500 dark:text-slate-400">কোনো ডেটা পাওয়া যায়নি</td></tr>
                    )}
                  </tbody>
               </table>
             </div>
 
-            <div className="flex justify-between items-center bg-[var(--surface)] p-4 rounded-xl border border-[var(--border)]">
-              <span className="text-sm font-bold text-[var(--text-secondary)]">
+            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
                  নির্বাচিত: {selectedApis.size}
               </span>
               <button 
                 onClick={importSelected}
                 disabled={selectedApis.size === 0 || isImporting}
-                className="bg-[var(--text-primary)] text-[var(--bg)] px-5 py-2 rounded-lg font-bold shadow-sm hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center"
+                className="bg-[#006a4e] text-white hover:bg-[#00523b] px-5 py-2 rounded-lg font-bold shadow-sm hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center"
               >
                 {isImporting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                 নির্বাচিত API ইমপোর্ট করুন

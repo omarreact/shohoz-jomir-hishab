@@ -1,125 +1,91 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @theme {
   /* =========================================
-     LandBD 4.0 Design System Tokens
+     LANDBD_OLD Design System Tokens
      ========================================= */
 
-  /* Colors based on new theme variables */
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-accent: var(--accent);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-border-c: var(--border);
-  --color-info: var(--info);
-  --color-success: var(--success);
+  /* Base Brand Colors */
+  --color-bd-green: var(--bd-green);
+  --color-bd-red: var(--bd-red);
 
   /* Shadcn UI Default Theme Variables */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card-bg);
+  --color-popover-foreground: var(--foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-foreground: #ffffff;
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent-color: var(--accent-color);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--foreground);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-foreground: #ffffff;
   --color-border: var(--border-color);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-input: var(--border-color);
+  --color-ring: var(--primary);
 
-  /* Shadows */
-  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+  /* Shadows (LANDBD_OLD match) */
+  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
 
   /* Border Radius */
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 1rem; /* Bootstrap rounded-4 is usually 1rem */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
   /* Font Family */
-  --font-noto-bengali:
-    "Noto Sans Bengali", "Work Sans", "Hind Siliguri", "Geist Sans", sans-serif;
-  --font-work-sans: "Work Sans", "Noto Sans Bengali", sans-serif;
+  --font-tiro-bangla: "Tiro Bangla", serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-tiro-bangla); /* Default font to Tiro Bangla */
 }
 
 @layer base {
   :root {
-    /* Legacy LandBD Tokens */
-    --bg: #FFFFFF;
-    --surface: #F9FAFB;
-    --accent: #F6C343;
-    --text-primary: #0D1117;
-    --text-secondary: #6B7280;
-    --border: #E5E7EB;
-    --info: #3B82F6;
-    --success: #22C55E;
+    /* LANDBD_OLD Brand Tokens */
+    --bd-green: #006a4e;
+    --bd-red: #f42a41;
 
-    /* Shadcn Tokens */
-    --background: var(--bg);
-    --foreground: var(--text-primary);
-    --card: var(--surface);
-    --card-foreground: var(--text-primary);
-    --popover: var(--surface);
-    --popover-foreground: var(--text-primary);
-    --primary: var(--info);
-    --primary-foreground: #ffffff;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #0f172a;
-    --muted: #f1f5f9;
+    /* Light Theme (Extracted from LANDBD_OLD) */
+    --background: #f8fafc;
+    --foreground: #1e293b;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+
+    /* Shadcn Mappings */
+    --primary: var(--bd-green);
+    --secondary: #e2e8f0; /* Bootstrap btn-light equivalent */
+    --muted: #f8fafc;
     --muted-foreground: #64748b;
-    --accent-color: var(--surface);
-    --accent-foreground: var(--text-primary);
-    --destructive: #ef4444;
-    --destructive-foreground: #f8fafc;
-    --border-color: var(--border);
-    --input: var(--border);
-    --ring: var(--info);
-    --radius: 0.75rem;
+    --accent: #f1f5f9; /* hover states */
+    --destructive: var(--bd-red);
+    --radius: 0.5rem;
   }
 
   [data-theme="dark"],
   .dark {
-    /* Legacy LandBD Tokens */
-    --bg: #0D1117;
-    --surface: #161B22;
-    --accent: #F6C343;
-    --text-primary: #FFFFFF;
-    --text-secondary: #8B949E;
-    --border: #30363D;
-    --info: #3B82F6;
-    --success: #22C55E;
-
-    /* Shadcn Tokens */
-    --background: var(--bg);
-    --foreground: var(--text-primary);
-    --card: var(--surface);
-    --card-foreground: var(--text-primary);
-    --popover: var(--surface);
-    --popover-foreground: var(--text-primary);
-    --primary: var(--info);
-    --primary-foreground: #ffffff;
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
+    /* Dark Theme (Extracted from LANDBD_OLD) */
+    --background: #0b110f;
+    --foreground: #e2e8f0;
+    --card-bg: #131c19;
+    --border-color: #23332d;
+    
+    /* Slightly brighter primary/danger in dark mode for contrast */
+    --primary: #00c490;
+    --destructive: #ff5a6e;
+    
+    /* Shadcn Mappings */
+    --secondary: #1a2521;
+    --muted: #1a2521;
     --muted-foreground: #94a3b8;
-    --accent-color: var(--surface);
-    --accent-foreground: var(--text-primary);
-    --destructive: #ef4444;
-    --destructive-foreground: #f8fafc;
-    --border-color: var(--border);
-    --input: var(--border);
-    --ring: var(--info);
+    --accent: #1e293b;
   }
 
   * {
@@ -135,118 +101,42 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-work-sans);
-    line-height: 1.7;
+    font-family: var(--font-tiro-bangla);
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    transition: background-color 0.3s, color 0.3s;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
 @layer components {
-  .surface-bg {
-    background-color: var(--surface);
-  }
-
-  .text-secondary-c {
-    color: var(--text-secondary) !important;
-  }
-
-  .accent-text {
-    color: var(--accent);
-  }
-
-  .accent-bg {
-    background-color: var(--accent);
-  }
-
-  .border-c {
-    border-color: var(--border);
-  }
-
-  .card-new {
-    background-color: var(--card);
-    color: var(--card-foreground);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 24px;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
-    /* Soft shadow for light mode */
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-  }
-
-  .card-new:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-    border-color: rgba(15, 23, 42, 0.1);
-  }
-
-  [data-theme="dark"] .card-new,
-  .dark .card-new {
-    box-shadow: none;
-    /* Removed heavy shadow in dark mode base */
-  }
-
-  [data-theme="dark"] .card-new:hover,
-  .dark .card-new:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  /* Alternating Backgrounds */
-  .bg-alt-1 {
-    background-color: #F8FAFC;
-  }
-
-  .bg-alt-2 {
-    background-color: rgba(15, 23, 42, 0.03);
-  }
-
-  [data-theme="dark"] .bg-alt-1,
-  .dark .bg-alt-1 {
-    background-color: #0d1117;
-  }
-
-  [data-theme="dark"] .bg-alt-2,
-  .dark .bg-alt-2 {
-    background-color: #161B22;
-  }
-
-  .fade-in {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s, transform 0.6s;
-  }
-
-  .fade-in.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
+  /* Utilities for glassmorphism from LANDBD_OLD */
   .nav-blur {
-    backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    background-color: var(--card-bg);
   }
-
+  
   [data-theme="dark"] .nav-blur,
   .dark .nav-blur {
-    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(10px);
+    background-color: var(--card-bg);
   }
 
-  .hero-gradient {
-    background: linear-gradient(135deg, var(--background) 0%, var(--surface) 100%);
+  /* Map Panel Cards */
+  .map-panel-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-lg);
   }
 
-  .cta-gradient {
-    background: linear-gradient(135deg, #F6C343 0%, #E5A000 100%);
+  /* Layout Utilities */
+  .fade-in {
+    animation: fadeIn 0.4s ease-in-out;
   }
 
-  .stat-num {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: var(--accent);
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
-
-/* abcd */

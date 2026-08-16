@@ -19,7 +19,7 @@ const ResultSection = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="text-center p-5 mt-4 text-[var(--text-secondary)]">
+      <div className="text-center p-5 mt-4 text-slate-500 dark:text-slate-400">
         লোড হচ্ছে...
       </div>
     ),
@@ -243,7 +243,7 @@ export default function SmartKhatiyanApp() {
         badge="খতিয়ান ক্যালকুলেটর"
         title={
           <>
-            স্মার্ট <span className="accent-text">খতিয়ান</span> হিসাব
+            স্মার্ট <span className="text-[#006a4e]">খতিয়ান</span> হিসাব
           </>
         }
         description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন এবং রাজউক ম্যাপ থেকে দাগের তথ্য আনুন।"
@@ -253,22 +253,22 @@ export default function SmartKhatiyanApp() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 no-print fade-in visible">
         <Tabs defaultValue="detailed" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex justify-center mb-10">
-            <TabsList className="bg-card border border-border rounded-full p-1 h-auto shadow-sm">
+            <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 h-auto shadow-sm">
               <TabsTrigger
                 value="detailed"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all text-muted-foreground"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-[#006a4e] data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
               >
                 <List size={18} className="mr-2" /> বিস্তারিত হিসাব
               </TabsTrigger>
               <TabsTrigger
                 value="quick"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-muted-foreground"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
               >
                 <Zap size={18} className="mr-2" /> কুইক
               </TabsTrigger>
               <TabsTrigger
                 value="rajuk"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md transition-all text-muted-foreground"
+                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-slate-900 dark:data-[state=active]:bg-white data-[state=active]:text-white dark:data-[state=active]:text-slate-900 data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
               >
                 <Database size={18} className="mr-2 text-yellow-500" /> রাজউক ডাটা
               </TabsTrigger>
@@ -276,7 +276,7 @@ export default function SmartKhatiyanApp() {
           </div>
 
           <TabsContent value="detailed" className="mt-0 outline-none">
-            <div className="card-new p-6 md:p-8 animate-in fade-in zoom-in-95 duration-300 visible">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300 visible">
               <DetailedCalculator
                 plots={plots}
                 owners={owners}
@@ -288,16 +288,16 @@ export default function SmartKhatiyanApp() {
                 onRemoveOwner={removeOwner}
                 onUpdateOwner={updateOwner}
               />
-              <div className="flex justify-center gap-4 mt-8 mb-4 border-t border-border pt-8">
+              <div className="flex justify-center gap-4 mt-8 mb-4 border-t border-slate-200 dark:border-slate-800 pt-8">
                 <button
                   onClick={clearAll}
-                  className="px-6 py-3 font-bold rounded-xl border border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center"
+                  className="px-6 py-3 font-bold rounded-2xl border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center"
                 >
                   <Trash2 size={18} className="mr-2" /> মুছে ফেলুন
                 </button>
                 <button
                   onClick={calculateDetailed}
-                  className="px-8 py-3 cta-gradient text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-shadow flex items-center"
+                  className="px-8 py-3 bg-[#006a4e] text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center"
                 >
                   <Calculator size={18} className="mr-2" /> হিসাব করুন
                 </button>
@@ -306,7 +306,7 @@ export default function SmartKhatiyanApp() {
           </TabsContent>
 
           <TabsContent value="quick" className="mt-0 outline-none">
-            <div className="card-new p-6 md:p-8 max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-300 visible">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-300 visible">
               <QuickCalculator
                 quickData={quickData}
                 quickResult={quickResult}
@@ -318,7 +318,7 @@ export default function SmartKhatiyanApp() {
 
           <TabsContent value="rajuk" className="mt-0 outline-none">
             <div className="flex justify-center animate-in fade-in zoom-in-95 duration-300 mb-10 visible">
-              <div className="w-full max-w-4xl card-new p-6 md:p-8">
+              <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
                 <SearchPanel onUseArea={handleUseArea} compact />
               </div>
             </div>

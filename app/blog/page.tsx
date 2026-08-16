@@ -92,14 +92,14 @@ export default function BlogListingPage() {
           title={
             <>
               ভূমি সম্পর্কিত{" "}
-              <span className="accent-text">জ্ঞানের ভাণ্ডার</span>
+              <span className="text-[#006a4e]">জ্ঞানের ভাণ্ডার</span>
             </>
           }
           description="বাংলাদেশের ভূমি আইন, ডিজিটাল জরিপ এবং উত্তরাধিকার সম্পর্কে ইনসাইট, গাইড এবং আপডেট।"
           pattern="none"
         />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#006a4e]" />
         </div>
       </>
     );
@@ -113,7 +113,7 @@ export default function BlogListingPage() {
         title={
           <>
             ভূমি সম্পর্কিত{" "}
-            <span className="accent-text">জ্ঞানের ভাণ্ডার</span>
+            <span className="text-[#006a4e]">জ্ঞানের ভাণ্ডার</span>
           </>
         }
         description="বাংলাদেশের ভূমি আইন, ডিজিটাল জরিপ এবং উত্তরাধিকার সম্পর্কে ইনসাইট, গাইড এবং আপডেট।"
@@ -123,14 +123,14 @@ export default function BlogListingPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible min-h-screen">
         {displayFeatured && featuredPost && (
           <section className="mb-16">
-            <h4 className="text-2xl font-bold mb-6 text-[var(--text-primary)] border-l-4 border-[var(--accent)] pl-4">
+            <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
               ফিচার্ড আর্টিকেল
             </h4>
             <BlogCard post={featuredPost} featured={true} />
           </section>
         )}
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 bg-[var(--surface)] p-4 rounded-xl border border-[var(--border)]">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex gap-2 w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
             {categories.map((cat) => (
               <button
@@ -138,8 +138,8 @@ export default function BlogListingPage() {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-5 py-2 rounded-full font-bold whitespace-nowrap transition-colors ${
                   activeCategory === cat
-                    ? "bg-[var(--text-primary)] text-[var(--bg)]"
-                    : "border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)]"
+                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                    : "border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600"
                 }`}
               >
                 {cat}
@@ -152,11 +152,11 @@ export default function BlogListingPage() {
               placeholder="আর্টিকেল খুঁজুন..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] rounded-full px-5 py-2.5 pl-10 focus:outline-none focus:border-[var(--accent)] transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-full px-5 py-2.5 pl-10 focus:outline-none focus:border-[#006a4e] transition-colors"
             />
             <Search
               size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
             />
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function BlogListingPage() {
         <section className="mb-16">
           {filteredPosts.length > 0 ? (
             <>
-              <h4 className="text-2xl font-bold mb-6 text-[var(--text-primary)] border-l-4 border-[var(--accent)] pl-4">
+              <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
                 {searchQuery || activeCategory !== "সকল পোস্ট"
                   ? "ফলাফল"
                   : "সাম্প্রতিক পোস্টসমূহ"}
@@ -180,14 +180,14 @@ export default function BlogListingPage() {
             </>
           ) : (
             <div className="text-center py-20">
-              <p className="text-xl text-[var(--text-secondary)]">
+              <p className="text-xl text-slate-500 dark:text-slate-400">
                 কোনো পোস্ট পাওয়া যায়নি।
               </p>
             </div>
           )}
         </section>
 
-        <section className="mt-20 border-t border-[var(--border)] pt-16">
+        <section className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-16">
           <NewsletterCta />
         </section>
       </div>

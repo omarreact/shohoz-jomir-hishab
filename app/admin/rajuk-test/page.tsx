@@ -108,11 +108,11 @@ export default function RajukApiTestPage() {
 
   const renderStatus = (status: ApiTestResult["status"], error?: string) => {
     switch (status) {
-      case "idle": return <span className="text-muted-foreground flex items-center gap-2"><Clock size={16}/> অপেক্ষমাণ</span>;
-      case "testing": return <span className="text-primary flex items-center gap-2"><Loader2 className="animate-spin" size={16}/> যাচাই চলছে...</span>;
-      case "success": return <span className="text-green-500 flex items-center gap-2"><CheckCircle2 size={16}/> সফল</span>;
-      case "error": return <span className="text-red-500 flex items-center gap-2" title={error}><XCircle size={16}/> ব্যর্থ</span>;
-      case "auth_error": return <span className="text-orange-500 flex items-center gap-2" title="টোকেন বাতিল/মেয়াদোত্তীর্ণ"><AlertTriangle size={16}/> টোকেন সমস্যা</span>;
+      case "idle": return <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2"><Clock size={16}/> অপেক্ষমাণ</span>;
+      case "testing": return <span className="text-[#006a4e] flex items-center gap-2"><Loader2 className="animate-spin" size={16}/> যাচাই চলছে...</span>;
+      case "success": return <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><CheckCircle2 size={16}/> সফল</span>;
+      case "error": return <span className="text-red-600 dark:text-red-400 flex items-center gap-2" title={error}><XCircle size={16}/> ব্যর্থ</span>;
+      case "auth_error": return <span className="text-amber-600 dark:text-amber-400 flex items-center gap-2" title="টোকেন বাতিল/মেয়াদোত্তীর্ণ"><AlertTriangle size={16}/> টোকেন সমস্যা</span>;
     }
   };
 
@@ -120,13 +120,13 @@ export default function RajukApiTestPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 fade-in visible">
       <div className="mb-8 flex justify-between items-end">
         <div>
-          <h3 className="font-bold text-3xl text-foreground mb-2 flex items-center gap-3">
-            <Database className="text-primary" /> রাজউক API স্বাস্থ্য পরীক্ষা
+          <h3 className="font-bold text-3xl text-slate-900 dark:text-white mb-2 flex items-center gap-3">
+            <Database className="text-[#006a4e]" /> রাজউক API স্বাস্থ্য পরীক্ষা
           </h3>
-          <p className="text-muted-foreground text-lg">সিস্টেমের সকল পাবলিক ও প্রাইভেট এন্ডপয়েন্টের রিয়েল-টাইম স্ট্যাটাস।</p>
+          <p className="text-slate-500 dark:text-slate-400 text-lg">সিস্টেমের সকল পাবলিক ও প্রাইভেট এন্ডপয়েন্টের রিয়েল-টাইম স্ট্যাটাস।</p>
         </div>
         
-        <div className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 ${authStatus === "TOKEN_VALID" ? "bg-green-500/10 text-green-600 border border-green-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20"}`}>
+        <div className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 ${authStatus === "TOKEN_VALID" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"}`}>
           {authStatus === "TOKEN_VALID" ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
           {authStatus === "TOKEN_VALID" ? "প্রাইভেট কানেকশন সক্রিয়" : "প্রাইভেট কানেকশন নিষ্ক্রিয়"}
         </div>
@@ -134,20 +134,20 @@ export default function RajukApiTestPage() {
 
       <div className="space-y-8">
         <section>
-          <h4 className="text-xl font-bold text-foreground mb-4 border-b border-border pb-2">পাবলিক API (Public Endpoints)</h4>
+          <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">পাবলিক API (Public Endpoints)</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {endpoints.map((ep, idx) => ep.visibility === "public" && (
-              <Card key={idx} className="shadow-sm border-border hover:border-primary/50 transition-colors">
+              <Card key={idx} className="shadow-sm border-slate-200 dark:border-slate-800 hover:border-[#006a4e]/50 transition-colors">
                 <CardContent className="p-5 flex flex-col justify-between h-full">
                   <div>
                     <h5 className="font-bold text-lg mb-1">{ep.name}</h5>
-                    <p className="text-xs text-muted-foreground font-mono bg-muted p-1 rounded mb-4 truncate">{ep.endpoint}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-950 p-1 rounded mb-4 truncate">{ep.endpoint}</p>
                   </div>
                   
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex flex-col gap-1">
                       {renderStatus(ep.status, ep.error)}
-                      {ep.responseTime !== undefined && <span className="text-xs text-muted-foreground font-mono">{ep.responseTime}ms | {ep.httpStatus} HTTP | {ep.recordCount ?? 0} Records</span>}
+                      {ep.responseTime !== undefined && <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{ep.responseTime}ms | {ep.httpStatus} HTTP | {ep.recordCount ?? 0} Records</span>}
                     </div>
                     <Button size="sm" onClick={() => runTest(idx)} disabled={ep.status === "testing"}>
                       টেস্ট করুন
@@ -160,29 +160,29 @@ export default function RajukApiTestPage() {
         </section>
 
         <section>
-          <h4 className="text-xl font-bold text-foreground mb-4 border-b border-border pb-2">প্রাইভেট API (Feature Server)</h4>
+          <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">প্রাইভেট API (Feature Server)</h4>
           {authStatus !== "TOKEN_VALID" && (
-             <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 mb-4 flex items-center gap-3">
+             <div className="bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-xl border border-red-500/20 mb-4 flex items-center gap-3">
                <ShieldAlert size={24} />
                <p className="font-bold">বৈধ টোকেন পাওয়া যায়নি। প্রাইভেট API ব্যবহার করা যাবে্বা না।</p>
              </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-100 transition-opacity">
             {endpoints.map((ep, idx) => ep.visibility === "private" && (
-              <Card key={idx} className={`shadow-sm border-border hover:border-primary/50 transition-colors ${authStatus !== "TOKEN_VALID" ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+              <Card key={idx} className={`shadow-sm border-slate-200 dark:border-slate-800 hover:border-[#006a4e]/50 transition-colors ${authStatus !== "TOKEN_VALID" ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                 <CardContent className="p-5 flex flex-col justify-between h-full">
                   <div>
                     <h5 className="font-bold text-lg mb-1 flex items-center justify-between">
                       {ep.name}
-                      <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-bold border border-primary/20">Private</span>
+                      <span className="bg-[#006a4e]/10 text-[#006a4e] text-xs px-2 py-0.5 rounded-full font-bold border border-[#006a4e]/20">Private</span>
                     </h5>
-                    <p className="text-xs text-muted-foreground font-mono bg-muted p-1 rounded mb-4 truncate">{ep.endpoint}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-950 p-1 rounded mb-4 truncate">{ep.endpoint}</p>
                   </div>
                   
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex flex-col gap-1">
                       {renderStatus(ep.status, ep.error)}
-                      {ep.responseTime !== undefined && <span className="text-xs text-muted-foreground font-mono">{ep.responseTime}ms | {ep.httpStatus} HTTP | {ep.recordCount ?? 0} Records</span>}
+                      {ep.responseTime !== undefined && <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{ep.responseTime}ms | {ep.httpStatus} HTTP | {ep.recordCount ?? 0} Records</span>}
                     </div>
                     <Button size="sm" onClick={() => runTest(idx)} disabled={ep.status === "testing" || authStatus !== "TOKEN_VALID"} variant="secondary">
                       টেস্ট করুন
