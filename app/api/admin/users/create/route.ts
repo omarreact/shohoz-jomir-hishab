@@ -3,6 +3,9 @@ import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import { auth, collections } from "@/src/modules/database/firebaseAdmin";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -10,10 +13,17 @@ const createUserSchema = z.object({
   role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).default("Basic User"),
 });
 
+function jsonError(message: string, status = 500, error?: unknown) {
+  return NextResponse.json(
+    { success: false, message: message || "Internal server error", ...(error ? { error } : {}) },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     await verifyAdminAuth(request);
-    
+
     const body = await request.json();
     const validated = createUserSchema.parse(body);
 
@@ -52,25 +62,28 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to create user profile in database. Auth account rolled back.");
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: { id: userRecord.uid, ...userData } 
+    return NextResponse.json({
+      success: true,
+      data: { id: userRecord.uid, ...userData },
     }, { status: 201 });
 
   } catch (error: any) {
     console.error("Error creating user:", error);
-    
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ success: false, message: "Invalid input data", error: error.issues }, { status: 400 });
+      return jsonError("Invalid input data", 400, error.issues);
     }
 
     if (error.code === "auth/email-already-exists") {
-      return NextResponse.json({ success: false, message: "A user with this email already exists." }, { status: 409 });
+      return jsonError("A user with this email already exists.", 409);
     }
 
-    return NextResponse.json(
-      { success: false, message: error.message || "Failed to create user" }, 
-      { status: error.message === "Unauthorized" ? 403 : 500 }
-    );
+    const status = error?.message === "Unauthorized"
+      ? 401
+      : error?.message?.startsWith("Forbidden")
+        ? 403
+        : 500;
+
+    return jsonError(error?.message || "Failed to create user", status);
   }
 }
