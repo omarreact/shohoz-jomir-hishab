@@ -65,6 +65,13 @@
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
+  "overrides": {
+    "firebase-admin": {
+      "jwks-rsa": {
+        "jose": "4.15.9"
+      }
+    }
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/leaflet": "^1.9.21",
