@@ -16,7 +16,13 @@ export async function GET(req: NextRequest) {
       
     const comments = snapshot.docs.map((doc: any) => {
       const data = doc.data();
-      return { id: doc.id, blogId: data.blogId, name: data.name, text: data.text, createdAt: data.createdAt };
+      return { 
+        id: doc.id, 
+        blogId: data.blogId, 
+        name: data.name, 
+        text: data.text, 
+        createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt 
+      };
     });
 
     return NextResponse.json({ comments }, { status: 200 });

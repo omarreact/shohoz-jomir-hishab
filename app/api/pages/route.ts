@@ -19,7 +19,13 @@ export async function GET(req: NextRequest) {
     const snapshot = await collections.pages.orderBy("createdAt", "asc").get();
     const pages = snapshot.docs.map((doc: any) => {
       const data = doc.data();
-      return { id: doc.id, title: data.title, slug: data.slug, category: data.category, createdAt: data.createdAt };
+      return { 
+        id: doc.id, 
+        title: data.title, 
+        slug: data.slug, 
+        category: data.category, 
+        createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt 
+      };
     });
     return NextResponse.json({ success: true, data: { pages } }, { status: 200 });
   } catch (error: any) {

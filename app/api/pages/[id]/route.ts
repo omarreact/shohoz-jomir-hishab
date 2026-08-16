@@ -13,7 +13,13 @@ export async function GET(
     if (!doc.exists)
       return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
       
-    const page = { id: doc.id, ...doc.data() };
+    const pageData = doc.data() as any;
+    const page = { 
+      id: doc.id, 
+      ...pageData,
+      createdAt: typeof pageData.createdAt?.toDate === 'function' ? pageData.createdAt.toDate().toISOString() : pageData.createdAt,
+      updatedAt: typeof pageData.updatedAt?.toDate === 'function' ? pageData.updatedAt.toDate().toISOString() : pageData.updatedAt
+    };
     return NextResponse.json({ success: true, data: { page } }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -51,7 +57,13 @@ export async function PUT(
     await docRef.update(data);
     
     const updatedDoc = await docRef.get();
-    const page = { id: updatedDoc.id, ...updatedDoc.data() };
+    const updatedDocData = updatedDoc.data() as any;
+    const page = { 
+      id: updatedDoc.id, 
+      ...updatedDocData,
+      createdAt: typeof updatedDocData.createdAt?.toDate === 'function' ? updatedDocData.createdAt.toDate().toISOString() : updatedDocData.createdAt,
+      updatedAt: typeof updatedDocData.updatedAt?.toDate === 'function' ? updatedDocData.updatedAt.toDate().toISOString() : updatedDocData.updatedAt
+    };
     
     revalidatePath("/", "layout");
 

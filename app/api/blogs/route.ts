@@ -58,8 +58,8 @@ export async function GET(req: NextRequest) {
         categorySlug: data.categorySlug,
         status: data.status,
         readingTime: data.readingTime,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
+        createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt,
+        updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate().toISOString() : data.updatedAt,
       };
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -107,7 +107,13 @@ export async function POST(req: NextRequest) {
 
     const ref = await collections.blogs.add(data);
     const doc = await ref.get();
-    const blog = { id: doc.id, ...doc.data() };
+    const blogData = doc.data() as any;
+    const blog = { 
+      id: doc.id, 
+      ...blogData,
+      createdAt: typeof blogData.createdAt?.toDate === 'function' ? blogData.createdAt.toDate().toISOString() : blogData.createdAt,
+      updatedAt: typeof blogData.updatedAt?.toDate === 'function' ? blogData.updatedAt.toDate().toISOString() : blogData.updatedAt,
+    };
     
     revalidatePath("/", "layout");
 

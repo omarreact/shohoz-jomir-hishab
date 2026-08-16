@@ -30,7 +30,14 @@ export async function GET(
         .map((c: any) => ({ id: c.id, ...c.data() }))
         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
-      const blog = { id: doc.id, ...doc.data(), comments };
+      const blogData = doc.data() as any;
+      const blog = { 
+        id: doc.id, 
+        ...blogData, 
+        createdAt: typeof blogData.createdAt?.toDate === 'function' ? blogData.createdAt.toDate().toISOString() : blogData.createdAt,
+        updatedAt: typeof blogData.updatedAt?.toDate === 'function' ? blogData.updatedAt.toDate().toISOString() : blogData.updatedAt,
+        comments 
+      };
       return NextResponse.json({ success: true, data: { blog } }, { status: 200 });
     } catch (error: unknown) {
       return NextResponse.json(
@@ -79,7 +86,13 @@ export async function PUT(
     await docRef.update(data);
     
     const updatedDoc = await docRef.get();
-    const blog = { id: updatedDoc.id, ...updatedDoc.data() };
+    const updatedDocData = updatedDoc.data() as any;
+    const blog = { 
+      id: updatedDoc.id, 
+      ...updatedDocData,
+      createdAt: typeof updatedDocData.createdAt?.toDate === 'function' ? updatedDocData.createdAt.toDate().toISOString() : updatedDocData.createdAt,
+      updatedAt: typeof updatedDocData.updatedAt?.toDate === 'function' ? updatedDocData.updatedAt.toDate().toISOString() : updatedDocData.updatedAt,
+    };
     
     revalidatePath("/", "layout");
 
