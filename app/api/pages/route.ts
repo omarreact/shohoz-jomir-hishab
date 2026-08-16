@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 export const runtime = "nodejs";
@@ -34,6 +33,7 @@ function jsonError(message: string, status = 500, error?: unknown, requestId?: s
 export async function GET(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
+    const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const slug = req.nextUrl.searchParams.get("slug");
 
     if (slug) {
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     });
     return json({ success: true, data: { pages } }, 200, requestId);
   } catch (error: any) {
-    console.error("GET /api/pages failed:", error);
+    console.error("GET /api/pages failed:", { requestId, error });
     return jsonError(error?.message || "Failed to load pages", 500, undefined, requestId);
   }
 }
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
     await verifyAdminAuth(req);
+    const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: any;
     try {
@@ -79,7 +80,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { title, slug, category, content } = body || {};
-    if (typeof title !== "string" || !title.trim() || typeof slug !== "string" || !slug.trim() || typeof content !== "string" || !content.trim()) {
+    if (
+      typeof title !== "string" || !title.trim() ||
+      typeof slug !== "string" || !slug.trim() ||
+      typeof content !== "string" || !content.trim()
+    ) {
       return jsonError("title, slug, and content are required", 400, undefined, requestId);
     }
 
@@ -93,7 +98,10 @@ export async function POST(req: NextRequest) {
     const data = {
       title: title.trim(),
       slug: formattedSlug,
-      category: typeof category === "string" && category.trim() ? category.trim() : "সাধারণ (General)",
+      category:
+        typeof category === "string" && category.trim()
+          ? category.trim()
+          : "সাধারণ (General)",
       content,
       createdAt: now,
       updatedAt: now,
@@ -106,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     return json({ success: true, data: { page } }, 201, requestId);
   } catch (error: any) {
-    console.error("POST /api/pages failed:", error);
+    console.error("POST /api/pages failed:", { requestId, error });
     const status =
       error?.message === "Unauthorized"
         ? 401
