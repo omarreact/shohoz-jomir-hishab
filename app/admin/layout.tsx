@@ -107,7 +107,7 @@ export default function AdminLayout({
   ];
 
   const navItems = allNavItems.filter(
-    (item) => userRole && item.roles.includes(userRole)
+    (item) => userRole && item.roles.some(r => r.toLowerCase() === userRole.toLowerCase())
   );
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
