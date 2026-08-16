@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 export const runtime = "nodejs";
@@ -28,7 +27,11 @@ function json(data: unknown, status = 200, requestId?: string) {
 
 function jsonError(message: string, status = 500, requestId?: string) {
   return json(
-    { success: false, message: message || "Internal server error", ...(requestId ? { requestId } : {}) },
+    {
+      success: false,
+      message: message || "Internal server error",
+      ...(requestId ? { requestId } : {}),
+    },
     status,
     requestId,
   );
@@ -38,6 +41,7 @@ function jsonError(message: string, status = 500, requestId?: string) {
 export async function GET(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
+    const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const { searchParams } = req.nextUrl;
     const status = searchParams.get("status");
     const slug = searchParams.get("slug");
@@ -51,7 +55,11 @@ export async function GET(req: NextRequest) {
       const comments = commentsSnapshot.docs
         .map((c: any) => ({ id: c.id, ...c.data() }))
         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      return json({ success: true, data: { blog: { id: doc.id, ...blogData, comments } } }, 200, requestId);
+      return json(
+        { success: true, data: { blog: { id: doc.id, ...blogData, comments } } },
+        200,
+        requestId,
+      );
     }
 
     let query: any = collections.blogs;
@@ -84,7 +92,7 @@ export async function GET(req: NextRequest) {
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return json({ success: true, data: { blogs } }, 200, requestId);
   } catch (error: any) {
-    console.error("GET /api/blogs failed:", error);
+    console.error("GET /api/blogs failed:", { requestId, error });
     return jsonError(error?.message || "Failed to load blogs", 500, requestId);
   }
 }
@@ -94,6 +102,7 @@ export async function POST(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
     await verifyAdminAuth(req);
+    const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: any;
     try {
@@ -151,7 +160,7 @@ export async function POST(req: NextRequest) {
     revalidatePath("/blog", "page");
     return json({ success: true, data: { blog } }, 201, requestId);
   } catch (error: any) {
-    console.error("POST /api/blogs failed:", error);
+    console.error("POST /api/blogs failed:", { requestId, error });
     const status =
       error?.message === "Unauthorized"
         ? 401
