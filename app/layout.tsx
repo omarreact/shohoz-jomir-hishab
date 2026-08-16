@@ -1,49 +1,11 @@
 import "reflect-metadata";
 import type { Metadata } from "next";
-import {
-  Geist,
-  Geist_Mono,
-  Tiro_Bangla,
-  Noto_Sans_Bengali,
-  Hind_Siliguri,
-} from "next/font/google";
 
 import "./globals.css";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { TooltipProvider } from "@/src/shared/ui/tooltip";
-import { Toaster } from "@/src/shared/ui/sonner";
 import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const tiroBangla = Tiro_Bangla({
-  weight: "400",
-  style: ["normal", "italic"],
-  subsets: ["bengali", "latin"],
-  variable: "--font-tiro-bangla",
-});
-
-const notoBengali = Noto_Sans_Bengali({
-  weight: ["300", "400", "500", "600", "700"],
-  subsets: ["bengali"],
-  variable: "--font-noto-bengali",
-});
-
-const hindSiliguri = Hind_Siliguri({
-  weight: ["300", "400", "500", "600", "700"],
-  subsets: ["bengali"],
-  variable: "--font-hind-siliguri",
-});
 
 export const metadata: Metadata = {
   title: "সহজ জমির হিসাব | Shohoz Jomir Hishab",
@@ -64,7 +26,7 @@ export const metadata: Metadata = {
     title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
     description:
       "খতিয়ানের হিসাব, জমির পরিমাপ এবং আইনি উত্তরাধিকার বন্টনের সবচেয়ে স্মার্ট সমাধান।",
-    url: "https://shohoz-jomir-hishab.vercel.app/", // আপনার আসল ডোমেইন দিন
+    url: "https://shohoz-jomir-hishab.vercel.app/",
     siteName: "Shohoz Jomir Hishab",
     locale: "bn_BD",
     type: "website",
@@ -80,7 +42,7 @@ export default function RootLayout({
     <html lang="bn" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${tiroBangla.variable} ${notoBengali.variable} ${hindSiliguri.variable} font-sans`}
+        className="font-sans"
         style={{
           display: "flex",
           flexDirection: "column",
