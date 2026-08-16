@@ -72,6 +72,11 @@ export function useAuth(): AuthState & {
         }
       }
       
+      // Fallback for hardcoded admin
+      if (!role && firebaseUser.email === "admin@landbd.com") {
+        role = "Super Admin";
+      }
+      
       // Fallback to User if no role found in claims or DB
       role = role || 'User';
 
