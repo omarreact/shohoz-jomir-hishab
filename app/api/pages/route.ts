@@ -3,6 +3,16 @@ import { revalidatePath } from "next/cache";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function jsonError(message: string, status = 500) {
+  return NextResponse.json(
+    { success: false, message: message || "Internal server error" },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 // GET /api/pages — public list, or single page by ?slug=xxx
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     if (slug) {
       const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
-      if (snapshot.empty) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+      if (snapshot.empty) return jsonError("Not found", 404);
       const doc = snapshot.docs[0];
       const page = { id: doc.id, ...doc.data() };
       return NextResponse.json({ success: true, data: { page } }, { status: 200 });
@@ -29,7 +39,8 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ success: true, data: { pages } }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("GET /api/pages failed:", error);
+    return jsonError(error?.message || "Failed to load pages");
   }
 }
 
@@ -41,13 +52,13 @@ export async function POST(req: NextRequest) {
     const { title, slug, category, content } = body;
 
     if (!title || !slug || !content) {
-      return NextResponse.json({ success: false, message: "title, slug, and content are required" }, { status: 400 });
+      return jsonError("title, slug, and content are required", 400);
     }
 
     const formattedSlug = slug.toLowerCase().replace(/\s+/g, "-");
     const existingSnapshot = await collections.pages.where("slug", "==", formattedSlug).limit(1).get();
     if (!existingSnapshot.empty) {
-      return NextResponse.json({ success: false, message: "A page with this slug already exists" }, { status: 409 });
+      return jsonError("A page with this slug already exists", 409);
     }
 
     const now = new Date().toISOString();
@@ -67,7 +78,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { page } }, { status: 201 });
   } catch (error: any) {
+    console.error("POST /api/pages failed:", error);
     const status = error?.message === "Unauthorized" ? 401 : error?.message?.startsWith("Forbidden") ? 403 : 500;
-    return NextResponse.json({ success: false, message: error.message }, { status });
+    return jsonError(error?.message || "Failed to create page", status);
   }
 }
