@@ -36,6 +36,8 @@ const blogSchema = z.object({
 
 type BlogFormValues = z.infer<typeof blogSchema>;
 
+const isCloudinaryConfigured = !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME && !!process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+
 export default function NewBlogPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,25 +141,36 @@ export default function NewBlogPage() {
                             className="flex-1"
                             {...field}
                           />
-                          <CldUploadWidget
-                            signatureEndpoint="/api/cloudinary/sign"
-                            onSuccess={(result: any) => {
-                              if (result.info?.secure_url) {
-                                form.setValue("coverImage", result.info.secure_url);
-                              }
-                            }}
-                          >
-                            {({ open }) => (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={(e) => { e.preventDefault(); open(); }}
-                              >
-                                Upload
-                              </Button>
-                            )}
-                          </CldUploadWidget>
+                          {isCloudinaryConfigured ? (
+                            <CldUploadWidget
+                              signatureEndpoint="/api/cloudinary/sign"
+                              onSuccess={(result: any) => {
+                                if (result.info?.secure_url) {
+                                  form.setValue("coverImage", result.info.secure_url);
+                                }
+                              }}
+                            >
+                              {({ open }) => (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={(e) => { e.preventDefault(); open(); }}
+                                >
+                                  Upload
+                                </Button>
+                              )}
+                            </CldUploadWidget>
+                          ) : (
+                            <Button type="button" variant="outline" disabled title="Cloudinary is not configured">
+                              Upload (Disabled)
+                            </Button>
+                          )}
                         </div>
+                        {!isCloudinaryConfigured && (
+                          <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
+                            Cloudinary image upload is currently unavailable. Please configure Cloudinary environment variables.
+                          </div>
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
