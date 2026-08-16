@@ -37,14 +37,14 @@
   --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
 
   /* Border Radius */
-  --radius-xl: 1rem; /* Bootstrap rounded-4 is usually 1rem */
+  --radius-xl: 1rem;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Font Family */
-  --font-tiro-bangla: "Tiro Bangla", serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-sans: var(--font-tiro-bangla); /* Default font to Tiro Bangla */
+  /* Font Family - system/local fonts only; no build-time Google font fetch */
+  --font-tiro-bangla: "Tiro Bangla", "Noto Sans Bengali", "Hind Siliguri", "Nirmala UI", "Segoe UI", sans-serif;
+  --font-sans: var(--font-tiro-bangla);
 }
 
 @layer base {
@@ -61,10 +61,10 @@
 
     /* Shadcn Mappings */
     --primary: var(--bd-green);
-    --secondary: #e2e8f0; /* Bootstrap btn-light equivalent */
+    --secondary: #e2e8f0;
     --muted: #f8fafc;
     --muted-foreground: #64748b;
-    --accent: #f1f5f9; /* hover states */
+    --accent: #f1f5f9;
     --destructive: var(--bd-red);
     --radius: 0.5rem;
   }
@@ -76,11 +76,11 @@
     --foreground: #e2e8f0;
     --card-bg: #131c19;
     --border-color: #23332d;
-    
+
     /* Slightly brighter primary/danger in dark mode for contrast */
     --primary: #00c490;
     --destructive: #ff5a6e;
-    
+
     /* Shadcn Mappings */
     --secondary: #1a2521;
     --muted: #1a2521;
@@ -115,7 +115,7 @@
     backdrop-filter: blur(10px);
     background-color: var(--card-bg);
   }
-  
+
   [data-theme="dark"] .nav-blur,
   .dark .nav-blur {
     backdrop-filter: blur(10px);
