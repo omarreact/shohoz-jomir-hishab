@@ -3,6 +3,9 @@ import { revalidatePath } from "next/cache";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 function generateSlug(text: string): string {
   return text
     .toLowerCase()
@@ -10,6 +13,13 @@ function generateSlug(text: string): string {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function jsonError(message: string, status = 500) {
+  return NextResponse.json(
+    { success: false, message: message || "Internal server error" },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 // GET /api/blogs — public list, or single by ?slug=xxx
@@ -20,7 +30,7 @@ export async function GET(req: NextRequest) {
     const slug = searchParams.get("slug");
     if (slug) {
       const snapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
-      if (snapshot.empty) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+      if (snapshot.empty) return jsonError("Not found", 404);
       const doc = snapshot.docs[0];
       const blogData = doc.data();
       const commentsSnapshot = await collections.comments.where("blogId", "==", doc.id).get();
@@ -52,7 +62,8 @@ export async function GET(req: NextRequest) {
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json({ success: true, data: { blogs } }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("GET /api/blogs failed:", error);
+    return jsonError(error?.message || "Failed to load blogs");
   }
 }
 
@@ -62,11 +73,11 @@ export async function POST(req: NextRequest) {
     await verifyAdminAuth(req);
     const body = await req.json();
     const { title, coverImage, category, author, content } = body;
-    if (!title || !content) return NextResponse.json({ success: false, message: "title and content are required" }, { status: 400 });
+    if (!title || !content) return jsonError("title and content are required", 400);
 
     const slug = generateSlug(title);
     const existingSnapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
-    if (!existingSnapshot.empty) return NextResponse.json({ success: false, message: "A blog with this title already exists" }, { status: 409 });
+    if (!existingSnapshot.empty) return jsonError("A blog with this title already exists", 409);
 
     const categorySlug = generateSlug(category || "general");
     const plainText = content.replace(/<[^>]+>/g, "");
@@ -98,7 +109,8 @@ export async function POST(req: NextRequest) {
     revalidatePath("/", "layout");
     return NextResponse.json({ success: true, data: { blog } }, { status: 201 });
   } catch (error: any) {
+    console.error("POST /api/blogs failed:", error);
     const status = error?.message === "Unauthorized" ? 401 : error?.message?.startsWith("Forbidden") ? 403 : 500;
-    return NextResponse.json({ success: false, message: error.message }, { status });
+    return jsonError(error?.message || "Failed to create blog", status);
   }
 }
