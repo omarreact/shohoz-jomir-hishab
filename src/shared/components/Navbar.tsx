@@ -270,12 +270,12 @@ export default function Navbar() {
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1050] lg:hidden" 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1050]" 
             onClick={() => setIsMobileMenuOpen(false)}
           />
           
           {/* Panel */}
-          <div className="fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#131c19] z-[1060] shadow-2xl flex flex-col transition-transform duration-300 transform translate-x-0 lg:hidden">
+          <div className="fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#131c19] z-[1060] shadow-2xl flex flex-col transition-transform duration-300 transform translate-x-0">
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center">
                 <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[32px] h-[32px]">
