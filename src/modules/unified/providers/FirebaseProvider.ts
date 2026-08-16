@@ -18,13 +18,19 @@ export class FirebaseProvider extends BaseProvider {
 
   public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
     try {
-      const { doc, getDoc } = await import("firebase/firestore");
-      const { db } = await import("@/src/modules/database/firebaseClient");
+      const { collections } = await import("@/src/modules/database/firebaseAdmin");
       
-      const docRef = doc(db, this.collectionName, this.documentId);
-      const docSnap = await getDoc(docRef);
+      // Access the correct collection via admin SDK
+      // Using generic db reference if collection is dynamic
+      const { db } = await import("@/src/modules/database/firebaseAdmin");
+      if (!db) {
+         throw new Error("Firebase Admin SDK not initialized");
+      }
       
-      if (!docSnap.exists()) {
+      const docRef = db.collection(this.collectionName).doc(this.documentId);
+      const docSnap = await docRef.get();
+      
+      if (!docSnap.exists) {
         return [];
       }
       
@@ -65,3 +71,4 @@ export class FirebaseProvider extends BaseProvider {
     }] as UnifiedFeature[];
   }
 }
+

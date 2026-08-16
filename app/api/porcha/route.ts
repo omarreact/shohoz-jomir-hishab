@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 
 export async function GET(request: Request) {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   try {
     const filePath = path.join(process.cwd(), "src", "modules", "porcha", "data", "porcha.json");
-    const fileContents = fs.readFileSync(filePath, "utf8");
+    const fileContents = await fs.readFile(filePath, "utf8");
     const data = JSON.parse(fileContents);
 
     // ডাটা ফিল্টার করার লজিক
@@ -50,3 +50,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

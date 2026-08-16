@@ -43,13 +43,7 @@ const MS_MAUZA_TOKEN =
 
 export const API_REGISTRY: ApiRow[] = [
   {
-    name: "Landbd Proxy",
-    endpoint: "/api/landbd",
-    type: "External",
-    status: "active",
-    note: "Local + production proxy for landbd.pincodeit.com",
-  },
-  {
+
     name: "RS Plots (FeatureServer/0)",
     endpoint: "/api/unified?include=plots&limit=1",
     type: "Rajuk",

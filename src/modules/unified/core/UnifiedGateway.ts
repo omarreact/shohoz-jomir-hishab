@@ -4,15 +4,12 @@ import { RajukFeatureProvider } from "../providers/RajukFeatureProvider";
 import { RajukPlotProvider } from "../providers/RajukPlotProvider";
 import { ElevationProvider } from "../providers/ElevationProvider";
 import { FirebaseProvider } from "../providers/FirebaseProvider";
-import { CacheManager } from "./CacheManager";
 
 export class UnifiedGateway {
   private providers: Record<string, BaseProvider> = {};
-  private cacheManager: CacheManager;
   private dynamicLoaded: boolean = false;
 
   constructor() {
-    this.cacheManager = CacheManager.getInstance();
     this.registerProviders();
   }
 
@@ -114,20 +111,8 @@ export class UnifiedGateway {
     // 2. Fetch all in parallel using Promise.allSettled
     const promises = activeKeys.map(async (key) => {
       const provider = this.providers[key];
-      const cacheKey = `unified:${key}:${JSON.stringify(query)}`;
-      
-      // Check Cache
-      const cached = this.cacheManager.get<any>(cacheKey);
-      if (cached) {
-        return { key, data: cached };
-      }
-
-      // Fetch
+      // Fetch directly without in-memory caching
       const result = await provider.fetch(query);
-      
-      // Set Cache (5 mins)
-      this.cacheManager.set(cacheKey, result, 5 * 60 * 1000);
-      
       return { key, data: result };
     });
 
@@ -137,8 +122,6 @@ export class UnifiedGateway {
     results.forEach((res, idx) => {
       if (res.status === "fulfilled") {
         data[res.value.key] = res.value.data;
-        
-
       } else {
         const failedKey = activeKeys[idx];
         errors.push({
@@ -181,3 +164,4 @@ export class UnifiedGateway {
     return healthData;
   }
 }
+

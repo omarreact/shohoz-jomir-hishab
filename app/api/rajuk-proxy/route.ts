@@ -1,16 +1,29 @@
 import { NextResponse } from "next/server";
+import { TokenManager } from "@/src/modules/unified/core/TokenManager";
 
-const cache = new Map<string, { data: unknown; timestamp: number }>();
-const CACHE_DURATION = 3600000; // ১ ঘণ্টা
+// Helper function to execute the ArcGIS fetch
+async function fetchRajuk(baseUrl: string, params: URLSearchParams) {
+  const finalUrl = `${baseUrl}?${params.toString()}`;
+  const response = await fetch(finalUrl, {
+    method: "GET",
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      Accept: "application/json",
+      Referer: "https://masterplan.rajuk.gov.bd/",
+    },
+  });
+
+  const rawData = await response.text();
+  if (!response.ok) {
+    return { ok: false, status: response.status, rawData };
+  }
+  
+  const data = JSON.parse(rawData);
+  return { ok: true, data };
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const cacheKey = searchParams.toString();
-
-  const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return NextResponse.json(cached.data);
-  }
 
   const servicePath = searchParams.get("servicePath");
   const layer = searchParams.get("layer"); // Fallback
@@ -41,19 +54,9 @@ export async function GET(request: Request) {
   // Append operation only if provided
   const baseUrl = `https://masterplan.rajuk.gov.bd/server/rest/services/${targetPath}${operation ? `/${operation}` : ""}`;
 
-  let activeToken = process.env.RAJUK_MAP_TOKEN || "";
-  try {
-    // Load token from our own DB-backed API
-    const tokenRes = await fetch(
-      new URL("/api/admin/rajuk-config", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").toString()
-    );
-    if (tokenRes.ok) {
-      const tokenData = await tokenRes.json();
-      if (tokenData.token) activeToken = tokenData.token;
-    }
-  } catch (err) {
-    console.error("Failed to load Rajuk token:", err);
-  }
+  // Get active token from TokenManager
+  const tokenManager = TokenManager.getInstance();
+  const activeToken = await tokenManager.getToken();
 
   const params = new URLSearchParams({
     f: "json",
@@ -62,8 +65,11 @@ export async function GET(request: Request) {
     returnGeometry: returnGeometry,
     resultRecordCount: "100",
     resultOffset: offset,
-    token: activeToken,
   });
+  
+  if (activeToken) {
+    params.set("token", activeToken);
+  }
 
   if (geometry) params.append("geometry", geometry);
   if (geometryType) params.append("geometryType", geometryType);
@@ -72,40 +78,57 @@ export async function GET(request: Request) {
   if (outSR) params.append("outSR", outSR);
 
   try {
-    const finalUrl = `${baseUrl}?${params.toString()}`;
+    let result = await fetchRajuk(baseUrl, params);
 
-    const response = await fetch(finalUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        Accept: "application/json",
-        Referer: "https://masterplan.rajuk.gov.bd/",
-      },
-    });
-
-    const rawData = await response.text();
-
-    if (!response.ok) {
-      console.error("Rajuk Server HTTP Error:", rawData);
+    // If HTTP error (e.g. 500 from Rajuk)
+    if (!result.ok) {
+      console.error("Rajuk Server HTTP Error:", result.rawData);
       return NextResponse.json(
-        { error: "Bad Request", details: rawData },
-        { status: response.status },
+        { error: "Bad Request", details: result.rawData },
+        { status: result.status },
       );
     }
 
-    const data = JSON.parse(rawData);
-
-    if (data.error) {
-      const isAuthError = data.error.code === 498 || data.error.code === 499;
+    // Check for ArcGIS application-level token errors (498 or 499)
+    if (result.data.error) {
+      const isAuthError = result.data.error.code === 498 || result.data.error.code === 499;
+      
+      if (isAuthError && activeToken) {
+        console.warn("Rajuk token expired/invalid. Reporting failure and falling back to public layers...");
+        tokenManager.reportTokenFailure(result.data.error.code);
+        
+        // PUBLIC FALLBACK: Retry the exact same request without the token
+        params.delete("token");
+        const retryResult = await fetchRajuk(baseUrl, params);
+        
+        if (!retryResult.ok) {
+           return NextResponse.json(
+             { error: "Bad Request on Retry", details: retryResult.rawData },
+             { status: retryResult.status },
+           );
+        }
+        
+        if (retryResult.data.error) {
+           // If even the public fallback fails, we must return the error.
+           return NextResponse.json(
+             { error: retryResult.data.error.message || "Rajuk API Error (Public Fallback)", details: retryResult.data.error },
+             { status: 401 },
+           );
+        }
+        
+        return NextResponse.json(retryResult.data);
+      }
+      
+      // Standard non-auth ArcGIS error
       return NextResponse.json(
-        { error: data.error.message || "Rajuk API Error", details: data.error },
+        { error: result.data.error.message || "Rajuk API Error", details: result.data.error },
         { status: isAuthError ? 401 : 400 },
       );
     }
 
-    cache.set(cacheKey, { data, timestamp: Date.now() });
-    return NextResponse.json(data);
+    return NextResponse.json(result.data);
   } catch (error: unknown) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
+

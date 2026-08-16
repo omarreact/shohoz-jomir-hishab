@@ -4,6 +4,15 @@ import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 const RAJUK_TOKEN_KEY = "rajuk_api_token";
 
+// Utility to mask the token so it's not exposed to the browser fully
+function maskToken(token: string | undefined): string {
+  if (!token) return "";
+  if (token.length <= 15) return "***...*** (masked)";
+  const start = token.slice(0, 10);
+  const end = token.slice(-5);
+  return `${start}...[MASKED]...${end}`;
+}
+
 // GET /api/admin/rajuk-config — get current token
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        token: setting?.value ?? "",
+        token: maskToken(setting?.value),
         updatedAt: setting?.updatedAt ?? null,
       },
       { status: 200 },
@@ -47,7 +56,7 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(
-      { token, updatedAt },
+      { token: maskToken(token), updatedAt },
       { status: 200 },
     );
   } catch (error: any) {

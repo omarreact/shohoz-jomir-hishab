@@ -30,7 +30,7 @@ export default function ConditionalShell({
 
     // Fetch maintenance flag — don't wait for auth, it's a public endpoint.
     // Authenticated users bypass maintenance mode via the auth check below.
-    fetch("/api/admin/settings/maintenance")
+    fetch("/api/public/maintenance")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.maintenanceMode === true) setIsMaintenance(true);

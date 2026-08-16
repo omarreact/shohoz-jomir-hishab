@@ -7,7 +7,7 @@ export function useAnnouncement() {
   const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/public/settings")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.settings?.announcement) {

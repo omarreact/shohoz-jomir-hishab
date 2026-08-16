@@ -93,9 +93,9 @@ export async function proxy(request: NextRequest) {
     userPayload = await verifyFirebaseToken(rawToken);
     if (userPayload) {
       requestHeaders.set("x-user-id", userPayload.user_id);
-      // Firebase doesn't have custom roles by default without custom claims.
-      // We will set role to Admin if their email is in a specific list, or if custom claims are set.
-      const role = userPayload.role || (userPayload.email?.includes('admin') ? 'Admin' : 'User');
+      // The role must come securely from the custom claims. 
+      // Do not use insecure fallbacks like email matching on the edge.
+      const role = userPayload.role || 'User';
       requestHeaders.set("x-user-role", role);
     }
   }
@@ -106,14 +106,20 @@ export async function proxy(request: NextRequest) {
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }
+    
+    // Strict admin path check
+    const role = requestHeaders.get("x-user-role");
+    if (role !== "Admin" && role !== "Super Admin") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   const publicApiPrefixes = [
     "/api/auth",
     "/api/metrics",
     "/api/rajuk/health",
-    "/api/admin/settings/maintenance",
-    "/api/landbd",
+    "/api/public",
+    "/api/search",
     "/api/porcha",
     "/api/rajuk",
     "/api/unified",
@@ -121,10 +127,11 @@ export async function proxy(request: NextRequest) {
     "/api/pages",
     "/api/blogs",
     "/api/comments",
-    "/api/admin/stats",
   ];
   
   const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
+
+  // Protect all internal APIs (unless public)
   if (pathname.startsWith("/api/") && !isPublicApi) {
     if (!userPayload) {
       return new NextResponse(
@@ -132,6 +139,21 @@ export async function proxy(request: NextRequest) {
         { status: 401, headers: { "Content-Type": "application/json", ...securityHeaders } }
       );
     }
+    
+    // Strict edge guard for ALL admin API routes
+    if (pathname.startsWith("/api/admin/")) {
+      const role = requestHeaders.get("x-user-role");
+      if (role !== "Admin" && role !== "Super Admin") {
+        return new NextResponse(
+          JSON.stringify({ error: "Forbidden: Admin access required", requestId }),
+          { status: 403, headers: { "Content-Type": "application/json", ...securityHeaders } }
+        );
+      }
+    }
+  }
+
+  // Rewrite /dap-map API calls to ArcGIS backend using our server
+  if (pathname.startsWith("/server/")) {
   }
 
   return NextResponse.next({
