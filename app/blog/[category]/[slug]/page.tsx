@@ -64,7 +64,16 @@ function apiBlogToPost(b: ApiBlog): PostData {
     categorySlug: b.categorySlug || "general",
     content: (b as any).content || "",
     excerpt: b.excerpt || "",
-    tags: (b as any).tags ? JSON.parse((b as any).tags) : [],
+    tags: (() => {
+      const t = (b as any).tags;
+      if (!t) return [];
+      if (Array.isArray(t)) return t;
+      if (typeof t === 'string') {
+        try { return JSON.parse(t); } 
+        catch { return t.split(',').map(s => s.trim()).filter(Boolean); }
+      }
+      return [];
+    })(),
   };
 }
 
