@@ -266,93 +266,95 @@ export default function Navbar() {
       </div>
 
       {/* Offcanvas Mobile Menu */}
-      {isMobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1050]" 
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          
-          {/* Panel */}
-          <div className="fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#131c19] z-[1060] shadow-2xl flex flex-col transition-transform duration-300 transform translate-x-0">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[32px] h-[32px]">
-                  <Calculator size={16} />
-                </div>
-                <h5 className="font-bold text-[#006a4e] m-0 text-lg">
-                  সহজ জমির হিসাব
-                </h5>
+      <>
+        {/* Backdrop */}
+        <div 
+          className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1050] transition-opacity duration-300 ease-in-out ${
+            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        
+        {/* Panel */}
+        <div className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#131c19] z-[1060] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[32px] h-[32px]">
+                <Calculator size={16} />
               </div>
-              <button aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent">
-                <X size={24} />
-              </button>
+              <h5 className="font-bold text-[#006a4e] m-0 text-lg">
+                সহজ জমির হিসাব
+              </h5>
             </div>
+            <button aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent">
+              <X size={24} />
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-              <h6 className="text-slate-400 font-bold text-xs mb-3">প্রধান মেনু</h6>
-              <ul className="m-0 p-0 mb-6">
-                {NAV_LINKS.map(link => (
-                  <OffcanvasNavItem key={link.href} href={link.href} label={link.label} Icon={link.Icon} onClick={() => setIsMobileMenuOpen(false)} />
-                ))}
-                {isLoggedIn && <OffcanvasNavItem href="/porcha" label="পর্চা" Icon={FileText} onClick={() => setIsMobileMenuOpen(false)} />}
-              </ul>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+            <h6 className="text-slate-400 font-bold text-xs mb-3">প্রধান মেনু</h6>
+            <ul className="m-0 p-0 mb-6">
+              {NAV_LINKS.map(link => (
+                <OffcanvasNavItem key={link.href} href={link.href} label={link.label} Icon={link.Icon} onClick={() => setIsMobileMenuOpen(false)} />
+              ))}
+              {isLoggedIn && <OffcanvasNavItem href="/porcha" label="পর্চা" Icon={FileText} onClick={() => setIsMobileMenuOpen(false)} />}
+            </ul>
 
-              <h6 className="text-slate-400 font-bold text-xs mb-3">অন্যান্য সেবা</h6>
-              <ul className="m-0 p-0 mb-auto">
-                <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} onClick={() => setIsMobileMenuOpen(false)} />
-                <OffcanvasNavItem href="/rajuk-test" label="রাজউক ম্যাপ" Icon={MapPin} onClick={() => setIsMobileMenuOpen(false)} />
-                <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} onClick={() => setIsMobileMenuOpen(false)} />
-                <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} onClick={() => setIsMobileMenuOpen(false)} />
-              </ul>
+            <h6 className="text-slate-400 font-bold text-xs mb-3">অন্যান্য সেবা</h6>
+            <ul className="m-0 p-0 mb-auto">
+              <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} onClick={() => setIsMobileMenuOpen(false)} />
+              <OffcanvasNavItem href="/rajuk-test" label="রাজউক ম্যাপ" Icon={MapPin} onClick={() => setIsMobileMenuOpen(false)} />
+              <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} onClick={() => setIsMobileMenuOpen(false)} />
+              <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} onClick={() => setIsMobileMenuOpen(false)} />
+            </ul>
 
-              <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                {mounted && (
-                  <div className="flex items-center justify-between p-4 mb-4 rounded-2xl bg-[#006a4e]/10 border border-[#006a4e]/20">
-                    <span className="font-bold text-[#006a4e] text-sm flex items-center">
-                      <MoonStar size={16} className="mr-2" /> থিম পরিবর্তন
-                    </span>
-                    <button
-                      aria-label="Toggle theme"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      className="w-8 h-8 rounded-full bg-white dark:bg-[#131c19] text-[#006a4e] flex items-center justify-center shadow-sm cursor-pointer border-none"
-                    >
-                      {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                    </button>
-                  </div>
-                )}
-
-                {isLoggedIn ? (
-                  <div className="flex flex-col gap-3">
-                    <Link
-                      href="/admin"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold no-underline"
-                    >
-                      ড্যাশবোর্ড
-                    </Link>
-                    <button
-                      onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                      className="border border-[#f42a41] text-[#f42a41] w-full rounded-full flex items-center justify-center py-3 font-bold bg-transparent cursor-pointer"
-                    >
-                      <LogOut size={18} className="mr-2" /> লগআউট করুন
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold shadow-sm no-underline"
+            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+              {mounted && (
+                <div className="flex items-center justify-between p-4 mb-4 rounded-2xl bg-[#006a4e]/10 border border-[#006a4e]/20">
+                  <span className="font-bold text-[#006a4e] text-sm flex items-center">
+                    <MoonStar size={16} className="mr-2" /> থিম পরিবর্তন
+                  </span>
+                  <button
+                    aria-label="Toggle theme"
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="w-8 h-8 rounded-full bg-white dark:bg-[#131c19] text-[#006a4e] flex items-center justify-center shadow-sm cursor-pointer border-none transition-transform hover:scale-110 active:scale-95"
                   >
-                    <LogIn size={18} className="mr-2" /> অ্যাডমিন লগিন
+                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                  </button>
+                </div>
+              )}
+
+              {isLoggedIn ? (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold no-underline transition-transform hover:scale-[1.02] active:scale-95 shadow-sm"
+                  >
+                    ড্যাশবোর্ড
                   </Link>
-                )}
-              </div>
+                  <button
+                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                    className="border border-[#f42a41] text-[#f42a41] w-full rounded-full flex items-center justify-center py-3 font-bold bg-transparent cursor-pointer transition-transform hover:scale-[1.02] hover:bg-[#f42a41] hover:text-white active:scale-95"
+                  >
+                    <LogOut size={18} className="mr-2" /> লগআউট করুন
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold shadow-sm no-underline transition-transform hover:scale-[1.02] active:scale-95"
+                >
+                  <LogIn size={18} className="mr-2" /> অ্যাডমিন লগিন
+                </Link>
+              )}
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </>
 
       {isSearchOpen && (
         <SmartSearchPalette
