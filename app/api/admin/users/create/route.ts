@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { auth, collections } from "@/src/modules/database/firebaseAdmin";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -43,6 +42,7 @@ export async function POST(request: NextRequest) {
 
   try {
     await verifyAdminAuth(request);
+    const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: unknown;
     try {
