@@ -44,3 +44,13 @@ export const makeBanglaStr = (str: any) => {
     .map((c: any) => (map as any)[c] || c)
     .join("");
 };
+
+export const optimizeCloudinaryUrl = (url: string, width: number = 800) => {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
+  
+  // If it already has transformations, don't mess with it
+  if (url.includes("/upload/c_") || url.includes("/upload/f_") || url.includes("/upload/e_")) return url;
+  
+  // Inject transformation
+  return url.replace("/upload/", `/upload/c_scale,w_${width},f_auto,q_auto,e_auto_enhance/`);
+};

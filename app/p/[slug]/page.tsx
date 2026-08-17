@@ -1,67 +1,69 @@
-"use client";
+import { notFound } from "next/navigation";
+import { collections } from "@/src/modules/database/firebaseAdmin";
+import type { Metadata } from "next";
 
-import { useState, useEffect, use } from "react";
-import Link from "next/link";
+interface PageData {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export default function DynamicPageViewer({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const resolvedParams = use(params);
-  const slug = resolvedParams.slug;
+/**
+ * Fetches page data from Firestore based on the slug.
+ * This is a server-side function that runs on the server, not in the browser.
+ */
+async function getPage(slug: string): Promise<PageData | null> {
+  const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
 
-  const [pageData, setPageData] = useState<{ title: string; content: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    if (!slug) return;
-
-    fetch(`/api/pages?slug=${encodeURIComponent(slug)}`)
-      .then((res) => {
-        if (res.status === 404) {
-          setNotFound(true);
-          return null;
-        }
-        if (!res.ok) throw new Error("Failed to load page");
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.page) setPageData(data.page);
-      })
-      .catch((error) => {
-        console.error("Error fetching dynamic page:", error);
-        setNotFound(true);
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="w-10 h-10 border-4 border-[#006a4e] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (snapshot.empty) {
+    return null;
   }
 
-  if (notFound || !pageData) {
-    return (
-      <div className="text-center py-20">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">৪০৪ — পেজটি পাওয়া যায়নি</h3>
-        <Link
-          href="/"
-          className="inline-block mt-4 px-6 py-3 rounded-full bg-[#006a4e] text-white font-bold"
-        >
-          হোমপেজে যান
-        </Link>
-      </div>
-    );
+  const doc = snapshot.docs[0];
+  const data = doc.data();
+
+  return {
+    id: doc.id,
+    title: data.title,
+    slug: data.slug,
+    category: data.category,
+    content: data.content,
+    createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+  };
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const page = await getPage(params.slug);
+
+  if (!page) {
+    return { title: "Page Not Found" };
+  }
+
+  return {
+    title: `${page.title} | Shohoz Jomir Hishab`,
+    description: `Information about ${page.title}`,
+  };
+}
+
+export default async function Page({ params }: { params: { slug: string } }) {
+  const page = await getPage(params.slug);
+
+  if (!page) {
+    notFound();
   }
 
   return (
-    <div className="fade-in pb-5">
-      <div dangerouslySetInnerHTML={{ __html: pageData.content }} />
-    </div>
+    <main className="container mx-auto px-4 py-8">
+      <article className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">{page.title}</h1>
+        {/* The content is assumed to be safe HTML from a trusted source (e.g., an admin). */}
+        <div className="prose lg:prose-xl max-w-none" dangerouslySetInnerHTML={{ __html: page.content }} />
+      </article>
+    </main>
   );
 }

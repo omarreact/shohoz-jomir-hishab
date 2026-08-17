@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
     const doc = await ref.get();
     const page = { id: doc.id, ...doc.data() };
     revalidatePath("/", "layout");
+    revalidatePath(`/p/${formattedSlug}`);
 
     return json({ success: true, data: { page } }, 201, requestId);
   } catch (error: any) {

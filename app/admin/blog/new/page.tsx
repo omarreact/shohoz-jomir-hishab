@@ -166,12 +166,12 @@ export default function NewBlogPage() {
                             </Button>
                           )}
                         </div>
-                        {!isCloudinaryConfigured && (
-                          <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
-                            Cloudinary image upload is currently unavailable. Please configure Cloudinary environment variables.
-                          </div>
-                        )}
                       </FormControl>
+                      {!isCloudinaryConfigured && (
+                        <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
+                          Cloudinary image upload is currently unavailable. Please configure Cloudinary environment variables.
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

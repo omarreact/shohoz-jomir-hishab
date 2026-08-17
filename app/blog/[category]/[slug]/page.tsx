@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Loader2,
 } from "lucide-react";
+import { optimizeCloudinaryUrl } from "@/src/shared/utils";
 import TableOfContents from "@/src/features/blog/components/TableOfContents";
 import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
 import BlogCard, { BlogPost } from "@/src/features/blog/components/BlogCard";
@@ -192,7 +193,7 @@ export default function SingleBlogPage() {
       <div className="relative flex items-center justify-center pt-32 pb-24 min-h-[500px]">
         <div
           className="absolute inset-0 w-full h-full opacity-20"
-          style={{ backgroundImage: `url(${post.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          style={{ backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 1200)})`, backgroundSize: "cover", backgroundPosition: "center" }}
         />
         <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent" />
 

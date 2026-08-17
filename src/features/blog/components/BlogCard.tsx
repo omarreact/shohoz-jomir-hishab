@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clock, User } from "lucide-react";
+import { optimizeCloudinaryUrl } from "@/src/shared/utils";
 
 export interface BlogPost {
   slug: string;
@@ -29,7 +30,7 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
           <div 
             className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105" 
             style={{ 
-              backgroundImage: `url(${post.coverImage})`, 
+              backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 600)})`, 
             }} 
           />
           <div className="absolute top-4 left-4">

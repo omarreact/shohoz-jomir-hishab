@@ -40,6 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const docRef = collections.pages.doc(id);
     const docSnap = await docRef.get();
     if (!docSnap.exists) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    const oldPageData = docSnap.data();
 
     await docRef.update(data);
     const updatedDoc = await docRef.get();
@@ -51,6 +52,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       updatedAt: typeof updatedDocData.updatedAt?.toDate === "function" ? updatedDocData.updatedAt.toDate().toISOString() : updatedDocData.updatedAt,
     };
     revalidatePath("/", "layout");
+    // Revalidate old path if slug changed
+    if (oldPageData?.slug && oldPageData.slug !== updatedDocData.slug) {
+      revalidatePath(`/p/${oldPageData.slug}`);
+    }
+    // Revalidate new/current path
+    if (updatedDocData.slug) {
+      revalidatePath(`/p/${updatedDocData.slug}`);
+    }
     return NextResponse.json({ success: true, data: { page } }, { status: 200 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -67,8 +76,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const docRef = collections.pages.doc(id);
     const docSnap = await docRef.get();
     if (!docSnap.exists) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    const pageData = docSnap.data();
     await docRef.delete();
     revalidatePath("/", "layout");
+    if (pageData?.slug) {
+      revalidatePath(`/p/${pageData.slug}`);
+    }
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

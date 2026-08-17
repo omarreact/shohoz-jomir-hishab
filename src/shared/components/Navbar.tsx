@@ -131,8 +131,8 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { isLoggedIn: authLoggedIn, loading: authLoading, logout } = useAuth();
+  const isLoggedIn = !authLoading && authLoggedIn;
   
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -140,10 +140,6 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!authLoading) setIsLoggedIn(authLoggedIn);
-  }, [authLoggedIn, authLoading]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

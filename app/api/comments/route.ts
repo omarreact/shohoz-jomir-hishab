@@ -11,10 +11,9 @@ export async function GET(req: NextRequest) {
 
     const snapshot = await collections.comments
       .where("blogId", "==", blogId)
-      .orderBy("createdAt", "desc")
       .get();
       
-    const comments = snapshot.docs.map((doc: any) => {
+    let comments = snapshot.docs.map((doc: any) => {
       const data = doc.data();
       return { 
         id: doc.id, 
@@ -23,6 +22,13 @@ export async function GET(req: NextRequest) {
         text: data.text, 
         createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt 
       };
+    });
+
+    // Sort by createdAt descending manually to avoid requiring a composite index
+    comments.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
     });
 
     return NextResponse.json({ comments }, { status: 200 });
