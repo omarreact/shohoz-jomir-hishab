@@ -2,7 +2,6 @@ import "reflect-metadata";
 import type { Metadata } from "next";
 
 import "./globals.css";
-import "@arcgis/core/assets/esri/themes/light/main.css";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";

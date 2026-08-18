@@ -26,7 +26,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
 import { t } from "@/src/locales";
 import { useTheme } from "next-themes";
 
@@ -352,12 +351,7 @@ export default function Navbar() {
         </div>
       </>
 
-      {isSearchOpen && (
-        <SmartSearchPalette
-          onClose={() => setIsSearchOpen(false)}
-          onSelectResult={handleSelectResult}
-        />
-      )}
+
     </>
   );
 }

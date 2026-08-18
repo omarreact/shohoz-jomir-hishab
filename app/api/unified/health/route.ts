@@ -9,7 +9,7 @@ export async function GET() {
     const health = await gateway.getHealth();
     
     // Check if any critical providers are down
-    const isDegraded = Object.values(health).some((h: { status?: string }) => h.status === "down");
+    const isDegraded = Object.values(health).some((h: any) => h?.status === "down");
     
     return NextResponse.json({
       status: isDegraded ? "degraded" : "healthy",

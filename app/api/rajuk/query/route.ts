@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     if (action === "plots") {
       const raw = p.get("plot_no");
       const plotNo = raw ? Number(raw) : undefined;
-      if (raw && (!Number.isInteger(plotNo) || plotNo < 0)) return NextResponse.json({ error: "plot_no must be an integer" }, { status: 400 });
+      if (raw && plotNo !== undefined && (!Number.isInteger(plotNo) || plotNo < 0)) return NextResponse.json({ error: "plot_no must be an integer" }, { status: 400 });
       return NextResponse.json(await getPlots({ plotNo, mouza: p.get("mouza") || undefined, jl: p.get("jl") || undefined, upazila: p.get("upazila") || undefined, resultRecordCount: Number(p.get("limit") || 50), resultOffset: Number(p.get("offset") || 0) }));
     }
     if (action === "identify") {

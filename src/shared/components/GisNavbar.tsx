@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import SmartSearchPalette from "@/src/features/search/components/SmartSearchPalette";
 import { t } from "@/src/locales";
 
 export default function GisNavbar() {
@@ -266,13 +265,6 @@ export default function GisNavbar() {
           </div>
         </div>
       </div>
-
-      {isSearchOpen && (
-        <SmartSearchPalette
-          onClose={() => setIsSearchOpen(false)}
-          onSelectResult={handleSelectResult}
-        />
-      )}
     </>
   );
 }
