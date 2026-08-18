@@ -1,340 +1,59 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { List, Zap, Calculator, Trash2, Database } from "lucide-react";
+import { List, Zap, Calculator, Trash2 } from "lucide-react";
 import { FULL_UNIT_TIL } from "@/src/shared/constants";
 import { toBn, toEn, makeBanglaStr } from "@/src/shared/utils";
 import { buildDetailedResults } from "@/src/modules/khatiyan/calculations";
 import PrintStyles from "@/src/shared/components/PrintStyles";
 import DetailedCalculator from "@/src/features/khatiyan/components/DetailedCalculator";
 import QuickCalculator from "@/src/features/khatiyan/components/QuickCalculator";
+import ResultSection from "@/src/features/khatiyan/components/ResultSection";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
-import SearchPanel from "@/src/features/search/components/SearchPanel";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/shared/ui/tabs";
 
-const ResultSection = dynamic(
-  () => import("@/src/features/khatiyan/components/ResultSection"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="text-center p-5 mt-4 text-slate-500 dark:text-slate-400">
-        লোড হচ্ছে...
-      </div>
-    ),
-  },
-);
-
-// -- Types --
-type Plot = {
-  id: number;
-  cs: string;
-  rs: string;
-  city: string;
-  bds: string;
-  t: string;
-  a: string;
-};
-import type { RelationTypeBn } from "@/src/shared/types";
-
-type Owner = {
-  id: number;
-  n: string;
-  rType: RelationTypeBn;
-  rName: string;
-  a: number;
-  g: number;
-  k: number;
-  kr: number;
-  ti: number;
-};
-type QuickData = {
-  totalLand: string;
-  a: number;
-  g: number;
-  k: number;
-  kr: number;
-  ti: number;
-};
-type QuickResult = { land: number; sqft: number; katha: number };
-
-const initialPlot = (id: number): Plot => ({
-  id,
-  cs: "",
-  rs: "",
-  city: "",
-  bds: "",
-  t: "",
-  a: "",
-});
-
-const initialOwner = (id: number): Owner => ({
-  id,
-  n: "",
-  rType: "পিতা",
-  rName: "",
-  a: 0,
-  g: 0,
-  k: 0,
-  kr: 0,
-  ti: 0,
-});
+ type Plot = { id: number; cs: string; rs: string; city: string; bds: string; t: string; a: string };
+ type Owner = { id: number; n: string; rType: any; rName: string; a: number; g: number; k: number; kr: number; ti: number };
+ type QuickData = { totalLand: string; a: number; g: number; k: number; kr: number; ti: number };
+ type QuickResult = { land: number; sqft: number; katha: number };
+ const initialPlot = (id: number): Plot => ({ id, cs: "", rs: "", city: "", bds: "", t: "", a: "" });
+ const initialOwner = (id: number): Owner => ({ id, n: "", rType: "পিতা", rName: "", a: 0, g: 0, k: 0, kr: 0, ti: 0 });
 
 export default function SmartKhatiyanApp() {
   const [activeTab, setActiveTab] = useState("detailed");
-  const nextPlotId = useRef(3);
-  const nextOwnerId = useRef(4);
-
+  const nextPlotId = useRef(3); const nextOwnerId = useRef(4); const exportRef = useRef<HTMLDivElement | null>(null);
   const [plots, setPlots] = useState<Plot[]>([initialPlot(1)]);
   const [owners, setOwners] = useState<Owner[]>([initialOwner(2)]);
   const [detailedResults, setDetailedResults] = useState<any[] | null>(null);
-  const [quickData, setQuickData] = useState<QuickData>({
-    totalLand: "",
-    a: 0,
-    g: 0,
-    k: 0,
-    kr: 0,
-    ti: 0,
-  });
+  const [quickData, setQuickData] = useState<QuickData>({ totalLand: "", a: 0, g: 0, k: 0, kr: 0, ti: 0 });
   const [quickResult, setQuickResult] = useState<QuickResult | null>(null);
-  const exportRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const savedData = localStorage.getItem("khatiyanNextData");
-    if (savedData) {
-      try {
-        const d = JSON.parse(savedData);
-        if (d.plots?.length > 0) setPlots(d.plots);
-        if (d.owners?.length > 0) setOwners(d.owners);
-      } catch (e) {}
-    }
-  }, []);
+  useEffect(() => { const saved = localStorage.getItem("khatiyanNextData"); if (saved) { try { const d = JSON.parse(saved); if (d.plots?.length) setPlots(d.plots); if (d.owners?.length) setOwners(d.owners); } catch {} } }, []);
+  useEffect(() => { const t = setTimeout(() => localStorage.setItem("khatiyanNextData", JSON.stringify({ plots, owners })), 500); return () => clearTimeout(t); }, [plots, owners]);
+  const addPlot = () => setPlots((p) => [...p, initialPlot(nextPlotId.current++)]);
+  const removePlot = (id: number) => setPlots((p) => p.filter((x) => x.id !== id));
+  const updatePlot = (id: number, field: keyof Plot, value: string) => setPlots((p) => p.map((x) => x.id === id ? { ...x, [field]: ["cs", "rs", "city", "bds", "a"].includes(field) ? makeBanglaStr(value) : value } : x));
+  const addOwner = () => setOwners((p) => [...p, initialOwner(nextOwnerId.current++)]);
+  const removeOwner = (id: number) => setOwners((p) => p.filter((x) => x.id !== id));
+  const updateOwner = <K extends keyof Owner>(id: number, field: K, value: Owner[K]) => setOwners((p) => p.map((x) => x.id === id ? { ...x, [field]: value } : x));
+  const totalOwnerTil = owners.reduce((s, o) => s + Number(o.a) * 4800 + Number(o.g) * 240 + Number(o.k) * 60 + Number(o.kr) * 20 + Number(o.ti), 0);
+  const calculateDetailed = () => { const { hasData, computedResults } = buildDetailedResults(owners, plots, FULL_UNIT_TIL, toEn, toBn); if (hasData && computedResults.length) { setDetailedResults(computedResults); setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 50); } else alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।"); };
+  const calculateQuick = () => { const total = toEn(quickData.totalLand); const shareTil = Number(quickData.a) * 4800 + Number(quickData.g) * 240 + Number(quickData.k) * 60 + Number(quickData.kr) * 20 + Number(quickData.ti); const share = shareTil / FULL_UNIT_TIL; if (total > 0 && share > 0) setQuickResult({ land: total * share, sqft: total * share * 435.6, katha: total * share / 1.65 }); else alert("দয়া করে জমির পরিমাণ এবং অংশ সঠিক ভাবে দিন।"); };
+  const clearAll = () => { if (!confirm("সব ডাটা মুছে ফেলতে চান?")) return; nextPlotId.current = 3; nextOwnerId.current = 4; setPlots([initialPlot(1)]); setOwners([initialOwner(2)]); setDetailedResults(null); localStorage.removeItem("khatiyanNextData"); };
+  const handleQuickDataChange = (d: Partial<QuickData>) => setQuickData((p) => ({ ...p, ...d, ...(d.totalLand !== undefined ? { totalLand: makeBanglaStr(d.totalLand) } : {}) }));
 
-  useEffect(() => {
-    const timer = setTimeout(
-      () =>
-        localStorage.setItem(
-          "khatiyanNextData",
-          JSON.stringify({ plots, owners }),
-        ),
-      500,
-    );
-    return () => clearTimeout(timer);
-  }, [plots, owners]);
-
-  const addPlot = () =>
-    setPlots((prev) => [...prev, initialPlot(nextPlotId.current++)]);
-  const removePlot = (id: number) =>
-    setPlots((prev) => prev.filter((p) => p.id !== id));
-  const updatePlot = (id: number, field: keyof Plot, value: string) => {
-    const finalValue = ["cs", "rs", "city", "bds", "a"].includes(field)
-      ? makeBanglaStr(value)
-      : value;
-    setPlots((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: finalValue as any } : p)),
-    );
-  };
-
-  const addOwner = () =>
-    setOwners((prev) => [...prev, initialOwner(nextOwnerId.current++)]);
-  const removeOwner = (id: number) =>
-    setOwners((prev) => prev.filter((o) => o.id !== id));
-  const updateOwner = <K extends keyof Owner>(
-    id: number,
-    field: K,
-    value: Owner[K],
-  ) =>
-    setOwners((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, [field]: value } : o)),
-    );
-
-  const totalOwnerTil = owners.reduce(
-    (acc, o) =>
-      acc +
-      Number(o.a) * 4800 +
-      Number(o.g) * 240 +
-      Number(o.k) * 60 +
-      Number(o.kr) * 20 +
-      Number(o.ti),
-    0,
-  );
-
-  const calculateDetailed = () => {
-    const { hasData, computedResults } = buildDetailedResults(
-      owners,
-      plots,
-      FULL_UNIT_TIL,
-      toEn,
-      toBn,
-    );
-    if (hasData && computedResults.length > 0) {
-      setDetailedResults(computedResults);
-      setTimeout(
-        () =>
-          document
-            .getElementById("resultSection")
-            ?.scrollIntoView({ behavior: "smooth" }),
-        100,
-      );
-    } else {
-      alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।");
-    }
-  };
-
-  const calculateQuick = () => {
-    const total = toEn(quickData.totalLand);
-    const shareTil =
-      Number(quickData.a) * 4800 +
-      Number(quickData.g) * 240 +
-      Number(quickData.k) * 60 +
-      Number(quickData.kr) * 20 +
-      Number(quickData.ti);
-    const share = shareTil / FULL_UNIT_TIL;
-    if (total > 0 && share > 0) {
-      setQuickResult({
-        land: total * share,
-        sqft: total * share * 435.6,
-        katha: (total * share) / 1.65,
-      });
-    } else {
-      alert("দয়া করে জমির পরিমাণ এবং অংশ সঠিক ভাবে দিন।");
-    }
-  };
-
-  const clearAll = () => {
-    if (confirm("সব ডাটা মুছে ফেলতে চান?")) {
-      nextPlotId.current = 3;
-      nextOwnerId.current = 4;
-      setPlots([initialPlot(1)]);
-      setOwners([initialOwner(2)]);
-      setDetailedResults(null);
-      localStorage.removeItem("khatiyanNextData");
-    }
-  };
-
-  const handleQuickDataChange = (newData: Partial<QuickData>) => {
-    setQuickData((prev) => ({
-      ...prev,
-      ...newData,
-      ...(newData.totalLand !== undefined && {
-        totalLand: makeBanglaStr(newData.totalLand),
-      }),
-    }));
-  };
-
-  const handleUseArea = (decimalArea: number, dagNo: string, type: string) => {
-    if (plots.length === 0) {
-      alert("খতিয়ানে কমপক্ষে একটি প্লট বা দাগ থাকা আবশ্যক!");
-      return;
-    }
-    updatePlot(plots[0].id, "a", decimalArea.toFixed(2));
-    updatePlot(plots[0].id, "rs", type !== "ms_plot_no" ? toBn(dagNo) : "");
-    setActiveTab("detailed");
-  };
-
-  const downloadMultiPagePDF = async () => {};
-  const downloadExcel = () => {};
-
-  return (
-    <>
-      <HeroBanner
-        align="center"
-        badge="খতিয়ান ক্যালকুলেটর"
-        title={
-          <>
-            স্মার্ট <span className="text-[#006a4e]">খতিয়ান</span> হিসাব
-          </>
-        }
-        description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন এবং রাজউক ম্যাপ থেকে দাগের তথ্য আনুন।"
-        pattern="none"
-      />
-      <PrintStyles />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 no-print fade-in visible">
-        <Tabs defaultValue="detailed" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="flex justify-center mb-10">
-            <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 h-auto shadow-sm">
-              <TabsTrigger
-                value="detailed"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-[#006a4e] data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
-              >
-                <List size={18} className="mr-2" /> বিস্তারিত হিসাব
-              </TabsTrigger>
-              <TabsTrigger
-                value="quick"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
-              >
-                <Zap size={18} className="mr-2" /> কুইক
-              </TabsTrigger>
-              <TabsTrigger
-                value="rajuk"
-                className="rounded-full px-6 py-3 font-bold data-[state=active]:bg-slate-900 dark:data-[state=active]:bg-white data-[state=active]:text-white dark:data-[state=active]:text-slate-900 data-[state=active]:shadow-md transition-all text-slate-500 dark:text-slate-400"
-              >
-                <Database size={18} className="mr-2 text-yellow-500" /> রাজউক ডাটা
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="detailed" className="mt-0 outline-none">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300 visible">
-              <DetailedCalculator
-                plots={plots}
-                owners={owners}
-                totalOwnerTil={totalOwnerTil}
-                onAddPlot={addPlot}
-                onRemovePlot={removePlot}
-                onUpdatePlot={updatePlot}
-                onAddOwner={addOwner}
-                onRemoveOwner={removeOwner}
-                onUpdateOwner={updateOwner}
-              />
-              <div className="flex justify-center gap-4 mt-8 mb-4 border-t border-slate-200 dark:border-slate-800 pt-8">
-                <button
-                  onClick={clearAll}
-                  className="px-6 py-3 font-bold rounded-2xl border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center"
-                >
-                  <Trash2 size={18} className="mr-2" /> মুছে ফেলুন
-                </button>
-                <button
-                  onClick={calculateDetailed}
-                  className="px-8 py-3 bg-[#006a4e] text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center"
-                >
-                  <Calculator size={18} className="mr-2" /> হিসাব করুন
-                </button>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="quick" className="mt-0 outline-none">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-300 visible">
-              <QuickCalculator
-                quickData={quickData}
-                quickResult={quickResult}
-                onQuickDataChange={handleQuickDataChange}
-                onCalculateQuick={calculateQuick}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="rajuk" className="mt-0 outline-none">
-            <div className="flex justify-center animate-in fade-in zoom-in-95 duration-300 mb-10 visible">
-              <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
-                <SearchPanel onUseArea={handleUseArea} compact />
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <ResultSection
-          detailedResults={detailedResults}
-          exportRef={exportRef}
-          onDownloadPDF={downloadMultiPagePDF}
-          onDownloadExcel={downloadExcel}
-        />
-        <div className="mt-20">
-          <LatestBlogs />
-        </div>
-      </div>
-    </>
-  );
+  return <>
+    <HeroBanner align="center" badge="খতিয়ান ক্যালকুলেটর" title={<>স্মার্ট <span className="text-[#006a4e]">খতিয়ান</span> হিসাব</>} description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন। রাজউক ডাটা এখন আলাদা RAJUK পেজে রয়েছে।" pattern="none" />
+    <PrintStyles />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 no-print">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex justify-center mb-10"><TabsList className="bg-slate-100 dark:bg-slate-900 border rounded-full p-1 h-auto"><TabsTrigger value="detailed" className="rounded-full px-6 py-3 font-bold"><List size={18} className="mr-2" /> বিস্তারিত হিসাব</TabsTrigger><TabsTrigger value="quick" className="rounded-full px-6 py-3 font-bold"><Zap size={18} className="mr-2" /> কুইক</TabsTrigger></TabsList></div>
+        <TabsContent value="detailed" className="mt-0"><div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border"><DetailedCalculator plots={plots} owners={owners} totalOwnerTil={totalOwnerTil} onAddPlot={addPlot} onRemovePlot={removePlot} onUpdatePlot={updatePlot} onAddOwner={addOwner} onRemoveOwner={removeOwner} onUpdateOwner={updateOwner} /><div className="flex justify-center gap-4 mt-8 pt-8 border-t"><button onClick={clearAll} className="px-6 py-3 font-bold rounded-2xl border border-red-500 text-red-500 flex items-center"><Trash2 size={18} className="mr-2" /> মুছে ফেলুন</button><button onClick={calculateDetailed} className="px-8 py-3 bg-[#006a4e] text-white font-bold rounded-2xl flex items-center"><Calculator size={18} className="mr-2" /> হিসাব করুন</button></div></div></TabsContent>
+        <TabsContent value="quick" className="mt-0"><div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 shadow-sm border max-w-3xl mx-auto"><QuickCalculator quickData={quickData} quickResult={quickResult} onQuickDataChange={handleQuickDataChange} onCalculateQuick={calculateQuick} /></div></TabsContent>
+      </Tabs>
+      <ResultSection detailedResults={detailedResults} exportRef={exportRef} onDownloadPDF={() => {}} onDownloadExcel={() => {}} />
+      <div className="mt-20"><LatestBlogs /></div>
+    </div>
+  </>;
 }
