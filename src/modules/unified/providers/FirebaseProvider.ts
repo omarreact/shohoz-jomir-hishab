@@ -1,74 +1,11 @@
 import { BaseProvider } from "../core/BaseProvider";
 import { ProviderQuery, UnifiedFeature } from "../types";
-import { FirebaseResponseSchema } from "@/src/types/rajuk";
+import { FirebaseResponseSchema } from "@/src/types/external";
 import { ApiError } from "@/src/shared/utils/errors";
 
 export class FirebaseProvider extends BaseProvider {
-  public readonly name: string;
-  public readonly type = "Firebase";
-  private readonly collectionName: string;
-  private readonly documentId: string;
-
-  constructor(name: string, collectionName: string, documentId: string) {
-    super();
-    this.name = name;
-    this.collectionName = collectionName;
-    this.documentId = documentId;
-  }
-
-  public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> {
-    try {
-      const { collections } = await import("@/src/modules/database/firebaseAdmin");
-      
-      // Access the correct collection via admin SDK
-      // Using generic db reference if collection is dynamic
-      const { db } = await import("@/src/modules/database/firebaseAdmin");
-      if (!db) {
-         throw new Error("Firebase Admin SDK not initialized");
-      }
-      
-      const docRef = db.collection(this.collectionName).doc(this.documentId);
-      const docSnap = await docRef.get();
-      
-      if (!docSnap.exists) {
-        return [];
-      }
-      
-      const rawData = docSnap.data();
-      return this.normalize(rawData);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new ApiError(`Firebase Error: ${error.message}`, 500);
-      }
-      throw new ApiError("Firebase Error", 500);
-    }
-  }
-
-  public normalize(rawData: unknown): UnifiedFeature[] {
-    const data = FirebaseResponseSchema.parse(rawData);
-    
-    // If it's the specific format for porcha JSON containing an array of records
-    if (data && data.data && Array.isArray(data.data)) {
-      return data.data.map((item, index) => ({
-        id: item.id || `fb-${this.name}-${index}`,
-        properties: item,
-        metadata: {
-          layerId: this.name,
-          source: "Firebase",
-        }
-      })) as UnifiedFeature[];
-    }
-
-    // Otherwise treat the whole doc as one feature
-    const recordData = data as Record<string, unknown>;
-    return [{
-      id: (recordData.id as string) || `fb-${this.name}-doc`,
-      properties: recordData,
-      metadata: {
-        layerId: this.name,
-        source: "Firebase",
-      }
-    }] as UnifiedFeature[];
-  }
+  public readonly name: string; public readonly type = "Firebase"; private readonly collectionName: string; private readonly documentId: string;
+  constructor(name: string, collectionName: string, documentId: string) { super(); this.name = name; this.collectionName = collectionName; this.documentId = documentId; }
+  public async fetch(query: ProviderQuery): Promise<UnifiedFeature[]> { try { const { db } = await import("@/src/modules/database/firebaseAdmin"); if (!db) throw new Error("Firebase Admin SDK not initialized"); const docSnap = await db.collection(this.collectionName).doc(this.documentId).get(); if (!docSnap.exists) return []; return this.normalize(docSnap.data()); } catch (error: unknown) { throw new ApiError(`Firebase Error: ${error instanceof Error ? error.message : "unknown error"}`, 500); } }
+  public normalize(rawData: unknown): UnifiedFeature[] { const data = FirebaseResponseSchema.parse(rawData); if (data.data && Array.isArray(data.data)) return data.data.map((item, index) => ({ id: item.id || `fb-${this.name}-${index}`, properties: item, metadata: { layerId: this.name, source: "Firebase" } })) as UnifiedFeature[]; const recordData = data as Record<string, unknown>; return [{ id: (recordData.id as string) || `fb-${this.name}-doc`, properties: recordData, metadata: { layerId: this.name, source: "Firebase" } }] as UnifiedFeature[]; }
 }
-

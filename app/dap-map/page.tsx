@@ -1,70 +1,60 @@
 "use client";
 
-import { useState } from "react";
 import dynamic from "next/dynamic";
-import LoadingSpinner from "@/src/shared/ui/LoadingSpinner";
-import { ChevronDown, Map as MapIcon } from "lucide-react";
-import DapSearchWizard from "@/src/features/map/components/DapSearchWizard";
+import { FormEvent, useState } from "react";
+import { Search, MapPinned, Layers3, AlertCircle, Loader2 } from "lucide-react";
+import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 
-// Lazy load the heavy Leaflet map
-const FullDapMap = dynamic(() => import("@/src/features/map/components/FullDapMap"), {
-  ssr: false,
-  loading: () => <LoadingSpinner label="ম্যাপ লোড হচ্ছে..." size="lg" />,
-});
+const RajukMap = dynamic(() => import("./RajukMap"), { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-slate-100 text-slate-600"><Loader2 className="mr-2 animate-spin" /> RAJUK map loading…</div> });
 
 export default function DapMapPage() {
-  const [selectedPlot, setSelectedPlot] = useState<any | null>(null);
+  const [plotNo, setPlotNo] = useState("");
+  const [mouza, setMouza] = useState("");
+  const [jl, setJl] = useState("");
+  const [upazila, setUpazila] = useState("");
+  const [results, setResults] = useState<RajukPlotFeature[]>([]);
+  const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  return (
-    <div className="flex flex-col bg-slate-50 dark:bg-slate-950 w-full" style={{ height: "calc(100vh - 75px)", overflow: "hidden" }}>
-      {/* ── Official RAJUK Style Header ── */}
-      <div 
-        className="bg-white dark:bg-slate-900 px-4 md:px-6 flex items-center justify-between shrink-0 h-[60px] border-b border-slate-200 dark:border-slate-800 shadow-sm z-[1050]"
-      >
-        <div className="flex items-center h-full">
-          {/* Mock Logo / Branding */}
-          <div className="flex items-center justify-center border rounded-full border-blue-600/25 bg-slate-50 dark:bg-slate-800 w-10 h-10">
-            <MapIcon size={22} className="text-blue-600 dark:text-blue-500" />
-          </div>
-          <div className="ml-3 pl-3 border-l border-slate-200 dark:border-slate-700 h-full flex flex-col justify-center">
-            <h5 className="m-0 font-bold text-[#1e3a8a] dark:text-blue-400 text-lg leading-tight">
-              Masterplan, RAJUK
-            </h5>
-            <small className="text-slate-500 dark:text-slate-400 font-medium text-xs">
-              Detailed Area Plan 2022 - 2035
-            </small>
-          </div>
-        </div>
+  async function search(event: FormEvent) {
+    event.preventDefault(); setError(""); setResults([]); setSelected(null);
+    if (!plotNo.trim()) { setError("দাগ/প্লট নম্বর দিন।"); return; }
+    setLoading(true);
+    try {
+      const q = new URLSearchParams({ action: "plots", plot_no: plotNo.trim(), limit: "50" });
+      if (mouza.trim()) q.set("mouza", mouza.trim());
+      if (jl.trim()) q.set("jl", jl.trim());
+      if (upazila.trim()) q.set("upazila", upazila.trim());
+      const response = await fetch(`/api/rajuk/query?${q}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "RAJUK query failed");
+      const features = data.features ?? [];
+      if (!features.length) setError("কোনো RAJUK RS প্লট পাওয়া যায়নি।");
+      setResults(features);
+      if (features.length === 1) setSelected(features[0]);
+    } catch (e) { setError(e instanceof Error ? e.message : "অনুসন্ধান ব্যর্থ হয়েছে।"); }
+    finally { setLoading(false); }
+  }
 
-        <div className="flex items-center">
-          <button className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 flex items-center font-medium text-sm transition-colors">
-            Help <ChevronDown size={14} className="ml-1" />
-          </button>
-        </div>
+  return <main className="flex h-[calc(100vh-75px)] min-h-[640px] flex-col bg-slate-100">
+    <header className="flex shrink-0 items-center justify-between border-b bg-white px-4 py-3 shadow-sm md:px-6">
+      <div><div className="flex items-center gap-2 text-lg font-bold text-slate-900"><MapPinned className="text-[#006a4e]" /> RAJUK DAP Map</div><p className="text-xs text-slate-500">Verified RAJUK runtime services • RS Plot / Dag search</p></div>
+      <div className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 md:flex"><Layers3 size={14} /> 6 live layers</div>
+    </header>
+    <section className="relative min-h-0 flex-1">
+      <RajukMap selected={selected} />
+      <div className="absolute left-4 top-4 z-30 w-[min(420px,calc(100%-2rem))] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur">
+        <form onSubmit={search} className="space-y-3">
+          <div><label className="text-sm font-semibold text-slate-800">দাগ / Plot No *</label><div className="relative mt-1"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input value={plotNo} onChange={e => setPlotNo(e.target.value)} inputMode="numeric" className="w-full rounded-xl border px-10 py-2.5 outline-none focus:border-[#006a4e]" placeholder="যেমন 450" /></div></div>
+          <div className="grid grid-cols-2 gap-2"><input value={mouza} onChange={e => setMouza(e.target.value)} className="rounded-xl border px-3 py-2 text-sm outline-none focus:border-[#006a4e]" placeholder="মৌজা (ঐচ্ছিক)" /><input value={jl} onChange={e => setJl(e.target.value)} className="rounded-xl border px-3 py-2 text-sm outline-none focus:border-[#006a4e]" placeholder="JL (ঐচ্ছিক)" /></div>
+          <input value={upazila} onChange={e => setUpazila(e.target.value)} className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-[#006a4e]" placeholder="উপজেলা (ঐচ্ছিক)" />
+          <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#006a4e] px-4 py-2.5 font-semibold text-white disabled:opacity-60">{loading && <Loader2 size={17} className="animate-spin" />} {loading ? "অনুসন্ধান হচ্ছে…" : "RAJUK প্লট খুঁজুন"}</button>
+        </form>
+        {error && <div className="mt-3 flex gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={18} className="shrink-0" />{error}</div>}
+        {results.length > 1 && <div className="mt-3 max-h-52 space-y-2 overflow-auto border-t pt-3"><p className="text-xs font-semibold text-slate-500">একই দাগের {results.length}টি ফলাফল — একটি নির্বাচন করুন</p>{results.map(f => <button key={f.attributes.p_guid || f.attributes.objectid} onClick={() => setSelected(f)} className={`w-full rounded-xl border p-3 text-left text-sm hover:border-[#006a4e] ${selected?.attributes.objectid === f.attributes.objectid ? "border-[#006a4e] bg-emerald-50" : "bg-white"}`}><b>RS-{f.attributes.plot_no}</b><div className="text-xs text-slate-500">{f.attributes.address_search}</div></button>)}</div>}
+        {selected && <div className="mt-3 rounded-xl bg-slate-900 p-3 text-xs text-white"><div className="font-bold">Selected Plot: {selected.attributes.plot_no}</div><div className="mt-1 text-slate-300">{selected.attributes.address_search}</div><div className="mt-1 text-slate-400">Area: {selected.attributes.Shape__Area?.toLocaleString()} m² • PID: {selected.attributes.p_guid}</div></div>}
       </div>
-
-      {/* ── Main Content Area ── */}
-      <div className="relative grow w-full">
-        <FullDapMap initialData={selectedPlot} />
-        
-        {/* ── Floating Search Wizard ── */}
-        <div 
-          className="absolute top-4 right-4 z-[1050] w-full max-w-[400px]"
-        >
-          <DapSearchWizard onPlotSelected={setSelectedPlot} onMouzaSelected={setSelectedPlot} />
-        </div>
-      </div>
-
-      {/* ── Official RAJUK Style Footer ── */}
-      <div 
-        className="bg-white dark:bg-slate-900 px-4 md:px-6 flex items-center justify-between shrink-0 h-[36px] border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 z-[1050]"
-      >
-        <span>© 2025 Rajuk</span>
-        <span className="flex items-center">
-          Developed by 
-          <strong className="ml-1 text-slate-900 dark:text-white">esri Bangladesh</strong>
-        </span>
-      </div>
-    </div>
-  );
+    </section>
+  </main>;
 }
