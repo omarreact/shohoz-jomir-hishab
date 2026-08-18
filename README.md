@@ -1,34 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# সহজ জমির হিসাব — LandBD
 
-## Getting Started
+Next.js application for Bangladesh land calculations and land information.
 
-First, run the development server:
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## RAJUK runtime integration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The RAJUK map and data pages use only the verified official runtime architecture:
 
-## Learn More
+- `/dap-map` — ArcGIS Maps SDK 4.x map with the six verified RAJUK cached layers.
+- `/rajuk-test` — FeatureServer QA workspace for District → Upazila → Mauza → Plot and coordinate identify.
+- Plot/hierarchy data comes from `Rajuk_dap_db/FeatureServer` layers 10, 9, 1 and 0.
+- Map visualization uses the six verified Hosted MapServer services.
+- RAJUK credentials are server-only; the browser receives normalized application responses and proxied tiles, never the API key or generated token.
 
-To learn more about Next.js, take a look at the following resources:
+### Environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copy `.env.example` to `.env.local` and set:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+RAJUK_API_KEY=your-server-only-arcgis-api-key
+```
 
-## Deploy on Vercel
+Do **not** use `NEXT_PUBLIC_RAJUK_API_KEY`, commit the real key, or store generated RAJUK tokens in Firestore.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Verified RAJUK flow
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The backend calls RAJUK `generateToken` with the configured API key and the target service URL, caches the short-lived token in server memory, refreshes it before expiry, and retries FeatureServer requests once after HTTP 498/499. Visualization tiles are served through the allow-listed LandBD tile proxy.
