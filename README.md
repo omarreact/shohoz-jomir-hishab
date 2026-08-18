@@ -1,4 +1,4 @@
-# সহজ জমির হিসাব — LandBD
+# সহজ জমির হিসাব — LandBDAPP
 
 Next.js application for Bangladesh land calculations and land information.
 
