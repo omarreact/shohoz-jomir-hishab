@@ -2,15 +2,8 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-  /* =========================================
-     LANDBD_OLD Design System Tokens
-     ========================================= */
-
-  /* Base Brand Colors */
-  --color-bd-green: var(--bd-green);
-  --color-bd-red: var(--bd-red);
-
-  /* Shadcn UI Default Theme Variables */
+  --color-bd-green: var(--primary);
+  --color-bd-red: #ef4444;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card-bg);
@@ -18,7 +11,7 @@
   --color-popover: var(--card-bg);
   --color-popover-foreground: var(--foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -26,117 +19,94 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--foreground);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: #ffffff;
+  --color-destructive-foreground: #fff;
   --color-border: var(--border-color);
   --color-input: var(--border-color);
   --color-ring: var(--primary);
-
-  /* Shadows (LANDBD_OLD match) */
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-
-  /* Border Radius */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow-md: 0 8px 30px rgba(15, 23, 42, .07);
+  --shadow-lg: 0 20px 60px rgba(15, 23, 42, .10);
   --radius-xl: 1rem;
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-
-  /* Font Family - system/local fonts only; no build-time Google font fetch */
+  --radius-lg: .875rem;
+  --radius-md: .75rem;
+  --radius-sm: .625rem;
   --font-tiro-bangla: "Tiro Bangla", "Noto Sans Bengali", "Hind Siliguri", "Nirmala UI", "Segoe UI", sans-serif;
   --font-sans: var(--font-tiro-bangla);
 }
 
 @layer base {
   :root {
-    /* LANDBD_OLD Brand Tokens */
-    --bd-green: #006a4e;
-    --bd-red: #f42a41;
-
-    /* Light Theme (Extracted from LANDBD_OLD) */
-    --background: #f8fafc;
-    --foreground: #1e293b;
+    color-scheme: light;
+    --background: #fafafa;
+    --foreground: #171717;
     --card-bg: #ffffff;
-    --border-color: #e2e8f0;
-
-    /* Shadcn Mappings */
-    --primary: var(--bd-green);
-    --secondary: #e2e8f0;
-    --muted: #f8fafc;
-    --muted-foreground: #64748b;
-    --accent: #f1f5f9;
-    --destructive: var(--bd-red);
-    --radius: 0.5rem;
+    --border-color: #e7e7e7;
+    --primary: #171717;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --muted: #f7f7f7;
+    --muted-foreground: #737373;
+    --accent: #f4f4f5;
+    --destructive: #dc2626;
+    --radius: .875rem;
   }
 
-  [data-theme="dark"],
-  .dark {
-    /* Dark Theme (Extracted from LANDBD_OLD) */
-    --background: #0b110f;
-    --foreground: #e2e8f0;
-    --card-bg: #131c19;
-    --border-color: #23332d;
-
-    /* Slightly brighter primary/danger in dark mode for contrast */
-    --primary: #00c490;
-    --destructive: #ff5a6e;
-
-    /* Shadcn Mappings */
-    --secondary: #1a2521;
-    --muted: #1a2521;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
+  .dark, [data-theme="dark"] {
+    color-scheme: dark;
+    --background: #0b0b0b;
+    --foreground: #f5f5f5;
+    --card-bg: #141414;
+    --border-color: #292929;
+    --primary: #f5f5f5;
+    --primary-foreground: #111111;
+    --secondary: #1d1d1d;
+    --muted: #171717;
+    --muted-foreground: #a3a3a3;
+    --accent: #222222;
+    --destructive: #f87171;
   }
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
-    background-color: var(--background);
+    margin: 0;
+    background: var(--background);
     color: var(--foreground);
     font-family: var(--font-tiro-bangla);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color .2s ease, color .2s ease;
   }
+
+  ::selection { background: #171717; color: #fff; }
+  .dark ::selection { background: #fff; color: #111; }
 }
 
 @layer components {
-  /* Utilities for glassmorphism from LANDBD_OLD */
-  .nav-blur {
-    backdrop-filter: blur(10px);
-    background-color: var(--card-bg);
-  }
-
-  [data-theme="dark"] .nav-blur,
-  .dark .nav-blur {
-    backdrop-filter: blur(10px);
-    background-color: var(--card-bg);
-  }
-
-  /* Map Panel Cards */
-  .map-panel-card {
-    background-color: var(--card-bg);
+  .app-surface {
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
+  }
+  .app-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+  }
+  .nav-blur {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  }
+  .map-panel-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
     border-radius: var(--radius-lg);
   }
-
-  /* Layout Utilities */
-  .fade-in {
-    animation: fadeIn 0.4s ease-in-out;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  .fade-in { animation: fadeIn .35s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 }
