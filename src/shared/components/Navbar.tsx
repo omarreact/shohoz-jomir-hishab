@@ -2,356 +2,178 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Calculator,
-  Ruler,
-  Users,
-  Home,
-  BookOpen,
-  LogOut,
-  LogIn,
-  Menu,
-  MoonStar,
-  MapPin,
-  Map,
-  FileText,
-  Search,
-  User,
-  ShieldCheck,
-  ChevronDown,
-  Sun,
-  Moon,
-  X
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import type { ComponentType } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Calculator, Search, Map, FileText, BookOpen, Ruler, Users, Menu, X, LogIn, LogOut, ShieldCheck, User, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { t } from "@/src/locales";
 import { useTheme } from "next-themes";
 
-const NAV_LINKS = [
-  { href: "/", label: "হোম", Icon: Home },
-  { href: "/khatiyan", label: "খতিয়ান", Icon: Calculator },
-  { href: "/land-measurement", label: "জমি মাপ", Icon: Ruler },
+type NavItem = { href: string; label: string; icon: typeof Calculator };
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "হোম", icon: Calculator },
+  { href: "/dap-map", label: "ম্যাপ", icon: Map },
+  { href: "/khatiyan", label: "খতিয়ান", icon: Calculator },
+  { href: "/land-measurement", label: "জমি মাপ", icon: Ruler },
+  { href: "/faraez", label: "ফারায়েজ", icon: Users },
+  { href: "/blog", label: "ব্লগ", icon: BookOpen },
 ];
 
-function DesktopNavItem({
-  href,
-  label,
-  Icon,
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-}) {
-  const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
-  
-  return (
-    <li className="list-none mx-1">
-      <Link
-        href={href}
-        className={`flex items-center px-4 py-2 rounded-full whitespace-nowrap transition-all no-underline ${
-          isActive 
-            ? "bg-[#006a4e]/10 text-[#006a4e] font-bold" 
-            : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-        }`}
-      >
-        <Icon size={18} className={`mr-2 shrink-0 ${isActive ? "text-[#006a4e]" : ""}`} />
-        {label}
-      </Link>
-    </li>
-  );
-}
-
-function BottomNavItem({
-  href,
-  label,
-  Icon,
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-}) {
-  const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
-  
-  return (
-    <Link
-      href={href}
-      className={`no-underline flex flex-col items-center p-2 transition-all ${
-        isActive ? "text-[#006a4e]" : "text-slate-500 dark:text-slate-400"
-      }`}
-    >
-      <div className={`p-1.5 rounded-full transition-all ${isActive ? "bg-[#006a4e]/10" : ""}`}>
-        <Icon size={22} className={isActive ? "text-[#006a4e]" : ""} />
-      </div>
-      <span className={`text-[11px] mt-0.5 ${isActive ? "font-bold" : "font-medium"}`}>
-        {label}
-      </span>
-    </Link>
-  );
-}
-
-function OffcanvasNavItem({
-  href,
-  label,
-  Icon,
-  onClick
-}: {
-  href: string;
-  label: string;
-  Icon: ComponentType<{ size?: number; className?: string }>;
-  onClick?: () => void;
-}) {
-  const pathname = usePathname();
-  const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
-
-  return (
-    <li className="list-none mb-2">
-      <Link
-        href={href}
-        onClick={onClick}
-        className={`flex items-center px-4 py-3 rounded-xl transition-all no-underline ${
-          isActive 
-            ? "bg-[#006a4e]/10 text-[#006a4e] font-bold" 
-            : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-        }`}
-      >
-        <Icon size={20} className={`mr-3 ${isActive ? "text-[#006a4e]" : ""}`} />
-        {label}
-      </Link>
-    </li>
-  );
+function activePath(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
 export default function Navbar() {
   const pathname = usePathname();
+  const isMapRoute = pathname.startsWith("/dap-map");
   const { theme, setTheme } = useTheme();
+  const { isLoggedIn, loading: authLoading, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
-  
-  const { isLoggedIn: authLoggedIn, loading: authLoading, logout } = useAuth();
-  const isLoggedIn = !authLoading && authLoggedIn;
-  
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        setIsSearchOpen(true);
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setMobileOpen(false);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
-  };
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return NAV_ITEMS.filter(item => !q || item.label.toLowerCase().includes(q) || item.href.includes(q));
+  }, [query]);
 
-  const handleSelectResult = (result: any) => {
-    window.dispatchEvent(new CustomEvent("smart-search-result", { detail: result }));
+  const handleLogout = async () => {
+    await logout();
+    window.location.assign("/");
   };
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media (max-width: 1024px) {
-          body { padding-bottom: 75px !important; }
-        }
-      `}} />
-
-      {/* Top Navbar */}
-      <nav className="sticky top-0 z-[1030] border-b border-slate-200 dark:border-[#23332d] py-2 lg:py-3 bg-white/80 dark:bg-[#131c19]/80 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          
-          {/* Brand */}
-          <Link href="/" className="no-underline flex items-center shrink-0">
-            <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[38px] h-[38px]">
-              <Calculator size={20} />
-            </div>
-            <h4 className="font-bold text-xl m-0 hidden sm:block text-slate-800 dark:text-white">
-              সহজ <span className="text-[#006a4e]">জমির হিসাব</span>
-            </h4>
-            <h5 className="font-bold text-lg m-0 sm:hidden text-[#006a4e] mt-1">
-              সহজ জমির হিসাব
-            </h5>
+      <nav
+        className={`${isMapRoute ? "absolute top-0 left-0 right-0" : "sticky top-0"} z-[1100] px-3 pt-3 sm:px-4`}
+        aria-label="প্রধান নেভিগেশন"
+      >
+        <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-3 rounded-2xl border border-slate-200/10 bg-[#161b22]/95 px-3 shadow-xl backdrop-blur-xl sm:px-4">
+          <Link href="/" className="flex shrink-0 items-center gap-2 no-underline" onClick={() => setMobileOpen(false)}>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6c343] text-[#0d1117] shadow-sm">
+              <Calculator size={19} />
+            </span>
+            <span className="hidden text-base font-bold text-white sm:block">সহজ জমির হিসাব</span>
+            <span className="text-sm font-bold text-[#f6c343] sm:hidden">LandBD</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center justify-end w-full gap-4">
-            <ul className="flex items-center m-0 p-0 mx-auto">
-              {NAV_LINKS.map(link => (
-                <DesktopNavItem key={link.href} href={link.href} label={link.label} Icon={link.Icon} />
-              ))}
-            </ul>
-            
-            <div className="flex items-center gap-3">
-              <button
-                aria-label="Search"
-                onClick={() => setIsSearchOpen(true)}
-                className="flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <Search size={18} />
-              </button>
-              
-              {isLoggedIn ? (
-                <>
-                  <Link
-                    href="/admin"
-                    className="bg-[#006a4e] text-white rounded-full px-5 py-2 font-bold text-sm hover:bg-[#005a42] transition-colors no-underline shadow-sm"
-                  >
-                    ড্যাশবোর্ড
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="border border-[#f42a41] text-[#f42a41] rounded-full px-4 py-2 text-sm font-bold flex items-center hover:bg-[#f42a41] hover:text-white transition-colors cursor-pointer"
-                  >
-                    <LogOut size={16} className="mr-2" /> লগআউট
-                  </button>
-                </>
-              ) : (
+          <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
+            {NAV_ITEMS.map(({ href, label }) => {
+              const active = activePath(pathname, href);
+              return (
                 <Link
-                  href="/login"
-                  className="border border-[#006a4e] text-[#006a4e] rounded-full px-5 py-2 text-sm font-bold flex items-center hover:bg-[#006a4e] hover:text-white transition-colors no-underline"
+                  key={href}
+                  href={href}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold no-underline transition-colors ${active ? "bg-white/10 text-[#f6c343]" : "text-[#b7bdc8] hover:bg-white/5 hover:text-white"}`}
                 >
-                  <LogIn size={16} className="mr-2" /> লগিন
+                  {label}
                 </Link>
-              )}
+              );
+            })}
+          </div>
 
-              <button
-                aria-label="Open mobile menu"
-                className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 shadow-sm cursor-pointer"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                <Menu size={20} />
-              </button>
-            </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              aria-label="সার্চ"
+              onClick={() => setSearchOpen(true)}
+              className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#0d1117] px-3 py-2 text-xs text-[#b7bdc8] transition hover:border-[#f6c343]/40 hover:text-white md:flex"
+            >
+              <Search size={15} />
+              <span>সার্চ</span>
+              <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[10px]">Ctrl K</kbd>
+            </button>
+
+            {authLoading ? null : isLoggedIn ? (
+              <div className="hidden items-center gap-2 md:flex">
+                <Link href="/admin" className="flex items-center gap-1.5 rounded-xl border border-[#f6c343]/30 px-3 py-2 text-sm font-semibold text-[#f6c343] no-underline hover:bg-[#f6c343]/10">
+                  <ShieldCheck size={15} /> ড্যাশবোর্ড
+                </Link>
+                <button onClick={handleLogout} className="flex items-center gap-1.5 rounded-xl border border-red-400/20 px-3 py-2 text-sm text-red-300 hover:bg-red-400/10">
+                  <LogOut size={15} /> লগআউট
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="hidden items-center gap-1.5 rounded-xl bg-[#f6c343] px-4 py-2 text-sm font-bold text-[#0d1117] no-underline hover:bg-[#ffd66a] md:flex">
+                <LogIn size={15} /> লগইন
+              </Link>
+            )}
+
+            <button type="button" aria-label="মেনু" onClick={() => setMobileOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#1f2937] text-white lg:hidden">
+              <Menu size={19} />
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[1040] shadow-[0_-4px_10px_rgba(0,0,0,0.05)] border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c19] flex justify-around items-center pb-2 pt-1 px-2">
-        {NAV_LINKS.map(link => (
-          <BottomNavItem key={link.href} href={link.href} label={link.label} Icon={link.Icon} />
-        ))}
-        {isLoggedIn && <BottomNavItem href="/porcha" label="পর্চা" Icon={FileText} />}
-        
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="flex flex-col items-center p-2 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer"
-        >
-          <div className="p-1">
-            <Menu size={22} />
-          </div>
-          <span className="text-[11px] mt-0.5 font-medium">মেনু</span>
-        </button>
-      </div>
-
-      {/* Offcanvas Mobile Menu */}
-      <>
-        {/* Backdrop */}
-        <div 
-          className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1050] transition-opacity duration-300 ease-in-out ${
-            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-        
-        {/* Panel */}
-        <div className={`fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-[#131c19] z-[1060] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}>
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-[#006a4e] text-white rounded-full p-2 mr-3 flex items-center justify-center shadow-sm w-[32px] h-[32px]">
-                <Calculator size={16} />
-              </div>
-              <h5 className="font-bold text-[#006a4e] m-0 text-lg">
-                সহজ জমির হিসাব
-              </h5>
+      {searchOpen && (
+        <div className="fixed inset-0 z-[1300] flex items-start justify-center bg-black/60 p-4 pt-24 backdrop-blur-sm" onMouseDown={() => setSearchOpen(false)}>
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-[#161b22] shadow-2xl" onMouseDown={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 border-b border-white/10 px-4">
+              <Search size={18} className="text-[#f6c343]" />
+              <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="সেবা বা পেজ খুঁজুন..." className="h-14 flex-1 bg-transparent text-white outline-none placeholder:text-[#6b7280]" />
+              <button onClick={() => setSearchOpen(false)} className="text-[#9ca3af] hover:text-white"><X size={18} /></button>
             </div>
-            <button aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent">
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-            <h6 className="text-slate-400 font-bold text-xs mb-3">প্রধান মেনু</h6>
-            <ul className="m-0 p-0 mb-6">
-              {NAV_LINKS.map(link => (
-                <OffcanvasNavItem key={link.href} href={link.href} label={link.label} Icon={link.Icon} onClick={() => setIsMobileMenuOpen(false)} />
-              ))}
-              {isLoggedIn && <OffcanvasNavItem href="/porcha" label="পর্চা" Icon={FileText} onClick={() => setIsMobileMenuOpen(false)} />}
-            </ul>
-
-            <h6 className="text-slate-400 font-bold text-xs mb-3">অন্যান্য সেবা</h6>
-            <ul className="m-0 p-0 mb-auto">
-              <OffcanvasNavItem href="/faraez" label="ফারায়েজ" Icon={Users} onClick={() => setIsMobileMenuOpen(false)} />
-              <OffcanvasNavItem href="/rajuk-test" label="রাজউক ম্যাপ" Icon={MapPin} onClick={() => setIsMobileMenuOpen(false)} />
-              <OffcanvasNavItem href="/dap-map" label="ফুল ড্যাপ ম্যাপ" Icon={Map} onClick={() => setIsMobileMenuOpen(false)} />
-              <OffcanvasNavItem href="/blog" label="ব্লগ" Icon={BookOpen} onClick={() => setIsMobileMenuOpen(false)} />
-            </ul>
-
-            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-              {mounted && (
-                <div className="flex items-center justify-between p-4 mb-4 rounded-2xl bg-[#006a4e]/10 border border-[#006a4e]/20">
-                  <span className="font-bold text-[#006a4e] text-sm flex items-center">
-                    <MoonStar size={16} className="mr-2" /> থিম পরিবর্তন
-                  </span>
-                  <button
-                    aria-label="Toggle theme"
-                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="w-8 h-8 rounded-full bg-white dark:bg-[#131c19] text-[#006a4e] flex items-center justify-center shadow-sm cursor-pointer border-none transition-transform hover:scale-110 active:scale-95"
-                  >
-                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                  </button>
-                </div>
-              )}
-
-              {isLoggedIn ? (
-                <div className="flex flex-col gap-3">
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold no-underline transition-transform hover:scale-[1.02] active:scale-95 shadow-sm"
-                  >
-                    ড্যাশবোর্ড
-                  </Link>
-                  <button
-                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                    className="border border-[#f42a41] text-[#f42a41] w-full rounded-full flex items-center justify-center py-3 font-bold bg-transparent cursor-pointer transition-transform hover:scale-[1.02] hover:bg-[#f42a41] hover:text-white active:scale-95"
-                  >
-                    <LogOut size={18} className="mr-2" /> লগআউট করুন
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="bg-[#006a4e] text-white w-full rounded-full flex items-center justify-center py-3 font-bold shadow-sm no-underline transition-transform hover:scale-[1.02] active:scale-95"
-                >
-                  <LogIn size={18} className="mr-2" /> অ্যাডমিন লগিন
+            <div className="p-2">
+              {results.map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} onClick={() => setSearchOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[#b7bdc8] no-underline hover:bg-white/5 hover:text-[#f6c343]">
+                  <Icon size={17} /> {label}
                 </Link>
-              )}
+              ))}
+              {!results.length && <p className="px-3 py-6 text-center text-sm text-[#8b93a1]">কোনো ফলাফল পাওয়া যায়নি</p>}
             </div>
           </div>
         </div>
-      </>
+      )}
 
-
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[1250] lg:hidden" role="dialog" aria-modal="true">
+          <button aria-label="মেনু বন্ধ করুন" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute right-0 top-0 flex h-full w-[310px] max-w-[88vw] flex-col border-l border-white/10 bg-[#161b22] p-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <Link href="/" className="flex items-center gap-2 text-white no-underline" onClick={() => setMobileOpen(false)}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6c343] text-[#0d1117]"><Calculator size={19} /></span>
+                <strong>সহজ জমির হিসাব</strong>
+              </Link>
+              <button onClick={() => setMobileOpen(false)} className="text-[#b7bdc8] hover:text-white"><X /></button>
+            </div>
+            <div className="flex flex-1 flex-col gap-1 overflow-y-auto py-4">
+              {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline ${activePath(pathname, href) ? "bg-white/10 text-[#f6c343]" : "text-[#b7bdc8] hover:bg-white/5 hover:text-white"}`}>
+                  <Icon size={18} /> {label}
+                </Link>
+              ))}
+              <Link href="/rajuk-test" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#b7bdc8] no-underline hover:bg-white/5 hover:text-white"><Map size={18} /> RAJUK ডাটা টেস্ট</Link>
+              <Link href="/porcha" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#b7bdc8] no-underline hover:bg-white/5 hover:text-white"><FileText size={18} /> পর্চা</Link>
+            </div>
+            <div className="border-t border-white/10 pt-4">
+              {mounted && <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="mb-3 flex w-full items-center justify-between rounded-xl border border-white/10 px-4 py-3 text-sm text-[#b7bdc8]">
+                <span className="flex items-center gap-2">{theme === "dark" ? <Moon size={16} /> : <Sun size={16} />} থিম পরিবর্তন</span>
+                <span>{theme === "dark" ? "ডার্ক" : "লাইট"}</span>
+              </button>}
+              {isLoggedIn ? (
+                <div className="grid gap-2"><Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-[#f6c343] py-3 font-bold text-[#0d1117] no-underline"><User size={16} /> ড্যাশবোর্ড</Link><button onClick={handleLogout} className="flex items-center justify-center gap-2 rounded-xl border border-red-400/20 py-3 text-red-300"><LogOut size={16} /> লগআউট</button></div>
+              ) : <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-[#f6c343] py-3 font-bold text-[#0d1117] no-underline"><LogIn size={16} /> লগইন</Link>}
+            </div>
+          </aside>
+        </div>
+      )}
     </>
   );
 }
