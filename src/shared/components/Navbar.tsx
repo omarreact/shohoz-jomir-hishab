@@ -10,11 +10,12 @@ import { useTheme } from "next-themes";
 type NavItem = { href: string; label: string; icon: typeof Calculator };
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "হোম", icon: Calculator },
-  { href: "/dap-map", label: "ম্যাপ", icon: Map },
-  { href: "/geospatial-map", label: "জিওস্পেশিয়াল", icon: Layers3 },
   { href: "/khatiyan", label: "খতিয়ান", icon: Calculator },
   { href: "/land-measurement", label: "জমি মাপ", icon: Ruler },
   { href: "/faraez", label: "ফারায়েজ", icon: Users },
+  { href: "/dap-map", label: "DAP ম্যাপ", icon: Map },
+  { href: "/geospatial-map", label: "জিওস্পেশিয়াল", icon: Layers3 },
+  { href: "/lios-map", label: "LIOS ম্যাপ", icon: Map },
   { href: "/blog", label: "ব্লগ", icon: BookOpen },
 ];
 function activePath(pathname: string, href: string) { return href === "/" ? pathname === "/" : pathname.startsWith(href); }
