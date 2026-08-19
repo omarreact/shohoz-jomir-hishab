@@ -9,11 +9,8 @@ export interface DataMonitorService {
   note: string;
 }
 
-const RAJUK_FEATURE_BASE =
-  "https://masterplan.rajuk.gov.bd/server/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer";
-
-const RAJUK_HOSTED_BASE =
-  "https://masterplan.rajuk.gov.bd/server/rest/services/Hosted";
+const RAJUK_FEATURE_BASE = "https://masterplan.rajuk.gov.bd/server/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer";
+const RAJUK_HOSTED_BASE = "https://masterplan.rajuk.gov.bd/server/rest/services/Hosted";
 
 export const DATA_MONITOR_SERVICES: readonly DataMonitorService[] = [
   { id: "rs-plots", name: "RS Plots", kind: "feature", endpoint: `${RAJUK_FEATURE_BASE}/0`, verified: true, note: "Real plot attributes + polygon geometry" },
