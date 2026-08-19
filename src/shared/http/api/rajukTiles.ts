@@ -1,10 +1,19 @@
-import type { RajukLayerKey } from "@/src/services/rajuk/rajukLayers.service";
+import { RAJUK_LAYER_KEYS, RAJUK_LAYERS, type RajukLayerKey } from "@/src/services/rajuk/rajukLayers.service";
 
 const RAJUK_TILE_PROXY_BASE = "/api/rajuk/tile";
 const RAJUK_TILE_ROOT = "https://masterplan.rajuk.gov.bd/server/rest/services";
 
 export function normalizeRajukService(service: string) {
-  return service.replace(/\s*\(tile\)\s*$/i, "").replace(/\s+/g, " ").trim();
+  return service.replace(/^https?:\/\/[^/]+\/server\/rest\/services\//i, "").replace(/\s*\(tile\)\s*$/i, "").replace(/\s+/g, " ").trim();
+}
+
+export function layerKeyFromService(service: string): RajukLayerKey | null {
+  const normalized = normalizeRajukService(service).replace(/\/MapServer\/?$/i, "");
+  const match = RAJUK_LAYER_KEYS.find((key) => {
+    const configured = RAJUK_LAYERS[key].service.replace(`${RAJUK_TILE_ROOT}/`, "");
+    return normalized === configured || normalized === configured.replace(/\/MapServer$/i, "");
+  });
+  return match ?? null;
 }
 
 export function buildRajukTileProxyUrl(layer: RajukLayerKey, level: string | number, row: string | number, col: string | number) {
@@ -24,6 +33,8 @@ export function buildRajukTileServiceUrl(service: string, x?: string, y?: string
 export function resolveApiRequestUrl(endpoint: string, origin?: string) {
   if (!endpoint) return origin ?? "http://localhost:3000";
   if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  const layer = layerKeyFromService(endpoint);
+  if (layer) return `${origin ?? ""}/api/rajuk/tile/${layer}/{z}/{y}/{x}`;
   if (endpoint.startsWith("/")) return new URL(endpoint, origin ?? "http://localhost:3000").toString();
   return new URL(`/${endpoint}`, origin ?? "http://localhost:3000").toString();
 }
