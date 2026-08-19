@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import Navbar from "@/src/shared/components/Navbar";
-import GisNavbar from "@/src/shared/components/GisNavbar";
 import Footer from "@/src/shared/components/Footer";
 import MaintenanceGate from "@/src/shared/components/MaintenanceGate";
 
@@ -16,9 +15,9 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   if (isGisRoute) {
     return (
-      <div style={{ height: "100vh", width: "100vw", overflow: "hidden", position: "relative" }}>
-        <GisNavbar />
-        <main className="w-100 h-100">{children}</main>
+      <div className="relative h-screen w-screen overflow-hidden">
+        <Navbar />
+        <main className="h-full w-full">{children}</main>
       </div>
     );
   }
