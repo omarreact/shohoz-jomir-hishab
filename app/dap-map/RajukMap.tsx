@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { RAJUK_LAYER_KEYS, RAJUK_LAYERS } from "@/src/services/rajuk/rajukLayers.service";
-import { buildRajukTileProxyUrl } from "@/src/shared/http/api/rajukTiles";
 import type { RajukLayerKey } from "@/src/services/rajuk/rajukLayers.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 
@@ -33,8 +32,8 @@ export default function RajukMap({ selected, onSelect }: { selected?: RajukPlotF
         maxZoom: 21,
       }).addTo(map);
 
-      // All six verified RAJUK visualization services are represented by the canonical proxy.
-      // Public layers do not require a token; protected layers are authenticated server-side.
+      // All six verified RAJUK visualization services use the canonical LandBD proxy.
+      // Public layers work without a token; protected layers are authenticated server-side.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const overlays: Record<string, any> = {};
       RAJUK_LAYER_KEYS.forEach((key) => {
@@ -85,5 +84,3 @@ export default function RajukMap({ selected, onSelect }: { selected?: RajukPlotF
 
   return <div ref={mapRef} className="h-full w-full" aria-label="LandBD interactive land map" />;
 }
-
-void buildRajukTileProxyUrl;
