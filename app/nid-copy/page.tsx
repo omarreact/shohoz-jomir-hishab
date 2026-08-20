@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-// @ts-expect-error bwip-js has no official types
 import bwipjs from "bwip-js";
 
 export default function SmartLogPage() {
