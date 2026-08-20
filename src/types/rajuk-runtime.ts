@@ -10,6 +10,7 @@ export interface RajukPlotAttributes {
   address_search: string | null;
   Shape__Area: number | null;
   Shape__Length: number | null;
+  [key: string]: unknown;
 }
 
 export interface RajukArcGISGeometry { rings: number[][][]; spatialReference?: { wkid?: number; latestWkid?: number } }
