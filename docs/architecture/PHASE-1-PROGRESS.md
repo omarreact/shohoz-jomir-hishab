@@ -9,29 +9,34 @@
 3. Keep RAJUK technical identifiers and Firebase stack intact.
 4. Prepare for Phase 2 design tokens and Phase 3 unified shell.
 
-## Completed in this start batch
+## Completed
 
-- [x] Phase 0 audit published: `docs/architecture/PHASE-0-AUDIT.md`
-- [x] Expanded `FEATURE_ROUTES` with login, map QA path, bn/en labels, and `PRIMARY_NAV_KEYS`
-- [x] Documented progress on `main`
+- [x] Phase 0 audit: `docs/architecture/PHASE-0-AUDIT.md`
+- [x] Expanded `FEATURE_ROUTES` with login, map QA, bn/en labels, `PRIMARY_NAV_KEYS`
+- [x] Config barrel exports labels + nav keys
+- [x] **Navbar** driven by `FEATURE_ROUTES` / `FEATURE_LABELS` / `PRIMARY_NAV_KEYS` / `SITE_CONFIG`
+  - Desktop primary links: records, land measurement, inheritance, urban planning map, documents, blog
+  - Map label uses neutral product copy (নগর পরিকল্পনা মানচিত্র), not raw service branding
+  - Secondary maps (geospatial, LIOS) + map QA remain in mobile/search only
+  - Login / admin still use centralized routes
 
-## Explicitly deferred (do later in Phase 1)
+## Explicitly deferred
 
-- Physical App Router moves into `(public)` / `(auth)` route groups (large file moves; do in small verified batches).
-- Compatibility redirects (`/khatiyan` → `/records/...`) until SEO/consumer audit is done.
-- Unifying `Navbar` vs `GisNavbar` (Phase 3).
-- Pure extraction of land-measurement / inheritance engines into feature folders (Phases 6–7).
+- App Router moves into `(public)` / `(auth)` route groups
+- Compatibility redirects (`/khatiyan` → `/records/...`)
+- Unifying `Navbar` vs `GisNavbar` (Phase 3)
+- Pure extraction of measurement / inheritance engines (Phases 6–7)
 
-## Verification checklist after each batch
+## Verification
 
 ```bash
-npm install   # until lockfile is regenerated for npm ci
+npm install
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-Smoke: `/`, `/khatiyan`, `/land-measurement`, `/faraez`, `/dap-map`, `/admin`, `/login`.
+Smoke: `/`, `/khatiyan`, `/land-measurement`, `/faraez`, `/dap-map`, `/porcha`, `/blog`, `/admin`, `/login`.
 
 ## Related docs
 
