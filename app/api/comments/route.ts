@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       .where("blogId", "==", blogId)
       .get();
       
-    let comments = snapshot.docs.map((doc: any) => {
+    const comments = snapshot.docs.map((doc: any) => {
       const data = doc.data();
       return { 
         id: doc.id, 
