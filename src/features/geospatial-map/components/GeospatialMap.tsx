@@ -29,7 +29,7 @@ const BASEMAPS: Record<BasemapKey, { label: string; url: string; attribution: st
   satellite2003: { label: "স্যাটেলাইট ২০০৩", url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual/default/2003-12-31/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg", attribution: "© NASA GIBS / Landsat WELD 2003", maxZoom: 21, maxNativeZoom: 12 },
 };
 
-const detailValue = (a: Record<string, unknown>, keys: string[]) => {
+const detailValue = (a: Record<string, unknown>, keys: readonly string[]) => {
   for (const key of keys) if (a[key] !== undefined && a[key] !== null && a[key] !== "") return a[key];
   return "—";
 };
@@ -194,7 +194,7 @@ export default function GeospatialMap() {
               <div className={styles.resultTitle}>General Plot Information</div>
               <div className={styles.resultMeta}>Plot No {formatValue(selectedAttributes.plot_no)}</div>
               <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-                {DETAIL_FIELDS.map(([label, keys]) => <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderTop: "1px solid rgba(148,163,184,.25)", paddingTop: 6 }}><span style={{ fontWeight: 600 }}>{label}</span><span>{formatValue(detailValue(selectedAttributes, keys as string[]))}</span></div>)}
+                {DETAIL_FIELDS.map(([label, keys]) => <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderTop: "1px solid rgba(148,163,184,.25)", paddingTop: 6 }}><span style={{ fontWeight: 600 }}>{label}</span><span>{formatValue(detailValue(selectedAttributes, keys))}</span></div>)}
               </div>
             </div>}
           </>}
@@ -203,7 +203,6 @@ export default function GeospatialMap() {
 
       <div className={styles.bottomBar}><span><strong>নগর পরিকল্পনা</strong></span><span className={styles.separator} /><span>Geo · LIOS</span><span className={styles.separator} /><span>WGS 84 / 3857</span><span className={styles.separator} /><span>RS Plot: <strong>{selected?.attributes.plot_no ?? "—"}</strong></span><button type="button" className={styles.iconButton} onClick={resetMap} title="ম্যাপ রিসেট"><RefreshCw size={14} /></button><button type="button" className={styles.iconButton} onClick={() => setIdentifyMode((value) => !value)} title="Identify"><LocateFixed size={14} /></button></div>
       {toast && <div className={styles.toast} role="status">{toast}</div>}
-      {!mapReady && <div className={styles.loading}><div className={styles.loadingCard}><span className={styles.spinner} /> নগর পরিকল্পনা মানচিত্র প্রস্তুত হচ্ছে…</div></div>}
     </section>
   );
 }
