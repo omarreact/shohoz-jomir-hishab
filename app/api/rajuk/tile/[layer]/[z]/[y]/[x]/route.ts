@@ -20,12 +20,6 @@ export async function GET(
     }
 
     const upstream = new URL(`${layer.service}/tile/${z}/${y}/${x}`);
-    let token: string | undefined;
-
-    if (layer.auth) {
-      token = await getValidToken(layer.service);
-      upstream.searchParams.set("token", token);
-    }
 
     const fetchTile = async () => {
       const controller = new AbortController();
@@ -41,9 +35,11 @@ export async function GET(
       }
     };
 
+    // Public-first: every layer gets a token-free attempt. Only protected
+    // services that actually reject the request receive the authorized token.
     let response = await fetchTile();
 
-    if ((response.status === 498 || response.status === 499) && layer.auth) {
+    if ((response.status === 498 || response.status === 499) || (layer.auth && response.status === 401)) {
       invalidateToken(layer.service);
       upstream.searchParams.set("token", await getValidToken(layer.service));
       response = await fetchTile();
