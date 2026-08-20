@@ -97,28 +97,36 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
 }
 
 /**
- * Obtain Token 2 using only supported/authorized ArcGIS authentication flows.
- * No browser session token is scraped and no client-side token is exposed.
+ * Obtain Token 2 using supported/authorized ArcGIS authentication flows.
+ * Credential-based portal authentication is preferred when configured so an
+ * expired static portal token cannot mask a valid username/password pair.
  */
 export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
-  const portalToken = configuredPortalToken();
-  if (portalToken) return exchangePortalToken(portalToken, serverUrl);
-
   const credentials = configuredPortalCredentials();
   if (credentials) {
     const portal = await generatePortalToken();
     return exchangePortalToken(portal.token, serverUrl);
   }
 
-  throw new Error("RAJUK authentication is not configured. Set RAJUK_PORTAL_TOKEN or the authorized RAJUK_PORTAL_USERNAME/RAJUK_PORTAL_PASSWORD pair.");
+  const portalToken = configuredPortalToken();
+  if (portalToken) return exchangePortalToken(portalToken, serverUrl);
+
+  const direct = configuredServerToken();
+  if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) return direct;
+
+  throw new Error("RAJUK authentication is not configured. Set RAJUK_PORTAL_TOKEN, an authorized RAJUK_PORTAL_USERNAME/RAJUK_PORTAL_PASSWORD pair, or a valid RAJUK_SERVER_TOKEN.");
 }
 
-async function refreshAndCache(key: string): Promise<TokenEntry> {
-  const direct = configuredServerToken();
-  if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) {
-    localCache.set(key, direct);
-    await cacheRajukToken(key, direct);
-    return direct;
+async function refreshAndCache(key: string, forceGenerate = false): Promise<TokenEntry> {
+  // A forced refresh must never reuse a static server token or an old cached
+  // token. This is critical after ArcGIS returns HTTP 498/499.
+  if (!forceGenerate) {
+    const direct = configuredServerToken();
+    if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) {
+      localCache.set(key, direct);
+      await cacheRajukToken(key, direct);
+      return direct;
+    }
   }
 
   const fresh = await generateToken(key);
@@ -145,7 +153,7 @@ export async function refreshToken(serverUrl = RAJUK_SERVER): Promise<string> {
   const key = normalizeServerUrl(serverUrl);
   await invalidateCachedRajukToken(key);
   localCache.delete(key);
-  if (!refreshPromise) refreshPromise = refreshAndCache(key).finally(() => { refreshPromise = null; });
+  if (!refreshPromise) refreshPromise = refreshAndCache(key, true).finally(() => { refreshPromise = null; });
   return (await refreshPromise).token;
 }
 
@@ -160,8 +168,8 @@ export function hasRajukCredential(): boolean {
 }
 
 export function getRajukAuthMode(): "portal-token" | "portal-credentials" | "server-token" | "none" {
-  if (configuredPortalToken()) return "portal-token";
   if (configuredPortalCredentials()) return "portal-credentials";
+  if (configuredPortalToken()) return "portal-token";
   if (configuredServerToken()) return "server-token";
   return "none";
 }
