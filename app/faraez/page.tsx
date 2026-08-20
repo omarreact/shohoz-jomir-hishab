@@ -101,7 +101,6 @@ export default function FaraezPage() {
     element.style.width = "800px";
 
     try {
-      // @ts-expect-error html2pdf.js has no official types
       const html2pdf = (await import("html2pdf.js")).default;
 
       const opt = {
