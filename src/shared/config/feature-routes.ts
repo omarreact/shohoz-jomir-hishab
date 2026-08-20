@@ -1,17 +1,17 @@
 /**
  * Canonical product routes used by navigation and CTAs.
- * URL paths stay as-is for Phase 1; future redirects may map
- * e.g. /khatiyan → /records without breaking bookmarks.
  *
- * UI labels for maps use neutral product language; internal API
- * paths and RAJUK service identifiers remain technical.
+ * Urban planning map = merged Geospatial + LIOS experience at /geospatial-map.
+ * /lios-map and legacy paths redirect into that page.
+ * Internal RAJUK/tile API identifiers remain technical.
  */
 export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
-  landMap: "/dap-map",
+  /** Unified নগর পরিকল্পনা মানচিত্র (Geospatial + LIOS). */
+  landMap: "/geospatial-map",
   mapQa: "/rajuk-test",
   documents: "/porcha",
   blog: "/blog",
