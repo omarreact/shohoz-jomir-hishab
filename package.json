@@ -34,6 +34,7 @@
     "ioredis": "^5.11.1",
     "jose": "^6.2.4",
     "jsonwebtoken": "^9.0.3",
+    "jspdf": "^4.2.0",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "lucide-react": "^1.23.0",
@@ -87,7 +88,6 @@
     "firebase-tools": "^15.24.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
-    "tsx": "4.19.2",
-    "typescript": "^5"
+    "tsx": "4.19.2"
   }
 }
