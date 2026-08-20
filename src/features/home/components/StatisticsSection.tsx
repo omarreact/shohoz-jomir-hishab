@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Users, MapPin, Database, Activity } from "lucide-react";
+import { Users, MapPin, Database, Activity, type LucideIcon } from "lucide-react";
 import { t } from "@/src/locales";
 
 // Custom hook for number counting animation
@@ -19,11 +19,11 @@ function useCountUp(end: number, duration: number = 2000) {
           const step = (timestamp: number) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            
+
             // easeOutExpo
             const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
             setCount(Math.floor(easeProgress * end));
-            
+
             if (progress < 1) {
               window.requestAnimationFrame(step);
             }
@@ -55,6 +55,31 @@ function toBengaliNum(num: number): string {
   return str;
 }
 
+type StatItemProps = {
+  label: string;
+  end: number;
+  suffix: string;
+  icon: LucideIcon;
+  delayMs: number;
+};
+
+function StatItem({ label, end, suffix, icon: Icon, delayMs }: StatItemProps) {
+  const { count, nodeRef } = useCountUp(end, 2000);
+
+  return (
+    <div className="fade-in visible group" style={{ transitionDelay: `${delayMs}ms` }}>
+      <div className="w-20 h-20 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:bg-[#006a4e]/10 group-hover:border-[#006a4e]/20 transition-colors duration-300">
+        <Icon size={36} className="text-[#006a4e]" />
+      </div>
+      <div ref={nodeRef} className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
+        {toBengaliNum(count)}
+        {suffix}
+      </div>
+      <div className="text-slate-500 dark:text-slate-400 font-medium text-lg">{label}</div>
+    </div>
+  );
+}
+
 export default function StatisticsSection() {
   const stats = [
     { label: t.stats.plots || "খতিয়ান", end: 125000, suffix: "+", icon: MapPin },
@@ -76,22 +101,16 @@ export default function StatisticsSection() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {stats.map((stat, i) => {
-            const { count, nodeRef } = useCountUp(stat.end, 2000);
-            return (
-              <div key={i} className="fade-in visible group" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="w-20 h-20 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:bg-[#006a4e]/10 group-hover:border-[#006a4e]/20 transition-colors duration-300">
-                  <stat.icon size={36} className="text-[#006a4e]" />
-                </div>
-                <div ref={nodeRef} className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
-                  {toBengaliNum(count)}{stat.suffix}
-                </div>
-                <div className="text-slate-500 dark:text-slate-400 font-medium text-lg">
-                  {stat.label}
-                </div>
-              </div>
-            );
-          })}
+          {stats.map((stat, i) => (
+            <StatItem
+              key={i}
+              label={stat.label}
+              end={stat.end}
+              suffix={stat.suffix}
+              icon={stat.icon}
+              delayMs={i * 100}
+            />
+          ))}
         </div>
       </div>
     </section>
