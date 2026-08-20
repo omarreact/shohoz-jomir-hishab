@@ -1,15 +1,10 @@
 import "server-only";
-import { getValidToken, invalidateToken } from "./rajukAuth.service";
+import { getValidToken, invalidateToken, RAJUK_SERVER } from "./rajukAuth.service";
 import { RAJUK_DB } from "./rajukLayers.service";
 import type { RajukDistrict, RajukMauza, RajukPlotCollection, RajukPlotFilters, RajukUpazila, RajukIdentifyResult } from "@/src/types/rajuk-runtime";
 
 const escapeSql = (value: string) => value.replace(/'/g, "''");
 
-/**
- * Query RAJUK with a public-first strategy. Public services are queried without
- * a token; only an ArcGIS 498/499 response triggers the configured authorized
- * token flow. This avoids requiring RAJUK_API_KEY for genuinely public data.
- */
 async function requestLayer<T>(layerId: number, params: Record<string, string | number | boolean | undefined>, retry = true): Promise<T> {
   const serverUrl = `${RAJUK_DB}/${layerId}`;
   const query = new URLSearchParams();
@@ -27,13 +22,14 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
 
   if (!retry) throw new Error(publicData.error?.message || `RAJUK authorization failed for layer ${layerId}`);
 
-  const token = await getValidToken(serverUrl);
+  // ArcGIS federated-server exchange must target the server root, not the FeatureServer URL.
+  const token = await getValidToken(RAJUK_SERVER);
   query.set("token", token);
   const response = await fetch(`${serverUrl}/query?${query.toString()}`, { cache: "no-store" });
   const data = await response.json();
   const authError = response.status === 498 || response.status === 499 || data?.error?.code === 498 || data?.error?.code === 499;
   if (authError) {
-    invalidateToken(serverUrl);
+    await invalidateToken(RAJUK_SERVER);
     return requestLayer<T>(layerId, params, false);
   }
   if (!response.ok || data.error) throw new Error(data.error?.message || `RAJUK layer ${layerId} query failed (${response.status})`);
