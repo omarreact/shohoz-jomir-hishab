@@ -1,6 +1,7 @@
 import "server-only";
 
 const RAJUK_PORTAL = "https://masterplan.rajuk.gov.bd/portal/sharing/rest";
+const RAJUK_SERVER = "https://masterplan.rajuk.gov.bd/server";
 const REFERER = "https://masterplan.rajuk.gov.bd";
 
 // Vercel/Next.js server runtimes may reuse a process, but this cache is only an
@@ -48,10 +49,7 @@ export async function generateToken(serverUrl: string) {
   };
 }
 
-/**
- * Normal request path: reuse a valid token and refresh it one minute before
- * expiry. This prevents a token request for every map tile/feature request.
- */
+/** Normal map/API path: reuse a valid token and refresh it one minute before expiry. */
 export async function getValidToken(serverUrl: string) {
   const cached = cache.get(serverUrl);
   if (cached && cached.expiresAt > Date.now() + 60_000) return cached.token;
@@ -62,11 +60,9 @@ export async function getValidToken(serverUrl: string) {
 }
 
 /**
- * Explicitly obtain a new token and replace the cached value.
- *
- * The home page calls this once for every server-rendered request to `/` so a
- * new authorized RAJUK server token is available before a visitor starts
- * using the GIS features. The token remains server-only.
+ * Explicitly obtain a new authorized server token and replace the cached value.
+ * The home page invokes this for every server-rendered `/` request. The token
+ * stays server-only and is never serialized into HTML or returned to clients.
  */
 export async function refreshToken(serverUrl: string) {
   const fresh = await generateToken(serverUrl);
@@ -78,4 +74,4 @@ export function invalidateToken(serverUrl: string) {
   cache.delete(serverUrl);
 }
 
-export { RAJUK_PORTAL, REFERER };
+export { RAJUK_PORTAL, RAJUK_SERVER, REFERER };
