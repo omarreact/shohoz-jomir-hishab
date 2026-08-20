@@ -3,7 +3,25 @@ import { getValidToken, invalidateToken, RAJUK_SERVER } from "./rajukAuth.servic
 import { RAJUK_DB } from "./rajukLayers.service";
 import type { RajukDistrict, RajukMauza, RajukPlotCollection, RajukPlotFilters, RajukUpazila, RajukIdentifyResult } from "@/src/types/rajuk-runtime";
 
+const REQUEST_TIMEOUT_MS = 20_000;
 const escapeSql = (value: string) => value.replace(/'/g, "''");
+
+async function fetchJson(url: string): Promise<{ response: Response; data: any }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+    const data = await response.json();
+    return { response, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isAuthError(response: Response, data: any): boolean {
+  return response.status === 401 || response.status === 403 || response.status === 498 || response.status === 499
+    || data?.error?.code === 401 || data?.error?.code === 403 || data?.error?.code === 498 || data?.error?.code === 499;
+}
 
 async function requestLayer<T>(layerId: number, params: Record<string, string | number | boolean | undefined>, retry = true): Promise<T> {
   const serverUrl = `${RAJUK_DB}/${layerId}`;
@@ -11,29 +29,38 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
   for (const [key, value] of Object.entries(params)) if (value !== undefined) query.set(key, String(value));
   query.set("f", "json");
 
-  const publicResponse = await fetch(`${serverUrl}/query?${query.toString()}`, { cache: "no-store" });
-  const publicData = await publicResponse.json();
-  const authRequired = publicResponse.status === 498 || publicResponse.status === 499 || publicData?.error?.code === 498 || publicData?.error?.code === 499;
-
-  if (!authRequired) {
-    if (!publicResponse.ok || publicData.error) throw new Error(publicData.error?.message || `RAJUK layer ${layerId} query failed (${publicResponse.status})`);
-    return publicData as T;
+  const publicResult = await fetchJson(`${serverUrl}/query?${query.toString()}`);
+  if (!isAuthError(publicResult.response, publicResult.data)) {
+    if (!publicResult.response.ok || publicResult.data?.error) {
+      throw new Error(publicResult.data?.error?.message || `RAJUK layer ${layerId} query failed (${publicResult.response.status})`);
+    }
+    return publicResult.data as T;
   }
 
-  if (!retry) throw new Error(publicData.error?.message || `RAJUK authorization failed for layer ${layerId}`);
+  if (!retry) {
+    throw new Error(publicResult.data?.error?.message || `RAJUK authorization failed for layer ${layerId}`);
+  }
 
-  // ArcGIS federated-server exchange must target the server root, not the FeatureServer URL.
   const token = await getValidToken(RAJUK_SERVER);
   query.set("token", token);
-  const response = await fetch(`${serverUrl}/query?${query.toString()}`, { cache: "no-store" });
-  const data = await response.json();
-  const authError = response.status === 498 || response.status === 499 || data?.error?.code === 498 || data?.error?.code === 499;
-  if (authError) {
+  const authenticatedResult = await fetchJson(`${serverUrl}/query?${query.toString()}`);
+
+  if (isAuthError(authenticatedResult.response, authenticatedResult.data)) {
     await invalidateToken(RAJUK_SERVER);
-    return requestLayer<T>(layerId, params, false);
+    // One and only one refresh/retry prevents an auth failure from becoming a request loop.
+    const freshToken = await getValidToken(RAJUK_SERVER);
+    query.set("token", freshToken);
+    const retryResult = await fetchJson(`${serverUrl}/query?${query.toString()}`);
+    if (!retryResult.response.ok || retryResult.data?.error) {
+      throw new Error(retryResult.data?.error?.message || `RAJUK layer ${layerId} query failed after token refresh (${retryResult.response.status})`);
+    }
+    return retryResult.data as T;
   }
-  if (!response.ok || data.error) throw new Error(data.error?.message || `RAJUK layer ${layerId} query failed (${response.status})`);
-  return data as T;
+
+  if (!authenticatedResult.response.ok || authenticatedResult.data?.error) {
+    throw new Error(authenticatedResult.data?.error?.message || `RAJUK layer ${layerId} query failed (${authenticatedResult.response.status})`);
+  }
+  return authenticatedResult.data as T;
 }
 
 export async function getDistricts(): Promise<RajukDistrict[]> {

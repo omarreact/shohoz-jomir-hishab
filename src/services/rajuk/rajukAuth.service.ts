@@ -1,33 +1,38 @@
 import "server-only";
 import { cacheRajukToken, getCachedRajukToken, invalidateCachedRajukToken } from "./rajukRedis.service";
 
-const RAJUK_PORTAL = "https://masterplan.rajuk.gov.bd/portal/sharing/rest";
-const RAJUK_SERVER = "https://masterplan.rajuk.gov.bd/server";
-const REFERER = "https://masterplan.rajuk.gov.bd/";
+export const RAJUK_PORTAL = process.env.RAJUK_PORTAL_URL?.trim() || "https://masterplan.rajuk.gov.bd/portal/sharing/rest";
+export const RAJUK_SERVER = process.env.RAJUK_SERVER_URL?.trim() || "https://masterplan.rajuk.gov.bd/server";
+export const REFERER = "https://masterplan.rajuk.gov.bd/";
+
+const REFRESH_SKEW_MS = 2 * 60 * 1000;
 
 type TokenEntry = { token: string; expiresAt: number };
 const localCache = new Map<string, TokenEntry>();
+const refreshLocks = new Map<string, Promise<TokenEntry>>();
 
 function configuredPortalToken(): string | null {
-  return (process.env.RAJUK_PORTAL_TOKEN || process.env.RAJUK_API_KEY)?.trim() || null;
+  return process.env.RAJUK_PORTAL_TOKEN?.trim() || process.env.RAJUK_API_KEY?.trim() || null;
 }
 
 function configuredServerToken(): TokenEntry | null {
   const token = process.env.RAJUK_SERVER_TOKEN?.trim();
   if (!token) return null;
   const rawExpiry = Number(process.env.RAJUK_SERVER_TOKEN_EXPIRES_AT);
-  // A server token supplied explicitly is useful as a bootstrap/fallback. If no expiry is
-  // supplied, keep it for one hour; the normal Portal -> Server exchange remains preferred.
   const expiresAt = Number.isFinite(rawExpiry) && rawExpiry > Date.now()
     ? rawExpiry
-    : Date.now() + 60 * 60 * 1000;
+    : Date.now() + 30 * 60 * 1000;
   return { token, expiresAt };
 }
 
-export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
+function isUsable(entry: TokenEntry | null | undefined): entry is TokenEntry {
+  return Boolean(entry?.token && entry.expiresAt > Date.now() + REFRESH_SKEW_MS);
+}
+
+async function exchangePortalToken(serverUrl: string): Promise<TokenEntry> {
   const portalToken = configuredPortalToken();
   if (!portalToken) {
-    throw new Error("RAJUK Portal credential is not configured. Set RAJUK_PORTAL_TOKEN to an authorized ArcGIS Portal token.");
+    throw new Error("RAJUK authentication is not configured. Set RAJUK_SERVER_TOKEN or RAJUK_PORTAL_TOKEN in the Vercel environment.");
   }
 
   const body = new URLSearchParams({
@@ -52,7 +57,7 @@ export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntr
     cache: "no-store",
   });
 
-  const data = (await response.json()) as {
+  const data = await response.json() as {
     token?: string;
     expires?: number;
     ssl?: boolean;
@@ -68,38 +73,51 @@ export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntr
   return { token: data.token, expiresAt: data.expires };
 }
 
+async function acquireFreshToken(serverUrl: string): Promise<TokenEntry> {
+  // An explicitly supplied Server Token is already scoped for the federated server and
+  // is therefore the safest bootstrap mechanism for Vercel. Never expose it to the client.
+  const direct = configuredServerToken();
+  if (isUsable(direct)) return direct;
+
+  return exchangePortalToken(serverUrl);
+}
+
+async function persistToken(serverUrl: string, entry: TokenEntry): Promise<TokenEntry> {
+  localCache.set(serverUrl, entry);
+  await cacheRajukToken(serverUrl, entry);
+  return entry;
+}
+
 export async function getValidToken(serverUrl = RAJUK_SERVER): Promise<string> {
-  const cachedRemote = await getCachedRajukToken(serverUrl);
-  if (cachedRemote) return cachedRemote.token;
+  const remote = await getCachedRajukToken(serverUrl);
+  if (isUsable(remote)) return remote.token;
 
-  const cachedLocal = localCache.get(serverUrl);
-  if (cachedLocal && cachedLocal.expiresAt > Date.now() + 30_000) return cachedLocal.token;
+  const local = localCache.get(serverUrl);
+  if (isUsable(local)) return local.token;
 
-  // Prefer a configured server token only when there is no Portal token. This lets an
-  // operator bootstrap the proxy with a verified Token 2 while fixing Portal auth.
-  if (!configuredPortalToken()) {
-    const direct = configuredServerToken();
-    if (direct && direct.expiresAt > Date.now() + 30_000) {
-      localCache.set(serverUrl, direct);
-      await cacheRajukToken(serverUrl, direct);
-      return direct.token;
-    }
-  }
+  const existingRefresh = refreshLocks.get(serverUrl);
+  if (existingRefresh) return (await existingRefresh).token;
 
-  const fresh = await generateToken(serverUrl);
-  localCache.set(serverUrl, fresh);
-  await cacheRajukToken(serverUrl, fresh);
-  return fresh.token;
+  const refresh = acquireFreshToken(serverUrl)
+    .then(entry => persistToken(serverUrl, entry))
+    .finally(() => refreshLocks.delete(serverUrl));
+
+  refreshLocks.set(serverUrl, refresh);
+  return (await refresh).token;
 }
 
 export async function refreshToken(serverUrl = RAJUK_SERVER): Promise<string> {
-  await invalidateCachedRajukToken(serverUrl);
-  localCache.delete(serverUrl);
+  await invalidateToken(serverUrl);
 
-  const fresh = await generateToken(serverUrl);
-  localCache.set(serverUrl, fresh);
-  await cacheRajukToken(serverUrl, fresh);
-  return fresh.token;
+  const existingRefresh = refreshLocks.get(serverUrl);
+  if (existingRefresh) return (await existingRefresh).token;
+
+  const refresh = acquireFreshToken(serverUrl)
+    .then(entry => persistToken(serverUrl, entry))
+    .finally(() => refreshLocks.delete(serverUrl));
+
+  refreshLocks.set(serverUrl, refresh);
+  return (await refresh).token;
 }
 
 export async function invalidateToken(serverUrl = RAJUK_SERVER): Promise<void> {
@@ -108,7 +126,11 @@ export async function invalidateToken(serverUrl = RAJUK_SERVER): Promise<void> {
 }
 
 export function hasRajukCredential(): boolean {
-  return Boolean(configuredPortalToken() || configuredServerToken());
+  return Boolean(configuredServerToken() || configuredPortalToken());
 }
 
-export { RAJUK_PORTAL, RAJUK_SERVER, REFERER };
+export function getRajukAuthMode(): "server-token" | "portal-exchange" | "missing" {
+  if (configuredServerToken()) return "server-token";
+  if (configuredPortalToken()) return "portal-exchange";
+  return "missing";
+}
