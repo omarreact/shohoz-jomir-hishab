@@ -79,7 +79,6 @@ export default function FaraezPage() {
   const [results, setResults] = useState<HeirResult[]>([]);
 
   const handleCalculate = () => {
-    // ধর্ম অনুযায়ী আলাদা হিসাবের লজিক চালু হবে
     if (religion === "muslim") {
       setResults(calculateMuslimFaraez(heirs, gender, assets));
     } else {
@@ -98,23 +97,22 @@ export default function FaraezPage() {
     if (!exportRef.current) return;
     const element = exportRef.current;
 
-    // ম্যাজিক: পিডিএফ বানানোর আগে সাইটকে ডেস্কটপ মোডে (800px) নিয়ে যাওয়া হচ্ছে
     const originalWidth = element.style.width;
     element.style.width = "800px";
 
     try {
-      // @ts-ignore
+      // @ts-expect-error html2pdf.js has no official types
       const html2pdf = (await import("html2pdf.js")).default;
 
       const opt = {
         margin: [15, 10, 15, 10] as [number, number, number, number],
         filename: "Faraez_Result.pdf",
-        image: { type: "jpeg" as "jpeg", quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
         jsPDF: {
           unit: "mm",
           format: "a4",
-          orientation: "portrait" as "portrait",
+          orientation: "portrait" as const,
         },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
@@ -124,7 +122,6 @@ export default function FaraezPage() {
       console.error(err);
       alert("PDF তৈরিতে সমস্যা হয়েছে।");
     } finally {
-      // পিডিএফ নামানো শেষ হলে আবার ফোনের রেগুলার ভিউতে ফিরিয়ে আনা
       element.style.width = originalWidth;
     }
   };
@@ -178,8 +175,6 @@ export default function FaraezPage() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible">
         <div className="max-w-4xl mx-auto">
-          
-          {/* Guide Accordion */}
           <Card className="mb-8 overflow-hidden">
             <button
               onClick={() => setIsGuideOpen(!isGuideOpen)}
@@ -212,7 +207,6 @@ export default function FaraezPage() {
             )}
           </Card>
 
-          {/* Config Controls */}
           <Card className="mb-8">
             <CardContent className="p-6 flex flex-col md:flex-row justify-between gap-6">
               <div className="flex-1">
