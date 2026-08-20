@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getValidToken, invalidateToken } from "@/src/services/rajuk/rajukAuth.service";
+import { getValidToken, invalidateToken, RAJUK_SERVER } from "@/src/services/rajuk/rajukAuth.service";
 import { getLayer } from "@/src/services/rajuk/rajukLayers.service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const TIMEOUT_MS = 8_000;
+/** Longer timeout helps on high-latency / filtered networks (e.g. some WiFi ISPs). */
+const TIMEOUT_MS = 15_000;
 
 export async function GET(
   request: NextRequest,
@@ -40,8 +41,9 @@ export async function GET(
     let response = await fetchTile();
 
     if ((response.status === 498 || response.status === 499) || (layer.auth && response.status === 401)) {
-      invalidateToken(layer.service);
-      upstream.searchParams.set("token", await getValidToken(layer.service));
+      // Always use the canonical federated server origin for token lifecycle.
+      await invalidateToken(RAJUK_SERVER);
+      upstream.searchParams.set("token", await getValidToken(RAJUK_SERVER));
       response = await fetchTile();
     }
 
