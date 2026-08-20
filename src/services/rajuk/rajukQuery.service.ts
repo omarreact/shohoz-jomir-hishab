@@ -1,13 +1,13 @@
 import "server-only";
 import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER } from "./rajukAuth.service";
 import { RAJUK_DB } from "./rajukLayers.service";
+import { classifyPlotKind, enrichPlotFeature } from "./rajukPlotNormalize";
 import type {
   RajukDistrict,
   RajukMauza,
   RajukPlotCollection,
   RajukPlotFeature,
   RajukPlotFilters,
-  RajukPlotKind,
   RajukUpazila,
   RajukIdentifyResult,
 } from "@/src/types/rajuk-runtime";
@@ -15,6 +15,10 @@ import type {
 const escapeSql = (value: string) => value.replace(/'/g, "''");
 type ArcGisError = { code?: number; message?: string; details?: string[] };
 type ArcGisEnvelope = { error?: ArcGisError | string };
+
+/** Layer 0 = RS_mauza plots; layer 5 = MS_mauza plots */
+const LAYER_RS_PLOT = 0;
+const LAYER_MS_PLOT = 5;
 
 function authErrorMessage(data: ArcGisEnvelope): string {
   if (!data?.error) return "";
@@ -72,7 +76,9 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
     token = await getValidToken(RAJUK_SERVER);
   } catch (error) {
     throw new Error(
-      `RAJUK layer ${layerId} requires an authorized server token: ${error instanceof Error ? error.message : "authentication failed"}`,
+      `RAJUK layer ${layerId} requires an authorized server token: ${
+        error instanceof Error ? error.message : "authentication failed"
+      }`,
     );
   }
 
@@ -101,24 +107,11 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
   return data;
 }
 
-function present(value: unknown): boolean {
-  return value !== null && value !== undefined && String(value).trim() !== "";
-}
-
-export function classifyPlotKind(attributes: Record<string, unknown>): RajukPlotKind {
-  const hasRs = present(attributes.rs_plot_no);
-  const hasMs = present(attributes.ms_plot_no);
-  if (hasRs && hasMs) return "mixed";
-  if (hasRs) return "rs";
-  if (hasMs) return "ms";
-  return "unknown";
-}
-
-function annotatePlots(collection: RajukPlotCollection): RajukPlotCollection {
-  const features = (collection.features ?? []).map((f) => {
-    const attributes = { ...f.attributes, plot_kind: classifyPlotKind(f.attributes as Record<string, unknown>) };
-    return { ...f, attributes } as RajukPlotFeature;
-  });
+function annotatePlots(
+  collection: RajukPlotCollection,
+  extras?: { district?: string; upazila?: string; mauza?: string; jl?: string },
+): RajukPlotCollection {
+  const features = (collection.features ?? []).map((f) => enrichPlotFeature(f, extras));
   return { ...collection, features };
 }
 
@@ -154,56 +147,132 @@ export async function getMouzas(tGuid: string): Promise<RajukMauza[]> {
   return (data.features ?? []).map((f) => f.attributes);
 }
 
-export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotCollection> {
+function buildWhere(filters: RajukPlotFilters, mode: "rs" | "ms"): string {
   const clauses: string[] = [];
 
-  // Match generic, RS, or MS plot numbers so mixed parcels are found.
   if (filters.plotNo !== undefined) {
     const n = Math.trunc(filters.plotNo);
     const s = escapeSql(String(n));
-    clauses.push(`(plot_no=${n} OR rs_plot_no='${s}' OR ms_plot_no='${s}')`);
+    if (mode === "rs") {
+      clauses.push(`(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`);
+    } else {
+      clauses.push(`(plot_no=${n} OR ms_plot_no='${s}' OR ms_plot_no='MS-${s}')`);
+    }
   }
-  if (filters.rsPlotNo?.trim()) {
-    clauses.push(`rs_plot_no='${escapeSql(filters.rsPlotNo.trim())}'`);
+
+  if (filters.rsPlotNo?.trim() && mode === "rs") {
+    const v = escapeSql(filters.rsPlotNo.trim());
+    const bare = escapeSql(filters.rsPlotNo.trim().replace(/^RS-/i, ""));
+    clauses.push(`(rs_plot_no='${v}' OR rs_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
   }
-  if (filters.msPlotNo?.trim()) {
-    clauses.push(`ms_plot_no='${escapeSql(filters.msPlotNo.trim())}'`);
+
+  if (filters.msPlotNo?.trim() && mode === "ms") {
+    const v = escapeSql(filters.msPlotNo.trim());
+    const bare = escapeSql(filters.msPlotNo.trim().replace(/^MS-/i, ""));
+    clauses.push(`(ms_plot_no='${v}' OR ms_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
+  }
+
+  // When only rs filter on MS layer (or vice versa), skip that layer via empty where
+  if (filters.rsPlotNo?.trim() && !filters.msPlotNo?.trim() && filters.plotNo === undefined && mode === "ms") {
+    return "1=0";
+  }
+  if (filters.msPlotNo?.trim() && !filters.rsPlotNo?.trim() && filters.plotNo === undefined && mode === "rs") {
+    return "1=0";
   }
 
   for (const term of [filters.mouza, filters.jl, filters.upazila]) {
     if (term?.trim()) clauses.push(`address_search LIKE '%${escapeSql(term.trim())}%'`);
   }
 
-  const data = await requestLayer<RajukPlotCollection>(0, {
-    where: clauses.length ? clauses.join(" AND ") : "1=0",
-    outFields: "*",
-    returnGeometry: true,
-    outSR: 4326,
-    resultRecordCount: Math.min(Math.max(filters.resultRecordCount ?? 50, 1), 2000),
-    resultOffset: Math.max(filters.resultOffset ?? 0, 0),
-    orderByFields: "plot_no ASC",
-  });
+  return clauses.length ? clauses.join(" AND ") : "1=0";
+}
 
-  let annotated = annotatePlots(data);
+export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotCollection> {
+  const limit = Math.min(Math.max(filters.resultRecordCount ?? 50, 1), 2000);
+  const offset = Math.max(filters.resultOffset ?? 0, 0);
+  const extras = {
+    mauza: filters.mouza,
+    jl: filters.jl,
+    upazila: filters.upazila,
+  };
+
+  const wantRs = filters.kind !== "ms";
+  const wantMs = filters.kind !== "rs";
+
+  const queries: Promise<RajukPlotCollection>[] = [];
+
+  if (wantRs) {
+    queries.push(
+      requestLayer<RajukPlotCollection>(LAYER_RS_PLOT, {
+        where: buildWhere(filters, "rs"),
+        outFields: "*",
+        returnGeometry: true,
+        outSR: 4326,
+        resultRecordCount: limit,
+        resultOffset: offset,
+        orderByFields: "plot_no ASC",
+      }),
+    );
+  }
+
+  if (wantMs) {
+    queries.push(
+      requestLayer<RajukPlotCollection>(LAYER_MS_PLOT, {
+        where: buildWhere(filters, "ms"),
+        outFields: "*",
+        returnGeometry: true,
+        outSR: 4326,
+        resultRecordCount: limit,
+        resultOffset: offset,
+        orderByFields: "plot_no ASC",
+      }),
+    );
+  }
+
+  const parts = await Promise.all(queries);
+  const merged: RajukPlotFeature[] = [];
+  for (const part of parts) {
+    for (const f of part.features ?? []) merged.push(f);
+  }
+
+  let annotated = annotatePlots({ features: merged, count: merged.length }, extras);
+
   if (filters.kind && filters.kind !== "all") {
     annotated = {
       ...annotated,
       features: (annotated.features ?? []).filter((f) => f.attributes.plot_kind === filters.kind),
     };
   }
+
   return annotated;
 }
 
 export async function identifyByPoint(lat: number, lng: number): Promise<RajukIdentifyResult> {
-  const data = await requestLayer<RajukIdentifyResult>(0, {
-    geometry: `${lng},${lat}`,
-    geometryType: "esriGeometryPoint",
-    spatialRel: "esriSpatialRelIntersects",
-    inSR: 4326,
-    outSR: 4326,
-    outFields: "*",
-    returnGeometry: true,
-    resultRecordCount: 5,
-  });
-  return annotatePlots(data);
+  const [rs, ms] = await Promise.all([
+    requestLayer<RajukIdentifyResult>(LAYER_RS_PLOT, {
+      geometry: `${lng},${lat}`,
+      geometryType: "esriGeometryPoint",
+      spatialRel: "esriSpatialRelIntersects",
+      inSR: 4326,
+      outSR: 4326,
+      outFields: "*",
+      returnGeometry: true,
+      resultRecordCount: 5,
+    }),
+    requestLayer<RajukIdentifyResult>(LAYER_MS_PLOT, {
+      geometry: `${lng},${lat}`,
+      geometryType: "esriGeometryPoint",
+      spatialRel: "esriSpatialRelIntersects",
+      inSR: 4326,
+      outSR: 4326,
+      outFields: "*",
+      returnGeometry: true,
+      resultRecordCount: 5,
+    }),
+  ]);
+
+  const features = [...(rs.features ?? []), ...(ms.features ?? [])];
+  return annotatePlots({ features, count: features.length });
 }
+
+export { classifyPlotKind };
