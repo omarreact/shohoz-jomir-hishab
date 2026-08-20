@@ -50,7 +50,6 @@ No `prisma/` schema in active use. No Supabase dependency for core data.
 | `/p/[slug]` | Custom pages |
 | `/login` | Auth |
 | `/faq`, `/privacy`, `/terms` | Static/info |
-| `/nid-copy` | NID-related tool |
 | `/403` | Forbidden |
 
 ## Admin routes
