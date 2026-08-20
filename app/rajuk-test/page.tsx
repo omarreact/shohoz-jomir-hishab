@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Database, Loader2, Search, AlertCircle } from "lucide-react";
 import type { RajukDistrict, RajukMauza, RajukPlotFeature, RajukUpazila } from "@/src/types/rajuk-runtime";
 import { areaFromPlotAttributes, formatAreaValue } from "@/src/modules/land/plotArea";
 
+const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[360px] items-center justify-center rounded-xl border bg-slate-50 text-sm text-slate-500">
+      Loading map…
+    </div>
+  ),
+});
+
 type PlotType = "rs" | "ms" | "mixed";
 
-/** Human-readable rows for the detail table (label, preferred attribute keys). */
 const DETAIL_ROWS: { label: string; keys: string[] }[] = [
   { label: "Object ID", keys: ["objectid"] },
   { label: "Plot No", keys: ["plot_no"] },
@@ -89,7 +98,7 @@ function AttrTable({ attributes }: { attributes: Record<string, unknown> }) {
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-            <th className="border-b px-4 py-3 w-[40%]">Field</th>
+            <th className="w-[40%] border-b px-4 py-3">Field</th>
             <th className="border-b px-4 py-3">Value</th>
           </tr>
         </thead>
@@ -181,7 +190,11 @@ function MatchesTable({
             return (
               <tr
                 key={String(a.p_guid || a.objectid || index)}
-                className={active ? "bg-emerald-50" : "odd:bg-white even:bg-slate-50/80 hover:bg-emerald-50/50"}
+                className={
+                  active
+                    ? "bg-emerald-50"
+                    : "odd:bg-white even:bg-slate-50/80 hover:bg-emerald-50/50"
+                }
               >
                 <td className="border-b border-slate-100 px-3 py-2.5 text-slate-500">{index + 1}</td>
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
@@ -190,10 +203,10 @@ function MatchesTable({
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
                   {firstValue(a, ["ms_plot_no"])}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2.5 uppercase text-xs">
+                <td className="border-b border-slate-100 px-3 py-2.5 text-xs uppercase">
                   {firstValue(a, ["plot_kind"]) === "—" ? plotType : firstValue(a, ["plot_kind"])}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2.5 text-slate-600 max-w-xs truncate">
+                <td className="max-w-xs truncate border-b border-slate-100 px-3 py-2.5 text-slate-600">
                   {firstValue(a, ["address_search"])}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
@@ -473,7 +486,7 @@ export default function RajukTestPage() {
     plots.length === 0
       ? "Mouza নির্বাচন করুন — তারপর plot type দেখাবে"
       : hasMixedData
-        ? "এই Mouza-তে RS, MS এবং Mixed (উভয় নম্বর) আছে"
+        ? "এই Mouza-তে RS ও MS (এবং Mixed) ডেটা আছে — ম্যাপে দুই লেয়ারই চালু করা যায়"
         : hasMsData && hasRsData
           ? "এই Mouza-তে RS ও MS আছে"
           : hasMsData
@@ -491,7 +504,7 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → Plot type (RS / MS / Mixed) → Plot
+            District → Upazila → Mouza → Plot type (RS / MS / Mixed) → Plot · map (RS + MS layers) · tables
           </p>
         </header>
 
@@ -682,7 +695,7 @@ export default function RajukTestPage() {
         )}
 
         {result && (
-          <section className="space-y-4 rounded-2xl border bg-white p-5 shadow-sm">
+          <section className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
             <div>
               <h2 className="font-bold">Plot details</h2>
               <p className="text-xs text-slate-500">
@@ -691,6 +704,13 @@ export default function RajukTestPage() {
                   ? ` · ${String(result.attributes.plot_kind)}`
                   : ""}
               </p>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-slate-700">
+                Map — RS &amp; MS layers + Google Maps
+              </h3>
+              <PlotMap feature={result} />
             </div>
 
             {(isMixedFeature(result) || result.attributes.plot_kind === "mixed") && (
