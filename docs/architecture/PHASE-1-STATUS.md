@@ -2,6 +2,8 @@
 
 Branch: `refactor/phase-1-architecture`
 
+> **See also:** [PROJECT-STATUS.md](./PROJECT-STATUS.md) for the full current project assessment, CI/lockfile issues, and recommended next steps.
+
 ## Completed in this phase
 
 - Created a dedicated refactoring branch from the production baseline.
