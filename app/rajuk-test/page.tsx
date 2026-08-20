@@ -17,20 +17,24 @@ const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
 
 type PlotType = "rs" | "ms" | "mixed";
 
+/** Matches the General Plot Information panel — keys filled by server enricher. */
 const DETAIL_ROWS: { label: string; keys: string[] }[] = [
-  { label: "Object ID", keys: ["objectid"] },
   { label: "Plot No", keys: ["plot_no"] },
-  { label: "RS Plot No", keys: ["rs_plot_no"] },
-  { label: "MS Plot No", keys: ["ms_plot_no"] },
-  { label: "Plot type", keys: ["plot_kind"] },
-  { label: "RS JL No", keys: ["rs_jl_no", "jl_no", "jl"] },
-  { label: "Mauza", keys: ["rs_mauza_name", "mauza", "mouza", "mauza_name"] },
-  { label: "Upazila / Thana", keys: ["thana_upazila", "upazila_ps", "upazila", "thana"] },
-  { label: "District", keys: ["m_district", "district", "district_name"] },
+  { label: "RS Plot Number", keys: ["rs_plot_no"] },
+  { label: "MS Plot Number", keys: ["ms_plot_no"] },
+  { label: "RS JL No", keys: ["rs_jl_no", "jl_no"] },
+  { label: "RS Plot Type", keys: ["rs_plot_type", "plot_kind"] },
+  { label: "RS Plot Area (Katha Approx.)", keys: ["rs_plot_area", "area_katha"] },
+  { label: "MS Plot Area (Katha Approx.)", keys: ["ms_plot_area", "area_katha"] },
+  { label: "RS Mauza Name", keys: ["rs_mauza_name", "mauza"] },
+  { label: "Thana/Upazila", keys: ["thana_upazila", "upazila_ps"] },
+  { label: "District", keys: ["m_district", "district"] },
   { label: "Address", keys: ["address_search"] },
+  { label: "Area (sq m)", keys: ["area_sq_m", "Shape__Area"] },
+  { label: "Area (sq ft)", keys: ["area_sq_ft"] },
+  { label: "Area (shotok)", keys: ["area_shotok"] },
+  { label: "Object ID", keys: ["objectid"] },
   { label: "P GUID", keys: ["p_guid"] },
-  { label: "Shape area (raw)", keys: ["Shape__Area", "shape__area"] },
-  { label: "Shape length (raw)", keys: ["Shape__Length", "shape__length"] },
 ];
 
 function present(value: unknown): boolean {
@@ -41,7 +45,11 @@ function firstValue(attributes: Record<string, unknown>, keys: string[]): string
   for (const key of keys) {
     const value = attributes[key];
     if (present(value)) {
-      if (typeof value === "number") return value.toLocaleString("en-US");
+      if (typeof value === "number") {
+        return Number.isInteger(value)
+          ? value.toLocaleString("en-US")
+          : value.toLocaleString("en-US", { maximumFractionDigits: 4 });
+      }
       return String(value);
     }
   }
@@ -71,7 +79,6 @@ function optionLabel(f: RajukPlotFeature, type: PlotType): string {
   return String(a.rs_plot_no ?? a.plot_no ?? a.objectid);
 }
 
-/** Searchable plot picker — type to filter plot numbers in the list. */
 function SearchablePlotSelect({
   plots,
   plotType,
@@ -105,15 +112,10 @@ function SearchablePlotSelect({
         return (
           o.value.toLowerCase().includes(q) ||
           o.label.toLowerCase().includes(q) ||
-          String(o.feature.attributes.rs_plot_no ?? "")
-            .toLowerCase()
-            .includes(q) ||
-          String(o.feature.attributes.ms_plot_no ?? "")
-            .toLowerCase()
-            .includes(q) ||
-          String(o.feature.attributes.plot_no ?? "")
-            .toLowerCase()
-            .includes(q)
+          String(o.feature.attributes.rs_plot_no ?? "").toLowerCase().includes(q) ||
+          String(o.feature.attributes.ms_plot_no ?? "").toLowerCase().includes(q) ||
+          String(o.feature.attributes.plot_no ?? "").toLowerCase().includes(q) ||
+          String(o.feature.attributes.address_search ?? "").toLowerCase().includes(q)
         );
       })
       .slice(0, 200);
@@ -133,7 +135,6 @@ function SearchablePlotSelect({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  // Reset search text when value cleared externally
   useEffect(() => {
     if (!value) setQuery("");
   }, [value]);
@@ -178,7 +179,7 @@ function SearchablePlotSelect({
               <li key={String(o.feature.attributes.p_guid || o.feature.attributes.objectid)}>
                 <button
                   type="button"
-                  className={`flex w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                  className={`flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
                     o.value === value ? "bg-emerald-50 font-semibold text-[#006a4e]" : ""
                   }`}
                   onMouseDown={(e) => e.preventDefault()}
@@ -188,7 +189,12 @@ function SearchablePlotSelect({
                     setOpen(false);
                   }}
                 >
-                  {o.label}
+                  <span>{o.label}</span>
+                  {present(o.feature.attributes.address_search) && (
+                    <span className="text-xs font-normal text-slate-500">
+                      {String(o.feature.attributes.address_search)}
+                    </span>
+                  )}
                 </button>
               </li>
             ))
@@ -210,7 +216,7 @@ function AttrTable({ attributes }: { attributes: Record<string, unknown> }) {
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-            <th className="w-[40%] border-b px-4 py-3">Field</th>
+            <th className="w-[48%] border-b px-4 py-3">Field</th>
             <th className="border-b px-4 py-3">Value</th>
           </tr>
         </thead>
@@ -261,9 +267,6 @@ function AreaTable({ feature }: { feature: RajukPlotFeature }) {
           ))}
         </tbody>
       </table>
-      <p className="px-4 py-2 text-xs text-slate-500">
-        Shape__Area কে m² ধরে রূপান্তর; খতিয়ানের সাথে সামান্য পার্থক্য থাকতে পারে।
-      </p>
     </div>
   );
 }
@@ -287,8 +290,8 @@ function MatchesTable({
             <th className="border-b px-3 py-3">#</th>
             <th className="border-b px-3 py-3">RS</th>
             <th className="border-b px-3 py-3">MS</th>
-            <th className="border-b px-3 py-3">Type</th>
-            <th className="border-b px-3 py-3">Address</th>
+            <th className="border-b px-3 py-3">Mauza</th>
+            <th className="border-b px-3 py-3">Thana</th>
             <th className="border-b px-3 py-3">Area (katha)</th>
             <th className="border-b px-3 py-3" />
           </tr>
@@ -296,7 +299,6 @@ function MatchesTable({
         <tbody>
           {features.map((f, index) => {
             const a = f.attributes as Record<string, unknown>;
-            const area = areaFromPlotAttributes(a);
             const id = Number(a.objectid);
             const active = selectedId !== null && id === selectedId;
             return (
@@ -315,14 +317,14 @@ function MatchesTable({
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
                   {firstValue(a, ["ms_plot_no"])}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2.5 text-xs uppercase">
-                  {firstValue(a, ["plot_kind"]) === "—" ? plotType : firstValue(a, ["plot_kind"])}
-                </td>
-                <td className="max-w-xs truncate border-b border-slate-100 px-3 py-2.5 text-slate-600">
-                  {firstValue(a, ["address_search"])}
+                <td className="border-b border-slate-100 px-3 py-2.5">
+                  {firstValue(a, ["rs_mauza_name", "mauza"])}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
-                  {area.isValid ? formatAreaValue(area.katha) : "—"}
+                  {firstValue(a, ["thana_upazila", "upazila_ps"])}
+                </td>
+                <td className="border-b border-slate-100 px-3 py-2.5">
+                  {firstValue(a, ["area_katha", "rs_plot_area"])}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
                   <button
@@ -456,6 +458,7 @@ export default function RajukTestPage() {
     if (!mauza) return;
     const selectedMouza = mouzas.find((x) => x.m_guid === mauza);
     const selectedUpazila = upazilas.find((x) => x.t_guid === tGuid);
+    const selectedDistrict = districts.find((x) => x.d_guid === dGuid);
     if (!selectedMouza) return;
     setLoadingLevel("plot");
     setError("");
@@ -473,13 +476,24 @@ export default function RajukTestPage() {
         return d;
       })
       .then((d) => {
-        const features = d.features ?? [];
+        let features = (d.features ?? []) as RajukPlotFeature[];
+        // Ensure district from hierarchy is visible on every plot
+        if (selectedDistrict?.m_district) {
+          features = features.map((f) => ({
+            ...f,
+            attributes: {
+              ...f.attributes,
+              m_district: f.attributes.m_district || selectedDistrict.m_district,
+              district: f.attributes.district || selectedDistrict.m_district,
+            },
+          }));
+        }
         setPlots(features);
         if (!features.length) setError("এই Mouza-তে কোনো Plot পাওয়া যায়নি।");
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Plot load failed"))
       .finally(() => setLoadingLevel(""));
-  }, [mauza, mouzas, tGuid, upazilas]);
+  }, [mauza, mouzas, tGuid, upazilas, dGuid, districts]);
 
   function onPlotTypeChange(next: PlotType) {
     setPlotType(next);
@@ -508,6 +522,7 @@ export default function RajukTestPage() {
     try {
       const selectedMouza = mouzas.find((x) => x.m_guid === mauza);
       const selectedUpazila = upazilas.find((x) => x.t_guid === tGuid);
+      const selectedDistrict = districts.find((x) => x.d_guid === dGuid);
       const q = new URLSearchParams({ action: "plots", limit: "50" });
 
       if (plotType === "ms") {
@@ -530,6 +545,17 @@ export default function RajukTestPage() {
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       let fs = (d.features ?? []) as RajukPlotFeature[];
+
+      if (selectedDistrict?.m_district) {
+        fs = fs.map((f) => ({
+          ...f,
+          attributes: {
+            ...f.attributes,
+            m_district: f.attributes.m_district || selectedDistrict.m_district,
+            district: f.attributes.district || selectedDistrict.m_district,
+          },
+        }));
+      }
 
       if (plotType === "mixed") {
         const dual = fs.filter(isMixedFeature);
@@ -556,7 +582,7 @@ export default function RajukTestPage() {
     plots.length === 0
       ? "Mouza নির্বাচন করুন — তারপর plot type দেখাবে"
       : hasMixedData
-        ? "এই Mouza-তে RS ও MS (এবং Mixed) ডেটা আছে — ম্যাপে দুই লেয়ারই চালু করা যায়"
+        ? "এই Mouza-তে RS ও MS ডেটা আছে"
         : hasMsData && hasRsData
           ? "এই Mouza-তে RS ও MS আছে"
           : hasMsData
@@ -574,7 +600,7 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → Plot type → Search plot number → map &amp; tables
+            District → Upazila → Mouza → Plot type → Search plot → full details
           </p>
         </header>
 
@@ -671,9 +697,7 @@ export default function RajukTestPage() {
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Select Plot</label>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Type a plot number to search and filter the list
-              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Type a plot number to search the list</p>
               <div className="mt-1">
                 <SearchablePlotSelect
                   plots={filteredPlots}
@@ -723,57 +747,28 @@ export default function RajukTestPage() {
         {result && (
           <section className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
             <div>
-              <h2 className="font-bold">Plot details</h2>
+              <h2 className="font-bold">General Plot Information</h2>
               <p className="text-xs text-slate-500">
                 {optionLabel(result, plotType)}
-                {present(result.attributes.plot_kind)
-                  ? ` · ${String(result.attributes.plot_kind)}`
+                {present(result.attributes.address_search)
+                  ? ` · ${String(result.attributes.address_search)}`
                   : ""}
               </p>
             </div>
 
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-slate-700">
-                Map — RS &amp; MS layers + Google Maps
-              </h3>
+              <h3 className="mb-2 text-sm font-semibold text-slate-700">Map</h3>
               <PlotMap feature={result} />
             </div>
 
-            {(isMixedFeature(result) || result.attributes.plot_kind === "mixed") && (
-              <div className="overflow-x-auto rounded-xl border border-amber-200">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-amber-50 text-left text-xs font-semibold uppercase text-amber-900">
-                      <th className="border-b border-amber-100 px-4 py-3">Survey</th>
-                      <th className="border-b border-amber-100 px-4 py-3">Plot number</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border-b border-amber-50 px-4 py-2.5">RS</td>
-                      <td className="border-b border-amber-50 px-4 py-2.5 font-bold">
-                        {String(result.attributes.rs_plot_no ?? "—")}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2.5">MS</td>
-                      <td className="px-4 py-2.5 font-bold">
-                        {String(result.attributes.ms_plot_no ?? "—")}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-slate-700">Plot details</h3>
+              <AttrTable attributes={result.attributes as Record<string, unknown>} />
+            </div>
 
             <div>
               <h3 className="mb-2 text-sm font-semibold text-slate-700">Calculated area</h3>
               <AreaTable feature={result} />
-            </div>
-
-            <div>
-              <h3 className="mb-2 text-sm font-semibold text-slate-700">Attributes</h3>
-              <AttrTable attributes={result.attributes as Record<string, unknown>} />
             </div>
           </section>
         )}
