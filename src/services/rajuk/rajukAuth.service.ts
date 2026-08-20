@@ -3,12 +3,15 @@ import { cacheRajukToken, getCachedRajukToken, invalidateCachedRajukToken } from
 
 const RAJUK_PORTAL = "https://masterplan.rajuk.gov.bd/portal/sharing/rest";
 const RAJUK_SERVER = "https://masterplan.rajuk.gov.bd/server";
+const RAJUK_PUBLIC_CONFIG = "https://masterplan.rajuk.gov.bd/config.json";
 const REFERER = "https://masterplan.rajuk.gov.bd/";
 const TOKEN_SKEW_MS = 90_000;
 
 type TokenEntry = { token: string; expiresAt: number };
 const localCache = new Map<string, TokenEntry>();
 let refreshPromise: Promise<TokenEntry> | null = null;
+let publicConfigCache: { key: string; fetchedAt: number } | null = null;
+const PUBLIC_CONFIG_TTL_MS = 30 * 60 * 1000;
 
 function normalizeServerUrl(value: string = RAJUK_SERVER): string {
   try {
@@ -42,6 +45,33 @@ function isInvalidTokenError(message: string): boolean {
   return m.includes("498") || m.includes("499") || m.includes("invalid token") || m.includes("token required");
 }
 
+/** Live API_KEY published by RAJUK for their own map client (no username/password). */
+async function fetchPublicConfigApiKey(): Promise<string> {
+  if (publicConfigCache && Date.now() - publicConfigCache.fetchedAt < PUBLIC_CONFIG_TTL_MS) {
+    return publicConfigCache.key;
+  }
+
+  const response = await fetch(RAJUK_PUBLIC_CONFIG, {
+    cache: "no-store",
+    headers: {
+      accept: "application/json",
+      referer: REFERER,
+      origin: "https://masterplan.rajuk.gov.bd",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`RAJUK public config.json fetch failed (${response.status})`);
+  }
+
+  const data = (await response.json()) as { API_KEY?: string; api_key?: string; apiKey?: string };
+  const key = (data.API_KEY || data.api_key || data.apiKey || "").trim();
+  if (!key) throw new Error("RAJUK config.json did not include API_KEY");
+
+  publicConfigCache = { key, fetchedAt: Date.now() };
+  return key;
+}
+
 async function generatePortalToken(): Promise<TokenEntry> {
   const credentials = configuredPortalCredentials();
   if (!credentials) throw new Error("RAJUK Portal credentials are not configured.");
@@ -67,7 +97,7 @@ async function generatePortalToken(): Promise<TokenEntry> {
     cache: "no-store",
   });
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     token?: string;
     expires?: number;
     error?: { code?: number; message?: string; details?: string[] };
@@ -98,7 +128,7 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
     cache: "no-store",
   });
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     token?: string;
     expires?: number;
     ssl?: boolean;
@@ -115,25 +145,23 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
 }
 
 /**
- * Obtain Token 2 using supported/authorized ArcGIS authentication flows.
- * Credential-based portal authentication is preferred when configured so an
- * expired static portal token cannot mask a valid username/password pair.
+ * Obtain a federated server token.
+ * Order:
+ * 1. RAJUK_PORTAL_USERNAME + PASSWORD (optional)
+ * 2. RAJUK_PORTAL_TOKEN / RAJUK_API_KEY from env (optional)
+ * 3. Live API_KEY from https://masterplan.rajuk.gov.bd/config.json (no login required)
+ * 4. RAJUK_SERVER_TOKEN bootstrap (optional)
  */
 export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
+  const errors: string[] = [];
+
   const credentials = configuredPortalCredentials();
   if (credentials) {
     try {
       const portal = await generatePortalToken();
       return await exchangePortalToken(portal.token, serverUrl);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      // Fall through to static portal token only if credentials fail for a non-auth reason.
-      if (isInvalidTokenError(message) || message.toLowerCase().includes("invalid username") || message.toLowerCase().includes("unable to generate")) {
-        throw new Error(
-          `RAJUK portal username/password rejected: ${message}. Verify RAJUK_PORTAL_USERNAME and RAJUK_PORTAL_PASSWORD on Vercel.`,
-        );
-      }
-      throw error;
+      errors.push(`portal-credentials: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -142,30 +170,27 @@ export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntr
     try {
       return await exchangePortalToken(portalToken, serverUrl);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (isInvalidTokenError(message)) {
-        throw new Error(
-          `RAJUK_PORTAL_TOKEN / RAJUK_API_KEY is expired or invalid (ArcGIS rejected the portal→server exchange). ` +
-            `Replace it with a fresh portal token, or set RAJUK_PORTAL_USERNAME + RAJUK_PORTAL_PASSWORD and remove the stale token. ` +
-            `Detail: ${message}`,
-        );
-      }
-      throw error;
+      errors.push(`env-portal-token: ${error instanceof Error ? error.message : String(error)}`);
+      // Fall through to public config.json — env token is often stale.
     }
+  }
+
+  try {
+    const publicKey = await fetchPublicConfigApiKey();
+    return await exchangePortalToken(publicKey, serverUrl);
+  } catch (error) {
+    errors.push(`public-config: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const direct = configuredServerToken();
   if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) return direct;
 
   throw new Error(
-    "RAJUK authentication is not configured. Set RAJUK_PORTAL_USERNAME/RAJUK_PORTAL_PASSWORD (preferred), " +
-      "a fresh RAJUK_PORTAL_TOKEN, or a valid RAJUK_SERVER_TOKEN on the server and redeploy.",
+    `RAJUK authentication failed after all methods. ${errors.join(" | ") || "No methods available."}`,
   );
 }
 
 async function refreshAndCache(key: string, forceGenerate = false): Promise<TokenEntry> {
-  // A forced refresh must never reuse a static server token or an old cached
-  // token. This is critical after ArcGIS returns HTTP 498/499.
   if (!forceGenerate) {
     const direct = configuredServerToken();
     if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) {
@@ -174,6 +199,9 @@ async function refreshAndCache(key: string, forceGenerate = false): Promise<Toke
       return direct;
     }
   }
+
+  // Bust public config cache on forced refresh so a rotated RAJUK API_KEY is picked up.
+  if (forceGenerate) publicConfigCache = null;
 
   const fresh = await generateToken(key);
   localCache.set(key, fresh);
@@ -215,15 +243,21 @@ export async function invalidateToken(serverUrl = RAJUK_SERVER): Promise<void> {
   await invalidateCachedRajukToken(key);
 }
 
+/** Always true: public config.json provides a working API_KEY without username/password. */
 export function hasRajukCredential(): boolean {
-  return Boolean(configuredPortalToken() || configuredPortalCredentials() || configuredServerToken());
+  return true;
 }
 
-export function getRajukAuthMode(): "portal-token" | "portal-credentials" | "server-token" | "none" {
+export function getRajukAuthMode():
+  | "portal-credentials"
+  | "portal-token"
+  | "public-config"
+  | "server-token"
+  | "none" {
   if (configuredPortalCredentials()) return "portal-credentials";
   if (configuredPortalToken()) return "portal-token";
   if (configuredServerToken()) return "server-token";
-  return "none";
+  return "public-config";
 }
 
-export { RAJUK_PORTAL, RAJUK_SERVER, REFERER };
+export { RAJUK_PORTAL, RAJUK_SERVER, REFERER, RAJUK_PUBLIC_CONFIG };
