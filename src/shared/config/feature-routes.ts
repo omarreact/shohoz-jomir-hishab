@@ -1,8 +1,5 @@
 /**
  * Canonical product routes used by navigation and CTAs.
- *
- * Urban planning map = merged Geospatial + LIOS experience at /geospatial-map.
- * /lios-map and legacy paths redirect into that page.
  * Internal RAJUK/tile API identifiers remain technical.
  */
 export const FEATURE_ROUTES = {
@@ -10,7 +7,7 @@ export const FEATURE_ROUTES = {
   records: "/khatiyan",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
-  /** Unified নগর পরিকল্পনা মানচিত্র (Geospatial + LIOS). */
+  /** Unified নগর পরিকল্পনা মানচিত্র. */
   landMap: "/geospatial-map",
   mapQa: "/rajuk-test",
   documents: "/porcha",
