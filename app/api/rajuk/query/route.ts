@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDistricts, getMouzas, getPlots, getUpazilas, identifyByPoint } from "@/src/services/rajuk/rajukQuery.service";
+import {
+  getDistricts,
+  getMouzas,
+  getPlots,
+  getUpazilas,
+  identifyByPoint,
+} from "@/src/services/rajuk/rajukQuery.service";
+import type { RajukPlotKind } from "@/src/types/rajuk-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +20,9 @@ function isRajukAuthFailure(message: string): boolean {
     m.includes("not configured") ||
     m.includes("authentication failed") ||
     m.includes("token generation failed") ||
-    m.includes("token exchange failed")
+    m.includes("token exchange failed") ||
+    m.includes("expired or invalid") ||
+    m.includes("username/password rejected")
   );
 }
 
@@ -38,12 +47,20 @@ export async function GET(request: NextRequest) {
       if (raw && plotNo !== undefined && (!Number.isInteger(plotNo) || plotNo < 0)) {
         return NextResponse.json({ error: "plot_no must be an integer" }, { status: 400 });
       }
+      const kindParam = p.get("kind") as RajukPlotKind | "all" | null;
+      const kind =
+        kindParam === "rs" || kindParam === "ms" || kindParam === "mixed" || kindParam === "unknown" || kindParam === "all"
+          ? kindParam
+          : undefined;
       return NextResponse.json(
         await getPlots({
           plotNo,
+          rsPlotNo: p.get("rs_plot_no") || undefined,
+          msPlotNo: p.get("ms_plot_no") || undefined,
           mouza: p.get("mouza") || undefined,
           jl: p.get("jl") || undefined,
           upazila: p.get("upazila") || undefined,
+          kind,
           resultRecordCount: Number(p.get("limit") || 50),
           resultOffset: Number(p.get("offset") || 0),
         }),
@@ -63,10 +80,10 @@ export async function GET(request: NextRequest) {
     if (isRajukAuthFailure(message)) {
       return NextResponse.json(
         {
-          error:
-            "RAJUK authentication failed. Set valid RAJUK_PORTAL_USERNAME and RAJUK_PORTAL_PASSWORD (or a fresh RAJUK_PORTAL_TOKEN) on the server and redeploy.",
+          error: message,
           code: "RAJUK_AUTH",
-          detail: message,
+          hint:
+            "Open /api/rajuk/auth/diagnose. If portalTokenConfigured=true and error is 498, replace the expired RAJUK_PORTAL_TOKEN/RAJUK_API_KEY or set RAJUK_PORTAL_USERNAME + RAJUK_PORTAL_PASSWORD on Vercel, then redeploy.",
         },
         { status: 503 },
       );

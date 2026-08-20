@@ -37,6 +37,11 @@ function configuredServerToken(): TokenEntry | null {
   return { token, expiresAt };
 }
 
+function isInvalidTokenError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("498") || m.includes("499") || m.includes("invalid token") || m.includes("token required");
+}
+
 async function generatePortalToken(): Promise<TokenEntry> {
   const credentials = configuredPortalCredentials();
   if (!credentials) throw new Error("RAJUK Portal credentials are not configured.");
@@ -62,11 +67,17 @@ async function generatePortalToken(): Promise<TokenEntry> {
     cache: "no-store",
   });
 
-  const data = await response.json() as { token?: string; expires?: number; error?: { code?: number; message?: string; details?: string[] } };
+  const data = await response.json() as {
+    token?: string;
+    expires?: number;
+    error?: { code?: number; message?: string; details?: string[] };
+  };
   if (!response.ok || !data.token || !data.expires) {
     const details = data.error?.details?.filter(Boolean).join("; ");
     const code = data.error?.code ? ` [ArcGIS ${data.error.code}]` : "";
-    throw new Error(`${details || data.error?.message || `RAJUK Portal token generation failed (${response.status})`}${code}`);
+    throw new Error(
+      `${details || data.error?.message || `RAJUK Portal token generation failed (${response.status})`}${code}`,
+    );
   }
   return { token: data.token, expiresAt: data.expires };
 }
@@ -87,11 +98,18 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
     cache: "no-store",
   });
 
-  const data = await response.json() as { token?: string; expires?: number; ssl?: boolean; error?: { code?: number; message?: string; details?: string[] } };
+  const data = await response.json() as {
+    token?: string;
+    expires?: number;
+    ssl?: boolean;
+    error?: { code?: number; message?: string; details?: string[] };
+  };
   if (!response.ok || !data.token || !data.expires) {
     const details = data.error?.details?.filter(Boolean).join("; ");
     const code = data.error?.code ? ` [ArcGIS ${data.error.code}]` : "";
-    throw new Error(`${details || data.error?.message || `RAJUK Server token exchange failed (${response.status})`}${code}`);
+    throw new Error(
+      `${details || data.error?.message || `RAJUK Server token exchange failed (${response.status})`}${code}`,
+    );
   }
   return { token: data.token, expiresAt: data.expires };
 }
@@ -104,17 +122,45 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
 export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
   const credentials = configuredPortalCredentials();
   if (credentials) {
-    const portal = await generatePortalToken();
-    return exchangePortalToken(portal.token, serverUrl);
+    try {
+      const portal = await generatePortalToken();
+      return await exchangePortalToken(portal.token, serverUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Fall through to static portal token only if credentials fail for a non-auth reason.
+      if (isInvalidTokenError(message) || message.toLowerCase().includes("invalid username") || message.toLowerCase().includes("unable to generate")) {
+        throw new Error(
+          `RAJUK portal username/password rejected: ${message}. Verify RAJUK_PORTAL_USERNAME and RAJUK_PORTAL_PASSWORD on Vercel.`,
+        );
+      }
+      throw error;
+    }
   }
 
   const portalToken = configuredPortalToken();
-  if (portalToken) return exchangePortalToken(portalToken, serverUrl);
+  if (portalToken) {
+    try {
+      return await exchangePortalToken(portalToken, serverUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isInvalidTokenError(message)) {
+        throw new Error(
+          `RAJUK_PORTAL_TOKEN / RAJUK_API_KEY is expired or invalid (ArcGIS rejected the portal→server exchange). ` +
+            `Replace it with a fresh portal token, or set RAJUK_PORTAL_USERNAME + RAJUK_PORTAL_PASSWORD and remove the stale token. ` +
+            `Detail: ${message}`,
+        );
+      }
+      throw error;
+    }
+  }
 
   const direct = configuredServerToken();
   if (direct && direct.expiresAt > Date.now() + TOKEN_SKEW_MS) return direct;
 
-  throw new Error("RAJUK authentication is not configured. Set RAJUK_PORTAL_TOKEN, an authorized RAJUK_PORTAL_USERNAME/RAJUK_PORTAL_PASSWORD pair, or a valid RAJUK_SERVER_TOKEN.");
+  throw new Error(
+    "RAJUK authentication is not configured. Set RAJUK_PORTAL_USERNAME/RAJUK_PORTAL_PASSWORD (preferred), " +
+      "a fresh RAJUK_PORTAL_TOKEN, or a valid RAJUK_SERVER_TOKEN on the server and redeploy.",
+  );
 }
 
 async function refreshAndCache(key: string, forceGenerate = false): Promise<TokenEntry> {
@@ -144,7 +190,9 @@ export async function getValidToken(serverUrl = RAJUK_SERVER): Promise<string> {
   if (cachedLocal && cachedLocal.expiresAt > Date.now() + TOKEN_SKEW_MS) return cachedLocal.token;
 
   if (!refreshPromise) {
-    refreshPromise = refreshAndCache(key).finally(() => { refreshPromise = null; });
+    refreshPromise = refreshAndCache(key).finally(() => {
+      refreshPromise = null;
+    });
   }
   return (await refreshPromise).token;
 }
@@ -153,7 +201,11 @@ export async function refreshToken(serverUrl = RAJUK_SERVER): Promise<string> {
   const key = normalizeServerUrl(serverUrl);
   await invalidateCachedRajukToken(key);
   localCache.delete(key);
-  if (!refreshPromise) refreshPromise = refreshAndCache(key, true).finally(() => { refreshPromise = null; });
+  if (!refreshPromise) {
+    refreshPromise = refreshAndCache(key, true).finally(() => {
+      refreshPromise = null;
+    });
+  }
   return (await refreshPromise).token;
 }
 
