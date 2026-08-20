@@ -11,7 +11,6 @@ const ALLOWED_QUERY_KEYS = new Set([
 ]);
 
 function upstreamUrl(layerId: string) {
-  // Keep the route strictly numeric: FeatureServer layer IDs are integer IDs.
   if (!/^\d+$/.test(layerId)) throw new Error("layerId must be numeric");
   return `${RAJUK_SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/${layerId}/query`;
 }
@@ -20,11 +19,15 @@ async function fetchUpstream(url: string, params: URLSearchParams, token?: strin
   const query = new URLSearchParams(params);
   query.set("f", "geojson");
   if (token) query.set("token", token);
-  return fetch(`${url}?${query.toString()}`, { cache: "no-store" });
+  return fetch(`${url}?${query.toString()}`, {
+    cache: "no-store",
+    headers: { Accept: "application/json", Referer: "https://masterplan.rajuk.gov.bd/", Origin: "https://masterplan.rajuk.gov.bd" },
+  });
 }
 
 function isAuthError(response: Response, data: any) {
-  return response.status === 401 || response.status === 403 || data?.error?.code === 498 || data?.error?.code === 499;
+  const message = String(data?.error?.message ?? data?.error ?? "");
+  return response.status === 401 || response.status === 403 || data?.error?.code === 498 || data?.error?.code === 499 || /invalid token|token required|token is required/i.test(message);
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ layerId: string }> }) {
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
     }
     params.set("f", "geojson");
 
-    // Public-first: genuinely public RAJUK layers work without credentials.
+    // Public-first: do not force a token onto genuinely public layers.
     let response = await fetchUpstream(url, params);
     let data = await response.json();
 
@@ -46,7 +49,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
       response = await fetchUpstream(url, params, token);
       data = await response.json();
 
-      // One controlled refresh on an invalid/expired Token 2. Never loop indefinitely.
       if (isAuthError(response, data)) {
         await invalidateToken(RAJUK_SERVER);
         const freshToken = await refreshToken(RAJUK_SERVER);
@@ -56,18 +58,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
     }
 
     if (!response.ok || data?.error) {
-      const status = data?.error?.code === 498 || data?.error?.code === 499 ? 502 : response.status >= 400 ? response.status : 502;
+      const code = Number(data?.error?.code);
+      const status = code === 498 || code === 499 || /invalid token|token required/i.test(String(data?.error?.message ?? data?.error ?? ""))
+        ? 502
+        : response.status >= 400 ? response.status : 502;
       return NextResponse.json({
-        error: data?.error?.message || "RAJUK FeatureServer request failed",
-        code: data?.error?.code,
+        ok: false,
+        error: data?.error?.message || data?.error || "RAJUK FeatureServer request failed",
+        code: Number.isFinite(code) ? code : undefined,
+        upstreamStatus: response.status,
       }, { status });
     }
 
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return NextResponse.json(data, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "RAJUK proxy failed" }, { status: 502 });
   }
