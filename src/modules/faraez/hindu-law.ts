@@ -1,7 +1,7 @@
 import { HeirsInput, HeirResult, DeceasedGender, AssetsInput } from "./types";
 
 export function calculateHinduDayabhaga(input: HeirsInput, gender: DeceasedGender, assets: AssetsInput): HeirResult[] {
-  let results: Omit<HeirResult, 'assets'>[] = [];
+  const results: Omit<HeirResult, 'assets'>[] = [];
   let remainingShare = 1;
 
   const addResult = (name: string, count: number, share: number, reason: string) => {
