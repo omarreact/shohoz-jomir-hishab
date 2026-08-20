@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Database, Loader2, Search, AlertCircle } from "lucide-react";
+import { Database, Loader2, Search, AlertCircle, ChevronDown } from "lucide-react";
 import type { RajukDistrict, RajukMauza, RajukPlotFeature, RajukUpazila } from "@/src/types/rajuk-runtime";
 import { areaFromPlotAttributes, formatAreaValue } from "@/src/modules/land/plotArea";
 
@@ -71,25 +71,137 @@ function optionLabel(f: RajukPlotFeature, type: PlotType): string {
   return String(a.rs_plot_no ?? a.plot_no ?? a.objectid);
 }
 
-function validateManualPlotNumber(
-  raw: string,
-  _plotType: PlotType,
-): { ok: true; value: string } | { ok: false; error: string } {
-  const value = raw.trim();
-  if (!value) return { ok: false, error: "প্লট / দাগ নম্বর লিখুন।" };
-  if (value.length > 20) return { ok: false, error: "প্লট নম্বর খুব বড় (সর্বোচ্চ ২০ অক্ষর)।" };
-  if (!/^\d{1,12}([\/-]\d{1,6})?$/.test(value)) {
-    return {
-      ok: false,
-      error: "শুধু সংখ্যা দিন (ঐচ্ছিক: 120/1 বা 45-2)। অক্ষর বা স্পেস দেওয়া যাবে না।",
-    };
-  }
-  const main = Number(value.split(/[\/-]/)[0]);
-  if (!Number.isFinite(main) || main <= 0) {
-    return { ok: false, error: "প্লট নম্বর ০ বা ঋণাত্মক হতে পারে না।" };
-  }
-  if (main > 999999) return { ok: false, error: "প্লট নম্বর সীমার বাইরে।" };
-  return { ok: true, value };
+/** Searchable plot picker — type to filter plot numbers in the list. */
+function SearchablePlotSelect({
+  plots,
+  plotType,
+  value,
+  disabled,
+  loading,
+  onSelect,
+}: {
+  plots: RajukPlotFeature[];
+  plotType: PlotType;
+  value: string;
+  disabled?: boolean;
+  loading?: boolean;
+  onSelect: (value: string, feature: RajukPlotFeature | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const options = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return plots
+      .map((f) => ({
+        feature: f,
+        value: plotNumberForType(f, plotType),
+        label: optionLabel(f, plotType),
+      }))
+      .filter((o) => o.value)
+      .filter((o) => {
+        if (!q) return true;
+        return (
+          o.value.toLowerCase().includes(q) ||
+          o.label.toLowerCase().includes(q) ||
+          String(o.feature.attributes.rs_plot_no ?? "")
+            .toLowerCase()
+            .includes(q) ||
+          String(o.feature.attributes.ms_plot_no ?? "")
+            .toLowerCase()
+            .includes(q) ||
+          String(o.feature.attributes.plot_no ?? "")
+            .toLowerCase()
+            .includes(q)
+        );
+      })
+      .slice(0, 200);
+  }, [plots, plotType, query]);
+
+  const selectedLabel = useMemo(() => {
+    if (!value) return "";
+    const hit = plots.find((f) => plotNumberForType(f, plotType) === value);
+    return hit ? optionLabel(hit, plotType) : value;
+  }, [value, plots, plotType]);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  // Reset search text when value cleared externally
+  useEffect(() => {
+    if (!value) setQuery("");
+  }, [value]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={open ? query : selectedLabel || query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (!e.target.value.trim()) onSelect("", null);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setQuery("");
+          }}
+          disabled={disabled}
+          placeholder={
+            plotType === "ms"
+              ? "Search MS plot number…"
+              : plotType === "mixed"
+                ? "Search RS / MS plot number…"
+                : "Search RS plot number…"
+          }
+          className="w-full rounded-xl border py-2.5 pl-9 pr-9 outline-none focus:border-[#006a4e] disabled:bg-slate-50"
+          autoComplete="off"
+        />
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        {loading && <Loader2 className="absolute right-9 top-3 animate-spin text-slate-400" size={17} />}
+      </div>
+
+      {open && !disabled && (
+        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border bg-white py-1 shadow-lg">
+          {options.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-slate-500">কোনো প্লট পাওয়া যায়নি</li>
+          ) : (
+            options.map((o) => (
+              <li key={String(o.feature.attributes.p_guid || o.feature.attributes.objectid)}>
+                <button
+                  type="button"
+                  className={`flex w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                    o.value === value ? "bg-emerald-50 font-semibold text-[#006a4e]" : ""
+                  }`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onSelect(o.value, o.feature);
+                    setQuery("");
+                    setOpen(false);
+                  }}
+                >
+                  {o.label}
+                </button>
+              </li>
+            ))
+          )}
+          {plots.length > 200 && options.length >= 200 && (
+            <li className="border-t px-3 py-1.5 text-xs text-slate-400">
+              Showing first 200 matches — type more digits to narrow
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function AttrTable({ attributes }: { attributes: Record<string, unknown> }) {
@@ -240,8 +352,6 @@ export default function RajukTestPage() {
   const [mauza, setMauza] = useState("");
   const [plotType, setPlotType] = useState<PlotType>("rs");
   const [plot, setPlot] = useState("");
-  const [manualPlot, setManualPlot] = useState("");
-  const [validationError, setValidationError] = useState("");
   const [result, setResult] = useState<RajukPlotFeature | null>(null);
   const [matches, setMatches] = useState<RajukPlotFeature[]>([]);
   const [loading, setLoading] = useState(false);
@@ -271,8 +381,6 @@ export default function RajukTestPage() {
     if (!plots.length) return;
     setPlotType((prev) => (availableTypes.includes(prev) ? prev : availableTypes[0]));
     setPlot("");
-    setManualPlot("");
-    setValidationError("");
   }, [plots, availableTypes]);
 
   const filteredPlots = useMemo(() => {
@@ -303,8 +411,6 @@ export default function RajukTestPage() {
     setTGuid("");
     setMauza("");
     setPlot("");
-    setManualPlot("");
-    setValidationError("");
     setResult(null);
     setMatches([]);
     if (!dGuid) return;
@@ -326,8 +432,6 @@ export default function RajukTestPage() {
     setPlots([]);
     setMauza("");
     setPlot("");
-    setManualPlot("");
-    setValidationError("");
     setResult(null);
     setMatches([]);
     if (!tGuid) return;
@@ -347,8 +451,6 @@ export default function RajukTestPage() {
   useEffect(() => {
     setPlots([]);
     setPlot("");
-    setManualPlot("");
-    setValidationError("");
     setResult(null);
     setMatches([]);
     if (!mauza) return;
@@ -382,55 +484,23 @@ export default function RajukTestPage() {
   function onPlotTypeChange(next: PlotType) {
     setPlotType(next);
     setPlot("");
-    setManualPlot("");
-    setValidationError("");
     setResult(null);
     setMatches([]);
     setError("");
   }
 
-  function selectPlot(value: string) {
-    setPlot(value);
-    setManualPlot(value);
-    setValidationError("");
-    setMatches([]);
-    setError("");
-    if (!value) {
-      setResult(null);
-      return;
-    }
-    const selected = filteredPlots.find((f) => plotNumberForType(f, plotType) === value);
-    setResult(selected ?? null);
-  }
-
-  function onManualPlotChange(value: string) {
-    setManualPlot(value);
+  function onPlotPicked(value: string, feature: RajukPlotFeature | null) {
     setPlot(value);
     setMatches([]);
     setError("");
-    if (!value.trim()) {
-      setValidationError("");
-      setResult(null);
-      return;
-    }
-    const check = validateManualPlotNumber(value, plotType);
-    setValidationError(check.ok ? "" : check.error);
-    if (check.ok) {
-      const selected = filteredPlots.find((f) => plotNumberForType(f, plotType) === check.value);
-      setResult(selected ?? null);
-    } else {
-      setResult(null);
-    }
+    setResult(feature);
   }
 
   async function runPlotSearch() {
-    const check = validateManualPlotNumber(manualPlot || plot, plotType);
-    if (!check.ok) {
-      setValidationError(check.error);
+    if (!plot.trim()) {
+      setError("প্লট নম্বর সিলেক্ট করুন।");
       return;
     }
-    const number = check.value;
-    setValidationError("");
     setError("");
     setLoading(true);
     setResult(null);
@@ -441,13 +511,13 @@ export default function RajukTestPage() {
       const q = new URLSearchParams({ action: "plots", limit: "50" });
 
       if (plotType === "ms") {
-        q.set("ms_plot_no", number);
+        q.set("ms_plot_no", plot);
       } else if (plotType === "mixed") {
-        q.set("rs_plot_no", number);
-        if (/^\d+$/.test(number)) q.set("plot_no", number);
+        q.set("rs_plot_no", plot);
+        if (/^\d+$/.test(plot)) q.set("plot_no", plot);
       } else {
-        q.set("rs_plot_no", number);
-        if (/^\d+$/.test(number)) q.set("plot_no", number);
+        q.set("rs_plot_no", plot);
+        if (/^\d+$/.test(plot)) q.set("plot_no", plot);
       }
 
       if (selectedMouza) {
@@ -471,8 +541,8 @@ export default function RajukTestPage() {
       if (!fs.length) {
         setError(
           plotType === "mixed"
-            ? `No mixed (RS+MS) plot found for ${number}`
-            : `No ${plotType.toUpperCase()} plot found for number ${number}`,
+            ? `No mixed (RS+MS) plot found for ${plot}`
+            : `No ${plotType.toUpperCase()} plot found for number ${plot}`,
         );
       }
     } catch (e) {
@@ -504,7 +574,7 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → Plot type (RS / MS / Mixed) → Plot · map (RS + MS layers) · tables
+            District → Upazila → Mouza → Plot type → Search plot number → map &amp; tables
           </p>
         </header>
 
@@ -599,72 +669,28 @@ export default function RajukTestPage() {
               <p className="mt-1 text-xs text-slate-500">{typeHint}</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium">Select Plot</label>
-              <div className="relative mt-1">
-                <select
-                  value={plot}
-                  onChange={(e) => selectPlot(e.target.value)}
-                  disabled={!mauza || loadingLevel === "plot" || !filteredPlots.length}
-                  className="w-full rounded-xl border px-3 py-2.5"
-                >
-                  <option value="">
-                    {plotType === "ms"
-                      ? "MS Plot নির্বাচন করুন"
-                      : plotType === "mixed"
-                        ? "Mixed Plot নির্বাচন করুন"
-                        : "RS Plot নির্বাচন করুন"}
-                  </option>
-                  {filteredPlots.map((f) => {
-                    const value = plotNumberForType(f, plotType);
-                    return (
-                      <option
-                        key={String(f.attributes.p_guid || f.attributes.objectid)}
-                        value={value}
-                      >
-                        {optionLabel(f, plotType)}
-                      </option>
-                    );
-                  })}
-                </select>
-                {loadingLevel === "plot" && (
-                  <Loader2 className="absolute right-3 top-3 animate-spin" size={17} />
-                )}
-              </div>
-            </div>
-
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium">Or enter plot number manually</label>
-              <input
-                value={manualPlot}
-                onChange={(e) => onManualPlotChange(e.target.value)}
-                inputMode="numeric"
-                placeholder={
-                  plotType === "ms"
-                    ? "MS দাগ নম্বর"
-                    : plotType === "mixed"
-                      ? "RS বা MS দাগ নম্বর"
-                      : "RS দাগ নম্বর"
-                }
-                disabled={!mauza || loadingLevel === "plot"}
-                aria-invalid={Boolean(validationError)}
-                className={`mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-[#006a4e] ${
-                  validationError ? "border-red-400 bg-red-50" : ""
-                }`}
-              />
-              {validationError && (
-                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-red-600">
-                  <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                  {validationError}
-                </p>
-              )}
+              <label className="block text-sm font-medium">Select Plot</label>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Type a plot number to search and filter the list
+              </p>
+              <div className="mt-1">
+                <SearchablePlotSelect
+                  plots={filteredPlots}
+                  plotType={plotType}
+                  value={plot}
+                  disabled={!mauza || loadingLevel === "plot" || !filteredPlots.length}
+                  loading={loadingLevel === "plot"}
+                  onSelect={onPlotPicked}
+                />
+              </div>
             </div>
 
             <div className="sm:col-span-2">
               <button
                 type="button"
                 onClick={runPlotSearch}
-                disabled={loading || Boolean(validationError) || !(manualPlot || plot).trim()}
+                disabled={loading || !plot.trim()}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#006a4e] px-4 py-2.5 font-semibold text-white disabled:opacity-50 sm:w-auto sm:min-w-[220px]"
               >
                 {loading ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}
