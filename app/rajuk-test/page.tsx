@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Database, Loader2, Search, Crosshair, AlertCircle } from "lucide-react";
 import type { RajukDistrict, RajukMauza, RajukPlotFeature, RajukUpazila } from "@/src/types/rajuk-runtime";
+import { areaFromPlotAttributes, formatAreaValue } from "@/src/modules/land/plotArea";
 
-type PlotType = "rs" | "ms";
+/** RS | MS | parcels that carry both survey numbers */
+type PlotType = "rs" | "ms" | "mixed";
 
 const fields = [
   "objectid",
@@ -25,26 +27,63 @@ function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
 }
 
+function isMixedFeature(f: RajukPlotFeature): boolean {
+  const a = f.attributes;
+  return present(a.rs_plot_no) && present(a.ms_plot_no);
+}
+
 function plotNumberForType(f: RajukPlotFeature, type: PlotType): string {
   const a = f.attributes;
-  if (type === "ms") {
-    return String(a.ms_plot_no ?? a.plot_no ?? "").trim();
+  if (type === "ms") return String(a.ms_plot_no ?? a.plot_no ?? "").trim();
+  if (type === "mixed") {
+    // Prefer RS as primary key in the list; MS shown in label
+    return String(a.rs_plot_no ?? a.plot_no ?? a.ms_plot_no ?? "").trim();
   }
   return String(a.rs_plot_no ?? a.plot_no ?? "").trim();
 }
 
 function optionLabel(f: RajukPlotFeature, type: PlotType): string {
   const a = f.attributes;
-  const primary = plotNumberForType(f, type);
-  const kind = a.plot_kind;
-  const extra =
-    type === "rs" && present(a.ms_plot_no)
-      ? ` · MS ${a.ms_plot_no}`
-      : type === "ms" && present(a.rs_plot_no)
-        ? ` · RS ${a.rs_plot_no}`
-        : "";
-  const badge = kind === "mixed" ? " [mixed]" : "";
-  return `${primary || a.objectid}${extra}${badge}`;
+  if (type === "mixed" || isMixedFeature(f)) {
+    const rs = present(a.rs_plot_no) ? `RS ${a.rs_plot_no}` : "";
+    const ms = present(a.ms_plot_no) ? `MS ${a.ms_plot_no}` : "";
+    return [rs, ms].filter(Boolean).join(" · ") || String(a.objectid);
+  }
+  if (type === "ms") return String(a.ms_plot_no ?? a.plot_no ?? a.objectid);
+  return String(a.rs_plot_no ?? a.plot_no ?? a.objectid);
+}
+
+/** Manual plot number rules for the active survey type. */
+function validateManualPlotNumber(
+  raw: string,
+  plotType: PlotType,
+): { ok: true; value: string } | { ok: false; error: string } {
+  const value = raw.trim();
+  if (!value) {
+    return { ok: false, error: "প্লট / দাগ নম্বর লিখুন।" };
+  }
+  if (value.length > 20) {
+    return { ok: false, error: "প্লট নম্বর খুব বড় (সর্বোচ্চ ২০ অক্ষর)।" };
+  }
+  // Allow digits, optional single slash or hyphen (e.g. 120/1)
+  if (!/^\d{1,12}([\/-]\d{1,6})?$/.test(value)) {
+    return {
+      ok: false,
+      error: "শুধু সংখ্যা দিন (ঐচ্ছিক: 120/1 বা 45-2)। অক্ষর বা স্পেস দেওয়া যাবে না।",
+    };
+  }
+  const main = Number(value.split(/[\/-]/)[0]);
+  if (!Number.isFinite(main) || main <= 0) {
+    return { ok: false, error: "প্লট নম্বর ০ বা ঋণাত্মক হতে পারে না।" };
+  }
+  if (main > 999999) {
+    return { ok: false, error: "প্লট নম্বর সীমার বাইরে।" };
+  }
+  if (plotType === "mixed") {
+    // Mixed search accepts either RS or MS style numbers — same format rules
+    return { ok: true, value };
+  }
+  return { ok: true, value };
 }
 
 export default function RajukTestPage() {
@@ -58,6 +97,7 @@ export default function RajukTestPage() {
   const [plotType, setPlotType] = useState<PlotType>("rs");
   const [plot, setPlot] = useState("");
   const [manualPlot, setManualPlot] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [result, setResult] = useState<RajukPlotFeature | null>(null);
   const [matches, setMatches] = useState<RajukPlotFeature[]>([]);
   const [lat, setLat] = useState("");
@@ -75,33 +115,28 @@ export default function RajukTestPage() {
     () => plots.some((f) => present(f.attributes.ms_plot_no)),
     [plots],
   );
+  const hasMixedData = useMemo(() => plots.some(isMixedFeature), [plots]);
 
-  /** Plot types available for this mouza. */
   const availableTypes = useMemo(() => {
     const types: PlotType[] = [];
     if (hasRsData || (!hasRsData && !hasMsData && plots.length > 0)) types.push("rs");
     if (hasMsData) types.push("ms");
+    if (hasMixedData) types.push("mixed");
     if (!types.length) types.push("rs");
     return types;
-  }, [hasRsData, hasMsData, plots.length]);
+  }, [hasRsData, hasMsData, hasMixedData, plots.length]);
 
-  // When mouza plots load: auto-pick RS if no MS; keep both when both exist.
   useEffect(() => {
     if (!plots.length) return;
-    if (hasMsData && hasRsData) {
-      // both available — keep current if still valid, else RS
-      setPlotType((prev) => (availableTypes.includes(prev) ? prev : "rs"));
-    } else if (hasMsData && !hasRsData) {
-      setPlotType("ms");
-    } else {
-      setPlotType("rs");
-    }
+    setPlotType((prev) => (availableTypes.includes(prev) ? prev : availableTypes[0]));
     setPlot("");
     setManualPlot("");
-  }, [plots, hasMsData, hasRsData, availableTypes]);
+    setValidationError("");
+  }, [plots, availableTypes]);
 
   const filteredPlots = useMemo(() => {
     return plots.filter((f) => {
+      if (plotType === "mixed") return isMixedFeature(f);
       if (plotType === "ms") return present(f.attributes.ms_plot_no);
       return present(f.attributes.rs_plot_no) || present(f.attributes.plot_no);
     });
@@ -128,6 +163,7 @@ export default function RajukTestPage() {
     setMauza("");
     setPlot("");
     setManualPlot("");
+    setValidationError("");
     setResult(null);
     if (!dGuid) return;
     setLoadingLevel("upazila");
@@ -149,6 +185,7 @@ export default function RajukTestPage() {
     setMauza("");
     setPlot("");
     setManualPlot("");
+    setValidationError("");
     setResult(null);
     if (!tGuid) return;
     setLoadingLevel("mouza");
@@ -168,6 +205,7 @@ export default function RajukTestPage() {
     setPlots([]);
     setPlot("");
     setManualPlot("");
+    setValidationError("");
     setResult(null);
     setMatches([]);
     if (!mauza) return;
@@ -202,6 +240,7 @@ export default function RajukTestPage() {
     setPlotType(next);
     setPlot("");
     setManualPlot("");
+    setValidationError("");
     setResult(null);
     setMatches([]);
     setError("");
@@ -210,6 +249,7 @@ export default function RajukTestPage() {
   function selectPlot(value: string) {
     setPlot(value);
     setManualPlot(value);
+    setValidationError("");
     setResult(null);
     setMatches([]);
     setError("");
@@ -224,14 +264,26 @@ export default function RajukTestPage() {
     setResult(null);
     setMatches([]);
     setError("");
-    if (!value.trim()) return;
-    const selected = filteredPlots.find((f) => plotNumberForType(f, plotType) === value.trim());
-    if (selected) setResult(selected);
+    if (!value.trim()) {
+      setValidationError("");
+      return;
+    }
+    const check = validateManualPlotNumber(value, plotType);
+    setValidationError(check.ok ? "" : check.error);
+    if (check.ok) {
+      const selected = filteredPlots.find((f) => plotNumberForType(f, plotType) === check.value);
+      if (selected) setResult(selected);
+    }
   }
 
   async function runPlotSearch() {
-    const number = (manualPlot || plot).trim();
-    if (!number) return;
+    const check = validateManualPlotNumber(manualPlot || plot, plotType);
+    if (!check.ok) {
+      setValidationError(check.error);
+      return;
+    }
+    const number = check.value;
+    setValidationError("");
     setError("");
     setLoading(true);
     setResult(null);
@@ -243,9 +295,12 @@ export default function RajukTestPage() {
 
       if (plotType === "ms") {
         q.set("ms_plot_no", number);
+      } else if (plotType === "mixed") {
+        // Search both fields; API ORs plot_no with rs/ms when plot_no is set
+        q.set("rs_plot_no", number);
+        if (/^\d+$/.test(number)) q.set("plot_no", number);
       } else {
         q.set("rs_plot_no", number);
-        // Also try generic plot_no when numeric
         if (/^\d+$/.test(number)) q.set("plot_no", number);
       }
 
@@ -258,10 +313,23 @@ export default function RajukTestPage() {
       const r = await fetch(`/api/rajuk/query?${q}`);
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
-      const fs = (d.features ?? []) as RajukPlotFeature[];
+      let fs = (d.features ?? []) as RajukPlotFeature[];
+
+      // Mixed: prefer features that actually have both numbers; if empty, keep all hits
+      if (plotType === "mixed") {
+        const dual = fs.filter(isMixedFeature);
+        if (dual.length) fs = dual;
+      }
+
       setMatches(fs);
       if (fs.length === 1) setResult(fs[0]);
-      if (!fs.length) setError(`No ${plotType.toUpperCase()} plot found for number ${number}`);
+      if (!fs.length) {
+        setError(
+          plotType === "mixed"
+            ? `No mixed (RS+MS) plot found for ${number}`
+            : `No ${plotType.toUpperCase()} plot found for number ${number}`,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Query failed");
     } finally {
@@ -289,6 +357,11 @@ export default function RajukTestPage() {
   }
 
   const active = result || identify[0];
+  const activeArea = useMemo(
+    () => (active ? areaFromPlotAttributes(active.attributes as Record<string, unknown>) : null),
+    [active],
+  );
+
   const geojson = useMemo(
     () =>
       active
@@ -309,11 +382,13 @@ export default function RajukTestPage() {
   const typeHint =
     plots.length === 0
       ? "Mouza নির্বাচন করুন — তারপর plot type দেখাবে"
-      : hasMsData && hasRsData
-        ? "এই Mouza-তে RS ও MS উভয়ই আছে"
-        : hasMsData
-          ? "এই Mouza-তে শুধু MS plot আছে"
-          : "এই Mouza-তে MS নেই — RS plot দেখানো হচ্ছে";
+      : hasMixedData
+        ? "এই Mouza-তে RS, MS এবং Mixed (উভয় নম্বর) আছে"
+        : hasMsData && hasRsData
+          ? "এই Mouza-তে RS ও MS আছে (mixed parcel নাও থাকতে পারে)"
+          : hasMsData
+            ? "এই Mouza-তে শুধু MS plot আছে"
+            : "এই Mouza-তে MS নেই — RS plot দেখানো হচ্ছে";
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 md:px-8">
@@ -323,7 +398,7 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → Plot type (RS/MS) → Plot • real RAJUK attributes + polygon
+            District → Upazila → Mouza → Plot type (RS / MS / Mixed) → Plot • area + geometry
           </p>
         </header>
 
@@ -401,12 +476,21 @@ export default function RajukTestPage() {
                 >
                   {availableTypes.includes("rs") && <option value="rs">RS plot</option>}
                   {availableTypes.includes("ms") && <option value="ms">MS plot</option>}
+                  {availableTypes.includes("mixed") && (
+                    <option value="mixed">Mixed (RS + MS)</option>
+                  )}
                 </select>
                 {loadingLevel === "plot" && (
                   <Loader2 className="absolute right-3 top-3 animate-spin" size={17} />
                 )}
               </div>
               <p className="text-xs text-slate-500">{typeHint}</p>
+              {plotType === "mixed" && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Mixed = একই পার্সেলে RS ও MS নম্বর দুটোই আছে। তালিকায় দুই নম্বরই দেখাবে; সার্চ RS
+                  নম্বর দিয়ে চালানো হয়, ফলাফলে MS-ও মিলিয়ে দেখানো হয়।
+                </p>
+              )}
 
               <label className="block text-sm font-medium">Select Plot</label>
               <div className="relative">
@@ -417,7 +501,11 @@ export default function RajukTestPage() {
                   className="w-full rounded-xl border px-3 py-2.5"
                 >
                   <option value="">
-                    {plotType === "ms" ? "MS Plot নির্বাচন করুন" : "RS Plot নির্বাচন করুন"}
+                    {plotType === "ms"
+                      ? "MS Plot নির্বাচন করুন"
+                      : plotType === "mixed"
+                        ? "Mixed Plot নির্বাচন করুন"
+                        : "RS Plot নির্বাচন করুন"}
                   </option>
                   {filteredPlots.map((f) => {
                     const value = plotNumberForType(f, plotType);
@@ -437,24 +525,40 @@ export default function RajukTestPage() {
               </div>
 
               <label className="block text-sm font-medium">
-                Or enter {plotType.toUpperCase()} plot number manually
+                Or enter plot number manually
               </label>
               <input
                 value={manualPlot}
                 onChange={(e) => onManualPlotChange(e.target.value)}
                 inputMode="numeric"
-                placeholder={plotType === "ms" ? "MS দাগ নম্বর লিখুন" : "RS দাগ নম্বর লিখুন"}
+                placeholder={
+                  plotType === "ms"
+                    ? "MS দাগ নম্বর"
+                    : plotType === "mixed"
+                      ? "RS বা MS দাগ নম্বর"
+                      : "RS দাগ নম্বর"
+                }
                 disabled={!mauza || loadingLevel === "plot"}
-                className="w-full rounded-xl border px-3 py-2.5 outline-none focus:border-[#006a4e]"
+                aria-invalid={Boolean(validationError)}
+                className={`w-full rounded-xl border px-3 py-2.5 outline-none focus:border-[#006a4e] ${
+                  validationError ? "border-red-400 bg-red-50" : ""
+                }`}
               />
+              {validationError && (
+                <p className="flex items-start gap-1.5 text-xs text-red-600">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                  {validationError}
+                </p>
+              )}
 
               <button
                 onClick={runPlotSearch}
-                disabled={loading || !(manualPlot || plot).trim()}
+                disabled={loading || Boolean(validationError) || !(manualPlot || plot).trim()}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#006a4e] px-4 py-2.5 font-semibold text-white disabled:opacity-50"
               >
                 {loading ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}
-                Query {plotType.toUpperCase()} Plot
+                Query{" "}
+                {plotType === "mixed" ? "Mixed" : plotType.toUpperCase()} Plot
               </button>
             </div>
           </div>
@@ -505,11 +609,7 @@ export default function RajukTestPage() {
                   onClick={() => setResult(f)}
                   className="rounded-xl border p-3 text-left hover:border-[#006a4e]"
                 >
-                  <b>
-                    {plotType === "ms"
-                      ? f.attributes.ms_plot_no || f.attributes.plot_no
-                      : f.attributes.rs_plot_no || f.attributes.plot_no}
-                  </b>
+                  <b>{optionLabel(f, plotType)}</b>
                   <span className="ml-2 text-xs uppercase text-slate-400">
                     {f.attributes.plot_kind || plotType}
                   </span>
@@ -523,6 +623,50 @@ export default function RajukTestPage() {
         {active && (
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-bold">Selected RAJUK Plot</h2>
+
+            {/* Mixed summary */}
+            {(isMixedFeature(active) || active.attributes.plot_kind === "mixed") && (
+              <div className="mb-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-xs font-semibold text-amber-800">RS Plot</div>
+                  <div className="text-lg font-bold">{String(active.attributes.rs_plot_no ?? "—")}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-amber-800">MS Plot</div>
+                  <div className="text-lg font-bold">{String(active.attributes.ms_plot_no ?? "—")}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Area calculation */}
+            {activeArea?.isValid && (
+              <div className="mb-4">
+                <h3 className="mb-2 font-semibold">Plot area (calculated)</h3>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {(
+                    [
+                      ["বর্গফুট", activeArea.sqFt],
+                      ["শতাংশ", activeArea.shotok],
+                      ["কাঠা", activeArea.katha],
+                      ["বিঘা", activeArea.bigha],
+                      ["একর", activeArea.acre],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="rounded-xl bg-emerald-50 p-3">
+                      <div className="text-xs font-semibold text-emerald-800">{label}</div>
+                      <div className="mt-1 text-lg font-bold text-emerald-950">
+                        {formatAreaValue(value)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Shape__Area কে m² ধরে বর্গফুট / শতাংশ / কাঠায় রূপান্তর (ভূমি পরিমাপ মডিউলের একই
+                  মান)। সরকারি খতিয়ানের সাথে সামান্য পার্থক্য থাকতে পারে।
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-3 md:grid-cols-2">
               {fields.map((key) => (
                 <div key={key} className="rounded-xl bg-slate-50 p-3">
