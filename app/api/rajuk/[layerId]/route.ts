@@ -11,7 +11,8 @@ const ALLOWED_QUERY_KEYS = new Set([
 ]);
 
 function upstreamUrl(layerId: string) {
-  if (!/^\\d+$/.test(layerId)) throw new Error("layerId must be numeric");
+  // Keep the route strictly numeric: FeatureServer layer IDs are integer IDs.
+  if (!/^\d+$/.test(layerId)) throw new Error("layerId must be numeric");
   return `${RAJUK_SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/${layerId}/query`;
 }
 
@@ -20,6 +21,10 @@ async function fetchUpstream(url: string, params: URLSearchParams, token?: strin
   query.set("f", "geojson");
   if (token) query.set("token", token);
   return fetch(`${url}?${query.toString()}`, { cache: "no-store" });
+}
+
+function isAuthError(response: Response, data: any) {
+  return response.status === 401 || response.status === 403 || data?.error?.code === 498 || data?.error?.code === 499;
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ layerId: string }> }) {
@@ -35,16 +40,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
     // Public-first: genuinely public RAJUK layers work without credentials.
     let response = await fetchUpstream(url, params);
     let data = await response.json();
-    const authError = data?.error?.code === 498 || data?.error?.code === 499 || response.status === 401 || response.status === 403;
 
-    if (authError) {
+    if (isAuthError(response, data)) {
       const token = await getValidToken(RAJUK_SERVER);
       response = await fetchUpstream(url, params, token);
       data = await response.json();
 
-      const tokenInvalid = data?.error?.code === 498 || data?.error?.code === 499 || response.status === 401 || response.status === 403;
-      if (tokenInvalid) {
-        invalidateToken(RAJUK_SERVER);
+      // One controlled refresh on an invalid/expired Token 2. Never loop indefinitely.
+      if (isAuthError(response, data)) {
+        await invalidateToken(RAJUK_SERVER);
         const freshToken = await refreshToken(RAJUK_SERVER);
         response = await fetchUpstream(url, params, freshToken);
         data = await response.json();
