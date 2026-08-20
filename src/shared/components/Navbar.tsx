@@ -19,7 +19,6 @@ import {
   User,
   Moon,
   Sun,
-  Layers3,
   Home,
   type LucideIcon,
 } from "lucide-react";
@@ -49,10 +48,9 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   admin: ShieldCheck,
 };
 
-/** Secondary map tools kept in search/mobile; not in PRIMARY_NAV_KEYS yet. */
+/** Optional specialist tools (search/mobile only). */
 const SECONDARY_NAV: NavItem[] = [
-  { href: "/geospatial-map", label: "জিওস্পেশিয়াল", icon: Layers3 },
-  { href: "/lios-map", label: "LIOS ম্যাপ", icon: Map },
+  { href: "/dap-map", label: "ArcGIS DAP", icon: Map },
 ];
 
 function buildPrimaryNav(): NavItem[] {
@@ -82,9 +80,10 @@ function activePath(pathname: string, href: string) {
 export default function Navbar() {
   const pathname = usePathname();
   const isMapRoute =
+    pathname.startsWith(FEATURE_ROUTES.landMap) ||
     pathname.startsWith("/dap-map") ||
-    pathname.startsWith("/geospatial-map") ||
-    pathname.startsWith("/lios-map");
+    pathname.startsWith("/lios-map") ||
+    pathname.startsWith("/geospatial-map");
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, loading: authLoading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
