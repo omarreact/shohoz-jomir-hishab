@@ -12,6 +12,7 @@ type LayerKey = "dap" | "rs" | "ms" | "flood" | "boundary" | "transport";
 
 type LayerDef = { key: LayerKey; label: string; description: string; color: string; defaultVisible: boolean };
 
+/** Planning layers (Geospatial + former LIOS coverage) via verified tile proxy. */
 const LAYERS: LayerDef[] = [
   { key: "dap", label: "DAP Proposed Landuse", description: "Proposed land-use zones", color: "#16a34a", defaultVisible: true },
   { key: "rs", label: "RS Mauza", description: "RS mauza reference tiles", color: "#2563eb", defaultVisible: false },
@@ -36,6 +37,7 @@ function toGeoJson(feature: RajukPlotFeature) {
   };
 }
 
+/** Unified urban planning map (formerly Geospatial + LIOS entry points). */
 export default function GeospatialMap() {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -119,8 +121,6 @@ export default function GeospatialMap() {
     if (!map) return;
     const base = basemapRef.current;
     if (base) map.removeLayer(base);
-    const L = layerRefs.current.dap ? Object.values(layerRefs.current)[0] : undefined;
-    void L;
     import("leaflet").then(({ default: Leaflet }) => {
       const next = Leaflet.tileLayer(BASEMAPS[basemap].url, { attribution: BASEMAPS[basemap].attribution, maxZoom: 21, crossOrigin: true }).addTo(map);
       basemapRef.current = next;
@@ -176,7 +176,7 @@ export default function GeospatialMap() {
   };
 
   return (
-    <section className={styles.mapShell} aria-label="জিওস্পেশিয়াল ম্যাপ">
+    <section className={styles.mapShell} aria-label="নগর পরিকল্পনা মানচিত্র">
       <div ref={mapElement} className={styles.mapCanvas} />
 
       <form className={styles.topSearch} onSubmit={(event) => { event.preventDefault(); void runSearch(); }}>
@@ -197,7 +197,7 @@ export default function GeospatialMap() {
         </div>
         <div className={styles.panelBody}>
           {tab === "layers" && <>
-            <div className={styles.sectionTitle}>মানচিত্র স্তর</div>
+            <div className={styles.sectionTitle}>নগর পরিকল্পনা স্তর</div>
             {LAYERS.map((layer) => <div className={styles.layerCard} key={layer.key}>
               <div className={styles.layerRow}>
                 <span className={styles.layerSwatch} style={{ background: layer.color }} />
@@ -220,9 +220,9 @@ export default function GeospatialMap() {
         </div>
       </aside>
 
-      <div className={styles.bottomBar}><span><strong>UDA GIS</strong></span><span className={styles.separator}/><span>WGS 84 / 3857</span><span className={styles.separator}/><span>RS Plot: <strong>{selected?.attributes.plot_no ?? "—"}</strong></span><button type="button" className={styles.iconButton} onClick={resetMap} title="ম্যাপ রিসেট"><RefreshCw size={14}/></button><button type="button" className={styles.iconButton} onClick={() => setIdentifyMode((value) => !value)} title="Identify"><LocateFixed size={14}/></button></div>
+      <div className={styles.bottomBar}><span><strong>নগর পরিকল্পনা</strong></span><span className={styles.separator}/><span>Geo · LIOS</span><span className={styles.separator}/><span>WGS 84 / 3857</span><span className={styles.separator}/><span>RS Plot: <strong>{selected?.attributes.plot_no ?? "—"}</strong></span><button type="button" className={styles.iconButton} onClick={resetMap} title="ম্যাপ রিসেট"><RefreshCw size={14}/></button><button type="button" className={styles.iconButton} onClick={() => setIdentifyMode((value) => !value)} title="Identify"><LocateFixed size={14}/></button></div>
       {toast && <div className={styles.toast} role="status">{toast}</div>}
-      {!mapReady && <div className={styles.loading}><div className={styles.loadingCard}><span className={styles.spinner}/> জিওস্পেশিয়াল ম্যাপ প্রস্তুত হচ্ছে…</div></div>}
+      {!mapReady && <div className={styles.loading}><div className={styles.loadingCard}><span className={styles.spinner}/> নগর পরিকল্পনা মানচিত্র প্রস্তুত হচ্ছে…</div></div>}
     </section>
   );
 }
