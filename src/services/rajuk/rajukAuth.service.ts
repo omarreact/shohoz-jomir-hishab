@@ -16,8 +16,6 @@ function configuredServerToken(): TokenEntry | null {
   const token = process.env.RAJUK_SERVER_TOKEN?.trim();
   if (!token) return null;
   const rawExpiry = Number(process.env.RAJUK_SERVER_TOKEN_EXPIRES_AT);
-  // A server token supplied explicitly is useful as a bootstrap/fallback. If no expiry is
-  // supplied, keep it for one hour; the normal Portal -> Server exchange remains preferred.
   const expiresAt = Number.isFinite(rawExpiry) && rawExpiry > Date.now()
     ? rawExpiry
     : Date.now() + 60 * 60 * 1000;
@@ -26,9 +24,7 @@ function configuredServerToken(): TokenEntry | null {
 
 export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
   const portalToken = configuredPortalToken();
-  if (!portalToken) {
-    throw new Error("RAJUK Portal credential is not configured. Set RAJUK_PORTAL_TOKEN to an authorized ArcGIS Portal token.");
-  }
+  if (!portalToken) throw new Error("RAJUK Portal credential is not configured.");
 
   const body = new URLSearchParams({
     request: "getToken",
@@ -55,7 +51,6 @@ export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntr
   const data = (await response.json()) as {
     token?: string;
     expires?: number;
-    ssl?: boolean;
     error?: { code?: number; message?: string; details?: string[] };
   };
 
@@ -64,7 +59,6 @@ export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntr
     const code = data.error?.code ? ` [ArcGIS ${data.error.code}]` : "";
     throw new Error(`${details || data.error?.message || `RAJUK token exchange failed (${response.status})`}${code}`);
   }
-
   return { token: data.token, expiresAt: data.expires };
 }
 
@@ -75,15 +69,13 @@ export async function getValidToken(serverUrl = RAJUK_SERVER): Promise<string> {
   const cachedLocal = localCache.get(serverUrl);
   if (cachedLocal && cachedLocal.expiresAt > Date.now() + 30_000) return cachedLocal.token;
 
-  // Prefer a configured server token only when there is no Portal token. This lets an
-  // operator bootstrap the proxy with a verified Token 2 while fixing Portal auth.
-  if (!configuredPortalToken()) {
-    const direct = configuredServerToken();
-    if (direct && direct.expiresAt > Date.now() + 30_000) {
-      localCache.set(serverUrl, direct);
-      await cacheRajukToken(serverUrl, direct);
-      return direct.token;
-    }
+  // Prefer an explicitly configured Token 2 as a bootstrap/fallback. This is important
+  // when the Portal exchange is temporarily unavailable even though the Server token works.
+  const direct = configuredServerToken();
+  if (direct && direct.expiresAt > Date.now() + 30_000) {
+    localCache.set(serverUrl, direct);
+    await cacheRajukToken(serverUrl, direct);
+    return direct.token;
   }
 
   const fresh = await generateToken(serverUrl);
@@ -95,6 +87,15 @@ export async function getValidToken(serverUrl = RAJUK_SERVER): Promise<string> {
 export async function refreshToken(serverUrl = RAJUK_SERVER): Promise<string> {
   await invalidateCachedRajukToken(serverUrl);
   localCache.delete(serverUrl);
+
+  // If an explicit Token 2 is configured, use it after clearing the cache. Otherwise
+  // perform the normal Portal → Server exchange.
+  const direct = configuredServerToken();
+  if (direct && direct.expiresAt > Date.now() + 30_000) {
+    localCache.set(serverUrl, direct);
+    await cacheRajukToken(serverUrl, direct);
+    return direct.token;
+  }
 
   const fresh = await generateToken(serverUrl);
   localCache.set(serverUrl, fresh);
