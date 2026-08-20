@@ -2,6 +2,7 @@ import "server-only";
 import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER } from "./rajukAuth.service";
 import { RAJUK_DB } from "./rajukLayers.service";
 import { classifyPlotKind, enrichPlotFeature } from "./rajukPlotNormalize";
+import { fetchWithRetry } from "./rajukFetch";
 import type {
   RajukDistrict,
   RajukMauza,
@@ -16,7 +17,6 @@ const escapeSql = (value: string) => value.replace(/'/g, "''");
 type ArcGisError = { code?: number; message?: string; details?: string[] };
 type ArcGisEnvelope = { error?: ArcGisError | string };
 
-/** Layer 0 = RS_mauza plots; layer 5 = MS_mauza plots */
 const LAYER_RS_PLOT = 0;
 const LAYER_MS_PLOT = 5;
 
@@ -58,9 +58,9 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
   for (const [key, value] of Object.entries(params)) if (value !== undefined) query.set(key, String(value));
   query.set("f", "json");
 
-  const publicResponse = await fetch(`${serverUrl}/query?${query.toString()}`, {
-    cache: "no-store",
-    headers: { accept: "application/json", referer: "https://masterplan.rajuk.gov.bd/" },
+  const publicResponse = await fetchWithRetry(`${serverUrl}/query?${query.toString()}`, {
+    timeoutMs: 20_000,
+    retries: 2,
   });
   const publicData = await parseJson<T & ArcGisEnvelope>(publicResponse);
 
@@ -84,9 +84,9 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
 
   const authenticatedQuery = new URLSearchParams(query);
   authenticatedQuery.set("token", token);
-  let response = await fetch(`${serverUrl}/query?${authenticatedQuery.toString()}`, {
-    cache: "no-store",
-    headers: { accept: "application/json", referer: "https://masterplan.rajuk.gov.bd/" },
+  let response = await fetchWithRetry(`${serverUrl}/query?${authenticatedQuery.toString()}`, {
+    timeoutMs: 20_000,
+    retries: 2,
   });
   let data = await parseJson<T & ArcGisEnvelope>(response);
 
@@ -94,9 +94,9 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
     await invalidateToken(RAJUK_SERVER);
     const freshToken = await refreshToken(RAJUK_SERVER);
     authenticatedQuery.set("token", freshToken);
-    response = await fetch(`${serverUrl}/query?${authenticatedQuery.toString()}`, {
-      cache: "no-store",
-      headers: { accept: "application/json", referer: "https://masterplan.rajuk.gov.bd/" },
+    response = await fetchWithRetry(`${serverUrl}/query?${authenticatedQuery.toString()}`, {
+      timeoutMs: 20_000,
+      retries: 1,
     });
     data = await parseJson<T & ArcGisEnvelope>(response);
   }
@@ -154,7 +154,9 @@ function buildWhere(filters: RajukPlotFilters, mode: "rs" | "ms"): string {
     const n = Math.trunc(filters.plotNo);
     const s = escapeSql(String(n));
     if (mode === "rs") {
-      clauses.push(`(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`);
+      clauses.push(
+        `(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`,
+      );
     } else {
       clauses.push(`(plot_no=${n} OR ms_plot_no='${s}' OR ms_plot_no='MS-${s}')`);
     }
@@ -172,7 +174,6 @@ function buildWhere(filters: RajukPlotFilters, mode: "rs" | "ms"): string {
     clauses.push(`(ms_plot_no='${v}' OR ms_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
   }
 
-  // When only rs filter on MS layer (or vice versa), skip that layer via empty where
   if (filters.rsPlotNo?.trim() && !filters.msPlotNo?.trim() && filters.plotNo === undefined && mode === "ms") {
     return "1=0";
   }
@@ -198,7 +199,6 @@ export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotColl
 
   const wantRs = filters.kind !== "ms";
   const wantMs = filters.kind !== "rs";
-
   const queries: Promise<RajukPlotCollection>[] = [];
 
   if (wantRs) {

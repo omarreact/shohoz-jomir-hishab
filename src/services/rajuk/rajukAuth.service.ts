@@ -6,6 +6,8 @@ const RAJUK_SERVER = "https://masterplan.rajuk.gov.bd/server";
 const RAJUK_PUBLIC_CONFIG = "https://masterplan.rajuk.gov.bd/config.json";
 const REFERER = "https://masterplan.rajuk.gov.bd/";
 const TOKEN_SKEW_MS = 90_000;
+/** Direct portal API keys are treated as valid for ~55 minutes. */
+const DIRECT_TOKEN_TTL_MS = 55 * 60 * 1000;
 
 type TokenEntry = { token: string; expiresAt: number };
 const localCache = new Map<string, TokenEntry>();
@@ -40,9 +42,8 @@ function configuredServerToken(): TokenEntry | null {
   return { token, expiresAt };
 }
 
-function isInvalidTokenError(message: string): boolean {
-  const m = message.toLowerCase();
-  return m.includes("498") || m.includes("499") || m.includes("invalid token") || m.includes("token required");
+function asDirectToken(token: string): TokenEntry {
+  return { token, expiresAt: Date.now() + DIRECT_TOKEN_TTL_MS };
 }
 
 /** Live API_KEY published by RAJUK for their own map client (no username/password). */
@@ -145,41 +146,54 @@ export async function exchangePortalToken(portalToken: string, serverUrl = RAJUK
 }
 
 /**
- * Obtain a federated server token.
- * Order:
- * 1. RAJUK_PORTAL_USERNAME + PASSWORD (optional)
- * 2. RAJUK_PORTAL_TOKEN / RAJUK_API_KEY from env (optional)
- * 3. Live API_KEY from https://masterplan.rajuk.gov.bd/config.json (no login required)
- * 4. RAJUK_SERVER_TOKEN bootstrap (optional)
+ * Obtain a token accepted by RAJUK FeatureServer / MapServer.
+ *
+ * Important: RAJUK often accepts the portal API_KEY *directly* as `token=`.
+ * Federated exchange sometimes returns a token that FeatureServer rejects (498).
+ * Order prefers direct keys for reliability (including restrictive client networks
+ * that only reach our Vercel proxy — the proxy must auth successfully every time).
  */
 export async function generateToken(serverUrl = RAJUK_SERVER): Promise<TokenEntry> {
   const errors: string[] = [];
 
+  // 1) Live public API_KEY as direct token (most reliable for FeatureServer)
+  try {
+    const publicKey = await fetchPublicConfigApiKey();
+    return asDirectToken(publicKey);
+  } catch (error) {
+    errors.push(`public-config-direct: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // 2) Env portal token / API key as direct token
+  const portalToken = configuredPortalToken();
+  if (portalToken) {
+    return asDirectToken(portalToken);
+  }
+
+  // 3) Username/password → portal token → try exchange, else use portal token direct
   const credentials = configuredPortalCredentials();
   if (credentials) {
     try {
       const portal = await generatePortalToken();
-      return await exchangePortalToken(portal.token, serverUrl);
+      try {
+        return await exchangePortalToken(portal.token, serverUrl);
+      } catch (exchangeError) {
+        errors.push(
+          `portal-exchange: ${exchangeError instanceof Error ? exchangeError.message : String(exchangeError)}`,
+        );
+        return asDirectToken(portal.token);
+      }
     } catch (error) {
       errors.push(`portal-credentials: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  const portalToken = configuredPortalToken();
-  if (portalToken) {
-    try {
-      return await exchangePortalToken(portalToken, serverUrl);
-    } catch (error) {
-      errors.push(`env-portal-token: ${error instanceof Error ? error.message : String(error)}`);
-      // Fall through to public config.json — env token is often stale.
-    }
-  }
-
+  // 4) Try exchange of public key (some MapServer layers)
   try {
     const publicKey = await fetchPublicConfigApiKey();
     return await exchangePortalToken(publicKey, serverUrl);
   } catch (error) {
-    errors.push(`public-config: ${error instanceof Error ? error.message : String(error)}`);
+    errors.push(`public-config-exchange: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const direct = configuredServerToken();
@@ -200,7 +214,6 @@ async function refreshAndCache(key: string, forceGenerate = false): Promise<Toke
     }
   }
 
-  // Bust public config cache on forced refresh so a rotated RAJUK API_KEY is picked up.
   if (forceGenerate) publicConfigCache = null;
 
   const fresh = await generateToken(key);
@@ -243,7 +256,6 @@ export async function invalidateToken(serverUrl = RAJUK_SERVER): Promise<void> {
   await invalidateCachedRajukToken(key);
 }
 
-/** Always true: public config.json provides a working API_KEY without username/password. */
 export function hasRajukCredential(): boolean {
   return true;
 }

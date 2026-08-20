@@ -5,11 +5,50 @@ import { getLayer } from "@/src/services/rajuk/rajukLayers.service";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** Longer timeout helps on high-latency / filtered networks (e.g. some WiFi ISPs). */
-const TIMEOUT_MS = 15_000;
+/** Longer timeout + retries for filtered / high-latency WiFi paths to RAJUK. */
+const TIMEOUT_MS = 20_000;
+const RETRIES = 2;
+
+async function fetchTileOnce(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "image/png,image/jpeg,image/*,*/*;q=0.8",
+        Referer: "https://masterplan.rajuk.gov.bd/",
+      },
+      cache: "no-store",
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchTileWithRetry(url: string): Promise<Response> {
+  let lastError: unknown;
+  for (let i = 0; i <= RETRIES; i++) {
+    try {
+      const response = await fetchTileOnce(url);
+      if (response.status >= 500 && i < RETRIES) {
+        await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (i < RETRIES) {
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+        continue;
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Tile fetch failed");
+}
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ layer: string; z: string; y: string; x: string }> },
 ) {
   const { layer: key, z, y, x } = await params;
@@ -22,29 +61,13 @@ export async function GET(
 
     const upstream = new URL(`${layer.service}/tile/${z}/${y}/${x}`);
 
-    const fetchTile = async () => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-      try {
-        return await fetch(upstream, {
-          signal: controller.signal,
-          headers: { Accept: "image/png,image/jpeg,image/*,*/*;q=0.8" },
-          cache: "no-store",
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-    };
+    // Public-first, then authorized token on 498/401.
+    let response = await fetchTileWithRetry(upstream.toString());
 
-    // Public-first: every layer gets a token-free attempt. Only protected
-    // services that actually reject the request receive the authorized token.
-    let response = await fetchTile();
-
-    if ((response.status === 498 || response.status === 499) || (layer.auth && response.status === 401)) {
-      // Always use the canonical federated server origin for token lifecycle.
+    if (response.status === 498 || response.status === 499 || (layer.auth && response.status === 401)) {
       await invalidateToken(RAJUK_SERVER);
       upstream.searchParams.set("token", await getValidToken(RAJUK_SERVER));
-      response = await fetchTile();
+      response = await fetchTileWithRetry(upstream.toString());
     }
 
     if (!response.ok) {
@@ -56,13 +79,14 @@ export async function GET(
 
     const contentType = response.headers.get("content-type") || "image/png";
     const body = await response.arrayBuffer();
-    const headers = new Headers({
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
-      "X-Proxy-Source": "landbd-rajuk",
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+        "X-Proxy-Source": "landbd-rajuk",
+      },
     });
-
-    return new NextResponse(body, { status: 200, headers });
   } catch (error) {
     const message = error instanceof Error ? error.message : "RAJUK tile proxy failed";
     if (error instanceof DOMException && error.name === "AbortError") {

@@ -36,11 +36,8 @@ function googleMapsUrl(feature: RajukPlotFeature): string | null {
 }
 
 /**
- * Interactive map for a selected RAJUK plot.
- * - Street / Satellite basemap
- * - Optional RS Mauza + MS Mauza tile overlays (both survey types)
- * - Selected plot polygon
- * - Link out to Google Maps
+ * Map for selected plot. RAJUK tiles always go through /api/rajuk/tile (no browser→gov.bd).
+ * Basemaps use multiple CDNs so restrictive WiFi that blocks one provider still works.
  */
 export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -73,12 +70,14 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
       });
       leafletRef.current = map;
 
-      const street = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap",
+      // Carto (often reachable when OSM is filtered) + OSM fallback via errorTileUrl pattern
+      const street = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OSM &copy; CARTO",
+        subdomains: "abcd",
         maxZoom: 21,
       });
 
-      // Esri World Imagery — satellite view (works without Google API key)
+      // Esri imagery; if blocked, user can switch to Street
       const satellite = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
@@ -87,15 +86,20 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
         },
       );
 
+      // Always via our proxy — never hit masterplan.rajuk.gov.bd from the phone on WiFi
       const rsOverlay = L.tileLayer("/api/rajuk/tile/rs/{z}/{y}/{x}", {
         attribution: "&copy; RAJUK RS",
         maxZoom: 21,
         opacity: 0.75,
+        errorTileUrl:
+          "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
       });
       const msOverlay = L.tileLayer("/api/rajuk/tile/ms/{z}/{y}/{x}", {
         attribution: "&copy; RAJUK MS",
         maxZoom: 21,
         opacity: 0.75,
+        errorTileUrl:
+          "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
       });
 
       const highlight = L.geoJSON(null, {
@@ -125,7 +129,6 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
     };
   }, []);
 
-  // Basemap switch
   useEffect(() => {
     const map = leafletRef.current;
     const { street, satellite } = layersRef.current;
@@ -139,7 +142,6 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
     }
   }, [base, ready]);
 
-  // RS / MS survey tile overlays (two map data types)
   useEffect(() => {
     const map = leafletRef.current;
     const { rsOverlay, msOverlay } = layersRef.current;
@@ -152,7 +154,6 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
     } else if (map.hasLayer(msOverlay)) map.removeLayer(msOverlay);
   }, [showRs, showMs, ready]);
 
-  // Selected plot polygon
   useEffect(() => {
     const map = leafletRef.current;
     const { highlight } = layersRef.current;
@@ -234,9 +235,8 @@ export default function PlotMap({ feature }: { feature: RajukPlotFeature }) {
       />
 
       <p className="text-xs text-slate-500">
-        Map shows the selected plot boundary plus two RAJUK survey overlays: <strong>RS Mauza</strong> and{" "}
-        <strong>MS Mauza</strong>. Use <strong>Open in Google Maps</strong> for the same location in Google
-        Maps.
+        RAJUK tiles load via our server proxy (works on WiFi that blocks gov.bd). Switch Street if Satellite is
+        blocked by your ISP.
       </p>
     </div>
   );
