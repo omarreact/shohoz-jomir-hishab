@@ -70,7 +70,7 @@ export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotColl
     outFields: "*",
     returnGeometry: true,
     outSR: 4326,
-    resultRecordCount: Math.min(Math.max(filters.resultRecordCount ?? 50, 1), 100),
+    resultRecordCount: Math.min(Math.max(filters.resultRecordCount ?? 50, 1), 2000),
     resultOffset: Math.max(filters.resultOffset ?? 0, 0),
     orderByFields: "plot_no ASC",
   });
