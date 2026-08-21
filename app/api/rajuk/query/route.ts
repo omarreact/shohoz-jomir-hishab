@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
           rsPlotNo: p.get("rs_plot_no") || undefined,
           msPlotNo: p.get("ms_plot_no") || undefined,
           mouza: p.get("mouza") || undefined,
-          jl: p.get("jl") || undefined,
+          // RS and MS have independent JL numbering. The mouza cascade currently
+          // exposes the RS JL, so never apply that RS JL as an MS filter.
+          jl: kind === "ms" ? undefined : p.get("jl") || undefined,
           upazila: p.get("upazila") || undefined,
           kind,
           resultRecordCount: Number(p.get("limit") || 50),
