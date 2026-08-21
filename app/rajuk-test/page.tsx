@@ -15,18 +15,17 @@ const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
   ),
 });
 
-type PlotType = "rs" | "ms" | "mixed";
+/** Search tab: RS or MS only */
+type PlotTab = "rs" | "ms";
 
-/** Matches the General Plot Information panel — keys filled by server enricher. */
 const DETAIL_ROWS: { label: string; keys: string[] }[] = [
   { label: "Plot No", keys: ["plot_no"] },
   { label: "RS Plot Number", keys: ["rs_plot_no"] },
   { label: "MS Plot Number", keys: ["ms_plot_no"] },
-  { label: "RS JL No", keys: ["rs_jl_no", "jl_no"] },
-  { label: "RS Plot Type", keys: ["rs_plot_type", "plot_kind"] },
-  { label: "RS Plot Area (Katha Approx.)", keys: ["rs_plot_area", "area_katha"] },
-  { label: "MS Plot Area (Katha Approx.)", keys: ["ms_plot_area", "area_katha"] },
-  { label: "RS Mauza Name", keys: ["rs_mauza_name", "mauza"] },
+  { label: "JL No", keys: ["rs_jl_no", "jl_no"] },
+  { label: "Survey type", keys: ["plot_kind", "rs_plot_type"] },
+  { label: "Plot Area (Katha Approx.)", keys: ["area_katha", "rs_plot_area", "ms_plot_area"] },
+  { label: "Mauza Name", keys: ["rs_mauza_name", "mauza"] },
   { label: "Thana/Upazila", keys: ["thana_upazila", "upazila_ps"] },
   { label: "District", keys: ["m_district", "district"] },
   { label: "Address", keys: ["address_search"] },
@@ -56,39 +55,28 @@ function firstValue(attributes: Record<string, unknown>, keys: string[]): string
   return "—";
 }
 
-function isMixedFeature(f: RajukPlotFeature): boolean {
+function plotNumberForTab(f: RajukPlotFeature, tab: PlotTab): string {
   const a = f.attributes;
-  return present(a.rs_plot_no) && present(a.ms_plot_no);
-}
-
-function plotNumberForType(f: RajukPlotFeature, type: PlotType): string {
-  const a = f.attributes;
-  if (type === "ms") return String(a.ms_plot_no ?? a.plot_no ?? "").trim();
-  if (type === "mixed") return String(a.rs_plot_no ?? a.plot_no ?? a.ms_plot_no ?? "").trim();
+  if (tab === "ms") return String(a.ms_plot_no ?? a.plot_no ?? "").trim();
   return String(a.rs_plot_no ?? a.plot_no ?? "").trim();
 }
 
-function optionLabel(f: RajukPlotFeature, type: PlotType): string {
+function optionLabel(f: RajukPlotFeature, tab: PlotTab): string {
   const a = f.attributes;
-  if (type === "mixed" || isMixedFeature(f)) {
-    const rs = present(a.rs_plot_no) ? `RS ${a.rs_plot_no}` : "";
-    const ms = present(a.ms_plot_no) ? `MS ${a.ms_plot_no}` : "";
-    return [rs, ms].filter(Boolean).join(" · ") || String(a.objectid);
-  }
-  if (type === "ms") return String(a.ms_plot_no ?? a.plot_no ?? a.objectid);
+  if (tab === "ms") return String(a.ms_plot_no ?? a.plot_no ?? a.objectid);
   return String(a.rs_plot_no ?? a.plot_no ?? a.objectid);
 }
 
 function SearchablePlotSelect({
   plots,
-  plotType,
+  tab,
   value,
   disabled,
   loading,
   onSelect,
 }: {
   plots: RajukPlotFeature[];
-  plotType: PlotType;
+  tab: PlotTab;
   value: string;
   disabled?: boolean;
   loading?: boolean;
@@ -103,8 +91,8 @@ function SearchablePlotSelect({
     return plots
       .map((f) => ({
         feature: f,
-        value: plotNumberForType(f, plotType),
-        label: optionLabel(f, plotType),
+        value: plotNumberForTab(f, tab),
+        label: optionLabel(f, tab),
       }))
       .filter((o) => o.value)
       .filter((o) => {
@@ -119,13 +107,13 @@ function SearchablePlotSelect({
         );
       })
       .slice(0, 200);
-  }, [plots, plotType, query]);
+  }, [plots, tab, query]);
 
   const selectedLabel = useMemo(() => {
     if (!value) return "";
-    const hit = plots.find((f) => plotNumberForType(f, plotType) === value);
-    return hit ? optionLabel(hit, plotType) : value;
-  }, [value, plots, plotType]);
+    const hit = plots.find((f) => plotNumberForTab(f, tab) === value);
+    return hit ? optionLabel(hit, tab) : value;
+  }, [value, plots, tab]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -156,13 +144,7 @@ function SearchablePlotSelect({
             setQuery("");
           }}
           disabled={disabled}
-          placeholder={
-            plotType === "ms"
-              ? "Search MS plot number…"
-              : plotType === "mixed"
-                ? "Search RS / MS plot number…"
-                : "Search RS plot number…"
-          }
+          placeholder={tab === "ms" ? "Search MS plot number…" : "Search RS plot number…"}
           className="w-full rounded-xl border py-2.5 pl-9 pr-9 outline-none focus:border-[#006a4e] disabled:bg-slate-50"
           autoComplete="off"
         />
@@ -198,11 +180,6 @@ function SearchablePlotSelect({
                 </button>
               </li>
             ))
-          )}
-          {plots.length > 200 && options.length >= 200 && (
-            <li className="border-t px-3 py-1.5 text-xs text-slate-400">
-              Showing first 200 matches — type more digits to narrow
-            </li>
           )}
         </ul>
       )}
@@ -273,12 +250,10 @@ function AreaTable({ feature }: { feature: RajukPlotFeature }) {
 
 function MatchesTable({
   features,
-  plotType,
   selectedId,
   onSelect,
 }: {
   features: RajukPlotFeature[];
-  plotType: PlotType;
   selectedId: number | null;
   onSelect: (f: RajukPlotFeature) => void;
 }) {
@@ -304,11 +279,7 @@ function MatchesTable({
             return (
               <tr
                 key={String(a.p_guid || a.objectid || index)}
-                className={
-                  active
-                    ? "bg-emerald-50"
-                    : "odd:bg-white even:bg-slate-50/80 hover:bg-emerald-50/50"
-                }
+                className={active ? "bg-emerald-50" : "odd:bg-white even:bg-slate-50/80 hover:bg-emerald-50/50"}
               >
                 <td className="border-b border-slate-100 px-3 py-2.5 text-slate-500">{index + 1}</td>
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
@@ -317,9 +288,7 @@ function MatchesTable({
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
                   {firstValue(a, ["ms_plot_no"])}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2.5">
-                  {firstValue(a, ["rs_mauza_name", "mauza"])}
-                </td>
+                <td className="border-b border-slate-100 px-3 py-2.5">{firstValue(a, ["rs_mauza_name", "mauza"])}</td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
                   {firstValue(a, ["thana_upazila", "upazila_ps"])}
                 </td>
@@ -352,7 +321,7 @@ export default function RajukTestPage() {
   const [dGuid, setDGuid] = useState("");
   const [tGuid, setTGuid] = useState("");
   const [mauza, setMauza] = useState("");
-  const [plotType, setPlotType] = useState<PlotType>("rs");
+  const [tab, setTab] = useState<PlotTab>("rs");
   const [plot, setPlot] = useState("");
   const [result, setResult] = useState<RajukPlotFeature | null>(null);
   const [matches, setMatches] = useState<RajukPlotFeature[]>([]);
@@ -360,38 +329,12 @@ export default function RajukTestPage() {
   const [loadingLevel, setLoadingLevel] = useState("");
   const [error, setError] = useState("");
 
-  const hasRsData = useMemo(
-    () => plots.some((f) => present(f.attributes.rs_plot_no) || present(f.attributes.plot_no)),
-    [plots],
-  );
-  const hasMsData = useMemo(
-    () => plots.some((f) => present(f.attributes.ms_plot_no)),
-    [plots],
-  );
-  const hasMixedData = useMemo(() => plots.some(isMixedFeature), [plots]);
-
-  const availableTypes = useMemo(() => {
-    const types: PlotType[] = [];
-    if (hasRsData || (!hasRsData && !hasMsData && plots.length > 0)) types.push("rs");
-    if (hasMsData) types.push("ms");
-    if (hasMixedData) types.push("mixed");
-    if (!types.length) types.push("rs");
-    return types;
-  }, [hasRsData, hasMsData, hasMixedData, plots.length]);
-
-  useEffect(() => {
-    if (!plots.length) return;
-    setPlotType((prev) => (availableTypes.includes(prev) ? prev : availableTypes[0]));
-    setPlot("");
-  }, [plots, availableTypes]);
-
   const filteredPlots = useMemo(() => {
     return plots.filter((f) => {
-      if (plotType === "mixed") return isMixedFeature(f);
-      if (plotType === "ms") return present(f.attributes.ms_plot_no);
+      if (tab === "ms") return present(f.attributes.ms_plot_no);
       return present(f.attributes.rs_plot_no) || present(f.attributes.plot_no);
     });
-  }, [plots, plotType]);
+  }, [plots, tab]);
 
   useEffect(() => {
     setLoadingLevel("district");
@@ -477,7 +420,6 @@ export default function RajukTestPage() {
       })
       .then((d) => {
         let features = (d.features ?? []) as RajukPlotFeature[];
-        // Ensure district from hierarchy is visible on every plot
         if (selectedDistrict?.m_district) {
           features = features.map((f) => ({
             ...f,
@@ -495,8 +437,8 @@ export default function RajukTestPage() {
       .finally(() => setLoadingLevel(""));
   }, [mauza, mouzas, tGuid, upazilas, dGuid, districts]);
 
-  function onPlotTypeChange(next: PlotType) {
-    setPlotType(next);
+  function onTabChange(next: PlotTab) {
+    setTab(next);
     setPlot("");
     setResult(null);
     setMatches([]);
@@ -525,11 +467,8 @@ export default function RajukTestPage() {
       const selectedDistrict = districts.find((x) => x.d_guid === dGuid);
       const q = new URLSearchParams({ action: "plots", limit: "50" });
 
-      if (plotType === "ms") {
+      if (tab === "ms") {
         q.set("ms_plot_no", plot);
-      } else if (plotType === "mixed") {
-        q.set("rs_plot_no", plot);
-        if (/^\d+$/.test(plot)) q.set("plot_no", plot);
       } else {
         q.set("rs_plot_no", plot);
         if (/^\d+$/.test(plot)) q.set("plot_no", plot);
@@ -557,37 +496,15 @@ export default function RajukTestPage() {
         }));
       }
 
-      if (plotType === "mixed") {
-        const dual = fs.filter(isMixedFeature);
-        if (dual.length) fs = dual;
-      }
-
       setMatches(fs);
       if (fs.length === 1) setResult(fs[0]);
-      if (!fs.length) {
-        setError(
-          plotType === "mixed"
-            ? `No mixed (RS+MS) plot found for ${plot}`
-            : `No ${plotType.toUpperCase()} plot found for number ${plot}`,
-        );
-      }
+      if (!fs.length) setError(`No ${tab.toUpperCase()} plot found for number ${plot}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Query failed");
     } finally {
       setLoading(false);
     }
   }
-
-  const typeHint =
-    plots.length === 0
-      ? "Mouza নির্বাচন করুন — তারপর plot type দেখাবে"
-      : hasMixedData
-        ? "এই Mouza-তে RS ও MS ডেটা আছে"
-        : hasMsData && hasRsData
-          ? "এই Mouza-তে RS ও MS আছে"
-          : hasMsData
-            ? "এই Mouza-তে শুধু MS plot আছে"
-            : "এই Mouza-তে MS নেই — RS plot দেখানো হচ্ছে";
 
   const selectedId =
     result?.attributes?.objectid != null ? Number(result.attributes.objectid) : null;
@@ -600,12 +517,39 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → Plot type → Search plot → full details
+            District → Upazila → Mouza → RS / MS tab → Search plot
           </p>
         </header>
 
         <section className="rounded-2xl border bg-white p-5 shadow-sm md:p-6">
           <h2 className="mb-4 font-bold">Plot Search</h2>
+
+          {/* Tabs */}
+          <div className="mb-5 flex gap-1 rounded-xl border bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => onTabChange("rs")}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                tab === "rs"
+                  ? "bg-white text-[#006a4e] shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              RS plot search
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange("ms")}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                tab === "ms"
+                  ? "bg-white text-[#006a4e] shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              MS plot search
+            </button>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Select District</label>
@@ -673,41 +617,28 @@ export default function RajukTestPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium">Plot type</label>
-              <div className="relative mt-1">
-                <select
-                  value={plotType}
-                  onChange={(e) => onPlotTypeChange(e.target.value as PlotType)}
-                  disabled={!mauza || loadingLevel === "plot" || !plots.length}
-                  className="w-full rounded-xl border px-3 py-2.5"
-                >
-                  {availableTypes.includes("rs") && <option value="rs">RS plot</option>}
-                  {availableTypes.includes("ms") && <option value="ms">MS plot</option>}
-                  {availableTypes.includes("mixed") && (
-                    <option value="mixed">Mixed (RS + MS)</option>
-                  )}
-                </select>
-                {loadingLevel === "plot" && (
-                  <Loader2 className="absolute right-3 top-3 animate-spin" size={17} />
-                )}
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{typeHint}</p>
-            </div>
-
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium">Select Plot</label>
-              <p className="mt-0.5 text-xs text-slate-500">Type a plot number to search the list</p>
+              <label className="block text-sm font-medium">
+                Select {tab === "ms" ? "MS" : "RS"} Plot
+              </label>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Type a {tab.toUpperCase()} plot number to search the list
+              </p>
               <div className="mt-1">
                 <SearchablePlotSelect
                   plots={filteredPlots}
-                  plotType={plotType}
+                  tab={tab}
                   value={plot}
                   disabled={!mauza || loadingLevel === "plot" || !filteredPlots.length}
                   loading={loadingLevel === "plot"}
                   onSelect={onPlotPicked}
                 />
               </div>
+              {mauza && !loadingLevel && filteredPlots.length === 0 && plots.length > 0 && (
+                <p className="mt-1.5 text-xs text-amber-700">
+                  এই Mouza-তে {tab === "ms" ? "MS" : "RS"} plot পাওয়া যায়নি — অন্য ট্যাব চেষ্টা করুন।
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -718,7 +649,7 @@ export default function RajukTestPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#006a4e] px-4 py-2.5 font-semibold text-white disabled:opacity-50 sm:w-auto sm:min-w-[220px]"
               >
                 {loading ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}
-                Query {plotType === "mixed" ? "Mixed" : plotType.toUpperCase()} Plot
+                Query {tab.toUpperCase()} Plot
               </button>
             </div>
           </div>
@@ -735,12 +666,7 @@ export default function RajukTestPage() {
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="mb-1 font-bold">Search results</h2>
             <p className="mb-4 text-xs text-slate-500">{matches.length} plot(s) matched</p>
-            <MatchesTable
-              features={matches}
-              plotType={plotType}
-              selectedId={selectedId}
-              onSelect={setResult}
-            />
+            <MatchesTable features={matches} selectedId={selectedId} onSelect={setResult} />
           </section>
         )}
 
@@ -749,7 +675,7 @@ export default function RajukTestPage() {
             <div>
               <h2 className="font-bold">General Plot Information</h2>
               <p className="text-xs text-slate-500">
-                {optionLabel(result, plotType)}
+                {optionLabel(result, tab)}
                 {present(result.attributes.address_search)
                   ? ` · ${String(result.attributes.address_search)}`
                   : ""}
