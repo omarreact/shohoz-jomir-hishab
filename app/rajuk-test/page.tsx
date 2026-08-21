@@ -15,17 +15,33 @@ const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
   ),
 });
 
-/** Search tab: RS or MS only */
 type PlotTab = "rs" | "ms";
 
-const DETAIL_ROWS: { label: string; keys: string[] }[] = [
+const DETAIL_ROWS_RS: { label: string; keys: string[] }[] = [
   { label: "Plot No", keys: ["plot_no"] },
   { label: "RS Plot Number", keys: ["rs_plot_no"] },
-  { label: "MS Plot Number", keys: ["ms_plot_no"] },
   { label: "JL No", keys: ["rs_jl_no", "jl_no"] },
-  { label: "Survey type", keys: ["plot_kind", "rs_plot_type"] },
-  { label: "Plot Area (Katha Approx.)", keys: ["area_katha", "rs_plot_area", "ms_plot_area"] },
+  { label: "Survey type", keys: ["plot_kind"] },
+  { label: "Plot Area (Katha Approx.)", keys: ["rs_plot_area", "area_katha"] },
   { label: "Mauza Name", keys: ["rs_mauza_name", "mauza"] },
+  { label: "Thana/Upazila", keys: ["thana_upazila", "upazila_ps"] },
+  { label: "District", keys: ["m_district", "district"] },
+  { label: "Address", keys: ["address_search"] },
+  { label: "Area (sq m)", keys: ["area_sq_m", "Shape__Area"] },
+  { label: "Area (sq ft)", keys: ["area_sq_ft"] },
+  { label: "Area (shotok)", keys: ["area_shotok"] },
+  { label: "Object ID", keys: ["objectid"] },
+  { label: "P GUID", keys: ["p_guid"] },
+];
+
+/** MS detail rows — MS fields only, no RS labels */
+const DETAIL_ROWS_MS: { label: string; keys: string[] }[] = [
+  { label: "Plot No", keys: ["plot_no"] },
+  { label: "MS Plot Number", keys: ["ms_plot_no"] },
+  { label: "JL No", keys: ["jl_no", "rs_jl_no"] },
+  { label: "Survey type", keys: ["plot_kind"] },
+  { label: "Plot Area (Katha Approx.)", keys: ["ms_plot_area", "area_katha"] },
+  { label: "Mauza Name", keys: ["mauza", "rs_mauza_name"] },
   { label: "Thana/Upazila", keys: ["thana_upazila", "upazila_ps"] },
   { label: "District", keys: ["m_district", "district"] },
   { label: "Address", keys: ["address_search"] },
@@ -97,13 +113,20 @@ function SearchablePlotSelect({
       .filter((o) => o.value)
       .filter((o) => {
         if (!q) return true;
+        const a = o.feature.attributes;
+        if (tab === "ms") {
+          return (
+            o.value.toLowerCase().includes(q) ||
+            String(a.ms_plot_no ?? "").toLowerCase().includes(q) ||
+            String(a.plot_no ?? "").toLowerCase().includes(q) ||
+            String(a.address_search ?? "").toLowerCase().includes(q)
+          );
+        }
         return (
           o.value.toLowerCase().includes(q) ||
-          o.label.toLowerCase().includes(q) ||
-          String(o.feature.attributes.rs_plot_no ?? "").toLowerCase().includes(q) ||
-          String(o.feature.attributes.ms_plot_no ?? "").toLowerCase().includes(q) ||
-          String(o.feature.attributes.plot_no ?? "").toLowerCase().includes(q) ||
-          String(o.feature.attributes.address_search ?? "").toLowerCase().includes(q)
+          String(a.rs_plot_no ?? "").toLowerCase().includes(q) ||
+          String(a.plot_no ?? "").toLowerCase().includes(q) ||
+          String(a.address_search ?? "").toLowerCase().includes(q)
         );
       })
       .slice(0, 200);
@@ -187,7 +210,8 @@ function SearchablePlotSelect({
   );
 }
 
-function AttrTable({ attributes }: { attributes: Record<string, unknown> }) {
+function AttrTable({ attributes, tab }: { attributes: Record<string, unknown>; tab: PlotTab }) {
+  const rows = tab === "ms" ? DETAIL_ROWS_MS : DETAIL_ROWS_RS;
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200">
       <table className="w-full border-collapse text-sm">
@@ -198,7 +222,7 @@ function AttrTable({ attributes }: { attributes: Record<string, unknown> }) {
           </tr>
         </thead>
         <tbody>
-          {DETAIL_ROWS.map((row) => (
+          {rows.map((row) => (
             <tr key={row.label} className="odd:bg-white even:bg-slate-50/80">
               <th className="border-b border-slate-100 px-4 py-2.5 text-left font-medium text-slate-600">
                 {row.label}
@@ -250,21 +274,22 @@ function AreaTable({ feature }: { feature: RajukPlotFeature }) {
 
 function MatchesTable({
   features,
+  tab,
   selectedId,
   onSelect,
 }: {
   features: RajukPlotFeature[];
+  tab: PlotTab;
   selectedId: number | null;
   onSelect: (f: RajukPlotFeature) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200">
-      <table className="w-full min-w-[720px] border-collapse text-sm">
+      <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
           <tr className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
             <th className="border-b px-3 py-3">#</th>
-            <th className="border-b px-3 py-3">RS</th>
-            <th className="border-b px-3 py-3">MS</th>
+            <th className="border-b px-3 py-3">{tab === "ms" ? "MS Plot" : "RS Plot"}</th>
             <th className="border-b px-3 py-3">Mauza</th>
             <th className="border-b px-3 py-3">Thana</th>
             <th className="border-b px-3 py-3">Area (katha)</th>
@@ -283,17 +308,16 @@ function MatchesTable({
               >
                 <td className="border-b border-slate-100 px-3 py-2.5 text-slate-500">{index + 1}</td>
                 <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
-                  {firstValue(a, ["rs_plot_no", "plot_no"])}
+                  {tab === "ms"
+                    ? firstValue(a, ["ms_plot_no", "plot_no"])
+                    : firstValue(a, ["rs_plot_no", "plot_no"])}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2.5 font-semibold">
-                  {firstValue(a, ["ms_plot_no"])}
-                </td>
-                <td className="border-b border-slate-100 px-3 py-2.5">{firstValue(a, ["rs_mauza_name", "mauza"])}</td>
+                <td className="border-b border-slate-100 px-3 py-2.5">{firstValue(a, ["mauza", "rs_mauza_name"])}</td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
                   {firstValue(a, ["thana_upazila", "upazila_ps"])}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
-                  {firstValue(a, ["area_katha", "rs_plot_area"])}
+                  {firstValue(a, tab === "ms" ? ["ms_plot_area", "area_katha"] : ["rs_plot_area", "area_katha"])}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2.5">
                   <button
@@ -328,13 +352,6 @@ export default function RajukTestPage() {
   const [loading, setLoading] = useState(false);
   const [loadingLevel, setLoadingLevel] = useState("");
   const [error, setError] = useState("");
-
-  const filteredPlots = useMemo(() => {
-    return plots.filter((f) => {
-      if (tab === "ms") return present(f.attributes.ms_plot_no);
-      return present(f.attributes.rs_plot_no) || present(f.attributes.plot_no);
-    });
-  }, [plots, tab]);
 
   useEffect(() => {
     setLoadingLevel("district");
@@ -393,6 +410,7 @@ export default function RajukTestPage() {
       .finally(() => setLoadingLevel(""));
   }, [tGuid]);
 
+  // Reload plots when mouza OR tab changes — each tab has its own API kind path
   useEffect(() => {
     setPlots([]);
     setPlot("");
@@ -407,6 +425,7 @@ export default function RajukTestPage() {
     setError("");
     const q = new URLSearchParams({
       action: "plots",
+      kind: tab, // "rs" → layer 0 only; "ms" → layer 5 only
       mouza: selectedMouza.mauza,
       jl: String(selectedMouza.jl_no),
       upazila: selectedUpazila?.upazila_ps ?? "",
@@ -431,11 +450,17 @@ export default function RajukTestPage() {
           }));
         }
         setPlots(features);
-        if (!features.length) setError("এই Mouza-তে কোনো Plot পাওয়া যায়নি।");
+        if (!features.length) {
+          setError(
+            tab === "ms"
+              ? "এই Mouza-তে কোনো MS Plot পাওয়া যায়নি।"
+              : "এই Mouza-তে কোনো RS Plot পাওয়া যায়নি।",
+          );
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Plot load failed"))
       .finally(() => setLoadingLevel(""));
-  }, [mauza, mouzas, tGuid, upazilas, dGuid, districts]);
+  }, [mauza, mouzas, tGuid, upazilas, dGuid, districts, tab]);
 
   function onTabChange(next: PlotTab) {
     setTab(next);
@@ -465,8 +490,13 @@ export default function RajukTestPage() {
       const selectedMouza = mouzas.find((x) => x.m_guid === mauza);
       const selectedUpazila = upazilas.find((x) => x.t_guid === tGuid);
       const selectedDistrict = districts.find((x) => x.d_guid === dGuid);
-      const q = new URLSearchParams({ action: "plots", limit: "50" });
+      const q = new URLSearchParams({
+        action: "plots",
+        kind: tab,
+        limit: "50",
+      });
 
+      // Pure path: MS never sends rs_plot_no / RS filters
       if (tab === "ms") {
         q.set("ms_plot_no", plot);
       } else {
@@ -517,22 +547,19 @@ export default function RajukTestPage() {
             <Database className="text-[#006a4e]" /> RAJUK Runtime Test
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            District → Upazila → Mouza → RS / MS tab → Search plot
+            RS tab → FeatureServer layer 0 · MS tab → FeatureServer layer 5
           </p>
         </header>
 
         <section className="rounded-2xl border bg-white p-5 shadow-sm md:p-6">
           <h2 className="mb-4 font-bold">Plot Search</h2>
 
-          {/* Tabs */}
           <div className="mb-5 flex gap-1 rounded-xl border bg-slate-100 p-1">
             <button
               type="button"
               onClick={() => onTabChange("rs")}
               className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
-                tab === "rs"
-                  ? "bg-white text-[#006a4e] shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                tab === "rs" ? "bg-white text-[#006a4e] shadow-sm" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               RS plot search
@@ -541,9 +568,7 @@ export default function RajukTestPage() {
               type="button"
               onClick={() => onTabChange("ms")}
               className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
-                tab === "ms"
-                  ? "bg-white text-[#006a4e] shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                tab === "ms" ? "bg-white text-[#006a4e] shadow-sm" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               MS plot search
@@ -622,23 +647,20 @@ export default function RajukTestPage() {
                 Select {tab === "ms" ? "MS" : "RS"} Plot
               </label>
               <p className="mt-0.5 text-xs text-slate-500">
-                Type a {tab.toUpperCase()} plot number to search the list
+                {tab === "ms"
+                  ? "Queries FeatureServer layer 5 (MS only)"
+                  : "Queries FeatureServer layer 0 (RS only)"}
               </p>
               <div className="mt-1">
                 <SearchablePlotSelect
-                  plots={filteredPlots}
+                  plots={plots}
                   tab={tab}
                   value={plot}
-                  disabled={!mauza || loadingLevel === "plot" || !filteredPlots.length}
+                  disabled={!mauza || loadingLevel === "plot" || !plots.length}
                   loading={loadingLevel === "plot"}
                   onSelect={onPlotPicked}
                 />
               </div>
-              {mauza && !loadingLevel && filteredPlots.length === 0 && plots.length > 0 && (
-                <p className="mt-1.5 text-xs text-amber-700">
-                  এই Mouza-তে {tab === "ms" ? "MS" : "RS"} plot পাওয়া যায়নি — অন্য ট্যাব চেষ্টা করুন।
-                </p>
-              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -664,16 +686,16 @@ export default function RajukTestPage() {
 
         {matches.length > 0 && (
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
-            <h2 className="mb-1 font-bold">Search results</h2>
+            <h2 className="mb-1 font-bold">Search results ({tab.toUpperCase()})</h2>
             <p className="mb-4 text-xs text-slate-500">{matches.length} plot(s) matched</p>
-            <MatchesTable features={matches} selectedId={selectedId} onSelect={setResult} />
+            <MatchesTable features={matches} tab={tab} selectedId={selectedId} onSelect={setResult} />
           </section>
         )}
 
         {result && (
           <section className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
             <div>
-              <h2 className="font-bold">General Plot Information</h2>
+              <h2 className="font-bold">General Plot Information ({tab.toUpperCase()})</h2>
               <p className="text-xs text-slate-500">
                 {optionLabel(result, tab)}
                 {present(result.attributes.address_search)
@@ -689,7 +711,7 @@ export default function RajukTestPage() {
 
             <div>
               <h3 className="mb-2 text-sm font-semibold text-slate-700">Plot details</h3>
-              <AttrTable attributes={result.attributes as Record<string, unknown>} />
+              <AttrTable attributes={result.attributes as Record<string, unknown>} tab={tab} />
             </div>
 
             <div>

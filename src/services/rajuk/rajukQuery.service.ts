@@ -1,7 +1,7 @@
 import "server-only";
 import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER } from "./rajukAuth.service";
 import { RAJUK_DB } from "./rajukLayers.service";
-import { classifyPlotKind, enrichPlotFeature } from "./rajukPlotNormalize";
+import { classifyPlotKind, enrichPlotFeature, type PlotLayerSource } from "./rajukPlotNormalize";
 import { fetchWithRetry } from "./rajukFetch";
 import type {
   RajukDistrict,
@@ -109,9 +109,10 @@ async function requestLayer<T>(layerId: number, params: Record<string, string | 
 
 function annotatePlots(
   collection: RajukPlotCollection,
-  extras?: { district?: string; upazila?: string; mauza?: string; jl?: string },
+  extras: { district?: string; upazila?: string; mauza?: string; jl?: string } | undefined,
+  source: PlotLayerSource,
 ): RajukPlotCollection {
-  const features = (collection.features ?? []).map((f) => enrichPlotFeature(f, extras));
+  const features = (collection.features ?? []).map((f) => enrichPlotFeature(f, extras, source));
   return { ...collection, features };
 }
 
@@ -147,37 +148,54 @@ export async function getMouzas(tGuid: string): Promise<RajukMauza[]> {
   return (data.features ?? []).map((f) => f.attributes);
 }
 
-function buildWhere(filters: RajukPlotFilters, mode: "rs" | "ms"): string {
+/** RS-only WHERE — FeatureServer layer 0 */
+function buildRsWhere(filters: RajukPlotFilters): string {
   const clauses: string[] = [];
 
   if (filters.plotNo !== undefined) {
     const n = Math.trunc(filters.plotNo);
     const s = escapeSql(String(n));
-    if (mode === "rs") {
-      clauses.push(
-        `(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`,
-      );
-    } else {
-      clauses.push(`(plot_no=${n} OR ms_plot_no='${s}' OR ms_plot_no='MS-${s}')`);
-    }
+    clauses.push(
+      `(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`,
+    );
   }
 
-  if (filters.rsPlotNo?.trim() && mode === "rs") {
+  if (filters.rsPlotNo?.trim()) {
     const v = escapeSql(filters.rsPlotNo.trim());
     const bare = escapeSql(filters.rsPlotNo.trim().replace(/^RS-/i, ""));
     clauses.push(`(rs_plot_no='${v}' OR rs_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
   }
 
-  if (filters.msPlotNo?.trim() && mode === "ms") {
+  // MS-only filters must not run against RS layer
+  if (filters.msPlotNo?.trim() && !filters.rsPlotNo?.trim() && filters.plotNo === undefined) {
+    return "1=0";
+  }
+
+  for (const term of [filters.mouza, filters.jl, filters.upazila]) {
+    if (term?.trim()) clauses.push(`address_search LIKE '%${escapeSql(term.trim())}%'`);
+  }
+
+  return clauses.length ? clauses.join(" AND ") : "1=0";
+}
+
+/** MS-only WHERE — FeatureServer layer 5 (no RS field names) */
+function buildMsWhere(filters: RajukPlotFilters): string {
+  const clauses: string[] = [];
+
+  if (filters.plotNo !== undefined) {
+    const n = Math.trunc(filters.plotNo);
+    const s = escapeSql(String(n));
+    clauses.push(`(plot_no=${n} OR ms_plot_no='${s}' OR ms_plot_no='MS-${s}')`);
+  }
+
+  if (filters.msPlotNo?.trim()) {
     const v = escapeSql(filters.msPlotNo.trim());
     const bare = escapeSql(filters.msPlotNo.trim().replace(/^MS-/i, ""));
     clauses.push(`(ms_plot_no='${v}' OR ms_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
   }
 
-  if (filters.rsPlotNo?.trim() && !filters.msPlotNo?.trim() && filters.plotNo === undefined && mode === "ms") {
-    return "1=0";
-  }
-  if (filters.msPlotNo?.trim() && !filters.rsPlotNo?.trim() && filters.plotNo === undefined && mode === "rs") {
+  // RS-only filters must not run against MS layer
+  if (filters.rsPlotNo?.trim() && !filters.msPlotNo?.trim() && filters.plotNo === undefined) {
     return "1=0";
   }
 
@@ -197,54 +215,48 @@ export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotColl
     upazila: filters.upazila,
   };
 
+  // Pure path selection — never merge RS logic into MS
   const wantRs = filters.kind !== "ms";
   const wantMs = filters.kind !== "rs";
-  const queries: Promise<RajukPlotCollection>[] = [];
+
+  const queries: Promise<{ source: PlotLayerSource; data: RajukPlotCollection }>[] = [];
 
   if (wantRs) {
     queries.push(
       requestLayer<RajukPlotCollection>(LAYER_RS_PLOT, {
-        where: buildWhere(filters, "rs"),
+        where: buildRsWhere(filters),
         outFields: "*",
         returnGeometry: true,
         outSR: 4326,
         resultRecordCount: limit,
         resultOffset: offset,
         orderByFields: "plot_no ASC",
-      }),
+      }).then((data) => ({ source: "rs" as const, data })),
     );
   }
 
   if (wantMs) {
     queries.push(
       requestLayer<RajukPlotCollection>(LAYER_MS_PLOT, {
-        where: buildWhere(filters, "ms"),
+        where: buildMsWhere(filters),
         outFields: "*",
         returnGeometry: true,
         outSR: 4326,
         resultRecordCount: limit,
         resultOffset: offset,
         orderByFields: "plot_no ASC",
-      }),
+      }).then((data) => ({ source: "ms" as const, data })),
     );
   }
 
   const parts = await Promise.all(queries);
   const merged: RajukPlotFeature[] = [];
   for (const part of parts) {
-    for (const f of part.features ?? []) merged.push(f);
+    const annotated = annotatePlots(part.data, extras, part.source);
+    for (const f of annotated.features ?? []) merged.push(f);
   }
 
-  let annotated = annotatePlots({ features: merged, count: merged.length }, extras);
-
-  if (filters.kind && filters.kind !== "all") {
-    annotated = {
-      ...annotated,
-      features: (annotated.features ?? []).filter((f) => f.attributes.plot_kind === filters.kind),
-    };
-  }
-
-  return annotated;
+  return { features: merged, count: merged.length };
 }
 
 export async function identifyByPoint(lat: number, lng: number): Promise<RajukIdentifyResult> {
@@ -258,7 +270,7 @@ export async function identifyByPoint(lat: number, lng: number): Promise<RajukId
       outFields: "*",
       returnGeometry: true,
       resultRecordCount: 5,
-    }),
+    }).then((data) => annotatePlots(data, undefined, "rs")),
     requestLayer<RajukIdentifyResult>(LAYER_MS_PLOT, {
       geometry: `${lng},${lat}`,
       geometryType: "esriGeometryPoint",
@@ -268,11 +280,11 @@ export async function identifyByPoint(lat: number, lng: number): Promise<RajukId
       outFields: "*",
       returnGeometry: true,
       resultRecordCount: 5,
-    }),
+    }).then((data) => annotatePlots(data, undefined, "ms")),
   ]);
 
   const features = [...(rs.features ?? []), ...(ms.features ?? [])];
-  return annotatePlots({ features, count: features.length });
+  return { features, count: features.length };
 }
 
 export { classifyPlotKind };
