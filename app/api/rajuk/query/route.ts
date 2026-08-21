@@ -40,7 +40,9 @@ export async function GET(request: NextRequest) {
     if (action === "mouzas") {
       const tGuid = p.get("t_guid");
       if (!tGuid) return NextResponse.json({ error: "t_guid is required" }, { status: 400 });
-      return NextResponse.json({ features: await getMouzas(tGuid) });
+      const kindParam = p.get("kind");
+      const kind = kindParam === "ms" ? "ms" : "rs";
+      return NextResponse.json({ features: await getMouzas(tGuid, kind) });
     }
     if (action === "plots") {
       const raw = p.get("plot_no");
@@ -59,8 +61,6 @@ export async function GET(request: NextRequest) {
           rsPlotNo: p.get("rs_plot_no") || undefined,
           msPlotNo: p.get("ms_plot_no") || undefined,
           mouza: p.get("mouza") || undefined,
-          // RS and MS have independent JL numbering. The mouza cascade currently
-          // exposes the RS JL, so never apply that RS JL as an MS filter.
           jl: kind === "ms" ? undefined : p.get("jl") || undefined,
           upazila: p.get("upazila") || undefined,
           kind,
@@ -80,14 +80,7 @@ export async function GET(request: NextRequest) {
       const kindParam = p.get("kind");
       const kind = kindParam === "rs" || kindParam === "ms" ? kindParam : "all";
       return NextResponse.json(
-        await getPlotsByExtent({
-          kind,
-          xmin,
-          ymin,
-          xmax,
-          ymax,
-          limit: Number(p.get("limit") || 400),
-        }),
+        await getPlotsByExtent({ kind, xmin, ymin, xmax, ymax, limit: Number(p.get("limit") || 400) }),
       );
     }
     if (action === "identify") {
@@ -103,11 +96,7 @@ export async function GET(request: NextRequest) {
     const message = error instanceof Error ? error.message : "RAJUK request failed";
     if (isRajukAuthFailure(message)) {
       return NextResponse.json(
-        {
-          error: message,
-          code: "RAJUK_AUTH",
-          hint: "Open /api/rajuk/auth/diagnose for token status.",
-        },
+        { error: message, code: "RAJUK_AUTH", hint: "Open /api/rajuk/auth/diagnose for token status." },
         { status: 503 },
       );
     }
