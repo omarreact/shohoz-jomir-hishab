@@ -9,37 +9,27 @@ const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
   ssr: false,
 });
 
-function envelopeFromRings(
+/** Centroid of the first ring (lng/lat order from ArcGIS rings). */
+function ringCentroid(
   rings: number[][][] | undefined,
-  pad = 0.0008,
-): { xmin: number; ymin: number; xmax: number; ymax: number } | null {
-  if (!rings?.length) return null;
-  let xmin = Infinity,
-    ymin = Infinity,
-    xmax = -Infinity,
-    ymax = -Infinity;
-  for (const ring of rings) {
-    for (const pt of ring) {
-      if (pt.length < 2) continue;
-      const [lng, lat] = pt;
-      if (lng < xmin) xmin = lng;
-      if (lng > xmax) xmax = lng;
-      if (lat < ymin) ymin = lat;
-      if (lat > ymax) ymax = lat;
-    }
+): { lat: number; lng: number } | null {
+  const ring = rings?.[0];
+  if (!ring?.length) return null;
+  let sumLng = 0;
+  let sumLat = 0;
+  let n = 0;
+  for (const pt of ring) {
+    if (pt.length < 2) continue;
+    sumLng += pt[0];
+    sumLat += pt[1];
+    n += 1;
   }
-  if (!Number.isFinite(xmin)) return null;
-  return {
-    xmin: xmin - pad,
-    ymin: ymin - pad,
-    xmax: xmax + pad,
-    ymax: ymax + pad,
-  };
+  return n ? { lng: sumLng / n, lat: sumLat / n } : null;
 }
 
 /**
- * Wraps PlotMap: when an RS feature is selected, loads nearby MS plots
- * via FeatureServer/5 extent query and overlays them (purple) on the map.
+ * Only MS plots that cover the selected RS plot (point-in-polygon at RS centroid).
+ * Does not load all nearby MS parcels in a bounding box.
  */
 export default function MsAwarePlotMap({
   feature,
@@ -55,33 +45,42 @@ export default function MsAwarePlotMap({
       setMsFeatures([]);
       return;
     }
-    const env = envelopeFromRings(feature.geometry.rings);
-    if (!env) {
+
+    const c = ringCentroid(feature.geometry.rings);
+    if (!c) {
       setMsFeatures([]);
       return;
     }
 
     let cancelled = false;
     setLoadingMs(true);
+
+    // Identify at RS centroid → only MS polygons that contain this RS plot location
     const q = new URLSearchParams({
-      action: "extent",
-      kind: "ms",
-      xmin: String(env.xmin),
-      ymin: String(env.ymin),
-      xmax: String(env.xmax),
-      ymax: String(env.ymax),
-      limit: "80",
+      action: "identify",
+      lat: String(c.lat),
+      lng: String(c.lng),
     });
 
     void fetch(`/api/rajuk/query?${q}`, { cache: "no-store" })
       .then(async (r) => {
         const d = await r.json();
-        if (!r.ok) throw new Error(d.error || "MS extent query failed");
+        if (!r.ok) throw new Error(d.error || "MS identify failed");
         return d;
       })
       .then((d) => {
         if (cancelled) return;
-        setMsFeatures((d.features ?? []) as RajukPlotFeature[]);
+        const all = (d.features ?? []) as RajukPlotFeature[];
+        // Keep only MS-layer rows (RS row is already shown as selected)
+        const msOnly = all.filter((f) => {
+          const a = f.attributes as Record<string, unknown>;
+          return (
+            a._layer_source === "ms" ||
+            a.plot_kind === "ms" ||
+            (a.ms_plot_no && !a.rs_plot_no)
+          );
+        });
+        setMsFeatures(msOnly);
       })
       .catch(() => {
         if (!cancelled) setMsFeatures([]);
@@ -101,11 +100,11 @@ export default function MsAwarePlotMap({
         {loadingMs ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-violet-700">
             <Loader2 size={13} className="animate-spin" />
-            Loading MS plots…
+            MS প্লট খোঁজা হচ্ছে…
           </span>
         ) : msFeatures.length > 0 ? (
           <span className="text-xs font-medium text-violet-700">
-            {msFeatures.length} MS plot{msFeatures.length === 1 ? "" : "s"} nearby
+            {msFeatures.length}টি MS প্লট (এই RS এর)
           </span>
         ) : null}
       </div>
