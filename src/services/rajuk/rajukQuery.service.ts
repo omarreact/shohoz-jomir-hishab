@@ -137,7 +137,44 @@ export async function getUpazilas(dGuid: string): Promise<RajukUpazila[]> {
   return (data.features ?? []).map((f) => f.attributes);
 }
 
-export async function getMouzas(tGuid: string): Promise<RajukMauza[]> {
+export async function getMouzas(tGuid: string, kind: "rs" | "ms" = "rs"): Promise<RajukMauza[]> {
+  if (kind === "ms") {
+    // MS has independent JL numbering. Build the MS address list from
+    // FeatureServer/5 instead of reusing the RS mouza layer (1).
+    const context = await requestLayer<{
+      features?: { attributes: Pick<RajukUpazila, "upazila_ps" | "m_district" | "t_guid" | "d_guid"> }[];
+    }>(9, {
+      where: `t_guid='${escapeSql(tGuid)}'`,
+      outFields: "upazila_ps,m_district,t_guid,d_guid",
+      returnGeometry: false,
+      resultRecordCount: 1,
+    });
+    const admin = context.features?.[0]?.attributes;
+    if (!admin?.upazila_ps) return [];
+
+    const addressTerms = [admin.upazila_ps, admin.m_district]
+      .filter(Boolean)
+      .map((value) => `address_search LIKE '%${escapeSql(String(value).trim())}%'`);
+
+    const data = await requestLayer<{ features?: { attributes: RajukMauza }[] }>(LAYER_MS_PLOT, {
+      where: addressTerms.join(" AND "),
+      outFields: "mauza,jl_no,upazila_ps,m_district",
+      returnGeometry: false,
+      returnDistinctValues: true,
+      orderByFields: "mauza ASC, jl_no ASC",
+      resultRecordCount: 5000,
+    });
+
+    return (data.features ?? []).map((feature, index) => ({
+      ...feature.attributes,
+      m_guid: `ms-${String(feature.attributes.mauza ?? "").trim()}-${String(feature.attributes.jl_no ?? "").trim()}-${index}`,
+      t_guid: admin.t_guid,
+      d_guid: admin.d_guid,
+      upazila_ps: feature.attributes.upazila_ps || admin.upazila_ps,
+      m_district: feature.attributes.m_district || admin.m_district,
+    }));
+  }
+
   const data = await requestLayer<{ features?: { attributes: RajukMauza }[] }>(1, {
     where: `t_guid='${escapeSql(tGuid)}'`,
     outFields: "mauza,jl_no,m_guid,t_guid,d_guid,upazila_ps,m_district",
