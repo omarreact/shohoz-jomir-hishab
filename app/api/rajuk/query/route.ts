@@ -3,6 +3,7 @@ import {
   getDistricts,
   getMouzas,
   getPlots,
+  getPlotsByExtent,
   getUpazilas,
   identifyByPoint,
 } from "@/src/services/rajuk/rajukQuery.service";
@@ -66,6 +67,27 @@ export async function GET(request: NextRequest) {
         }),
       );
     }
+    if (action === "extent") {
+      const xmin = Number(p.get("xmin"));
+      const ymin = Number(p.get("ymin"));
+      const xmax = Number(p.get("xmax"));
+      const ymax = Number(p.get("ymax"));
+      if (![xmin, ymin, xmax, ymax].every(Number.isFinite)) {
+        return NextResponse.json({ error: "xmin,ymin,xmax,ymax required" }, { status: 400 });
+      }
+      const kindParam = p.get("kind");
+      const kind = kindParam === "rs" || kindParam === "ms" ? kindParam : "all";
+      return NextResponse.json(
+        await getPlotsByExtent({
+          kind,
+          xmin,
+          ymin,
+          xmax,
+          ymax,
+          limit: Number(p.get("limit") || 400),
+        }),
+      );
+    }
     if (action === "identify") {
       const lat = Number(p.get("lat"));
       const lng = Number(p.get("lng"));
@@ -82,8 +104,7 @@ export async function GET(request: NextRequest) {
         {
           error: message,
           code: "RAJUK_AUTH",
-          hint:
-            "Open /api/rajuk/auth/diagnose. If portalTokenConfigured=true and error is 498, replace the expired RAJUK_PORTAL_TOKEN/RAJUK_API_KEY or set RAJUK_PORTAL_USERNAME + RAJUK_PORTAL_PASSWORD on Vercel, then redeploy.",
+          hint: "Open /api/rajuk/auth/diagnose for token status.",
         },
         { status: 503 },
       );
