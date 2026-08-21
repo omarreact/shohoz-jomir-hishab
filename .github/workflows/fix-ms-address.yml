@@ -1,7 +1,8 @@
 name: Fix MS address cascade
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: write
@@ -19,7 +20,6 @@ jobs:
         run: |
           from pathlib import Path
 
-          # page.tsx: give each survey form its own address-cascade kind.
           p = Path('app/rajuk-test/page.tsx')
           s = p.read_text(encoding='utf-8')
           replacements = [
@@ -31,9 +31,6 @@ jobs:
               if old not in s:
                   raise SystemExit(f'Expected page pattern not found: {old}')
               s = s.replace(old, new, 1)
-
-          # The two forms are intentionally independent. Replace only the two
-          # exact hook initializers, in source order.
           old = '  const loc = useLocationCascade();'
           if s.count(old) != 2:
               raise SystemExit(f'Expected exactly 2 cascade initializers, found {s.count(old)}')
@@ -41,7 +38,6 @@ jobs:
           s = s.replace(old, '  const loc = useLocationCascade("ms");', 1)
           p.write_text(s, encoding='utf-8')
 
-          # route.ts: forward the survey kind to the address endpoint.
           p = Path('app/api/rajuk/query/route.ts')
           s = p.read_text(encoding='utf-8')
           old = '      const tGuid = p.get("t_guid");\n      if (!tGuid) return NextResponse.json({ error: "t_guid is required" }, { status: 400 });\n      return NextResponse.json({ features: await getMouzas(tGuid) });'
@@ -50,9 +46,6 @@ jobs:
               raise SystemExit('Expected route mouza block not found')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
-          # rajukQuery.service.ts: RS continues to use the administrative
-          # mouza layer (1); MS address combinations are derived directly from
-          # FeatureServer/5 so its JL numbers can differ from RS.
           p = Path('src/services/rajuk/rajukQuery.service.ts')
           s = p.read_text(encoding='utf-8')
           old = '''export async function getMouzas(tGuid: string): Promise<RajukMauza[]> {
@@ -68,8 +61,6 @@ jobs:
           new = '''export async function getMouzas(tGuid: string, kind: "rs" | "ms" = "rs"): Promise<RajukMauza[]> {
   if (kind === "ms") {
     // MS has its own JL numbering. Do not reuse the RS mouza/JL layer (1).
-    // Resolve the selected administrative context first, then derive the
-    // actual Mouza/JL combinations from MS FeatureServer/5.
     const context = await requestLayer<{
       features?: { attributes: Pick<RajukUpazila, "upazila_ps" | "m_district" | "t_guid" | "d_guid"> }[];
     }>(9, {
@@ -95,8 +86,6 @@ jobs:
 
     return (data.features ?? []).map((f, index) => ({
       ...f.attributes,
-      // Stable client key for MS address options; the MS layer itself is the
-      // source of the Mouza/JL pair, not the RS administrative layer.
       m_guid: `ms-${String(f.attributes.mauza ?? "").trim()}-${String(f.attributes.jl_no ?? "").trim()}-${index}`,
       t_guid: admin.t_guid,
       d_guid: admin.d_guid,
