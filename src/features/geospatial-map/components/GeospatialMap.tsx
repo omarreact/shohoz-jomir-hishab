@@ -8,23 +8,67 @@ import styles from "./GeospatialMap.module.css";
 
 type Tab = "layers" | "basemap" | "results";
 type BasemapKey = "osm" | "light" | "satellite" | "satellite2003";
+/** Tile keys match /api/rajuk/tile/[layer] */
 type LayerKey = "dap" | "rs" | "ms" | "flood" | "boundary" | "transport";
-type LayerDef = { key: LayerKey; label: string; description: string; color: string; defaultVisible: boolean };
+type LayerDef = {
+  key: LayerKey;
+  label: string;
+  description: string;
+  color: string;
+  defaultVisible: boolean;
+};
 
 const LAYERS: LayerDef[] = [
-  { key: "dap", label: "DAP Proposed Landuse", description: "Proposed land-use zones", color: "#16a34a", defaultVisible: true },
-  // Both survey tile layers on together by default
-  { key: "rs", label: "RS Mauza", description: "RS mauza reference tiles", color: "#2563eb", defaultVisible: true },
-  { key: "ms", label: "MS Mauza", description: "MS mauza reference tiles", color: "#7c3aed", defaultVisible: true },
-  { key: "flood", label: "Flood Overlay", description: "Flood susceptibility overlay", color: "#0891b2", defaultVisible: false },
-  { key: "boundary", label: "Overlay Boundary", description: "Planning boundary", color: "#ea580c", defaultVisible: false },
-  { key: "transport", label: "Transport Network", description: "Transport network tiles", color: "#dc2626", defaultVisible: false },
+  {
+    key: "dap",
+    label: "DAP Proposed Landuse",
+    description: "Proposed land-use zones",
+    color: "#16a34a",
+    defaultVisible: true,
+  },
+  {
+    key: "rs",
+    label: "RS Mauza tiles",
+    description: "Hosted/RS_Mauza_282Scale MapServer",
+    color: "#2563eb",
+    defaultVisible: true,
+  },
+  {
+    key: "ms",
+    label: "MS Mauza tiles",
+    description: "Hosted/MS_Mauza_Tiles_Final MapServer",
+    color: "#7c3aed",
+    defaultVisible: true,
+  },
+  {
+    key: "flood",
+    label: "Flood Overlay",
+    description: "Flood susceptibility overlay",
+    color: "#0891b2",
+    defaultVisible: false,
+  },
+  {
+    key: "boundary",
+    label: "Overlay Boundary",
+    description: "Planning boundary tiles",
+    color: "#ea580c",
+    defaultVisible: false,
+  },
+  {
+    key: "transport",
+    label: "Transport Network",
+    description: "Transport network tiles",
+    color: "#dc2626",
+    defaultVisible: false,
+  },
 ];
 
 const DAP_BOUNDS: [[number, number], [number, number]] = [
   [23.5527, 90.2079],
   [24.1033, 90.6041],
 ];
+
+const MIN_ZOOM_FOR_VECTOR = 15;
 
 const BASEMAPS: Record<
   BasemapKey,
@@ -62,7 +106,6 @@ const detailValue = (a: Record<string, unknown>, keys: readonly string[]) => {
   return "—";
 };
 
-/** Full dual-survey fields (filled by server enricher from address_search + Shape__Area). */
 const DETAIL_FIELDS = [
   ["RS Plot Number", ["rs_plot_no"]],
   ["MS Plot Number", ["ms_plot_no"]],
@@ -110,6 +153,15 @@ function toGeoJson(feature: RajukPlotFeature) {
   };
 }
 
+function featuresToFc(features: RajukPlotFeature[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: features
+      .filter((f) => f.geometry?.rings?.length)
+      .map((f) => toGeoJson(f)),
+  };
+}
+
 function createBasemapLayer(Leaflet: typeof import("leaflet"), key: BasemapKey): TileLayer {
   const def = BASEMAPS[key];
   return Leaflet.tileLayer(def.url, {
@@ -126,14 +178,21 @@ export default function GeospatialMap() {
   const basemapRef = useRef<TileLayer | null>(null);
   const layerRefs = useRef<Partial<Record<LayerKey, TileLayer>>>({});
   const highlightRef = useRef<LeafletGeoJSON | null>(null);
+  const rsVectorRef = useRef<LeafletGeoJSON | null>(null);
+  const msVectorRef = useRef<LeafletGeoJSON | null>(null);
+  const extentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [tab, setTab] = useState<Tab>("layers");
   const [panelOpen, setPanelOpen] = useState(true);
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>(
     () => Object.fromEntries(LAYERS.map((l) => [l.key, l.defaultVisible])) as Record<LayerKey, boolean>,
   );
   const [opacity, setOpacity] = useState<Record<LayerKey, number>>(
-    () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.7 : 0.78])) as Record<LayerKey, number>,
+    () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78])) as Record<LayerKey, number>,
   );
+  /** FeatureServer polygon boundaries — on by default */
+  const [showRsBoundary, setShowRsBoundary] = useState(true);
+  const [showMsBoundary, setShowMsBoundary] = useState(true);
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
   const [plotNo, setPlotNo] = useState("");
   const [searching, setSearching] = useState(false);
@@ -142,11 +201,62 @@ export default function GeospatialMap() {
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
   const [toast, setToast] = useState("");
   const [mapReady, setMapReady] = useState(false);
+  const [vectorStatus, setVectorStatus] = useState("");
 
   const notify = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 3500);
   }, []);
+
+  const loadExtentVectors = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map || !rsVectorRef.current || !msVectorRef.current) return;
+    if (map.getZoom() < MIN_ZOOM_FOR_VECTOR) {
+      rsVectorRef.current.clearLayers();
+      msVectorRef.current.clearLayers();
+      setVectorStatus(`Zoom ≥ ${MIN_ZOOM_FOR_VECTOR} for FeatureServer boundaries`);
+      return;
+    }
+    if (!showRsBoundary && !showMsBoundary) {
+      rsVectorRef.current.clearLayers();
+      msVectorRef.current.clearLayers();
+      setVectorStatus("");
+      return;
+    }
+
+    const b = map.getBounds();
+    const kind = showRsBoundary && showMsBoundary ? "all" : showRsBoundary ? "rs" : "ms";
+    setVectorStatus("Loading plot boundaries…");
+    try {
+      const q = new URLSearchParams({
+        action: "extent",
+        kind,
+        xmin: String(b.getWest()),
+        ymin: String(b.getSouth()),
+        xmax: String(b.getEast()),
+        ymax: String(b.getNorth()),
+        limit: "500",
+      });
+      const response = await fetch(`/api/rajuk/query?${q}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Extent query failed");
+      const features = (data.features || []) as RajukPlotFeature[];
+      const rs = features.filter(
+        (f) => f.attributes.plot_kind === "rs" || (f.attributes as { _layer_source?: string })._layer_source === "rs",
+      );
+      const ms = features.filter(
+        (f) => f.attributes.plot_kind === "ms" || (f.attributes as { _layer_source?: string })._layer_source === "ms",
+      );
+
+      rsVectorRef.current.clearLayers();
+      msVectorRef.current.clearLayers();
+      if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
+      if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
+      setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
+    } catch (error) {
+      setVectorStatus(error instanceof Error ? error.message : "Boundary load failed");
+    }
+  }, [showRsBoundary, showMsBoundary]);
 
   useEffect(() => {
     let disposed = false;
@@ -159,20 +269,55 @@ export default function GeospatialMap() {
       map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
       mapRef.current = map;
       basemapRef.current = createBasemapLayer(L, "satellite").addTo(map);
+
+      // MapServer tile overlays (RS + MS ON by default)
       LAYERS.forEach((definition) => {
         const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
           maxZoom: 21,
-          opacity: definition.key === "ms" ? 0.7 : 0.78,
+          opacity: definition.key === "ms" ? 0.72 : 0.78,
           crossOrigin: true,
-          attribution: "LandBD data service",
+          attribution: "LandBD / RAJUK",
         });
         layerRefs.current[definition.key] = tile;
         if (definition.defaultVisible) tile.addTo(map);
       });
+
+      // FeatureServer polygon boundaries (layer 0 RS, layer 5 MS)
+      const rsVector = L.geoJSON(undefined, {
+        style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          layer.bindPopup(
+            `<strong>${p.rs_plot_no || p.plot_no || "RS"}</strong><br/>${p.address_search || ""}`,
+          );
+        },
+      }).addTo(map);
+      const msVector = L.geoJSON(undefined, {
+        style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          layer.bindPopup(
+            `<strong>${p.ms_plot_no || p.plot_no || "MS"}</strong><br/>${p.address_search || ""}`,
+          );
+        },
+      }).addTo(map);
+      rsVectorRef.current = rsVector;
+      msVectorRef.current = msVector;
+
       const highlight = L.geoJSON(undefined, {
         style: { color: "#111827", weight: 3, fillColor: "#facc15", fillOpacity: 0.28 },
       }).addTo(map);
       highlightRef.current = highlight;
+
+      const scheduleExtent = () => {
+        if (extentTimer.current) clearTimeout(extentTimer.current);
+        extentTimer.current = setTimeout(() => {
+          void loadExtentVectors();
+        }, 400);
+      };
+      map.on("moveend", scheduleExtent);
+      map.on("zoomend", scheduleExtent);
+
       map.on("click", async (event) => {
         if (!identifyMode) return;
         setSearching(true);
@@ -198,15 +343,22 @@ export default function GeospatialMap() {
           setSearching(false);
         }
       });
+
       setMapReady(true);
+      scheduleExtent();
     };
     init();
     return () => {
       disposed = true;
+      if (extentTimer.current) clearTimeout(extentTimer.current);
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [identifyMode, notify]);
+  }, [identifyMode, notify, loadExtentVectors]);
+
+  useEffect(() => {
+    void loadExtentVectors();
+  }, [loadExtentVectors, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -230,6 +382,15 @@ export default function GeospatialMap() {
     });
   }, [layers, opacity]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !rsVectorRef.current || !msVectorRef.current) return;
+    if (showRsBoundary && !map.hasLayer(rsVectorRef.current)) rsVectorRef.current.addTo(map);
+    if (!showRsBoundary && map.hasLayer(rsVectorRef.current)) map.removeLayer(rsVectorRef.current);
+    if (showMsBoundary && !map.hasLayer(msVectorRef.current)) msVectorRef.current.addTo(map);
+    if (!showMsBoundary && map.hasLayer(msVectorRef.current)) map.removeLayer(msVectorRef.current);
+  }, [showRsBoundary, showMsBoundary]);
+
   const runSearch = async () => {
     const value = Number(plotNo);
     if (!Number.isInteger(value) || value < 0) {
@@ -238,7 +399,6 @@ export default function GeospatialMap() {
     }
     setSearching(true);
     try {
-      // Searches both RS (layer 0) and MS (layer 5) on the server
       const response = await fetch(`/api/rajuk/query?action=plots&plot_no=${encodeURIComponent(value)}&limit=50`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Plot search failed");
@@ -333,9 +493,9 @@ export default function GeospatialMap() {
         <div className={styles.panelBody}>
           {tab === "layers" && (
             <>
-              <div className={styles.sectionTitle}>নগর পরিকল্পনা স্তর</div>
+              <div className={styles.sectionTitle}>MapServer tiles</div>
               <p style={{ margin: "0 0 10px", fontSize: 12, opacity: 0.75 }}>
-                RS Mauza ও MS Mauza দুটোই ডিফল্টে চালু — একসাথে দেখা যাবে।
+                RS + MS tiles ডিফল্টে চালু।
               </p>
               {LAYERS.map((layer) => (
                 <div className={styles.layerCard} key={layer.key}>
@@ -370,6 +530,50 @@ export default function GeospatialMap() {
                   </div>
                 </div>
               ))}
+
+              <div className={styles.sectionTitle} style={{ marginTop: 16 }}>
+                FeatureServer plot boundaries
+              </div>
+              <p style={{ margin: "0 0 10px", fontSize: 12, opacity: 0.75 }}>
+                Layer 0 (RS_mauza) ও Layer 5 (MS_mauza) — zoom ≥ {MIN_ZOOM_FOR_VECTOR}
+              </p>
+              <div className={styles.layerCard}>
+                <div className={styles.layerRow}>
+                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
+                  <div className={styles.layerInfo}>
+                    <div className={styles.layerName}>RS plot polygons</div>
+                    <div className={styles.layerMeta}>FeatureServer/0 RS_mauza</div>
+                  </div>
+                  <label className={styles.toggle}>
+                    <input
+                      type="checkbox"
+                      checked={showRsBoundary}
+                      onChange={(e) => setShowRsBoundary(e.target.checked)}
+                    />
+                    <span className={styles.toggleTrack} />
+                  </label>
+                </div>
+              </div>
+              <div className={styles.layerCard}>
+                <div className={styles.layerRow}>
+                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
+                  <div className={styles.layerInfo}>
+                    <div className={styles.layerName}>MS plot polygons</div>
+                    <div className={styles.layerMeta}>FeatureServer/5 MS_mauza</div>
+                  </div>
+                  <label className={styles.toggle}>
+                    <input
+                      type="checkbox"
+                      checked={showMsBoundary}
+                      onChange={(e) => setShowMsBoundary(e.target.checked)}
+                    />
+                    <span className={styles.toggleTrack} />
+                  </label>
+                </div>
+              </div>
+              {vectorStatus && (
+                <p style={{ margin: "8px 0 0", fontSize: 11, opacity: 0.7 }}>{vectorStatus}</p>
+              )}
             </>
           )}
           {tab === "basemap" && (
@@ -459,9 +663,7 @@ export default function GeospatialMap() {
           <strong>নগর পরিকল্পনা</strong>
         </span>
         <span className={styles.separator} />
-        <span>Geo · LIOS</span>
-        <span className={styles.separator} />
-        <span>RS+MS</span>
+        <span>RS+MS tiles + FS</span>
         <span className={styles.separator} />
         <span>
           Plot: <strong>{selected?.attributes.plot_no ?? "—"}</strong>
@@ -483,7 +685,6 @@ export default function GeospatialMap() {
           {toast}
         </div>
       )}
-      {!mapReady && null}
     </section>
   );
 }
