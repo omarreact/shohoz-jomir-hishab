@@ -45,15 +45,6 @@ export default function PlotMap({ feature, features = [] }: { feature: RajukPlot
   useEffect(() => {
     const map = leafletRef.current; const { boundaries, selectedLayer } = layersRef.current; if (!map || !boundaries || !selectedLayer || !ready) return;
     boundaries.clearLayers(); selectedLayer.clearLayers();
-    const boundsGroup: any[] = [];
-    for (const f of allFeatures) {
-      if (!f?.geometry?.rings?.length) continue;
-      const layer = (window as any).L?.geoJSON ? (window as any).L.geoJSON : null;
-      // Use Leaflet instance from the map rather than relying on a global L.
-      const L = (map as any)._leaflet_id ? null : null;
-      void layer; void L;
-    }
-    // Re-import Leaflet only for the data layers; the map already owns the module instance.
     import("leaflet").then(({ default: L }) => {
       if (!leafletRef.current) return;
       boundaries.clearLayers(); selectedLayer.clearLayers();
@@ -62,8 +53,21 @@ export default function PlotMap({ feature, features = [] }: { feature: RajukPlot
         const geojson: any = { type: "Feature", geometry: { type: "Polygon", coordinates: f.geometry.rings }, properties: f.attributes || {} };
         const a = f.attributes as any; const isSelected = f === feature;
         const target = isSelected ? selectedLayer : boundaries;
-        const item = L.geoJSON(geojson, { style: { color: isSelected ? "#006a4e" : "#f59e0b", weight: isSelected ? 4 : 2, fillColor: isSelected ? "#22c55e" : "#fbbf24", fillOpacity: isSelected ? 0.28 : 0.08 } }).addTo(target);
-        item.bindPopup(`<strong>${a.rs_plot_no ? `RS ${a.rs_plot_no}` : a.ms_plot_no ? `MS ${a.ms_plot_no}` : `Plot ${a.plot_no ?? ""}`}</strong><br/>${String(a.address_search || "")}`);
+        const isMs = a._layer_source === "ms" || a.plot_kind === "ms" || (a.ms_plot_no && !a.rs_plot_no);
+        const style = isSelected
+          ? { color: "#006a4e", weight: 4, fillColor: "#22c55e", fillOpacity: 0.28 }
+          : isMs
+            ? { color: "#7c3aed", weight: 2.5, fillColor: "#a78bfa", fillOpacity: 0.18 }
+            : { color: "#f59e0b", weight: 2, fillColor: "#fbbf24", fillOpacity: 0.08 };
+        const item = L.geoJSON(geojson, { style }).addTo(target);
+        const label = a.rs_plot_no
+          ? `RS ${a.rs_plot_no}`
+          : a.ms_plot_no
+            ? `MS ${a.ms_plot_no}`
+            : isMs
+              ? `MS ${a.plot_no ?? ""}`
+              : `Plot ${a.plot_no ?? ""}`;
+        item.bindPopup(`<strong>${label}</strong><br/>${String(a.address_search || "")}`);
       }
       const selectedBounds = selectedLayer.getBounds();
       const allBounds = boundaries.getBounds();
@@ -74,11 +78,11 @@ export default function PlotMap({ feature, features = [] }: { feature: RajukPlot
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-2">
       <div className="inline-flex rounded-lg border bg-white p-0.5 text-xs font-semibold"><button type="button" onClick={() => setBase("street")} className={`rounded-md px-3 py-1.5 ${base === "street" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Street</button><button type="button" onClick={() => setBase("satellite")} className={`rounded-md px-3 py-1.5 ${base === "satellite" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Satellite</button></div>
-      <label className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"><input type="checkbox" checked={showRs} onChange={e => setShowRs(e.target.checked)}/> RS Mauza layer</label>
-      <label className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"><input type="checkbox" checked={showMs} onChange={e => setShowMs(e.target.checked)}/> MS Mauza layer</label>
+      <label className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800"><input type="checkbox" checked={showRs} onChange={e => setShowRs(e.target.checked)}/> RS Mauza tiles</label>
+      <label className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800"><input type="checkbox" checked={showMs} onChange={e => setShowMs(e.target.checked)}/> MS Mauza tiles</label>
       {mapsLink && <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-lg bg-[#006a4e] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Open in Google Maps</a>}
     </div>
     <div ref={mapRef} className="h-[360px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 md:h-[420px]" aria-label="Plot boundaries map" />
-    <p className="text-xs text-slate-500">All returned plot boundaries are shown on the map; the selected plot is highlighted. RAJUK tiles load through our server proxy.</p>
+    <p className="text-xs text-slate-500">Selected plot is highlighted (green). MS plot boundaries appear in purple when available. Toggle RS/MS Mauza tile layers above. Tiles load via server proxy.</p>
   </div>;
 }
