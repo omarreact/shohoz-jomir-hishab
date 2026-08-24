@@ -33,10 +33,17 @@ const DAP_BOUNDS: [[number, number], [number, number]] = [
 
 const MIN_ZOOM_FOR_VECTOR = 15;
 
-const BASEMAPS: Record<
-  BasemapKey,
-  { label: string; url: string; attribution: string; maxZoom?: number; maxNativeZoom?: number }
-> = {
+type BasemapDef = {
+  label: string;
+  url: string;
+  attribution: string;
+  maxZoom?: number;
+  maxNativeZoom?: number;
+  subdomains?: string;
+  bounds?: [[number, number], [number, number]];
+};
+
+const BASEMAPS: Record<BasemapKey, BasemapDef> = {
   osm: {
     label: "OpenStreetMap",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -55,12 +62,18 @@ const BASEMAPS: Record<
     attribution: "© Esri",
     maxZoom: 21,
   },
+  // Landsat WELD annual has no 2003 epoch in GIBS (404). Use MODIS Terra True Color for 2003.
   satellite2003: {
     label: "স্যাটেলাইট ২০০৩",
-    url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual/default/2003-12-31/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg",
-    attribution: "© NASA GIBS / Landsat WELD 2003",
+    url: "https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-06-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    attribution: "© NASA GIBS / MODIS Terra 2003-06-15",
     maxZoom: 21,
-    maxNativeZoom: 12,
+    maxNativeZoom: 9,
+    subdomains: "abc",
+    bounds: [
+      [-85.0511287776, -179.999999975],
+      [85.0511287776, 179.999999975],
+    ],
   },
 };
 
@@ -155,7 +168,11 @@ function createBasemapLayer(Leaflet: typeof import("leaflet"), key: BasemapKey):
     attribution: def.attribution,
     maxZoom: def.maxZoom ?? 21,
     maxNativeZoom: def.maxNativeZoom,
+    subdomains: def.subdomains,
+    bounds: def.bounds,
     crossOrigin: true,
+    errorTileUrl:
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
   });
 }
 
