@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { Map as LeafletMap, TileLayer, GeoJSON as LeafletGeoJSON, Circle, CircleMarker } from "leaflet";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import styles from "./GeospatialMap.module.css";
 
 type Tab = "layers" | "basemap" | "results";
@@ -26,6 +27,7 @@ type LayerDef = {
   label: string;
   description: string;
   color: string;
+  /** Default for authenticated Present View */
   defaultVisible: boolean;
 };
 
@@ -38,19 +40,44 @@ const LAYERS: LayerDef[] = [
   { key: "transport", label: "Transport Network", description: "Transport network tiles", color: "#dc2626", defaultVisible: false },
 ];
 
+/** Public visitor: only RS + MS MapServer tiles at full opacity */
+const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
+  dap: false,
+  rs: true,
+  ms: true,
+  flood: false,
+  boundary: false,
+  transport: false,
+};
+
+const PUBLIC_LAYER_OPACITY: Record<LayerKey, number> = {
+  dap: 1,
+  rs: 1,
+  ms: 1,
+  flood: 1,
+  boundary: 1,
+  transport: 1,
+};
+
+const ADVANCED_LAYER_VISIBILITY = Object.fromEntries(
+  LAYERS.map((l) => [l.key, l.defaultVisible]),
+) as Record<LayerKey, boolean>;
+
+const ADVANCED_LAYER_OPACITY = Object.fromEntries(
+  LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78]),
+) as Record<LayerKey, number>;
+
 const DAP_BOUNDS: [[number, number], [number, number]] = [
   [23.5527, 90.2079],
   [24.1033, 90.6041],
 ];
 
-/** Google Earth historical focus (2003-01-17) from user link */
 const HISTORIC_2003_CENTER: [number, number] = [23.82810618, 90.48911986];
 const HISTORIC_2003_ZOOM = 11;
 const GOOGLE_EARTH_2003_URL =
   "https://earth.google.com/web/@23.82810618,90.48911986,3.60010157a,3337.57801622d,35y,-0h,0t,0r/data=ChYqEAgBEgoyMDAzLTAxLTE3GAFCAggBOgMKATBCAggASg0I____________ARAA?authuser=0";
 
 const MIN_ZOOM_FOR_VECTOR = 15;
-
 const EMPTY_FC = { type: "FeatureCollection" as const, features: [] as never[] };
 
 type BasemapDef = {
@@ -81,8 +108,6 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     attribution: "© Esri",
     maxZoom: 21,
   },
-  // NASA GIBS MODIS Terra — same epoch as Google Earth historical (2003-01-17).
-  // Google Earth commercial tiles cannot be embedded; this is the public alternative.
   satellite2003: {
     label: "স্যাটেলাইট ২০০৩",
     url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
@@ -91,6 +116,9 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     maxNativeZoom: 9,
   },
 };
+
+/** Basemaps available without login */
+const PUBLIC_BASEMAP_KEYS: BasemapKey[] = ["osm", "satellite"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LeafletNS = any;
@@ -181,9 +209,7 @@ function hasRings(f: RajukPlotFeature): boolean {
 
 function toGeoJson(feature: RajukPlotFeature) {
   const rings = feature.geometry?.rings;
-  if (!Array.isArray(rings) || rings.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(rings) || rings.length === 0) return null;
   return {
     type: "Feature" as const,
     geometry: { type: "Polygon" as const, coordinates: rings },
@@ -215,6 +241,10 @@ function createBasemapLayer(L: LeafletNS, key: BasemapKey): TileLayer {
 }
 
 export default function GeospatialMap() {
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  /** Full Present View only when authenticated */
+  const isAdvanced = isLoggedIn;
+
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const basemapRef = useRef<TileLayer | null>(null);
@@ -227,18 +257,15 @@ export default function GeospatialMap() {
   const locationMarkerRef = useRef<CircleMarker | null>(null);
   const accuracyCircleRef = useRef<Circle | null>(null);
   const loadExtentRef = useRef<() => void>(() => undefined);
+  const isAdvancedRef = useRef(false);
 
   const [tab, setTab] = useState<Tab>("layers");
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [layers, setLayers] = useState<Record<LayerKey, boolean>>(
-    () => Object.fromEntries(LAYERS.map((l) => [l.key, l.defaultVisible])) as Record<LayerKey, boolean>,
-  );
-  const [opacity, setOpacity] = useState<Record<LayerKey, number>>(
-    () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78])) as Record<LayerKey, number>,
-  );
-  const [showRsBoundary, setShowRsBoundary] = useState(true);
-  const [showMsBoundary, setShowMsBoundary] = useState(true);
-  const [basemap, setBasemap] = useState<BasemapKey>("satellite");
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [layers, setLayers] = useState<Record<LayerKey, boolean>>(PUBLIC_LAYER_VISIBILITY);
+  const [opacity, setOpacity] = useState<Record<LayerKey, number>>(PUBLIC_LAYER_OPACITY);
+  const [showRsBoundary, setShowRsBoundary] = useState(false);
+  const [showMsBoundary, setShowMsBoundary] = useState(false);
+  const [basemap, setBasemap] = useState<BasemapKey>("osm");
   const [plotNo, setPlotNo] = useState("");
   const [searching, setSearching] = useState(false);
   const [identifyMode, setIdentifyMode] = useState(true);
@@ -249,8 +276,10 @@ export default function GeospatialMap() {
   const [initError, setInitError] = useState<string | null>(null);
   const [vectorStatus, setVectorStatus] = useState("");
   const [locating, setLocating] = useState(false);
+  const [publicResultsOpen, setPublicResultsOpen] = useState(true);
 
   identifyModeRef.current = identifyMode;
+  isAdvancedRef.current = isAdvanced;
 
   const rsResults = useMemo(() => results.filter(isRsFeature), [results]);
   const msResults = useMemo(() => results.filter(isMsFeature), [results]);
@@ -260,14 +289,33 @@ export default function GeospatialMap() {
     window.setTimeout(() => setToast(""), 4000);
   }, []);
 
+  /** Switch public ↔ advanced defaults when auth settles (no fake login). */
+  useEffect(() => {
+    if (authLoading) return;
+    if (isLoggedIn) {
+      setLayers({ ...ADVANCED_LAYER_VISIBILITY });
+      setOpacity({ ...ADVANCED_LAYER_OPACITY });
+      setShowRsBoundary(true);
+      setShowMsBoundary(true);
+      setPanelOpen(true);
+      setBasemap((b) => (b === "osm" ? "satellite" : b));
+    } else {
+      setLayers({ ...PUBLIC_LAYER_VISIBILITY });
+      setOpacity({ ...PUBLIC_LAYER_OPACITY });
+      setShowRsBoundary(false);
+      setShowMsBoundary(false);
+      setPanelOpen(false);
+      setBasemap((b) => (PUBLIC_BASEMAP_KEYS.includes(b) ? b : "osm"));
+    }
+  }, [isLoggedIn, authLoading]);
+
   const selectBasemap = useCallback(
     (key: BasemapKey) => {
+      if (!isAdvancedRef.current && !PUBLIC_BASEMAP_KEYS.includes(key)) return;
       setBasemap(key);
       if (key === "satellite2003") {
         const map = mapRef.current;
-        if (map) {
-          map.setView(HISTORIC_2003_CENTER, HISTORIC_2003_ZOOM, { animate: true });
-        }
+        if (map) map.setView(HISTORIC_2003_CENTER, HISTORIC_2003_ZOOM, { animate: true });
         notify("স্যাটেলাইট ২০০৩ · NASA MODIS Terra (2003-01-17)");
       }
     },
@@ -291,13 +339,20 @@ export default function GeospatialMap() {
       const bounds = highlight.getBounds();
       if (bounds?.isValid?.()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
     } catch {
-      /* ignore bad geometry */
+      /* ignore */
     }
   }, []);
 
   const loadExtentVectors = useCallback(async () => {
     const map = mapRef.current;
     if (!map || !rsVectorRef.current || !msVectorRef.current) return;
+    // Public mode: no FeatureServer boundary overlays (tiles + identify only)
+    if (!isAdvancedRef.current) {
+      rsVectorRef.current.clearLayers();
+      msVectorRef.current.clearLayers();
+      setVectorStatus("");
+      return;
+    }
     if (map.getZoom() < MIN_ZOOM_FOR_VECTOR) {
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
@@ -330,12 +385,10 @@ export default function GeospatialMap() {
       const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
       const rs = features.filter(isRsFeature);
       const ms = features.filter(isMsFeature);
-
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
       if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
       if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
-
       setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
     } catch (error) {
       setVectorStatus(error instanceof Error ? error.message : "Boundary load failed");
@@ -355,7 +408,7 @@ export default function GeospatialMap() {
         try {
           await import("leaflet/dist/leaflet.css");
         } catch {
-          /* CSS optional */
+          /* optional */
         }
         if (disposed || !mapElement.current) return;
 
@@ -375,7 +428,9 @@ export default function GeospatialMap() {
         });
         map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
         mapRef.current = map;
-        const base = createBasemapLayer(L, "satellite").addTo(map);
+
+        // Public default basemap: OpenStreetMap
+        const base = createBasemapLayer(L, "osm").addTo(map);
         try {
           base.bringToBack();
         } catch {
@@ -383,17 +438,18 @@ export default function GeospatialMap() {
         }
         basemapRef.current = base;
 
+        // Create all MapServer tile layers; only RS+MS start on the map (public)
         LAYERS.forEach((definition) => {
           const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
             maxZoom: 21,
-            opacity: definition.key === "ms" ? 0.72 : 0.78,
+            opacity: PUBLIC_LAYER_OPACITY[definition.key],
             crossOrigin: true,
             attribution: "LandBD / RAJUK",
             errorTileUrl:
               "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
           });
           layerRefs.current[definition.key] = tile;
-          if (definition.defaultVisible) tile.addTo(map);
+          if (PUBLIC_LAYER_VISIBILITY[definition.key]) tile.addTo(map);
         });
 
         const rsVector = L.geoJSON(EMPTY_FC, {
@@ -443,6 +499,7 @@ export default function GeospatialMap() {
         map.on("moveend", scheduleExtent);
         map.on("zoomend", scheduleExtent);
 
+        // Plot click → identify RS (FS/0) + MS (FS/5) — available to everyone
         map.on("click", async (event: { latlng: { lat: number; lng: number } }) => {
           if (!identifyModeRef.current) return;
           setSearching(true);
@@ -454,14 +511,15 @@ export default function GeospatialMap() {
             if (!response.ok) throw new Error(data.error || "Identify failed");
             const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
             setResults(features);
+            setPublicResultsOpen(true);
             setTab("results");
-            setPanelOpen(true);
+            if (isAdvancedRef.current) setPanelOpen(true);
             if (features.length) {
               setSelected(features[0]);
               paintHighlight(features);
               const rsN = features.filter(isRsFeature).length;
               const msN = features.filter(isMsFeature).length;
-              notify(`পাওয়া গেছে: ${rsN} RS · ${msN} MS`);
+              notify(`ফলাফল — ${rsN} RS · ${msN} MS`);
             } else {
               highlight.clearLayers();
               notify("এই অবস্থানে কোনো RS/MS প্লট পাওয়া যায়নি");
@@ -515,7 +573,7 @@ export default function GeospatialMap() {
 
   useEffect(() => {
     if (mapReady) void loadExtentVectors();
-  }, [loadExtentVectors, mapReady]);
+  }, [loadExtentVectors, mapReady, isAdvanced]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -534,7 +592,7 @@ export default function GeospatialMap() {
         }
         basemapRef.current = next;
       } catch {
-        /* ignore basemap swap errors */
+        /* ignore */
       }
     });
     return () => {
@@ -548,9 +606,10 @@ export default function GeospatialMap() {
     LAYERS.forEach(({ key }) => {
       const layer = layerRefs.current[key];
       if (!layer) return;
-      layer.setOpacity(opacity[key]);
-      if (layers[key] && !map.hasLayer(layer)) layer.addTo(map);
-      if (!layers[key] && map.hasLayer(layer)) map.removeLayer(layer);
+      layer.setOpacity(opacity[key] ?? 1);
+      const want = !!layers[key];
+      if (want && !map.hasLayer(layer)) layer.addTo(map);
+      if (!want && map.hasLayer(layer)) map.removeLayer(layer);
     });
   }, [layers, opacity, mapReady]);
 
@@ -578,13 +637,14 @@ export default function GeospatialMap() {
       setResults(features);
       setTab("results");
       setPanelOpen(true);
+      setPublicResultsOpen(true);
       if (!features.length) {
         notify("কোনো RS/MS প্লট পাওয়া যায়নি");
         return;
       }
       setSelected(features[0]);
       paintHighlight(features);
-      notify(`${features.filter(isRsFeature).length} RS · ${features.filter(isMsFeature).length} MS`);
+      notify(`ফলাফল — ${features.filter(isRsFeature).length} RS · ${features.filter(isMsFeature).length} MS`);
     } catch (error) {
       notify(error instanceof Error ? error.message : "প্লট সার্চ ব্যর্থ হয়েছে");
     } finally {
@@ -646,9 +706,7 @@ export default function GeospatialMap() {
             fillColor: "#22c55e",
             fillOpacity: 0.9,
           }).addTo(map);
-          marker
-            .bindPopup(`<strong>আপনার অবস্থান</strong><br/>±${Math.round(accuracy || 0)} মিটার`)
-            .openPopup();
+          marker.bindPopup(`<strong>আপনার অবস্থান</strong><br/>±${Math.round(accuracy || 0)} মিটার`).openPopup();
           locationMarkerRef.current = marker;
           const circle = L.circle([latitude, longitude], {
             radius: Math.max(accuracy || 30, 15),
@@ -738,6 +796,48 @@ export default function GeospatialMap() {
     );
   }
 
+  function ResultsBody() {
+    return (
+      <>
+        {!results.length && (
+          <div className={styles.empty}>ম্যাপে ক্লিক করুন — RS (FS/0) ও MS (FS/5) ফলাফল দেখাবে।</div>
+        )}
+        {results.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
+            <div className={styles.publicResultsSection}>
+              <div className={styles.publicResultsSectionTitle} style={{ color: "#2563eb" }}>
+                RS (FS/0)
+              </div>
+              {rsResults.length ? (
+                rsResults.map((f) => (
+                  <PlotCard key={`rs-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="rs" />
+                ))
+              ) : (
+                <div className={styles.empty} style={{ fontSize: 12 }}>
+                  এই অবস্থানে RS নেই
+                </div>
+              )}
+            </div>
+            <div className={styles.publicResultsSection}>
+              <div className={styles.publicResultsSectionTitle} style={{ color: "#7c3aed" }}>
+                MS (FS/5)
+              </div>
+              {msResults.length ? (
+                msResults.map((f) => (
+                  <PlotCard key={`ms-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="ms" />
+                ))
+              ) : (
+                <div className={styles.empty} style={{ fontSize: 12 }}>
+                  এই অবস্থানে MS নেই
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   if (initError) {
     return (
       <div className={styles.mapShell} style={{ display: "grid", placeItems: "center", padding: 24 }}>
@@ -755,279 +855,292 @@ export default function GeospatialMap() {
   return (
     <section className={styles.mapShell} aria-label="নগর পরিকল্পনা মানচিত্র">
       <div ref={mapElement} className={styles.mapCanvas} />
-      <form
-        className={styles.topSearch}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void runSearch();
-        }}
-      >
-        <Search size={16} aria-hidden="true" />
-        <input
-          className={styles.searchInput}
-          value={plotNo}
-          onChange={(e) => setPlotNo(e.target.value.replace(/\D/g, ""))}
-          placeholder="প্লট নম্বর (RS + MS)…"
-          inputMode="numeric"
-          aria-label="প্লট নম্বর"
-        />
-        <button className={styles.searchButton} type="submit" disabled={searching}>
-          <Search size={15} />
-          <span>{searching ? "খুঁজছি" : "খুঁজুন"}</span>
-        </button>
-      </form>
-      <button
-        type="button"
-        className={`${styles.iconButton} ${styles.mobilePanelButton}`}
-        onClick={() => setPanelOpen((value) => !value)}
-        aria-label={panelOpen ? "প্যানেল বন্ধ করুন" : "প্যানেল খুলুন"}
-      >
-        <PanelRight size={17} />
-      </button>
-      <button
-        type="button"
-        className={`${styles.locateButton} ${locating ? styles.locateButtonActive : ""}`}
-        onClick={goToMyLocation}
-        disabled={locating || !mapReady}
-        title="বর্তমান অবস্থান"
-        aria-label="বর্তমান অবস্থানে যান"
-      >
-        {locating ? <Loader2 size={17} className="animate-spin" /> : <LocateFixed size={17} />}
-      </button>
-      {identifyMode && (
-        <div className={styles.identifyBanner}>
-          <MousePointer2 size={15} /> ম্যাপে ক্লিক করুন — RS ও MS একসাথে দেখাবে{" "}
-          <button type="button" className={styles.iconButton} onClick={() => setIdentifyMode(false)} aria-label="Identify বন্ধ">
-            <X size={14} />
-          </button>
+
+      {/* —— PUBLIC: compact basemap (OSM | Satellite) —— */}
+      {!isAdvanced && (
+        <div className={styles.publicBasemap} role="group" aria-label="বেসম্যাপ">
+          <span className={styles.publicBasemapLabel}>বেসম্যাপ</span>
+          {PUBLIC_BASEMAP_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`${styles.publicBasemapBtn} ${basemap === key ? styles.publicBasemapBtnActive : ""}`}
+              onClick={() => selectBasemap(key)}
+            >
+              {BASEMAPS[key].label}
+            </button>
+          ))}
         </div>
       )}
 
-      <aside className={`${styles.panel} ${!panelOpen ? styles.panelHidden : ""}`}>
-        <div className={styles.tabs} role="tablist">
-          <button type="button" className={`${styles.tab} ${tab === "layers" ? styles.tabActive : ""}`} onClick={() => setTab("layers")}>
-            <Layers3 size={14} /> লেয়ার
-          </button>
-          <button type="button" className={`${styles.tab} ${tab === "basemap" ? styles.tabActive : ""}`} onClick={() => setTab("basemap")}>
-            <MapIcon size={14} /> বেসম্যাপ
-          </button>
-          <button type="button" className={`${styles.tab} ${tab === "results" ? styles.tabActive : ""}`} onClick={() => setTab("results")}>
-            <Database size={14} /> ফলাফল
-          </button>
-        </div>
-        <div className={styles.panelBody}>
-          {tab === "layers" && (
-            <>
-              <div className={styles.sectionTitle}>MapServer tiles</div>
-              {LAYERS.map((layer) => (
-                <div className={styles.layerCard} key={layer.key}>
-                  <div className={styles.layerRow}>
-                    <span className={styles.layerSwatch} style={{ background: layer.color }} />
-                    <div className={styles.layerInfo}>
-                      <div className={styles.layerName}>{layer.label}</div>
-                      <div className={styles.layerMeta}>{layer.description}</div>
-                    </div>
-                    <label className={styles.toggle}>
-                      <input
-                        type="checkbox"
-                        checked={layers[layer.key]}
-                        onChange={(e) => setLayers((current) => ({ ...current, [layer.key]: e.target.checked }))}
-                      />
-                      <span className={styles.toggleTrack} />
-                    </label>
-                  </div>
-                  <div className={styles.opacityRow}>
-                    <span>অপাসিটি</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step=".05"
-                      value={opacity[layer.key]}
-                      onChange={(e) => setOpacity((current) => ({ ...current, [layer.key]: Number(e.target.value) }))}
-                    />
-                    <span>{Math.round(opacity[layer.key] * 100)}%</span>
-                  </div>
-                </div>
-              ))}
-              <div className={styles.sectionTitle} style={{ marginTop: 16 }}>
-                FeatureServer boundaries
-              </div>
-              <div className={styles.layerCard}>
-                <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
-                  <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>RS polygons (FS/0)</div>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
-                    <span className={styles.toggleTrack} />
-                  </label>
-                </div>
-              </div>
-              <div className={styles.layerCard}>
-                <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
-                  <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>MS polygons (FS/5)</div>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
-                    <span className={styles.toggleTrack} />
-                  </label>
-                </div>
-              </div>
-              {vectorStatus && <p style={{ margin: "8px 0 0", fontSize: 11, opacity: 0.7 }}>{vectorStatus}</p>}
-            </>
-          )}
-
-          {tab === "basemap" && (
-            <>
-              <div className={styles.sectionTitle}>বেসম্যাপ</div>
-              <div className={styles.basemapGrid}>
-                {(Object.entries(BASEMAPS) as [BasemapKey, (typeof BASEMAPS)[BasemapKey]][]).map(([key, value]) => (
-                  <button
-                    type="button"
-                    key={key}
-                    className={`${styles.baseButton} ${basemap === key ? styles.baseActive : ""}`}
-                    onClick={() => selectBasemap(key)}
-                  >
-                    <span className={styles.baseIcon}>{basemapIcon(key)}</span>
-                    {value.label}
-                  </button>
-                ))}
-              </div>
-              {basemap === "satellite2003" && (
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: 10,
-                    borderRadius: 8,
-                    fontSize: 11,
-                    lineHeight: 1.45,
-                    background: "rgba(15,23,42,.06)",
-                    border: "1px solid rgba(148,163,184,.35)",
-                  }}
-                >
-                  <strong>NASA MODIS Terra · ১৭ জানুয়ারি ২০০৩</strong>
-                  <br />
-                  Google Earth-এর historical তারিখের সাথে মিলিয়ে public টাইল। রেজোলিউশন ~২৫০ মি
-                  (জুম ৯ পর্যন্ত তীক্ষ্ণ)। উচ্চ রেজোলিউশন দেখতে:
-                  <a
-                    href={GOOGLE_EARTH_2003_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      marginTop: 6,
-                      color: "#2563eb",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <ExternalLink size={12} /> Google Earth ২০০৩ খুলুন
-                  </a>
-                </div>
-              )}
-              <div className={styles.sectionTitle}>ইন্টার‌্যাকশন</div>
-              <button
-                type="button"
-                className={`${styles.baseButton} ${identifyMode ? styles.baseActive : ""}`}
-                onClick={() => setIdentifyMode((v) => !v)}
-              >
-                <MousePointer2 size={17} />
-                <br />
-                {identifyMode ? "Identify চালু (ক্লিক = RS+MS)" : "Identify বন্ধ"}
-              </button>
-            </>
-          )}
-
-          {tab === "results" && (
-            <>
-              <div className={styles.sectionTitle}>
-                ফলাফল — {rsResults.length} RS · {msResults.length} MS
-              </div>
-              {!results.length && (
-                <div className={styles.empty}>
-                  ম্যাপে ক্লিক করুন অথবা প্লট নম্বর সার্চ করুন। RS ও MS পাশাপাশি দেখাবে।
-                </div>
-              )}
-
-              {results.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#2563eb" }}>RS (FS/0)</div>
-                    {rsResults.length ? (
-                      rsResults.map((f) => (
-                        <PlotCard key={`rs-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="rs" />
-                      ))
-                    ) : (
-                      <div className={styles.empty} style={{ fontSize: 12 }}>
-                        এই অবস্থানে RS নেই
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#7c3aed" }}>MS (FS/5)</div>
-                    {msResults.length ? (
-                      msResults.map((f) => (
-                        <PlotCard key={`ms-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="ms" />
-                      ))
-                    ) : (
-                      <div className={styles.empty} style={{ fontSize: 12 }}>
-                        এই অবস্থানে MS নেই
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </aside>
-
-      <div className={styles.bottomBar}>
-        <span>
-          <strong>নগর পরিকল্পনা</strong>
-        </span>
-        <span className={styles.separator} />
-        <span>
-          RS:{" "}
-          <strong>
-            {selected && isRsFeature(selected) ? rsNumber(selected) : rsResults[0] ? rsNumber(rsResults[0]) : "—"}
-          </strong>
-        </span>
-        <span className={styles.separator} />
-        <span>
-          MS:{" "}
-          <strong>
-            {selected && isMsFeature(selected) ? msNumber(selected) : msResults[0] ? msNumber(msResults[0]) : "—"}
-          </strong>
-        </span>
-        <button type="button" className={styles.iconButton} onClick={resetMap} title="রিসেট">
-          <RefreshCw size={14} />
-        </button>
+      {/* PUBLIC locate */}
+      {!isAdvanced && (
         <button
           type="button"
-          className={styles.iconButton}
+          className={`${styles.locateButton} ${styles.publicLocate} ${locating ? styles.locateButtonActive : ""}`}
           onClick={goToMyLocation}
           disabled={locating || !mapReady}
           title="বর্তমান অবস্থান"
           aria-label="বর্তমান অবস্থানে যান"
         >
-          {locating ? <Loader2 size={14} className="animate-spin" /> : <LocateFixed size={14} />}
+          {locating ? <Loader2 size={17} className="animate-spin" /> : <LocateFixed size={17} />}
         </button>
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={() => setIdentifyMode((v) => !v)}
-          title="Identify"
-          aria-label="Identify টগল"
-        >
-          <MousePointer2 size={14} />
-        </button>
-      </div>
+      )}
+
+      {/* PUBLIC floating results */}
+      {!isAdvanced && results.length > 0 && publicResultsOpen && (
+        <div className={styles.publicResults} role="dialog" aria-label="প্লট ফলাফল">
+          <div className={styles.publicResultsHeader}>
+            <div>
+              <div className={styles.publicResultsTitle}>ফলাফল</div>
+              <div className={styles.publicResultsSub}>
+                {rsResults.length} RS · {msResults.length} MS
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={() => setPublicResultsOpen(false)}
+              aria-label="ফলাফল বন্ধ"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className={styles.publicResultsBody}>
+            <ResultsBody />
+          </div>
+        </div>
+      )}
+
+      {!isAdvanced && !results.length && (
+        <div className={styles.publicHint}>
+          <strong>RS + MS মৌজা মানচিত্র</strong>
+          <br />
+          বেসম্যাপ বদলান · প্লটে ক্লিক করে ফলাফল দেখুন
+        </div>
+      )}
+
+      {/* —— AUTHENTICATED Present View —— */}
+      {isAdvanced && (
+        <>
+          <form
+            className={styles.topSearch}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void runSearch();
+            }}
+          >
+            <Search size={16} aria-hidden="true" />
+            <input
+              className={styles.searchInput}
+              value={plotNo}
+              onChange={(e) => setPlotNo(e.target.value.replace(/\D/g, ""))}
+              placeholder="প্লট নম্বর (RS + MS)…"
+              inputMode="numeric"
+              aria-label="প্লট নম্বর"
+            />
+            <button className={styles.searchButton} type="submit" disabled={searching}>
+              <Search size={15} />
+              <span>{searching ? "খুঁজছি" : "খুঁজুন"}</span>
+            </button>
+          </form>
+
+          <button
+            type="button"
+            className={`${styles.iconButton} ${styles.mobilePanelButton}`}
+            onClick={() => setPanelOpen((v) => !v)}
+            aria-label={panelOpen ? "প্যানেল বন্ধ" : "প্যানেল খুলুন"}
+          >
+            <PanelRight size={17} />
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.locateButton} ${locating ? styles.locateButtonActive : ""}`}
+            onClick={goToMyLocation}
+            disabled={locating || !mapReady}
+            title="বর্তমান অবস্থান"
+          >
+            {locating ? <Loader2 size={17} className="animate-spin" /> : <LocateFixed size={17} />}
+          </button>
+
+          {identifyMode && (
+            <div className={styles.identifyBanner}>
+              <MousePointer2 size={15} /> ম্যাপে ক্লিক করুন — RS ও MS একসাথে দেখাবে{" "}
+              <button type="button" className={styles.iconButton} onClick={() => setIdentifyMode(false)} aria-label="Identify বন্ধ">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <aside className={`${styles.panel} ${!panelOpen ? styles.panelHidden : ""}`}>
+            <div className={styles.tabs} role="tablist">
+              <button type="button" className={`${styles.tab} ${tab === "layers" ? styles.tabActive : ""}`} onClick={() => setTab("layers")}>
+                <Layers3 size={14} /> লেয়ার
+              </button>
+              <button type="button" className={`${styles.tab} ${tab === "basemap" ? styles.tabActive : ""}`} onClick={() => setTab("basemap")}>
+                <MapIcon size={14} /> বেসম্যাপ
+              </button>
+              <button type="button" className={`${styles.tab} ${tab === "results" ? styles.tabActive : ""}`} onClick={() => setTab("results")}>
+                <Database size={14} /> ফলাফল
+              </button>
+            </div>
+            <div className={styles.panelBody}>
+              {tab === "layers" && (
+                <>
+                  <div className={styles.sectionTitle}>MapServer tiles</div>
+                  {LAYERS.map((layer) => (
+                    <div className={styles.layerCard} key={layer.key}>
+                      <div className={styles.layerRow}>
+                        <span className={styles.layerSwatch} style={{ background: layer.color }} />
+                        <div className={styles.layerInfo}>
+                          <div className={styles.layerName}>{layer.label}</div>
+                          <div className={styles.layerMeta}>{layer.description}</div>
+                        </div>
+                        <label className={styles.toggle}>
+                          <input
+                            type="checkbox"
+                            checked={layers[layer.key]}
+                            onChange={(e) => setLayers((c) => ({ ...c, [layer.key]: e.target.checked }))}
+                          />
+                          <span className={styles.toggleTrack} />
+                        </label>
+                      </div>
+                      <div className={styles.opacityRow}>
+                        <span>অপাসিটি</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step=".05"
+                          value={opacity[layer.key]}
+                          onChange={(e) => setOpacity((c) => ({ ...c, [layer.key]: Number(e.target.value) }))}
+                        />
+                        <span>{Math.round(opacity[layer.key] * 100)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className={styles.sectionTitle} style={{ marginTop: 16 }}>
+                    FeatureServer boundaries
+                  </div>
+                  <div className={styles.layerCard}>
+                    <div className={styles.layerRow}>
+                      <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
+                      <div className={styles.layerInfo}>
+                        <div className={styles.layerName}>RS polygons (FS/0)</div>
+                      </div>
+                      <label className={styles.toggle}>
+                        <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
+                        <span className={styles.toggleTrack} />
+                      </label>
+                    </div>
+                  </div>
+                  <div className={styles.layerCard}>
+                    <div className={styles.layerRow}>
+                      <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
+                      <div className={styles.layerInfo}>
+                        <div className={styles.layerName}>MS polygons (FS/5)</div>
+                      </div>
+                      <label className={styles.toggle}>
+                        <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
+                        <span className={styles.toggleTrack} />
+                      </label>
+                    </div>
+                  </div>
+                  {vectorStatus && <p style={{ margin: "8px 0 0", fontSize: 11, opacity: 0.7 }}>{vectorStatus}</p>}
+                </>
+              )}
+
+              {tab === "basemap" && (
+                <>
+                  <div className={styles.sectionTitle}>বেসম্যাপ</div>
+                  <div className={styles.basemapGrid}>
+                    {(Object.entries(BASEMAPS) as [BasemapKey, (typeof BASEMAPS)[BasemapKey]][]).map(([key, value]) => (
+                      <button
+                        type="button"
+                        key={key}
+                        className={`${styles.baseButton} ${basemap === key ? styles.baseActive : ""}`}
+                        onClick={() => selectBasemap(key)}
+                      >
+                        <span className={styles.baseIcon}>{basemapIcon(key)}</span>
+                        {value.label}
+                      </button>
+                    ))}
+                  </div>
+                  {basemap === "satellite2003" && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: 10,
+                        borderRadius: 8,
+                        fontSize: 11,
+                        lineHeight: 1.45,
+                        background: "rgba(15,23,42,.06)",
+                        border: "1px solid rgba(148,163,184,.35)",
+                      }}
+                    >
+                      <strong>NASA MODIS Terra · ১৭ জানুয়ারি ২০০৩</strong>
+                      <br />
+                      <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, color: "#2563eb", fontWeight: 600 }}>
+                        <ExternalLink size={12} /> Google Earth ২০০৩
+                      </a>
+                    </div>
+                  )}
+                  <div className={styles.sectionTitle}>ইন্টার‌্যাকশন</div>
+                  <button
+                    type="button"
+                    className={`${styles.baseButton} ${identifyMode ? styles.baseActive : ""}`}
+                    onClick={() => setIdentifyMode((v) => !v)}
+                  >
+                    <MousePointer2 size={17} />
+                    <br />
+                    {identifyMode ? "Identify চালু" : "Identify বন্ধ"}
+                  </button>
+                </>
+              )}
+
+              {tab === "results" && (
+                <>
+                  <div className={styles.sectionTitle}>
+                    ফলাফল — {rsResults.length} RS · {msResults.length} MS
+                  </div>
+                  <ResultsBody />
+                </>
+              )}
+            </div>
+          </aside>
+
+          <div className={styles.bottomBar}>
+            <span>
+              <strong>Present View</strong>
+            </span>
+            <span className={styles.separator} />
+            <span>
+              RS:{" "}
+              <strong>
+                {selected && isRsFeature(selected) ? rsNumber(selected) : rsResults[0] ? rsNumber(rsResults[0]) : "—"}
+              </strong>
+            </span>
+            <span className={styles.separator} />
+            <span>
+              MS:{" "}
+              <strong>
+                {selected && isMsFeature(selected) ? msNumber(selected) : msResults[0] ? msNumber(msResults[0]) : "—"}
+              </strong>
+            </span>
+            <button type="button" className={styles.iconButton} onClick={resetMap} title="রিসেট">
+              <RefreshCw size={14} />
+            </button>
+            <button type="button" className={styles.iconButton} onClick={goToMyLocation} disabled={locating || !mapReady}>
+              {locating ? <Loader2 size={14} className="animate-spin" /> : <LocateFixed size={14} />}
+            </button>
+            <button type="button" className={styles.iconButton} onClick={() => setIdentifyMode((v) => !v)}>
+              <MousePointer2 size={14} />
+            </button>
+          </div>
+        </>
+      )}
+
       {toast && (
         <div className={styles.toast} role="status">
           {toast}
