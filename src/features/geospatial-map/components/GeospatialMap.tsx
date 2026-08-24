@@ -197,7 +197,8 @@ export default function GeospatialMap() {
   const [opacity, setOpacity] = useState<Record<LayerKey, number>>(
     () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78])) as Record<LayerKey, number>,
   );
-  const [showRsBoundary, setShowRsBoundary] = useState(true);
+  // Don't open RS polygons (FS/0) first — only MS (FS/5) by default
+  const [showRsBoundary, setShowRsBoundary] = useState(false);
   const [showMsBoundary, setShowMsBoundary] = useState(true);
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
   const [plotNo, setPlotNo] = useState("");
@@ -228,6 +229,10 @@ export default function GeospatialMap() {
     const withGeom = features.filter((f) => f.geometry?.rings?.length);
     if (!withGeom.length) return;
     highlight.addData(featuresToFc(withGeom) as never);
+    // Keep selected RS black line above RS/MS vector polygons
+    if (typeof (highlight as any).bringToFront === "function") {
+      (highlight as any).bringToFront();
+    }
     const bounds = highlight.getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
   }, []);
@@ -249,6 +254,7 @@ export default function GeospatialMap() {
     }
 
     const b = map.getBounds();
+    // Prefer MS-only when RS is off (don't open RS FS/0 first)
     const kind = showRsBoundary && showMsBoundary ? "all" : showRsBoundary ? "rs" : "ms";
     setVectorStatus("Loading plot boundaries…");
     try {
@@ -270,8 +276,21 @@ export default function GeospatialMap() {
 
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
-      if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
+      // Add MS first, then RS — both stay under the black RS highlight line
       if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
+      if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
+
+      // Ensure vector layers stay below highlight (selected RS black line)
+      if (msVectorRef.current && typeof (msVectorRef.current as any).bringToBack === "function") {
+        (msVectorRef.current as any).bringToBack();
+      }
+      if (rsVectorRef.current && typeof (rsVectorRef.current as any).bringToBack === "function") {
+        (rsVectorRef.current as any).bringToBack();
+      }
+      if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
+        (highlightRef.current as any).bringToFront();
+      }
+
       setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
     } catch (error) {
       setVectorStatus(error instanceof Error ? error.message : "Boundary load failed");
@@ -301,15 +320,7 @@ export default function GeospatialMap() {
         if (definition.defaultVisible) tile.addTo(map);
       });
 
-      const rsVector = L.geoJSON(undefined, {
-        style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
-        onEachFeature: (feature, layer) => {
-          const p = (feature.properties || {}) as Record<string, unknown>;
-          const label = present(p.rs_plot_no) ? String(p.rs_plot_no) : present(p.plot_no) ? `RS-${p.plot_no}` : "RS";
-          layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
-        },
-      }).addTo(map);
-
+      // MS polygons (FS/5) first — under highlight; RS polygons (FS/0) optional, also under highlight
       const msVector = L.geoJSON(undefined, {
         style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
         onEachFeature: (feature, layer) => {
@@ -323,16 +334,26 @@ export default function GeospatialMap() {
         },
       }).addTo(map);
 
-      rsVectorRef.current = rsVector;
-      msVectorRef.current = msVector;
+      const rsVector = L.geoJSON(undefined, {
+        style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
+        onEachFeature: (feature, layer) => {
+          const p = (feature.properties || {}) as Record<string, unknown>;
+          const label = present(p.rs_plot_no) ? String(p.rs_plot_no) : present(p.plot_no) ? `RS-${p.plot_no}` : "RS";
+          layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
+        },
+      }).addTo(map);
 
+      msVectorRef.current = msVector;
+      rsVectorRef.current = rsVector;
+
+      // Selected plot: RS = black line on top of FS polygons; MS = purple
       const highlight = L.geoJSON(undefined, {
         style: (feat) => {
           const p = (feat?.properties || {}) as Record<string, unknown>;
           const ms = p._layer_source === "ms" || p.plot_kind === "ms" || present(p.ms_plot_no);
           return ms
             ? { color: "#6d28d9", weight: 3, fillColor: "#a78bfa", fillOpacity: 0.3 }
-            : { color: "#1d4ed8", weight: 3, fillColor: "#93c5fd", fillOpacity: 0.3 };
+            : { color: "#000000", weight: 3.5, fillColor: "#94a3b8", fillOpacity: 0.12 };
         },
       }).addTo(map);
       highlightRef.current = highlight;
@@ -400,6 +421,10 @@ export default function GeospatialMap() {
     if (prev) map.removeLayer(prev);
     import("leaflet").then(({ default: Leaflet }) => {
       basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
+      // Basemap is bottom; re-assert highlight on top after basemap swap
+      if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
+        (highlightRef.current as any).bringToFront();
+      }
     });
   }, [basemap]);
 
@@ -418,10 +443,20 @@ export default function GeospatialMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !rsVectorRef.current || !msVectorRef.current) return;
-    if (showRsBoundary && !map.hasLayer(rsVectorRef.current)) rsVectorRef.current.addTo(map);
-    if (!showRsBoundary && map.hasLayer(rsVectorRef.current)) map.removeLayer(rsVectorRef.current);
+    // MS first in pane order; both under highlight black RS line
     if (showMsBoundary && !map.hasLayer(msVectorRef.current)) msVectorRef.current.addTo(map);
     if (!showMsBoundary && map.hasLayer(msVectorRef.current)) map.removeLayer(msVectorRef.current);
+    if (showRsBoundary && !map.hasLayer(rsVectorRef.current)) rsVectorRef.current.addTo(map);
+    if (!showRsBoundary && map.hasLayer(rsVectorRef.current)) map.removeLayer(rsVectorRef.current);
+    if (msVectorRef.current && typeof (msVectorRef.current as any).bringToBack === "function") {
+      (msVectorRef.current as any).bringToBack();
+    }
+    if (rsVectorRef.current && typeof (rsVectorRef.current as any).bringToBack === "function") {
+      (rsVectorRef.current as any).bringToBack();
+    }
+    if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
+      (highlightRef.current as any).bringToFront();
+    }
   }, [showMsBoundary, showRsBoundary]);
 
   const runSearch = async () => {
@@ -702,24 +737,26 @@ export default function GeospatialMap() {
               </div>
               <div className={styles.layerCard}>
                 <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
+                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
                   <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>RS polygons (FS/0)</div>
+                    <div className={styles.layerName}>MS polygons (FS/5)</div>
+                    <div className={styles.layerMeta}>Default on — under selected RS black line</div>
                   </div>
                   <label className={styles.toggle}>
-                    <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
+                    <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
                     <span className={styles.toggleTrack} />
                   </label>
                 </div>
               </div>
               <div className={styles.layerCard}>
                 <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
+                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
                   <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>MS polygons (FS/5)</div>
+                    <div className={styles.layerName}>RS polygons (FS/0)</div>
+                    <div className={styles.layerMeta}>Off by default — stays under black RS line</div>
                   </div>
                   <label className={styles.toggle}>
-                    <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
+                    <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
                     <span className={styles.toggleTrack} />
                   </label>
                 </div>
