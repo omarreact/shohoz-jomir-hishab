@@ -180,16 +180,6 @@ function createBasemapLayer(Leaflet: typeof import("leaflet"), key: BasemapKey):
   });
 }
 
-function keepHighlightOnTop(highlight: LeafletGeoJSON | null) {
-  try {
-    if (highlight && typeof (highlight as unknown as { bringToFront?: () => void }).bringToFront === "function") {
-      (highlight as unknown as { bringToFront: () => void }).bringToFront();
-    }
-  } catch {
-    /* ignore */
-  }
-}
-
 export default function GeospatialMap() {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -212,8 +202,7 @@ export default function GeospatialMap() {
   const [opacity, setOpacity] = useState<Record<LayerKey, number>>(
     () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78])) as Record<LayerKey, number>,
   );
-  // MS polygons (FS/5) on by default; RS polygons (FS/0) off until toggled
-  const [showRsBoundary, setShowRsBoundary] = useState(false);
+  const [showRsBoundary, setShowRsBoundary] = useState(true);
   const [showMsBoundary, setShowMsBoundary] = useState(true);
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
   const [plotNo, setPlotNo] = useState("");
@@ -245,7 +234,11 @@ export default function GeospatialMap() {
     const withGeom = features.filter((f) => f.geometry?.rings?.length);
     if (!withGeom.length) return;
     highlight.addData(featuresToFc(withGeom) as never);
-    keepHighlightOnTop(highlight);
+    try {
+      (highlight as unknown as { bringToFront: () => void }).bringToFront();
+    } catch {
+      /* ignore */
+    }
     const bounds = highlight.getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
   }, []);
@@ -288,9 +281,8 @@ export default function GeospatialMap() {
 
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
-      if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
       if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
-      keepHighlightOnTop(highlightRef.current);
+      if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
 
       setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
     } catch (error) {
@@ -334,20 +326,6 @@ export default function GeospatialMap() {
           if (definition.defaultVisible) tile.addTo(map);
         });
 
-        // MS (FS/5) then RS (FS/0) — both under selected black RS highlight
-        const msVector = L.geoJSON(null, {
-          style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
-          onEachFeature: (feature, layer) => {
-            const p = (feature.properties || {}) as Record<string, unknown>;
-            const label = present(p.ms_plot_no)
-              ? String(p.ms_plot_no)
-              : present(p.plot_no)
-                ? `MS-${p.plot_no}`
-                : "MS";
-            layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
-          },
-        }).addTo(map);
-
         const rsVector = L.geoJSON(null, {
           style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
           onEachFeature: (feature, layer) => {
@@ -361,8 +339,21 @@ export default function GeospatialMap() {
           },
         }).addTo(map);
 
-        msVectorRef.current = msVector;
+        const msVector = L.geoJSON(null, {
+          style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
+          onEachFeature: (feature, layer) => {
+            const p = (feature.properties || {}) as Record<string, unknown>;
+            const label = present(p.ms_plot_no)
+              ? String(p.ms_plot_no)
+              : present(p.plot_no)
+                ? `MS-${p.plot_no}`
+                : "MS";
+            layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
+          },
+        }).addTo(map);
+
         rsVectorRef.current = rsVector;
+        msVectorRef.current = msVector;
 
         const highlight = L.geoJSON(null, {
           style: (feat) => {
@@ -370,7 +361,7 @@ export default function GeospatialMap() {
             const ms = p._layer_source === "ms" || p.plot_kind === "ms" || present(p.ms_plot_no);
             return ms
               ? { color: "#6d28d9", weight: 3, fillColor: "#a78bfa", fillOpacity: 0.3 }
-              : { color: "#000000", weight: 3.5, fillColor: "#94a3b8", fillOpacity: 0.12 };
+              : { color: "#1d4ed8", weight: 3, fillColor: "#93c5fd", fillOpacity: 0.3 };
           },
         }).addTo(map);
         highlightRef.current = highlight;
@@ -412,7 +403,6 @@ export default function GeospatialMap() {
           }
         });
 
-        // Leaflet needs a second tick when container size settles
         requestAnimationFrame(() => {
           map.invalidateSize();
           scheduleExtent();
@@ -452,7 +442,6 @@ export default function GeospatialMap() {
       const prev = basemapRef.current;
       if (prev) map.removeLayer(prev);
       basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
-      keepHighlightOnTop(highlightRef.current);
     });
     return () => {
       cancelled = true;
@@ -474,11 +463,10 @@ export default function GeospatialMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !rsVectorRef.current || !msVectorRef.current) return;
-    if (showMsBoundary && !map.hasLayer(msVectorRef.current)) msVectorRef.current.addTo(map);
-    if (!showMsBoundary && map.hasLayer(msVectorRef.current)) map.removeLayer(msVectorRef.current);
     if (showRsBoundary && !map.hasLayer(rsVectorRef.current)) rsVectorRef.current.addTo(map);
     if (!showRsBoundary && map.hasLayer(rsVectorRef.current)) map.removeLayer(rsVectorRef.current);
-    keepHighlightOnTop(highlightRef.current);
+    if (showMsBoundary && !map.hasLayer(msVectorRef.current)) msVectorRef.current.addTo(map);
+    if (!showMsBoundary && map.hasLayer(msVectorRef.current)) map.removeLayer(msVectorRef.current);
   }, [showMsBoundary, showRsBoundary, mapReady]);
 
   const runSearch = async () => {
@@ -662,11 +650,7 @@ export default function GeospatialMap() {
         <div style={{ maxWidth: 420, textAlign: "center" }}>
           <p style={{ fontWeight: 700, marginBottom: 8 }}>ম্যাপ লোড হয়নি</p>
           <p style={{ fontSize: 13, opacity: 0.75, marginBottom: 16 }}>{initError}</p>
-          <button
-            type="button"
-            className={styles.searchButton}
-            onClick={() => window.location.reload()}
-          >
+          <button type="button" className={styles.searchButton} onClick={() => window.location.reload()}>
             আবার চেষ্টা করুন
           </button>
         </div>
@@ -777,26 +761,24 @@ export default function GeospatialMap() {
               </div>
               <div className={styles.layerCard}>
                 <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
+                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
                   <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>MS polygons (FS/5)</div>
-                    <div className={styles.layerMeta}>Default on — under selected RS black line</div>
+                    <div className={styles.layerName}>RS polygons (FS/0)</div>
                   </div>
                   <label className={styles.toggle}>
-                    <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
+                    <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
                     <span className={styles.toggleTrack} />
                   </label>
                 </div>
               </div>
               <div className={styles.layerCard}>
                 <div className={styles.layerRow}>
-                  <span className={styles.layerSwatch} style={{ background: "#2563eb" }} />
+                  <span className={styles.layerSwatch} style={{ background: "#7c3aed" }} />
                   <div className={styles.layerInfo}>
-                    <div className={styles.layerName}>RS polygons (FS/0)</div>
-                    <div className={styles.layerMeta}>Off by default — stays under black RS line</div>
+                    <div className={styles.layerName}>MS polygons (FS/5)</div>
                   </div>
                   <label className={styles.toggle}>
-                    <input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} />
+                    <input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} />
                     <span className={styles.toggleTrack} />
                   </label>
                 </div>
@@ -846,23 +828,12 @@ export default function GeospatialMap() {
               )}
 
               {results.length > 0 && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 10,
-                    alignItems: "start",
-                  }}
-                >
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#2563eb" }}>RS (FS/0)</div>
                     {rsResults.length ? (
                       rsResults.map((f) => (
-                        <PlotCard
-                          key={`rs-${f.attributes.objectid}-${f.attributes.p_guid}`}
-                          feature={f}
-                          kind="rs"
-                        />
+                        <PlotCard key={`rs-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="rs" />
                       ))
                     ) : (
                       <div className={styles.empty} style={{ fontSize: 12 }}>
@@ -874,11 +845,7 @@ export default function GeospatialMap() {
                     <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#7c3aed" }}>MS (FS/5)</div>
                     {msResults.length ? (
                       msResults.map((f) => (
-                        <PlotCard
-                          key={`ms-${f.attributes.objectid}-${f.attributes.p_guid}`}
-                          feature={f}
-                          kind="ms"
-                        />
+                        <PlotCard key={`ms-${f.attributes.objectid}-${f.attributes.p_guid}`} feature={f} kind="ms" />
                       ))
                     ) : (
                       <div className={styles.empty} style={{ fontSize: 12 }}>
@@ -901,22 +868,14 @@ export default function GeospatialMap() {
         <span>
           RS:{" "}
           <strong>
-            {selected && isRsFeature(selected)
-              ? rsNumber(selected)
-              : rsResults[0]
-                ? rsNumber(rsResults[0])
-                : "—"}
+            {selected && isRsFeature(selected) ? rsNumber(selected) : rsResults[0] ? rsNumber(rsResults[0]) : "—"}
           </strong>
         </span>
         <span className={styles.separator} />
         <span>
           MS:{" "}
           <strong>
-            {selected && isMsFeature(selected)
-              ? msNumber(selected)
-              : msResults[0]
-                ? msNumber(msResults[0])
-                : "—"}
+            {selected && isMsFeature(selected) ? msNumber(selected) : msResults[0] ? msNumber(msResults[0]) : "—"}
           </strong>
         </span>
         <button type="button" className={styles.iconButton} onClick={resetMap} title="রিসেট">
