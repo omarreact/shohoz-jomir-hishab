@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Layers3, Map as MapIcon, PanelRight, Search, LocateFixed, MousePointer2, Database, X, RefreshCw, Loader2 } from "lucide-react";
+import {
+  Layers3,
+  Map as MapIcon,
+  PanelRight,
+  Search,
+  LocateFixed,
+  MousePointer2,
+  Database,
+  X,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 import type { Map as LeafletMap, TileLayer, GeoJSON as LeafletGeoJSON, Circle, CircleMarker } from "leaflet";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import styles from "./GeospatialMap.module.css";
@@ -40,7 +51,6 @@ type BasemapDef = {
   maxZoom?: number;
   maxNativeZoom?: number;
   subdomains?: string;
-  bounds?: [[number, number], [number, number]];
 };
 
 const BASEMAPS: Record<BasemapKey, BasemapDef> = {
@@ -62,7 +72,6 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     attribution: "© Esri",
     maxZoom: 21,
   },
-  // Landsat WELD annual has no 2003 epoch in GIBS (404). Use MODIS Terra True Color for 2003.
   satellite2003: {
     label: "স্যাটেলাইট ২০০৩",
     url: "https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-06-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
@@ -70,10 +79,6 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     maxZoom: 21,
     maxNativeZoom: 9,
     subdomains: "abc",
-    bounds: [
-      [-85.0511287776, -179.999999975],
-      [85.0511287776, 179.999999975],
-    ],
   },
 };
 
@@ -169,11 +174,20 @@ function createBasemapLayer(Leaflet: typeof import("leaflet"), key: BasemapKey):
     maxZoom: def.maxZoom ?? 21,
     maxNativeZoom: def.maxNativeZoom,
     subdomains: def.subdomains,
-    bounds: def.bounds,
     crossOrigin: true,
     errorTileUrl:
       "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
   });
+}
+
+function keepHighlightOnTop(highlight: LeafletGeoJSON | null) {
+  try {
+    if (highlight && typeof (highlight as unknown as { bringToFront?: () => void }).bringToFront === "function") {
+      (highlight as unknown as { bringToFront: () => void }).bringToFront();
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 export default function GeospatialMap() {
@@ -188,6 +202,7 @@ export default function GeospatialMap() {
   const identifyModeRef = useRef(true);
   const locationMarkerRef = useRef<CircleMarker | null>(null);
   const accuracyCircleRef = useRef<Circle | null>(null);
+  const loadExtentRef = useRef<() => void>(() => undefined);
 
   const [tab, setTab] = useState<Tab>("layers");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -197,7 +212,7 @@ export default function GeospatialMap() {
   const [opacity, setOpacity] = useState<Record<LayerKey, number>>(
     () => Object.fromEntries(LAYERS.map((l) => [l.key, l.key === "ms" ? 0.72 : 0.78])) as Record<LayerKey, number>,
   );
-  // Don't open RS polygons (FS/0) first — only MS (FS/5) by default
+  // MS polygons (FS/5) on by default; RS polygons (FS/0) off until toggled
   const [showRsBoundary, setShowRsBoundary] = useState(false);
   const [showMsBoundary, setShowMsBoundary] = useState(true);
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
@@ -208,6 +223,7 @@ export default function GeospatialMap() {
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
   const [toast, setToast] = useState("");
   const [mapReady, setMapReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [vectorStatus, setVectorStatus] = useState("");
   const [locating, setLocating] = useState(false);
 
@@ -229,10 +245,7 @@ export default function GeospatialMap() {
     const withGeom = features.filter((f) => f.geometry?.rings?.length);
     if (!withGeom.length) return;
     highlight.addData(featuresToFc(withGeom) as never);
-    // Keep selected RS black line above RS/MS vector polygons
-    if (typeof (highlight as any).bringToFront === "function") {
-      (highlight as any).bringToFront();
-    }
+    keepHighlightOnTop(highlight);
     const bounds = highlight.getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
   }, []);
@@ -254,7 +267,6 @@ export default function GeospatialMap() {
     }
 
     const b = map.getBounds();
-    // Prefer MS-only when RS is off (don't open RS FS/0 first)
     const kind = showRsBoundary && showMsBoundary ? "all" : showRsBoundary ? "rs" : "ms";
     setVectorStatus("Loading plot boundaries…");
     try {
@@ -276,20 +288,9 @@ export default function GeospatialMap() {
 
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
-      // Add MS first, then RS — both stay under the black RS highlight line
       if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
       if (showRsBoundary) rsVectorRef.current.addData(featuresToFc(rs) as never);
-
-      // Ensure vector layers stay below highlight (selected RS black line)
-      if (msVectorRef.current && typeof (msVectorRef.current as any).bringToBack === "function") {
-        (msVectorRef.current as any).bringToBack();
-      }
-      if (rsVectorRef.current && typeof (rsVectorRef.current as any).bringToBack === "function") {
-        (rsVectorRef.current as any).bringToBack();
-      }
-      if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
-        (highlightRef.current as any).bringToFront();
-      }
+      keepHighlightOnTop(highlightRef.current);
 
       setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
     } catch (error) {
@@ -297,108 +298,136 @@ export default function GeospatialMap() {
     }
   }, [showRsBoundary, showMsBoundary]);
 
+  loadExtentRef.current = () => {
+    void loadExtentVectors();
+  };
+
   useEffect(() => {
     let disposed = false;
     const init = async () => {
       if (!mapElement.current || mapRef.current) return;
-      const L = (await import("leaflet")).default;
-      await import("leaflet/dist/leaflet.css");
-      if (disposed || !mapElement.current) return;
-      const map = L.map(mapElement.current, { zoomControl: true, preferCanvas: true, minZoom: 8, maxZoom: 21 });
-      map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
-      mapRef.current = map;
-      basemapRef.current = createBasemapLayer(L, "satellite").addTo(map);
+      try {
+        const L = (await import("leaflet")).default;
+        await import("leaflet/dist/leaflet.css");
+        if (disposed || !mapElement.current) return;
 
-      LAYERS.forEach((definition) => {
-        const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
+        const map = L.map(mapElement.current, {
+          zoomControl: true,
+          preferCanvas: true,
+          minZoom: 8,
           maxZoom: 21,
-          opacity: definition.key === "ms" ? 0.72 : 0.78,
-          crossOrigin: true,
-          attribution: "LandBD / RAJUK",
         });
-        layerRefs.current[definition.key] = tile;
-        if (definition.defaultVisible) tile.addTo(map);
-      });
+        map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
+        mapRef.current = map;
+        basemapRef.current = createBasemapLayer(L, "satellite").addTo(map);
 
-      // MS polygons (FS/5) first — under highlight; RS polygons (FS/0) optional, also under highlight
-      const msVector = L.geoJSON(undefined, {
-        style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
-        onEachFeature: (feature, layer) => {
-          const p = (feature.properties || {}) as Record<string, unknown>;
-          const label = present(p.ms_plot_no)
-            ? String(p.ms_plot_no)
-            : present(p.plot_no)
-              ? `MS-${p.plot_no}`
-              : "MS";
-          layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
-        },
-      }).addTo(map);
+        LAYERS.forEach((definition) => {
+          const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
+            maxZoom: 21,
+            opacity: definition.key === "ms" ? 0.72 : 0.78,
+            crossOrigin: true,
+            attribution: "LandBD / RAJUK",
+            errorTileUrl:
+              "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          });
+          layerRefs.current[definition.key] = tile;
+          if (definition.defaultVisible) tile.addTo(map);
+        });
 
-      const rsVector = L.geoJSON(undefined, {
-        style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
-        onEachFeature: (feature, layer) => {
-          const p = (feature.properties || {}) as Record<string, unknown>;
-          const label = present(p.rs_plot_no) ? String(p.rs_plot_no) : present(p.plot_no) ? `RS-${p.plot_no}` : "RS";
-          layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
-        },
-      }).addTo(map);
+        // MS (FS/5) then RS (FS/0) — both under selected black RS highlight
+        const msVector = L.geoJSON(null, {
+          style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
+          onEachFeature: (feature, layer) => {
+            const p = (feature.properties || {}) as Record<string, unknown>;
+            const label = present(p.ms_plot_no)
+              ? String(p.ms_plot_no)
+              : present(p.plot_no)
+                ? `MS-${p.plot_no}`
+                : "MS";
+            layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
+          },
+        }).addTo(map);
 
-      msVectorRef.current = msVector;
-      rsVectorRef.current = rsVector;
+        const rsVector = L.geoJSON(null, {
+          style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
+          onEachFeature: (feature, layer) => {
+            const p = (feature.properties || {}) as Record<string, unknown>;
+            const label = present(p.rs_plot_no)
+              ? String(p.rs_plot_no)
+              : present(p.plot_no)
+                ? `RS-${p.plot_no}`
+                : "RS";
+            layer.bindPopup(`<strong>${label}</strong><br/>${p.address_search || ""}`);
+          },
+        }).addTo(map);
 
-      // Selected plot: RS = black line on top of FS polygons; MS = purple
-      const highlight = L.geoJSON(undefined, {
-        style: (feat) => {
-          const p = (feat?.properties || {}) as Record<string, unknown>;
-          const ms = p._layer_source === "ms" || p.plot_kind === "ms" || present(p.ms_plot_no);
-          return ms
-            ? { color: "#6d28d9", weight: 3, fillColor: "#a78bfa", fillOpacity: 0.3 }
-            : { color: "#000000", weight: 3.5, fillColor: "#94a3b8", fillOpacity: 0.12 };
-        },
-      }).addTo(map);
-      highlightRef.current = highlight;
+        msVectorRef.current = msVector;
+        rsVectorRef.current = rsVector;
 
-      const scheduleExtent = () => {
-        if (extentTimer.current) clearTimeout(extentTimer.current);
-        extentTimer.current = setTimeout(() => {
-          void loadExtentVectors();
-        }, 400);
-      };
-      map.on("moveend", scheduleExtent);
-      map.on("zoomend", scheduleExtent);
+        const highlight = L.geoJSON(null, {
+          style: (feat) => {
+            const p = (feat?.properties || {}) as Record<string, unknown>;
+            const ms = p._layer_source === "ms" || p.plot_kind === "ms" || present(p.ms_plot_no);
+            return ms
+              ? { color: "#6d28d9", weight: 3, fillColor: "#a78bfa", fillOpacity: 0.3 }
+              : { color: "#000000", weight: 3.5, fillColor: "#94a3b8", fillOpacity: 0.12 };
+          },
+        }).addTo(map);
+        highlightRef.current = highlight;
 
-      map.on("click", async (event) => {
-        if (!identifyModeRef.current) return;
-        setSearching(true);
-        try {
-          const response = await fetch(
-            `/api/rajuk/query?action=identify&lat=${encodeURIComponent(event.latlng.lat)}&lng=${encodeURIComponent(event.latlng.lng)}`,
-          );
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Identify failed");
-          const features = (data.features || []) as RajukPlotFeature[];
-          setResults(features);
-          setTab("results");
-          setPanelOpen(true);
-          if (features.length) {
-            setSelected(features[0]);
-            paintHighlight(features);
-            const rsN = features.filter(isRsFeature).length;
-            const msN = features.filter(isMsFeature).length;
-            notify(`পাওয়া গেছে: ${rsN} RS · ${msN} MS`);
-          } else {
-            highlight.clearLayers();
-            notify("এই অবস্থানে কোনো RS/MS প্লট পাওয়া যায়নি");
+        const scheduleExtent = () => {
+          if (extentTimer.current) clearTimeout(extentTimer.current);
+          extentTimer.current = setTimeout(() => loadExtentRef.current(), 400);
+        };
+        map.on("moveend", scheduleExtent);
+        map.on("zoomend", scheduleExtent);
+
+        map.on("click", async (event) => {
+          if (!identifyModeRef.current) return;
+          setSearching(true);
+          try {
+            const response = await fetch(
+              `/api/rajuk/query?action=identify&lat=${encodeURIComponent(event.latlng.lat)}&lng=${encodeURIComponent(event.latlng.lng)}`,
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Identify failed");
+            const features = (data.features || []) as RajukPlotFeature[];
+            setResults(features);
+            setTab("results");
+            setPanelOpen(true);
+            if (features.length) {
+              setSelected(features[0]);
+              paintHighlight(features);
+              const rsN = features.filter(isRsFeature).length;
+              const msN = features.filter(isMsFeature).length;
+              notify(`পাওয়া গেছে: ${rsN} RS · ${msN} MS`);
+            } else {
+              highlight.clearLayers();
+              notify("এই অবস্থানে কোনো RS/MS প্লট পাওয়া যায়নি");
+            }
+          } catch (error) {
+            notify(error instanceof Error ? error.message : "Identify ব্যর্থ হয়েছে");
+          } finally {
+            setSearching(false);
           }
-        } catch (error) {
-          notify(error instanceof Error ? error.message : "Identify ব্যর্থ হয়েছে");
-        } finally {
-          setSearching(false);
-        }
-      });
+        });
 
-      setMapReady(true);
-      scheduleExtent();
+        // Leaflet needs a second tick when container size settles
+        requestAnimationFrame(() => {
+          map.invalidateSize();
+          scheduleExtent();
+        });
+        window.setTimeout(() => map.invalidateSize(), 250);
+
+        if (!disposed) {
+          setInitError(null);
+          setMapReady(true);
+        }
+      } catch (error) {
+        if (!disposed) {
+          setInitError(error instanceof Error ? error.message : "ম্যাপ লোড ব্যর্থ হয়েছে");
+        }
+      }
     };
     void init();
     return () => {
@@ -411,26 +440,28 @@ export default function GeospatialMap() {
   }, []);
 
   useEffect(() => {
-    void loadExtentVectors();
+    if (mapReady) void loadExtentVectors();
   }, [loadExtentVectors, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    const prev = basemapRef.current;
-    if (prev) map.removeLayer(prev);
+    if (!map || !mapReady) return;
+    let cancelled = false;
     import("leaflet").then(({ default: Leaflet }) => {
+      if (cancelled || !mapRef.current) return;
+      const prev = basemapRef.current;
+      if (prev) map.removeLayer(prev);
       basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
-      // Basemap is bottom; re-assert highlight on top after basemap swap
-      if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
-        (highlightRef.current as any).bringToFront();
-      }
+      keepHighlightOnTop(highlightRef.current);
     });
-  }, [basemap]);
+    return () => {
+      cancelled = true;
+    };
+  }, [basemap, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
     LAYERS.forEach(({ key }) => {
       const layer = layerRefs.current[key];
       if (!layer) return;
@@ -438,26 +469,17 @@ export default function GeospatialMap() {
       if (layers[key] && !map.hasLayer(layer)) layer.addTo(map);
       if (!layers[key] && map.hasLayer(layer)) map.removeLayer(layer);
     });
-  }, [layers, opacity]);
+  }, [layers, opacity, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !rsVectorRef.current || !msVectorRef.current) return;
-    // MS first in pane order; both under highlight black RS line
+    if (!map || !mapReady || !rsVectorRef.current || !msVectorRef.current) return;
     if (showMsBoundary && !map.hasLayer(msVectorRef.current)) msVectorRef.current.addTo(map);
     if (!showMsBoundary && map.hasLayer(msVectorRef.current)) map.removeLayer(msVectorRef.current);
     if (showRsBoundary && !map.hasLayer(rsVectorRef.current)) rsVectorRef.current.addTo(map);
     if (!showRsBoundary && map.hasLayer(rsVectorRef.current)) map.removeLayer(rsVectorRef.current);
-    if (msVectorRef.current && typeof (msVectorRef.current as any).bringToBack === "function") {
-      (msVectorRef.current as any).bringToBack();
-    }
-    if (rsVectorRef.current && typeof (rsVectorRef.current as any).bringToBack === "function") {
-      (rsVectorRef.current as any).bringToBack();
-    }
-    if (highlightRef.current && typeof (highlightRef.current as any).bringToFront === "function") {
-      (highlightRef.current as any).bringToFront();
-    }
-  }, [showMsBoundary, showRsBoundary]);
+    keepHighlightOnTop(highlightRef.current);
+  }, [showMsBoundary, showRsBoundary, mapReady]);
 
   const runSearch = async () => {
     const value = Number(plotNo);
@@ -631,6 +653,24 @@ export default function GeospatialMap() {
           ))}
         </div>
       </button>
+    );
+  }
+
+  if (initError) {
+    return (
+      <div className={styles.mapShell} style={{ display: "grid", placeItems: "center", padding: 24 }}>
+        <div style={{ maxWidth: 420, textAlign: "center" }}>
+          <p style={{ fontWeight: 700, marginBottom: 8 }}>ম্যাপ লোড হয়নি</p>
+          <p style={{ fontSize: 13, opacity: 0.75, marginBottom: 16 }}>{initError}</p>
+          <button
+            type="button"
+            className={styles.searchButton}
+            onClick={() => window.location.reload()}
+          >
+            আবার চেষ্টা করুন
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -859,11 +899,25 @@ export default function GeospatialMap() {
         </span>
         <span className={styles.separator} />
         <span>
-          RS: <strong>{selected && isRsFeature(selected) ? rsNumber(selected) : rsResults[0] ? rsNumber(rsResults[0]) : "—"}</strong>
+          RS:{" "}
+          <strong>
+            {selected && isRsFeature(selected)
+              ? rsNumber(selected)
+              : rsResults[0]
+                ? rsNumber(rsResults[0])
+                : "—"}
+          </strong>
         </span>
         <span className={styles.separator} />
         <span>
-          MS: <strong>{selected && isMsFeature(selected) ? msNumber(selected) : msResults[0] ? msNumber(msResults[0]) : "—"}</strong>
+          MS:{" "}
+          <strong>
+            {selected && isMsFeature(selected)
+              ? msNumber(selected)
+              : msResults[0]
+                ? msNumber(msResults[0])
+                : "—"}
+          </strong>
         </span>
         <button type="button" className={styles.iconButton} onClick={resetMap} title="রিসেট">
           <RefreshCw size={14} />
