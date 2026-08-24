@@ -51,9 +51,10 @@ export default function BlogListingPage() {
 
   useEffect(() => {
     fetch("/api/blogs?status=Published")
-      .then((r) => (r.ok ? r.json() : { blogs: [] }))
-      .then((data) => {
-        const blogData: BlogPost[] = (data.blogs ?? []).map(toBlogPost);
+      .then((r) => (r.ok ? r.json() : { success: false, data: { blogs: [] } }))
+      .then((json) => {
+        const list: ApiBlog[] = json?.data?.blogs ?? json?.blogs ?? [];
+        const blogData: BlogPost[] = list.map(toBlogPost);
         if (blogData.length > 0) {
           setFeaturedPost(blogData[0]);
           setPosts(blogData.slice(1));
@@ -66,7 +67,7 @@ export default function BlogListingPage() {
   const categories = [
     "সকল পোস্ট",
     ...new Set(
-      posts.concat(featuredPost ? [featuredPost] : []).map((p) => p.category)
+      posts.concat(featuredPost ? [featuredPost] : []).map((p) => p.category),
     ),
   ];
 
@@ -172,7 +173,9 @@ export default function BlogListingPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(searchQuery || activeCategory !== "সকল পোস্ট"
                   ? filteredPosts
-                  : posts
+                  : displayFeatured
+                    ? posts
+                    : allPosts
                 ).map((post) => (
                   <BlogCard key={post.slug} post={post} />
                 ))}
