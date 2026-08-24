@@ -1,3 +1,1 @@
-"use client";
-
-export { default } from "./GeospatialMap.full";
+COMPACT_FROM_FILE
