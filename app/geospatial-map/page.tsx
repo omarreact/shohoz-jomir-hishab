@@ -20,9 +20,5 @@ const GeospatialMap = dynamic(
 );
 
 export default function UrbanPlanningMapPage() {
-  return (
-    <div className="h-[calc(100vh-5rem)] w-full min-h-[560px]">
-      <GeospatialMap />
-    </div>
-  );
+  return <GeospatialMap />;
 }

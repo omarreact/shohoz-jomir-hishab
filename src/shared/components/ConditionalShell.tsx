@@ -5,13 +5,11 @@ import Navbar from "@/src/shared/components/Navbar";
 import Footer from "@/src/shared/components/Footer";
 import MaintenanceGate from "@/src/shared/components/MaintenanceGate";
 
-const GIS_PREFIXES = ["/dap-map", "/geospatial-map", "/lios-map"] as const;
-
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
-  const isGisRoute = GIS_PREFIXES.some((p) => pathname?.startsWith(p));
+  const isGisRoute = pathname?.startsWith("/dap-map") || pathname?.startsWith("/geospatial-map");
 
   if (isAdminRoute || isLoginRoute) return <>{children}</>;
 
