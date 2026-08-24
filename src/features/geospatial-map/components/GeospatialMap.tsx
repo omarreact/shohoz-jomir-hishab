@@ -44,6 +44,8 @@ const DAP_BOUNDS: [[number, number], [number, number]] = [
 
 const MIN_ZOOM_FOR_VECTOR = 15;
 
+const EMPTY_FC = { type: "FeatureCollection" as const, features: [] as never[] };
+
 type BasemapDef = {
   label: string;
   url: string;
@@ -81,6 +83,19 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     subdomains: "abc",
   },
 };
+
+/** Leaflet CJS/ESM interop — Next may expose either default or namespace. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeafletNS = any;
+
+async function loadLeaflet(): Promise<LeafletNS> {
+  const mod = await import("leaflet");
+  const L = (mod as { default?: LeafletNS }).default ?? mod;
+  if (!L || typeof L.map !== "function") {
+    throw new Error("Leaflet failed to load (no L.map)");
+  }
+  return L;
+}
 
 function present(v: unknown) {
   return v !== null && v !== undefined && String(v).trim() !== "";
@@ -152,32 +167,44 @@ function basemapIcon(key: BasemapKey): string {
   return "⊕";
 }
 
+function hasRings(f: RajukPlotFeature): boolean {
+  const rings = f?.geometry?.rings;
+  return Array.isArray(rings) && rings.length > 0;
+}
+
 function toGeoJson(feature: RajukPlotFeature) {
+  const rings = feature.geometry?.rings;
+  if (!Array.isArray(rings) || rings.length === 0) {
+    return null;
+  }
   return {
     type: "Feature" as const,
-    geometry: { type: "Polygon" as const, coordinates: feature.geometry.rings },
-    properties: feature.attributes,
+    geometry: { type: "Polygon" as const, coordinates: rings },
+    properties: feature.attributes ?? {},
   };
 }
 
 function featuresToFc(features: RajukPlotFeature[]) {
+  const list = Array.isArray(features) ? features : [];
   return {
     type: "FeatureCollection" as const,
-    features: features.filter((f) => f.geometry?.rings?.length).map((f) => toGeoJson(f)),
+    features: list.map(toGeoJson).filter(Boolean),
   };
 }
 
-function createBasemapLayer(Leaflet: typeof import("leaflet"), key: BasemapKey): TileLayer {
+function createBasemapLayer(L: LeafletNS, key: BasemapKey): TileLayer {
   const def = BASEMAPS[key];
-  return Leaflet.tileLayer(def.url, {
+  if (!def?.url) throw new Error(`Unknown basemap: ${key}`);
+  const opts: Record<string, unknown> = {
     attribution: def.attribution,
     maxZoom: def.maxZoom ?? 21,
-    maxNativeZoom: def.maxNativeZoom,
-    subdomains: def.subdomains,
     crossOrigin: true,
     errorTileUrl:
       "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-  });
+  };
+  if (def.maxNativeZoom != null) opts.maxNativeZoom = def.maxNativeZoom;
+  if (def.subdomains) opts.subdomains = def.subdomains;
+  return L.tileLayer(def.url, opts);
 }
 
 export default function GeospatialMap() {
@@ -230,17 +257,21 @@ export default function GeospatialMap() {
     const map = mapRef.current;
     const highlight = highlightRef.current;
     if (!map || !highlight) return;
-    highlight.clearLayers();
-    const withGeom = features.filter((f) => f.geometry?.rings?.length);
-    if (!withGeom.length) return;
-    highlight.addData(featuresToFc(withGeom) as never);
     try {
-      (highlight as unknown as { bringToFront: () => void }).bringToFront();
+      highlight.clearLayers();
+      const withGeom = (Array.isArray(features) ? features : []).filter(hasRings);
+      if (!withGeom.length) return;
+      highlight.addData(featuresToFc(withGeom) as never);
+      try {
+        (highlight as unknown as { bringToFront: () => void }).bringToFront();
+      } catch {
+        /* ignore */
+      }
+      const bounds = highlight.getBounds();
+      if (bounds?.isValid?.()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
     } catch {
-      /* ignore */
+      /* ignore bad geometry */
     }
-    const bounds = highlight.getBounds();
-    if (bounds.isValid()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 18 });
   }, []);
 
   const loadExtentVectors = useCallback(async () => {
@@ -275,7 +306,7 @@ export default function GeospatialMap() {
       const response = await fetch(`/api/rajuk/query?${q}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Extent query failed");
-      const features = (data.features || []) as RajukPlotFeature[];
+      const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
       const rs = features.filter(isRsFeature);
       const ms = features.filter(isMsFeature);
 
@@ -299,13 +330,26 @@ export default function GeospatialMap() {
     const init = async () => {
       if (!mapElement.current || mapRef.current) return;
       try {
-        const L = (await import("leaflet")).default;
-        await import("leaflet/dist/leaflet.css");
+        const L = await loadLeaflet();
+        try {
+          await import("leaflet/dist/leaflet.css");
+        } catch {
+          /* CSS optional if already global */
+        }
         if (disposed || !mapElement.current) return;
 
-        const map = L.map(mapElement.current, {
+        // React Strict Mode: clear previous leaflet id on same DOM node
+        const el = mapElement.current;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((el as any)._leaflet_id) {
+          el.innerHTML = "";
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (el as any)._leaflet_id;
+        }
+
+        const map = L.map(el, {
           zoomControl: true,
-          preferCanvas: true,
+          preferCanvas: false,
           minZoom: 8,
           maxZoom: 21,
         });
@@ -326,10 +370,10 @@ export default function GeospatialMap() {
           if (definition.defaultVisible) tile.addTo(map);
         });
 
-        const rsVector = L.geoJSON(null, {
+        const rsVector = L.geoJSON(EMPTY_FC, {
           style: { color: "#2563eb", weight: 1.5, fillColor: "#3b82f6", fillOpacity: 0.08 },
-          onEachFeature: (feature, layer) => {
-            const p = (feature.properties || {}) as Record<string, unknown>;
+          onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (h: string) => void }) => {
+            const p = feature.properties || {};
             const label = present(p.rs_plot_no)
               ? String(p.rs_plot_no)
               : present(p.plot_no)
@@ -339,10 +383,10 @@ export default function GeospatialMap() {
           },
         }).addTo(map);
 
-        const msVector = L.geoJSON(null, {
+        const msVector = L.geoJSON(EMPTY_FC, {
           style: { color: "#7c3aed", weight: 1.5, fillColor: "#a78bfa", fillOpacity: 0.08 },
-          onEachFeature: (feature, layer) => {
-            const p = (feature.properties || {}) as Record<string, unknown>;
+          onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (h: string) => void }) => {
+            const p = feature.properties || {};
             const label = present(p.ms_plot_no)
               ? String(p.ms_plot_no)
               : present(p.plot_no)
@@ -355,9 +399,9 @@ export default function GeospatialMap() {
         rsVectorRef.current = rsVector;
         msVectorRef.current = msVector;
 
-        const highlight = L.geoJSON(null, {
-          style: (feat) => {
-            const p = (feat?.properties || {}) as Record<string, unknown>;
+        const highlight = L.geoJSON(EMPTY_FC, {
+          style: (feat: { properties?: Record<string, unknown> } | undefined) => {
+            const p = feat?.properties || {};
             const ms = p._layer_source === "ms" || p.plot_kind === "ms" || present(p.ms_plot_no);
             return ms
               ? { color: "#6d28d9", weight: 3, fillColor: "#a78bfa", fillOpacity: 0.3 }
@@ -373,7 +417,7 @@ export default function GeospatialMap() {
         map.on("moveend", scheduleExtent);
         map.on("zoomend", scheduleExtent);
 
-        map.on("click", async (event) => {
+        map.on("click", async (event: { latlng: { lat: number; lng: number } }) => {
           if (!identifyModeRef.current) return;
           setSearching(true);
           try {
@@ -382,7 +426,7 @@ export default function GeospatialMap() {
             );
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "Identify failed");
-            const features = (data.features || []) as RajukPlotFeature[];
+            const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
             setResults(features);
             setTab("results");
             setPanelOpen(true);
@@ -404,10 +448,20 @@ export default function GeospatialMap() {
         });
 
         requestAnimationFrame(() => {
-          map.invalidateSize();
+          try {
+            map.invalidateSize();
+          } catch {
+            /* ignore */
+          }
           scheduleExtent();
         });
-        window.setTimeout(() => map.invalidateSize(), 250);
+        window.setTimeout(() => {
+          try {
+            map.invalidateSize();
+          } catch {
+            /* ignore */
+          }
+        }, 250);
 
         if (!disposed) {
           setInitError(null);
@@ -423,7 +477,11 @@ export default function GeospatialMap() {
     return () => {
       disposed = true;
       if (extentTimer.current) clearTimeout(extentTimer.current);
-      mapRef.current?.remove();
+      try {
+        mapRef.current?.remove();
+      } catch {
+        /* ignore */
+      }
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -437,11 +495,15 @@ export default function GeospatialMap() {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     let cancelled = false;
-    import("leaflet").then(({ default: Leaflet }) => {
+    void loadLeaflet().then((Leaflet) => {
       if (cancelled || !mapRef.current) return;
-      const prev = basemapRef.current;
-      if (prev) map.removeLayer(prev);
-      basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
+      try {
+        const prev = basemapRef.current;
+        if (prev) map.removeLayer(prev);
+        basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
+      } catch {
+        /* ignore basemap swap errors */
+      }
     });
     return () => {
       cancelled = true;
@@ -480,7 +542,7 @@ export default function GeospatialMap() {
       const response = await fetch(`/api/rajuk/query?action=plots&plot_no=${encodeURIComponent(value)}&limit=50`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Plot search failed");
-      const features = (data.features || []) as RajukPlotFeature[];
+      const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
       setResults(features);
       setTab("results");
       setPanelOpen(true);
@@ -542,7 +604,7 @@ export default function GeospatialMap() {
           return;
         }
         try {
-          const L = (await import("leaflet")).default;
+          const L = await loadLeaflet();
           clearLocationLayers();
           map.setView([latitude, longitude], Math.max(map.getZoom(), 17), { animate: true });
           const marker = L.circleMarker([latitude, longitude], {
