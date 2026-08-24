@@ -12,6 +12,7 @@ import {
   X,
   RefreshCw,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import type { Map as LeafletMap, TileLayer, GeoJSON as LeafletGeoJSON, Circle, CircleMarker } from "leaflet";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
@@ -41,6 +42,12 @@ const DAP_BOUNDS: [[number, number], [number, number]] = [
   [23.5527, 90.2079],
   [24.1033, 90.6041],
 ];
+
+/** Google Earth historical focus (2003-01-17) from user link */
+const HISTORIC_2003_CENTER: [number, number] = [23.82810618, 90.48911986];
+const HISTORIC_2003_ZOOM = 11;
+const GOOGLE_EARTH_2003_URL =
+  "https://earth.google.com/web/@23.82810618,90.48911986,3.60010157a,3337.57801622d,35y,-0h,0t,0r/data=ChYqEAgBEgoyMDAzLTAxLTE3GAFCAggBOgMKATBCAggASg0I____________ARAA?authuser=0";
 
 const MIN_ZOOM_FOR_VECTOR = 15;
 
@@ -74,17 +81,17 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     attribution: "© Esri",
     maxZoom: 21,
   },
+  // NASA GIBS MODIS Terra — same epoch as Google Earth historical (2003-01-17).
+  // Google Earth commercial tiles cannot be embedded; this is the public alternative.
   satellite2003: {
     label: "স্যাটেলাইট ২০০৩",
-    url: "https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-06-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
-    attribution: "© NASA GIBS / MODIS Terra 2003-06-15",
-    maxZoom: 21,
+    url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    attribution: "© NASA GIBS / MODIS Terra · 2003-01-17",
+    maxZoom: 18,
     maxNativeZoom: 9,
-    subdomains: "abc",
   },
 };
 
-/** Leaflet CJS/ESM interop — Next may expose either default or namespace. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LeafletNS = any;
 
@@ -250,8 +257,22 @@ export default function GeospatialMap() {
 
   const notify = useCallback((message: string) => {
     setToast(message);
-    window.setTimeout(() => setToast(""), 3500);
+    window.setTimeout(() => setToast(""), 4000);
   }, []);
+
+  const selectBasemap = useCallback(
+    (key: BasemapKey) => {
+      setBasemap(key);
+      if (key === "satellite2003") {
+        const map = mapRef.current;
+        if (map) {
+          map.setView(HISTORIC_2003_CENTER, HISTORIC_2003_ZOOM, { animate: true });
+        }
+        notify("স্যাটেলাইট ২০০৩ · NASA MODIS Terra (2003-01-17)");
+      }
+    },
+    [notify],
+  );
 
   const paintHighlight = useCallback((features: RajukPlotFeature[]) => {
     const map = mapRef.current;
@@ -334,11 +355,10 @@ export default function GeospatialMap() {
         try {
           await import("leaflet/dist/leaflet.css");
         } catch {
-          /* CSS optional if already global */
+          /* CSS optional */
         }
         if (disposed || !mapElement.current) return;
 
-        // React Strict Mode: clear previous leaflet id on same DOM node
         const el = mapElement.current;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((el as any)._leaflet_id) {
@@ -355,7 +375,13 @@ export default function GeospatialMap() {
         });
         map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
         mapRef.current = map;
-        basemapRef.current = createBasemapLayer(L, "satellite").addTo(map);
+        const base = createBasemapLayer(L, "satellite").addTo(map);
+        try {
+          base.bringToBack();
+        } catch {
+          /* ignore */
+        }
+        basemapRef.current = base;
 
         LAYERS.forEach((definition) => {
           const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
@@ -500,7 +526,13 @@ export default function GeospatialMap() {
       try {
         const prev = basemapRef.current;
         if (prev) map.removeLayer(prev);
-        basemapRef.current = createBasemapLayer(Leaflet, basemap).addTo(map);
+        const next = createBasemapLayer(Leaflet, basemap).addTo(map);
+        try {
+          next.bringToBack();
+        } catch {
+          /* ignore */
+        }
+        basemapRef.current = next;
       } catch {
         /* ignore basemap swap errors */
       }
@@ -858,13 +890,46 @@ export default function GeospatialMap() {
                     type="button"
                     key={key}
                     className={`${styles.baseButton} ${basemap === key ? styles.baseActive : ""}`}
-                    onClick={() => setBasemap(key)}
+                    onClick={() => selectBasemap(key)}
                   >
                     <span className={styles.baseIcon}>{basemapIcon(key)}</span>
                     {value.label}
                   </button>
                 ))}
               </div>
+              {basemap === "satellite2003" && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 10,
+                    borderRadius: 8,
+                    fontSize: 11,
+                    lineHeight: 1.45,
+                    background: "rgba(15,23,42,.06)",
+                    border: "1px solid rgba(148,163,184,.35)",
+                  }}
+                >
+                  <strong>NASA MODIS Terra · ১৭ জানুয়ারি ২০০৩</strong>
+                  <br />
+                  Google Earth-এর historical তারিখের সাথে মিলিয়ে public টাইল। রেজোলিউশন ~২৫০ মি
+                  (জুম ৯ পর্যন্ত তীক্ষ্ণ)। উচ্চ রেজোলিউশন দেখতে:
+                  <a
+                    href={GOOGLE_EARTH_2003_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      marginTop: 6,
+                      color: "#2563eb",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <ExternalLink size={12} /> Google Earth ২০০৩ খুলুন
+                  </a>
+                </div>
+              )}
               <div className={styles.sectionTitle}>ইন্টার‌্যাকশন</div>
               <button
                 type="button"
