@@ -1,0 +1,51 @@
+name: Restore GeospatialMap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore map component from good commit
+        run: |
+          git show 520b61f5eea89a6aab1b25e88624b7c659487b8a:src/features/geospatial-map/components/GeospatialMap.tsx > /tmp/map.tsx
+          # Bangla labels for plot results (land.gov terms)
+          python3 << 'PY'
+          from pathlib import Path
+          t = Path("/tmp/map.tsx").read_text()
+          t = t.replace('["MS Plot Number"', '["এমএস দাগ নম্বর"')
+          t = t.replace('["RS Plot Number"', '["আরএস দাগ নম্বর"')
+          t = t.replace('["Plot No"', '["দাগ নং"')
+          t = t.replace('["JL No"', '["জেএল নং"')
+          t = t.replace('["Area (katha)"', '["আয়তন (কাঠা)"')
+          t = t.replace('["Mauza"', '["মৌজা"')
+          t = t.replace('["Thana/Upazila"', '["থানা/উপজেলা"')
+          t = t.replace('["District"', '["জেলা"')
+          t = t.replace('["Address"', '["ঠিকানা"')
+          t = t.replace('label: "OpenStreetMap"', 'label: "রাস্তার মানচিত্র"')
+          t = t.replace(
+            'className={`${styles.locateButton} ${styles.publicLocate} ${locating ? styles.locateButtonActive : ""}`}',
+            'className={`${styles.locateButton} ${locating ? styles.locateButtonActive : ""}`}',
+          )
+          Path("src/features/geospatial-map/components/GeospatialMap.tsx").write_text(t)
+          PY
+          # Ensure CSS has bottom-right GPS
+          git show 1012d163bf21c914459a24157fef24a4b239e6a3:src/features/geospatial-map/components/GeospatialMap.module.css > src/features/geospatial-map/components/GeospatialMap.module.css || true
+
+      - name: Commit and push
+        run: |
+          git config user.name "LandBD CI"
+          git config user.email "ci@landbd.local"
+          git add src/features/geospatial-map/components/GeospatialMap.tsx src/features/geospatial-map/components/GeospatialMap.module.css
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "fix: restore GeospatialMap Bangla labels + GPS bottom-right"
+          git push origin HEAD:main
