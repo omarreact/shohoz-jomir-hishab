@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { STATIC_BLOG_POSTS, getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,16 +38,50 @@ function jsonError(message: string, status = 500, requestId?: string) {
   );
 }
 
+function staticAsListItem(p: (typeof STATIC_BLOG_POSTS)[number]) {
+  return {
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt,
+    coverImage: p.coverImage,
+    author: p.author,
+    category: p.category,
+    categorySlug: p.categorySlug,
+    status: p.status,
+    readingTime: p.readingTime,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
+
 // GET /api/blogs — public list, or single by ?slug=xxx
 export async function GET(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
-    const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const { searchParams } = req.nextUrl;
     const status = searchParams.get("status");
     const slug = searchParams.get("slug");
 
     if (slug) {
+      const staticPost = getStaticBlogBySlug(slug);
+      if (staticPost) {
+        return json(
+          {
+            success: true,
+            data: {
+              blog: {
+                ...staticPost,
+                comments: [],
+              },
+            },
+          },
+          200,
+          requestId,
+        );
+      }
+
+      const { collections } = await import("@/src/modules/database/firebaseAdmin");
       const snapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
       if (snapshot.empty) return jsonError("Not found", 404, requestId);
       const doc = snapshot.docs[0];
@@ -62,11 +97,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    let query: any = collections.blogs;
-    if (status) query = query.where("status", "==", status);
-    const snapshot = await query.get();
-    const blogs = snapshot.docs
-      .map((doc: any) => {
+    let firestoreBlogs: ReturnType<typeof staticAsListItem>[] = [];
+    try {
+      const { collections } = await import("@/src/modules/database/firebaseAdmin");
+      let query: any = collections.blogs;
+      if (status) query = query.where("status", "==", status);
+      const snapshot = await query.get();
+      firestoreBlogs = snapshot.docs.map((doc: any) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -88,12 +125,32 @@ export async function GET(req: NextRequest) {
               ? data.updatedAt.toDate().toISOString()
               : data.updatedAt,
         };
-      })
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return json({ success: true, data: { blogs } }, 200, requestId);
+      });
+    } catch (fbError) {
+      console.warn("Firestore blogs unavailable, serving static only:", fbError);
+    }
+
+    const staticList = STATIC_BLOG_POSTS.filter(
+      (p) => !status || p.status === status,
+    ).map(staticAsListItem);
+
+    // Prefer Firestore if same slug exists; otherwise include static
+    const firestoreSlugs = new Set(firestoreBlogs.map((b) => b.slug));
+    const merged = [
+      ...staticList.filter((s) => !firestoreSlugs.has(s.slug)),
+      ...firestoreBlogs,
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return json({ success: true, data: { blogs: merged } }, 200, requestId);
   } catch (error: any) {
     console.error("GET /api/blogs failed:", { requestId, error });
-    return jsonError(error?.message || "Failed to load blogs", 500, requestId);
+    // Last resort: static posts only
+    try {
+      const staticList = STATIC_BLOG_POSTS.map(staticAsListItem);
+      return json({ success: true, data: { blogs: staticList } }, 200, requestId);
+    } catch {
+      return jsonError(error?.message || "Failed to load blogs", 500, requestId);
+    }
   }
 }
 
