@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
+import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/admin/dashboard-kpis
  * Editor+ can load content KPIs; Admin+ also get users + system health.
+ * blogCount matches /api/blogs merge: static posts + Firestore (deduped by slug).
  */
 export async function GET(req: NextRequest) {
   try {
@@ -15,9 +17,9 @@ export async function GET(req: NextRequest) {
     const admin = isAdminRole(user.role);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
-    const [blogCountRes, pageCountRes, userCountRes, rajukTokenDoc, maintenanceDoc] =
+    const [blogSnap, pageCountRes, userCountRes, rajukTokenDoc, maintenanceDoc] =
       await Promise.all([
-        collections.blogs.count().get(),
+        collections.blogs.get().catch(() => null),
         collections.pages.count().get(),
         admin ? collections.users.count().get() : Promise.resolve(null),
         admin
@@ -27,6 +29,20 @@ export async function GET(req: NextRequest) {
           ? collections.settings.doc("maintenanceMode").get()
           : Promise.resolve(null),
       ]);
+
+    const firestoreSlugs = new Set<string>();
+    let firestoreBlogCount = 0;
+    if (blogSnap && !blogSnap.empty) {
+      firestoreBlogCount = blogSnap.size;
+      for (const doc of blogSnap.docs) {
+        const slug = doc.data()?.slug;
+        if (typeof slug === "string" && slug.trim()) firestoreSlugs.add(slug.trim());
+      }
+    }
+    const staticOnlyCount = STATIC_BLOG_POSTS.filter(
+      (p) => !firestoreSlugs.has(p.slug),
+    ).length;
+    const blogCount = staticOnlyCount + firestoreBlogCount;
 
     let dbConnected = false;
     let dbLatency: number | null = null;
@@ -57,7 +73,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         role: user.role,
-        blogCount: blogCountRes.data().count,
+        blogCount,
+        blogCountFirestore: firestoreBlogCount,
+        blogCountStatic: staticOnlyCount,
         pageCount: pageCountRes.data().count,
         userCount: admin && userCountRes ? userCountRes.data().count : null,
         rajukTokenSet,
