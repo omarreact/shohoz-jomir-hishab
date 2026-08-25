@@ -1,122 +1,82 @@
-"use client";
+import Link from "next/link";
+import { MousePointerClick, Calculator, FileCheck, ArrowRight } from "lucide-react";
+import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 
-import { Search, FileText, CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+const STEPS = [
+  {
+    id: 1,
+    title: "টুল বেছে নিন",
+    description:
+      "খতিয়ান, জমি পরিমাপ, ফারায়েজ বা নগর পরিকল্পনা মানচিত্র—প্রয়োজনমতো টুল খুলুন।",
+    icon: MousePointerClick,
+  },
+  {
+    id: 2,
+    title: "তথ্য দিন",
+    description:
+      "দাগ/খতিয়ান নম্বর, পরিমাপ একক বা ওয়ারিশদের তথ্য ইনপুট করুন। মানচিত্রে প্লটে ট্যাপও করতে পারেন।",
+    icon: Calculator,
+  },
+  {
+    id: 3,
+    title: "ফলাফল দেখুন",
+    description:
+      "আনা-গন্ডা, অংশ বণ্টন বা RS/MS ফলাফল তাৎক্ষণিক দেখুন। প্রয়োজনে মূল নথির সাথে মিলিয়ে নিন।",
+    icon: FileCheck,
+  },
+];
 
 export default function HowItWorksSection() {
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
-  const steps = [
-    {
-      id: 1,
-      title: "এলাকা নির্বাচন করুন",
-      description: "প্রথমে আপনার বিভাগ, জেলা এবং কাঙ্ক্ষিত মৌজা বা জে.এল নম্বর নির্বাচন করুন।",
-      icon: Search,
-      align: "left",
-    },
-    {
-      id: 2,
-      title: "দাগ বা খতিয়ান দিন",
-      description: "আপনার কাছে থাকা দাগ নম্বর বা খতিয়ান নম্বরটি ইনপুট বক্সে প্রদান করুন।",
-      icon: FileText,
-      align: "right",
-    },
-    {
-      id: 3,
-      title: "বিস্তারিত তথ্য পান",
-      description: "মুহূর্তেই আপনার জমির সম্পূর্ণ বিবরণ, মালিকানা এবং ম্যাপ দেখুন।",
-      icon: CheckCircle,
-      align: "left",
-    },
-  ];
-
   return (
-    <section id="how-it-works" className="py-24 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`text-center mb-16 fade-in ${isLoaded ? "visible" : ""}`}>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white">
+    <section
+      id="how-it-works"
+      className="border-t border-slate-200 bg-slate-50 py-16 dark:border-slate-800 dark:bg-slate-900/30 md:py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#006a4e]">
+            ব্যবহার
+          </p>
+          <h2 className="mb-3 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
             কিভাবে <span className="text-[#006a4e]">কাজ করে?</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
-            খুব সহজেই মাত্র তিনটি ধাপে আপনার কাঙ্ক্ষিত তথ্য খুঁজে নিন।
+          <p className="mx-auto max-w-2xl text-base text-slate-500 dark:text-slate-400 md:text-lg">
+            মাত্র তিন ধাপে হিসাব বা মানচিত্র ফলাফল পান।
           </p>
         </div>
 
-        <div className="relative max-w-4xl mx-auto">
-          {/* Timeline Line */}
-          <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-800 -translate-x-1/2"></div>
-
-          <div className="space-y-12">
-            {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className={`relative flex flex-col md:flex-row items-center justify-between fade-in ${
-                  isLoaded ? "visible" : ""
-                }`}
-                style={{ transitionDelay: `${index * 200}ms` }}
-              >
-                {/* Desktop Left Content */}
-                <div
-                  className={`hidden md:block w-5/12 ${
-                    step.align === "left" ? "text-right pr-8" : "invisible"
-                  }`}
-                >
-                  {step.align === "left" && (
-                    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-left hover:shadow-md transition-shadow">
-                      <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">
-                        {step.title}
-                      </h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm m-0 leading-relaxed">
-                        {step.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Center Circle */}
-                <div className="z-10 flex items-center justify-center w-16 h-16 rounded-full bg-white dark:bg-slate-950 border-4 border-slate-50 dark:border-slate-900 shadow-lg relative mb-6 md:mb-0">
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#f42a41] text-white flex items-center justify-center font-bold text-sm shadow-md">
-                    {step.id}
-                  </div>
-                  <step.icon size={24} className="text-[#006a4e]" />
-                </div>
-
-                {/* Desktop Right Content */}
-                <div
-                  className={`hidden md:block w-5/12 ${
-                    step.align === "right" ? "pl-8" : "invisible"
-                  }`}
-                >
-                  {step.align === "right" && (
-                    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-left hover:shadow-md transition-shadow">
-                      <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">
-                        {step.title}
-                      </h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm m-0 leading-relaxed">
-                        {step.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Mobile Content */}
-                <div className="md:hidden w-full px-4">
-                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
-                    <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">
-                      {step.title}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm m-0 leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {STEPS.map((step) => (
+            <div
+              key={step.id}
+              className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f42a41] text-sm font-bold text-white">
+                  {step.id}
+                </span>
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#006a4e]/10">
+                  <step.icon size={22} className="text-[#006a4e]" />
                 </div>
               </div>
-            ))}
-          </div>
+              <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+                {step.title}
+              </h3>
+              <p className="m-0 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <Link
+            href={FEATURE_ROUTES.records}
+            className="inline-flex items-center gap-2 rounded-full bg-[#006a4e] px-6 py-3 text-sm font-bold text-white no-underline shadow-md transition hover:bg-[#005a42]"
+          >
+            খতিয়ান দিয়ে শুরু করুন
+            <ArrowRight size={16} />
+          </Link>
         </div>
       </div>
     </section>

@@ -1,131 +1,106 @@
-"use client";
-
 import Link from "next/link";
-import { Map, ArrowRight, Search, Navigation } from "lucide-react";
-import { t } from "@/src/locales";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Map, MousePointer2, Layers, ArrowRight } from "lucide-react";
+import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+
+const MAP_POINTS = [
+  {
+    icon: Layers,
+    title: "RS + MS টাইল",
+    desc: "লগইন ছাড়াই মৌজা মানচিত্র দেখুন",
+  },
+  {
+    icon: MousePointer2,
+    title: "প্লট ট্যাপ",
+    desc: "ক্লিক করে RS ও MS ফলাফল একসাথে",
+  },
+  {
+    icon: Map,
+    title: "সীমানা ও বেসম্যাপ",
+    desc: "জুম করে স্যাটেলাইট বা রাস্তার মানচিত্র",
+  },
+];
 
 export default function MapPreviewSection() {
-  const router = useRouter();
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push("/dap-map");
-  };
-
   return (
-    <section id="search" className="py-24 relative bg-white dark:bg-slate-950">
-      {/* Background Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)",
-          backgroundSize: "32px 32px",
-        }}
-      ></div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 md:p-12 shadow-2xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Left Form */}
-            <div className={`fade-in ${isLoaded ? "visible" : ""}`}>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-900 dark:text-white">
-                মৌজা ও খতিয়ান <span className="text-[#006a4e]">অনুসন্ধান</span>
+    <section
+      id="map"
+      className="border-t border-slate-200 bg-slate-50 py-16 dark:border-slate-800 dark:bg-slate-900/40 md:py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="grid items-stretch lg:grid-cols-2">
+            <div className="flex flex-col justify-center p-8 md:p-12">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#006a4e]">
+                জিআইএস
+              </p>
+              <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+                নগর পরিকল্পনা{" "}
+                <span className="text-[#006a4e]">মানচিত্র</span>
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-8 text-lg">
-                আপনার নির্দিষ্ট মৌজা এবং দাগ নম্বর দিয়ে বিস্তারিত খতিয়ান তথ্য খুঁজুন। সম্পূর্ণ বাংলাদেশের ম্যাপ ডাটাবেস।
+              <p className="mb-8 text-base leading-relaxed text-slate-500 dark:text-slate-400 md:text-lg">
+                RAJUK এলাকার RS ও MS মৌজা টাইল লাইভ দেখুন। প্লটে ট্যাপ করে দাগ
+                নম্বর ও ঠিকানা পান—পাবলিক ব্যবহারকারীর জন্যও উন্মুক্ত।
               </p>
 
-              <form onSubmit={handleSearch} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                      বিভাগ
-                    </label>
-                    <select className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]">
-                      <option>ঢাকা</option>
-                      <option>চট্টগ্রাম</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                      জেলা
-                    </label>
-                    <select className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]">
-                      <option>ঢাকা</option>
-                      <option>গাজীপুর</option>
-                    </select>
-                  </div>
-                </div>
+              <ul className="mb-8 space-y-4">
+                {MAP_POINTS.map((item) => (
+                  <li key={item.title} className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#006a4e]/10">
+                      <item.icon size={18} className="text-[#006a4e]" />
+                    </div>
+                    <div>
+                      <p className="m-0 font-bold text-slate-900 dark:text-white">
+                        {item.title}
+                      </p>
+                      <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                    মৌজা / জে.এল নম্বর
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="মৌজার নাম বা নম্বর লিখুন"
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#006a4e] text-white font-bold text-lg py-4 rounded-xl mt-4 hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
-                >
-                  <Search size={20} />
-                  অনুসন্ধান করুন
-                </button>
-              </form>
+              <Link
+                href={FEATURE_ROUTES.landMap}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#006a4e] px-6 py-4 text-base font-bold text-white no-underline shadow-lg shadow-[#006a4e]/20 transition hover:bg-[#005a42] sm:w-auto"
+              >
+                <Map size={18} />
+                মানচিত্র খুলুন
+                <ArrowRight size={16} />
+              </Link>
             </div>
 
-            {/* Right Map Preview */}
-            <div className={`fade-in lg:ml-auto w-full ${isLoaded ? "visible" : ""}`} style={{ transitionDelay: "200ms" }}>
-              <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg aspect-[4/3] bg-slate-100 dark:bg-slate-950 group">
-                {/* Fallback image if real map isn't rendering */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-80 group-hover:scale-105 transition-transform duration-700"
-                  style={{
-                    backgroundImage:
-                      "url('https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop')",
-                  }}
-                ></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-900 to-transparent opacity-90"></div>
+            <div className="relative min-h-[280px] bg-gradient-to-br from-[#006a4e]/90 via-[#0a7a5c] to-slate-900 p-8 md:min-h-[360px] md:p-12">
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+                  backgroundSize: "28px 28px",
+                }}
+                aria-hidden
+              />
+              <div className="relative flex h-full flex-col justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-300" />
+                  <span className="text-sm font-semibold text-white/90">
+                    লাইভ ম্যাপ সার্ভার
+                  </span>
+                </div>
 
-                {/* Map UI overlays */}
-                <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                  <div className="flex justify-end">
-                    <div className="bg-white dark:bg-slate-900 p-2 rounded-lg shadow-md border border-slate-200 dark:border-slate-800">
-                      <Map className="text-slate-900 dark:text-white" size={20} />
-                    </div>
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+                    <p className="m-0 text-xs font-medium uppercase tracking-wide text-white/70">
+                      পাবলিক লেয়ার
+                    </p>
+                    <p className="m-0 mt-1 text-lg font-bold text-white">
+                      RS Mauza · MS Mauza
+                    </p>
                   </div>
-
-                  <div className="bg-white/90 dark:bg-slate-900/80 p-4 rounded-2xl backdrop-blur-md shadow-lg border border-slate-200 dark:border-slate-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-slate-900 dark:text-white text-sm font-bold">
-                          লাইভ ম্যাপ সার্ভার
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Syncing...
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#006a4e] rounded-full animate-[progress_2s_ease-in-out_infinite]"
-                        style={{ width: "60%" }}
-                      ></div>
-                    </div>
+                  <div className="rounded-2xl border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
+                    <p className="m-0 text-sm text-white/85">
+                      প্লটে ট্যাপ করুন → RS ও MS ফলাফল একসাথে
+                    </p>
                   </div>
                 </div>
               </div>

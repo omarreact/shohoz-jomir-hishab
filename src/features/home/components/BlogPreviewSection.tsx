@@ -1,109 +1,94 @@
-"use client";
-
 import Link from "next/link";
-import { ArrowRight, Clock, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, Clock } from "lucide-react";
+import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
+import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+
+function formatBnDate(iso?: string): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("bn-BD", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export default function BlogPreviewSection() {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const posts = STATIC_BLOG_POSTS.filter((p) => p.status === "Published")
+    .slice()
+    .sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 3);
 
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
-  const blogPosts = [
-    {
-      id: 1,
-      title: "ভূমি রেজিস্ট্রেশনের নতুন নিয়মকানুন",
-      excerpt: "২০২৪ সালের নতুন ভূমি রেজিস্ট্রেশন আইনে কি কি পরিবর্তন এসেছে তা বিস্তারিত জানুন।",
-      author: "অ্যাডভোকেট করিম",
-      date: "১২ মে, ২০২৪",
-      image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800",
-      delay: "0s",
-      slug: "new-land-registration-rules",
-      categorySlug: "law",
-    },
-    {
-      id: 2,
-      title: "উত্তরাধিকার সম্পত্তি বন্টন আইন",
-      excerpt: "মুসলিম ও হিন্দু উত্তরাধিকার আইন অনুযায়ী সম্পত্তি কিভাবে বন্টন হয় তার সম্পূর্ণ গাইডলাইন।",
-      author: "ব্যারিস্টার সুমন",
-      date: "১০ মে, ২০২৪",
-      image: "https://images.unsplash.com/photo-1555374018-1c4ffa612ebe?auto=format&fit=crop&q=80&w=800",
-      delay: "100ms",
-      slug: "inheritance-property-distribution",
-      categorySlug: "law",
-    },
-    {
-      id: 3,
-      title: "খাস জমি বন্দোবস্ত নেওয়ার প্রক্রিয়া",
-      excerpt: "সরকারি খাস জমি কিভাবে বন্দোবস্ত নিতে হয় এবং এর জন্য কি কি কাগজপত্র প্রয়োজন।",
-      author: "অ্যাডভোকেট রহিম",
-      date: "০৫ মে, ২০২৪",
-      image: "https://images.unsplash.com/photo-1450101499163-c8848c66cb85?auto=format&fit=crop&q=80&w=800",
-      delay: "200ms",
-      slug: "khas-land-settlement-process",
-      categorySlug: "law",
-    },
-  ];
+  if (!posts.length) return null;
 
   return (
-    <section className="py-24 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-end mb-12 gap-4 fade-in ${isLoaded ? "visible" : ""}`}>
+    <section className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-950 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-3xl font-bold mb-4 text-slate-900 dark:text-white">
-              আইন বিষয়ক <span className="text-[#006a4e]">ব্লগ</span>
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#006a4e]">
+              ব্লগ
+            </p>
+            <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
+              আইন ও <span className="text-[#006a4e]">নির্দেশিকা</span>
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 m-0 text-lg">
-              ভূমি সংক্রান্ত গুরুত্বপূর্ণ আইনি পরামর্শ এবং টিপস।
+            <p className="m-0 text-base text-slate-500 dark:text-slate-400">
+              ভূমি সংক্রান্ত ব্যবহারিক টিপস ও আইনি সারাংশ।
             </p>
           </div>
           <Link
-            href="/blog"
-            className="inline-flex items-center gap-2 text-[#006a4e] font-medium hover:underline no-underline shrink-0"
+            href={FEATURE_ROUTES.blog}
+            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-bold text-[#006a4e] no-underline hover:underline"
           >
             সবগুলো দেখুন <ArrowRight size={16} />
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {blogPosts.map((post) => (
-            <Link
-              href={`/blog/${post.categorySlug || 'general'}/${post.slug || post.id}`}
-              key={post.id}
-              className={`bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 p-0 fade-in group no-underline hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${
-                isLoaded ? "visible" : ""
-              }`}
-              style={{ transitionDelay: post.delay }}
-            >
-              <div
-                className="h-48 w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                style={{ backgroundImage: `url('${post.image}')` }}
-              ></div>
-              <div className="p-6 relative bg-white dark:bg-slate-900">
-                <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-xs mb-3">
-                  <div className="flex items-center gap-1">
-                    <User size={14} />
-                    {post.author}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock size={14} />
-                    {post.date}
-                  </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {posts.map((post) => {
+            const href = `/blog/${post.categorySlug || "general"}/${post.slug || post.id}`;
+            return (
+              <Link
+                key={post.id}
+                href={href}
+                className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/50 no-underline shadow-sm transition hover:-translate-y-1 hover:border-[#006a4e]/30 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex h-36 items-end bg-gradient-to-br from-[#006a4e]/90 to-slate-800 p-5">
+                  <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                    {post.category || "ভূমি"}
+                  </span>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-[#006a4e] transition-colors leading-snug">
-                  {post.title}
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-                  {post.excerpt}
-                </p>
-                <div className="text-[#006a4e] font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                  আরও পড়ুন <ArrowRight size={14} />
+                <div className="flex flex-1 flex-col p-5">
+                  {post.createdAt && (
+                    <div className="mb-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <Clock size={12} />
+                      {formatBnDate(post.createdAt)}
+                    </div>
+                  )}
+                  <h3 className="mb-2 text-lg font-bold leading-snug text-slate-900 transition group-hover:text-[#006a4e] dark:text-white">
+                    {post.title}
+                  </h3>
+                  {post.excerpt && (
+                    <p className="mb-4 line-clamp-2 flex-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                      {post.excerpt}
+                    </p>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-sm font-bold text-[#006a4e] transition group-hover:gap-2">
+                    আরও পড়ুন <ArrowRight size={14} />
+                  </span>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
