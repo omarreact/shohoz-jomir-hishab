@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   AlertCircle,
   CheckCircle2,
   Copy,
   Database,
+  Download,
   Loader2,
   MapPin,
   Search,
@@ -44,6 +45,11 @@ function normalizePlotInput(raw: string): string {
 function rsPlotNo(f: RajukPlotFeature): string {
   const a = f.attributes as Record<string, unknown>;
   return String(a.rs_plot_no ?? a.plot_no ?? "").trim();
+}
+
+function msPlotNo(f: RajukPlotFeature): string {
+  const a = f.attributes as Record<string, unknown>;
+  return String(a.ms_plot_no ?? a.plot_no ?? "").trim();
 }
 
 function attrStr(
@@ -174,14 +180,19 @@ export default function RajukTestPage() {
   const [loadingPlots, setLoadingPlots] = useState(false);
   const [plotInput, setPlotInput] = useState("");
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
+  const [msInside, setMsInside] = useState<RajukPlotFeature[]>([]);
+  const [loadingMs, setLoadingMs] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [lastRequestUrl, setLastRequestUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setPlots([]);
     setPlotsLoaded(false);
     setSelected(null);
+    setMsInside([]);
     setPlotInput("");
     setSearchError("");
     setLastRequestUrl("");
@@ -192,6 +203,7 @@ export default function RajukTestPage() {
     setLoadingPlots(true);
     setSearchError("");
     setSelected(null);
+    setMsInside([]);
     loc.setError("");
     const q = new URLSearchParams({
       action: "plots",
@@ -219,6 +231,7 @@ export default function RajukTestPage() {
   const runSearch = useCallback(() => {
     setSearchError("");
     setSelected(null);
+    setMsInside([]);
     const bare = normalizePlotInput(plotInput);
     if (!bare || bare === "0") {
       setSearchError("দয়া করে একটি RS Plot Number লিখুন।");
@@ -269,6 +282,30 @@ export default function RajukTestPage() {
     }
   };
 
+  const handleDownloadPng = async () => {
+    if (!exportRef.current || !selected) return;
+    setDownloading(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      const plotLabel = normalizePlotInput(rsPlotNo(selected)) || "plot";
+      const link = document.createElement("a");
+      link.download = `RS-${plotLabel}-LandBD.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error(err);
+      setSearchError("ছবি ডাউনলোডে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const resultRows = useMemo(() => {
     if (!selected) return [];
     const a = selected.attributes as Record<string, unknown>;
@@ -277,35 +314,55 @@ export default function RajukTestPage() {
     const bare = normalizePlotInput(plotDisplay);
     return [
       {
-        label: "RS Plot Number",
+        label: "আরএস প্লট নম্বর",
         value: plotDisplay.startsWith("RS") ? plotDisplay : `RS-${bare}`,
       },
-      { label: "Plot No", value: bare },
-      { label: "JL No", value: attrStr(a, ["jl_no", "rs_jl_no"]) },
+      { label: "প্লট নং", value: bare },
+      { label: "জেএল নং", value: attrStr(a, ["jl_no", "rs_jl_no"]) },
       {
-        label: "Area (katha)",
+        label: "পরিমাণ (শতাংশ)",
+        value: area.isValid ? `${formatAreaValue(area.shotok, 4)} শতাংশ` : "—",
+      },
+      {
+        label: "পরিমাণ (কাঠা)",
         value: area.isValid ? formatAreaValue(area.katha) : "—",
       },
       {
-        label: "Mauza",
+        label: "মৌজা",
         value: attrStr(a, ["mauza", "rs_mauza_name", "mauza_name"]),
       },
       {
-        label: "Thana/Upazila",
+        label: "থানা / উপজেলা",
         value: attrStr(a, ["upazila_ps", "thana_upazila", "upazila"]),
       },
       {
-        label: "District",
+        label: "জেলা",
         value: attrStr(a, ["m_district", "district", "district_name"]),
       },
       {
-        label: "Address",
+        label: "ঠিকানা",
         value: attrStr(a, ["address_search", "address"]),
       },
     ];
   }, [selected]);
 
+  const msRows = useMemo(() => {
+    return msInside.map((f, i) => {
+      const a = f.attributes as Record<string, unknown>;
+      const area = areaFromPlotAttributes(a);
+      const no = msPlotNo(f) || String(i + 1);
+      return {
+        no,
+        shotok: area.isValid ? formatAreaValue(area.shotok, 4) : "—",
+        katha: area.isValid ? formatAreaValue(area.katha) : "—",
+      };
+    });
+  }, [msInside]);
+
   const error = loc.error || searchError;
+  const rsArea = selected
+    ? areaFromPlotAttributes(selected.attributes as Record<string, unknown>)
+    : null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 md:px-8">
@@ -455,32 +512,126 @@ export default function RajukTestPage() {
 
         {selected && (
           <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-slate-800">ফলাফল</h2>
                 <p className="text-xs text-slate-500">1টি RS প্লট পাওয়া গেছে</p>
               </div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-[#006a4e]">
-                <MapPin size={13} />
-                RS · FeatureServer/0
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-[#006a4e]">
+                  <MapPin size={13} />
+                  RS · FeatureServer/0
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDownloadPng}
+                  disabled={downloading || loadingMs}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#006a4e] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {downloading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      তৈরি হচ্ছে…
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} />
+                      PNG ডাউনলোড
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full text-sm">
-                <tbody>
-                  {resultRows.map(({ label, value }) => (
-                    <tr key={label}>
-                      <th className="w-[38%] border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-left font-medium text-slate-600">
-                        {label}
-                      </th>
-                      <td className="border-b border-slate-100 px-4 py-2.5 text-slate-900">
-                        {value}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Exportable card — high-res PNG source */}
+            <div
+              ref={exportRef}
+              className="rounded-xl border border-slate-200 bg-white p-5"
+              style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
+            >
+              <div className="mb-4 border-b border-slate-200 pb-3">
+                <div className="text-lg font-bold text-[#006a4e]">সহজ জমির হিসাব · LandBD</div>
+                <div className="text-sm font-semibold text-slate-800">RAJUK RS প্লট ফলাফল</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {new Date().toLocaleString("bn-BD", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {resultRows.map(({ label, value }) => (
+                      <tr key={label}>
+                        <th className="w-[40%] border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-left font-medium text-slate-600">
+                          {label}
+                        </th>
+                        <td className="border-b border-slate-100 px-4 py-2.5 text-slate-900">
+                          {value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="mb-2 text-sm font-bold text-slate-800">
+                  এই RS এর অন্তর্ভুক্ত MS প্লট
+                  {loadingMs
+                    ? " (লোড হচ্ছে…)"
+                    : msRows.length > 0
+                      ? ` — ${msRows.length}টি`
+                      : " — পাওয়া যায়নি"}
+                </h3>
+                {msRows.length > 0 ? (
+                  <div className="overflow-hidden rounded-xl border border-violet-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-violet-50 text-left text-xs font-semibold text-violet-800">
+                          <th className="px-3 py-2">ক্রম</th>
+                          <th className="px-3 py-2">MS প্লট নম্বর</th>
+                          <th className="px-3 py-2">পরিমাণ (শতাংশ)</th>
+                          <th className="px-3 py-2">পরিমাণ (কাঠা)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {msRows.map((row, i) => (
+                          <tr key={`${row.no}-${i}`} className="border-t border-violet-100">
+                            <td className="px-3 py-2 text-slate-600">{i + 1}</td>
+                            <td className="px-3 py-2 font-medium text-slate-900">
+                              {row.no.startsWith("MS") ? row.no : `MS-${row.no}`}
+                            </td>
+                            <td className="px-3 py-2 text-slate-900">{row.shotok}</td>
+                            <td className="px-3 py-2 text-slate-900">{row.katha}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : !loadingMs ? (
+                  <p className="text-xs text-slate-500">
+                    এই RS প্লটের সীমানার ভিতরে কোনো MS প্লট পাওয়া যায়নি।
+                  </p>
+                ) : null}
+              </div>
+
+              {rsArea?.isValid && (
+                <p className="mt-3 text-xs text-slate-500">
+                  RS মোট আনুমানিক পরিমাণ: {formatAreaValue(rsArea.shotok, 4)} শতাংশ
+                  {" · "}
+                  {formatAreaValue(rsArea.katha)} কাঠা
+                </p>
+              )}
+
+              <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-400">
+                এই তথ্য RAJUK সার্ভে ডেটা থেকে নেওয়া হয়েছে এবং শুধুমাত্র সহায়ক উদ্দেশ্যে।
+                আনুষ্ঠানিক কাজে সংশ্লিষ্ট অফিস থেকে যাচাই করুন। — landbd.pincodeit.com
+              </p>
             </div>
+
             {isLoggedIn && lastRequestUrl && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -512,9 +663,15 @@ export default function RajukTestPage() {
             )}
             <div>
               <h3 className="mb-2 text-sm font-semibold text-slate-700">
-                Plot boundary
+                প্লট সীমানা (মানচিত্র)
               </h3>
-              <PlotMap feature={selected} features={[]} />
+              <PlotMap
+                feature={selected}
+                onMsFeaturesChange={(ms, loading) => {
+                  setMsInside(ms);
+                  setLoadingMs(loading);
+                }}
+              />
             </div>
           </section>
         )}

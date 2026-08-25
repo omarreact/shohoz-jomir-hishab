@@ -93,9 +93,11 @@ function isMsFeature(f: RajukPlotFeature): boolean {
  */
 export default function MsAwarePlotMap({
   feature,
+  onMsFeaturesChange,
 }: {
   feature: RajukPlotFeature;
   features?: RajukPlotFeature[];
+  onMsFeaturesChange?: (ms: RajukPlotFeature[], loading: boolean) => void;
 }) {
   const [msFeatures, setMsFeatures] = useState<RajukPlotFeature[]>([]);
   const [loadingMs, setLoadingMs] = useState(false);
@@ -103,18 +105,21 @@ export default function MsAwarePlotMap({
   useEffect(() => {
     if (!feature?.geometry?.rings?.length) {
       setMsFeatures([]);
+      onMsFeaturesChange?.([], false);
       return;
     }
 
     const env = envelopeFromRings(feature.geometry.rings);
     if (!env) {
       setMsFeatures([]);
+      onMsFeaturesChange?.([], false);
       return;
     }
 
     const rsRings = feature.geometry.rings;
     let cancelled = false;
     setLoadingMs(true);
+    onMsFeaturesChange?.([], true);
 
     const q = new URLSearchParams({
       action: "extent",
@@ -142,9 +147,13 @@ export default function MsAwarePlotMap({
           return pointInPolygon(c.lng, c.lat, rsRings);
         });
         setMsFeatures(inside);
+        onMsFeaturesChange?.(inside, false);
       })
       .catch(() => {
-        if (!cancelled) setMsFeatures([]);
+        if (!cancelled) {
+          setMsFeatures([]);
+          onMsFeaturesChange?.([], false);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingMs(false);
