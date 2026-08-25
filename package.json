@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit",
     "rajuk:export": "tsx scripts/rajuk-export.ts"
   },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "dependencies": {
-    "@arcgis/core": "^4.34.8",
     "@hookform/resolvers": "^5.4.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -85,7 +87,6 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "firebase-tools": "^15.24.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "tsx": "4.19.2",

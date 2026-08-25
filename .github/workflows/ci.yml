@@ -24,6 +24,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
+        # Use npm install until package-lock is regenerated after dep removals
         run: npm install --no-audit --no-fund
 
       - name: Lint
@@ -34,3 +35,5 @@ jobs:
 
       - name: Production build
         run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
