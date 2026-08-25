@@ -1,27 +1,33 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getAuth, type Auth } from "firebase-admin/auth";
 
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  let initialized = false;
+let adminReady = false;
+
+function normalizePrivateKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let key = raw.trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  return key.replace(/\\n/g, "\n");
+}
+
+function initAdmin(): void {
+  if (getApps().length) {
+    adminReady = true;
+    return;
+  }
+
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+
   try {
-    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    
-    if (privateKey) {
-      // Remove any surrounding quotes that might have been accidentally pasted
-      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-        privateKey = privateKey.slice(1, -1);
-      }
-      if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-        privateKey = privateKey.slice(1, -1);
-      }
-      // Replace escaped newlines with actual newlines
-      privateKey = privateKey.replace(/\\n/g, '\n');
-    }
-
     if (projectId && clientEmail && privateKey) {
       initializeApp({
         projectId,
@@ -31,32 +37,45 @@ if (!getApps().length) {
           privateKey,
         }),
       });
-      initialized = true;
-    } else {
-      console.warn("FirebaseAdmin Init: Missing credentials.");
+      adminReady = true;
+      return;
     }
-  } catch (error: any) {
-    console.error('Firebase admin initialization error:', error.message);
-  }
 
-  // Fallback to prevent top-level module crash when calling getFirestore()
-  if (!initialized && !getApps().length) {
-    const fallbackProjectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-project";
-    initializeApp({ projectId: fallbackProjectId });
+    console.warn(
+      "[FirebaseAdmin] Missing FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY. Using project-only fallback (token verify may fail).",
+    );
+    initializeApp({ projectId: projectId || "demo-project" });
+    adminReady = false;
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[FirebaseAdmin] initialization error:", msg);
+    if (!getApps().length) {
+      initializeApp({
+        projectId: projectId || "demo-project",
+      });
+    }
+    adminReady = false;
   }
 }
 
-export const db = getFirestore();
-export const auth = getAuth();
+initAdmin();
+
+/** True when full service-account credentials were loaded. */
+export function isFirebaseAdminReady(): boolean {
+  return adminReady;
+}
+
+export const db: Firestore = getFirestore();
+export const auth: Auth = getAuth();
 
 export const collections = {
-  users: db.collection('users'),
-  rajukPlots: db.collection('rajukPlots'),
-  blogs: db.collection('blogs'),
-  pages: db.collection('customPages'),
-  settings: db.collection('siteSettings'),
-  comments: db.collection('blogComments'),
-  notifications: db.collection('notifications'),
-  sessions: db.collection('sessions'),
-  loginHistory: db.collection('loginHistory'),
+  users: db.collection("users"),
+  rajukPlots: db.collection("rajukPlots"),
+  blogs: db.collection("blogs"),
+  pages: db.collection("customPages"),
+  settings: db.collection("siteSettings"),
+  comments: db.collection("blogComments"),
+  notifications: db.collection("notifications"),
+  sessions: db.collection("sessions"),
+  loginHistory: db.collection("loginHistory"),
 };
