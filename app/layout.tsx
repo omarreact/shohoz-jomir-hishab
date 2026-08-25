@@ -67,8 +67,9 @@ export default function RootLayout({
           overflowX: "hidden",
         }}
       >
+        {/* attribute="class" so Tailwind `dark:` utilities track next-themes */}
         <ThemeProvider
-          attribute="data-theme"
+          attribute="class"
           defaultTheme={SITE_CONFIG.theme.default}
           enableSystem
           disableTransitionOnChange
