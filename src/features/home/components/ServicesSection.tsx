@@ -1,78 +1,111 @@
-import { Search, Map, FileText, Layout } from "lucide-react";
-import { t } from "@/src/locales";
+import Link from "next/link";
+import {
+  Calculator,
+  Ruler,
+  Scale,
+  Map,
+  FileText,
+  BookOpen,
+  ArrowRight,
+  type LucideIcon,
+} from "lucide-react";
+import { FEATURE_ROUTES, FEATURE_LABELS } from "@/src/shared/config/feature-routes";
 
-const services = [
+type ToolCard = {
+  href: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  badge?: string;
+};
+
+const TOOLS: ToolCard[] = [
   {
-    id: "search",
-    title: t.services.searchPlot.title,
-    description: t.services.searchPlot.description,
-    icon: Search,
-    delay: "0s",
+    href: FEATURE_ROUTES.records,
+    title: FEATURE_LABELS.records.bn,
+    description:
+      "সিএস, এসএ, আরএস খতিয়ানের আনা-গন্ডা, শতাংশ ও কাঠা হিসাব করুন।",
+    icon: Calculator,
+    badge: "জনপ্রিয়",
   },
   {
-    id: "records",
-    title: t.services.landRecords.title,
-    description: t.services.landRecords.description,
-    icon: FileText,
-    delay: "100ms",
+    href: FEATURE_ROUTES.landMeasurement,
+    title: FEATURE_LABELS.landMeasurement.bn,
+    description: "স্কয়ার ফিট, শতাংশ, কাঠা ও একর একক রূপান্তর ও পরিমাপ।",
+    icon: Ruler,
   },
   {
-    id: "documents",
-    title: t.services.documents.title,
-    description: t.services.documents.description,
-    icon: Layout,
-    delay: "200ms",
+    href: FEATURE_ROUTES.inheritance,
+    title: FEATURE_LABELS.inheritance.bn,
+    description: "ইসলামি উত্তরাধিকার নিয়মে ওয়ারিশদের অংশ স্বয়ংক্রিয় বণ্টন।",
+    icon: Scale,
   },
   {
-    id: "maps",
-    title: t.services.surveyMaps.title,
-    description: t.services.surveyMaps.description,
+    href: FEATURE_ROUTES.landMap,
+    title: FEATURE_LABELS.landMap.bn,
+    description: "RS ও MS মৌজা টাইল, প্লট ট্যাপ ও সীমানা দেখুন (পাবলিক)।",
     icon: Map,
-    delay: "300ms",
+    badge: "নতুন",
+  },
+  {
+    href: FEATURE_ROUTES.documents,
+    title: FEATURE_LABELS.documents.bn,
+    description: "পর্চা ও সংশ্লিষ্ট দলিল সংক্রান্ত সহায়ক তথ্য।",
+    icon: FileText,
+  },
+  {
+    href: FEATURE_ROUTES.blog,
+    title: FEATURE_LABELS.blog.bn,
+    description: "ভূমি আইন, রেজিস্ট্রেশন ও ব্যবহারিক নির্দেশিকা।",
+    icon: BookOpen,
   },
 ];
 
 export default function ServicesSection() {
   return (
-    <section id="features" className="py-24 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16 fade-in visible">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white">
+    <section
+      id="tools"
+      className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-950 md:py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#006a4e]">
+            টুলস
+          </p>
+          <h2 className="mb-3 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
             একের ভেতর <span className="text-[#006a4e]">সব সমাধান</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
-            ভূমি সংক্রান্ত জটিল কাজগুলো এখন স্মার্ট প্রযুক্তির সাহায্যে মুহূর্তেই সমাধান করুন।
+          <p className="mx-auto max-w-2xl text-base text-slate-500 dark:text-slate-400 md:text-lg">
+            খতিয়ান হিসাব থেকে মানচিত্র পর্যন্ত—প্রয়োজনীয় টুল বেছে নিয়ে এখনই
+            শুরু করুন।
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="bg-white dark:bg-slate-900 h-full border-0 shadow-sm rounded-3xl transition-all hover:shadow-lg overflow-hidden fade-in visible group relative"
-              style={{ transitionDelay: service.delay }}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.map((tool) => (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="group relative flex h-full flex-col rounded-3xl border border-slate-200 bg-slate-50/80 p-6 no-underline shadow-sm transition hover:-translate-y-1 hover:border-[#006a4e]/35 hover:bg-white hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80 dark:hover:bg-slate-900"
             >
-              <div className="p-6 md:p-8 relative">
-                {/* Ghost background icon */}
-                <div
-                  className="absolute top-0 right-0 opacity-[0.03] dark:opacity-10 -translate-y-4 -mr-4 pointer-events-none"
-                >
-                  <service.icon size={120} className="text-[#006a4e]" />
-                </div>
-
-                <div className="flex justify-between items-start mb-6 relative z-10">
-                  <div
-                    className="bg-[#006a4e]/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ width: 65, height: 65 }}
-                  >
-                    <service.icon size={32} className="text-[#006a4e]" />
-                  </div>
-                </div>
-
-                <h4 className="font-bold mb-3 text-slate-900 dark:text-white text-xl relative z-10">{service.title}</h4>
-                <p className="text-slate-500 dark:text-slate-400 mb-0 relative z-10 leading-loose text-sm">{service.description}</p>
+              {tool.badge && (
+                <span className="absolute right-4 top-4 rounded-full bg-[#006a4e]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#006a4e]">
+                  {tool.badge}
+                </span>
+              )}
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#006a4e]/10 transition group-hover:scale-110">
+                <tool.icon size={28} className="text-[#006a4e]" />
               </div>
-            </div>
+              <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+                {tool.title}
+              </h3>
+              <p className="mb-4 flex-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                {tool.description}
+              </p>
+              <span className="inline-flex items-center gap-1 text-sm font-bold text-[#006a4e] transition group-hover:gap-2">
+                খুলুন <ArrowRight size={14} />
+              </span>
+            </Link>
           ))}
         </div>
       </div>

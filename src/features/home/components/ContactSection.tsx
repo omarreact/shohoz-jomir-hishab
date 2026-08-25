@@ -1,63 +1,41 @@
-"use client";
-
-import { Send, Mail, User, MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Mail, MessageCircle, ArrowRight } from "lucide-react";
+import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+import { SITE_CONFIG } from "@/src/shared/config/site";
 
 export default function ContactSection() {
   return (
-    <section className="py-24 relative overflow-hidden bg-white dark:bg-slate-950">
-      {/* Background with slight gradient overlay */}
-      <div className="absolute inset-0 bg-[#006a4e] opacity-[0.02] dark:opacity-5 pointer-events-none"></div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="bg-white dark:bg-slate-900 shadow-xl rounded-3xl p-8 md:p-12 lg:p-16 text-center max-w-4xl mx-auto border border-slate-200 dark:border-slate-800 fade-in visible">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-slate-900 dark:text-white leading-tight">
-            যেকোনো প্রয়োজনে <br />
-            আমাদের সাথে <span className="text-[#006a4e]">যোগাযোগ করুন</span>
+    <section className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-950 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 text-center shadow-lg dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 md:p-12">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#006a4e]/10">
+            <MessageCircle size={28} className="text-[#006a4e]" />
+          </div>
+          <h2 className="mb-3 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+            সাহায্য দরকার?{" "}
+            <span className="text-[#006a4e]">যোগাযোগ করুন</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-            ভূমি সংক্রান্ত যেকোনো আইনি সহায়তা, সিস্টেমের সমস্যা অথবা পরামর্শের
-            জন্য আমাদের এক্সপার্ট টিমের সাথে যোগাযোগ করুন।
+          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-slate-500 dark:text-slate-400">
+            টুল বা সাইট সংক্রান্ত প্রশ্ন, পরামর্শ বা সমস্যার জন্য ইমেইল করুন। আমরা
+            যত দ্রুত সম্ভব উত্তর দেওয়ার চেষ্টা করি।
           </p>
 
-          <form className="max-w-md mx-auto space-y-5 text-left">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <User size={20} className="text-slate-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="আপনার নাম"
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e] transition-colors"
-              />
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail size={20} className="text-slate-400" />
-              </div>
-              <input
-                type="email"
-                placeholder="আপনার ইমেইল"
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e] transition-colors"
-              />
-            </div>
-            <div className="relative">
-              <div className="absolute top-4 left-0 pl-4 pointer-events-none">
-                <MessageSquare size={20} className="text-slate-400" />
-              </div>
-              <textarea
-                placeholder="আপনার বার্তা"
-                rows={4}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e] transition-colors resize-none"
-              ></textarea>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#006a4e] text-white font-bold text-lg py-4 rounded-2xl mt-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href={`mailto:${SITE_CONFIG.contactEmail}`}
+              className="inline-flex items-center gap-2 rounded-full bg-[#006a4e] px-6 py-3.5 text-sm font-bold text-white no-underline shadow-md transition hover:bg-[#005a42]"
             >
-              <Send size={18} />
-              মেসেজ পাঠান
-            </button>
-          </form>
+              <Mail size={16} />
+              {SITE_CONFIG.contactEmail}
+            </a>
+            <Link
+              href={FEATURE_ROUTES.contact}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-900 no-underline transition hover:border-[#006a4e]/40 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            >
+              যোগাযোগ পৃষ্ঠা
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </div>
     </section>
