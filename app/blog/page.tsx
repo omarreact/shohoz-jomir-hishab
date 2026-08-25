@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import BlogCard, { BlogPost } from "@/src/features/blog/components/BlogCard";
 import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
-import { Search, Loader2 } from "lucide-react";
+import { Search } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
+import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 
 type ApiBlog = {
   id: string;
@@ -42,27 +43,91 @@ function toBlogPost(b: ApiBlog): BlogPost {
   };
 }
 
+function staticFallback(): BlogPost[] {
+  return STATIC_BLOG_POSTS.filter((p) => p.status === "Published").map((p) =>
+    toBlogPost({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      excerpt: p.excerpt,
+      coverImage: p.coverImage,
+      author: p.author,
+      category: p.category,
+      categorySlug: p.categorySlug,
+      status: p.status,
+      readingTime: p.readingTime,
+      createdAt: p.createdAt,
+    }),
+  );
+}
+
+function BlogSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pulse"
+        >
+          <div className="h-44 bg-slate-200 dark:bg-slate-800" />
+          <div className="p-4 space-y-3">
+            <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+            <div className="h-5 w-full rounded bg-slate-200 dark:bg-slate-700" />
+            <div className="h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BlogListingPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [featuredPost, setFeaturedPost] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("সকল পোস্ট");
 
-  useEffect(() => {
-    fetch("/api/blogs?status=Published")
-      .then((r) => (r.ok ? r.json() : { success: false, data: { blogs: [] } }))
-      .then((json) => {
-        const list: ApiBlog[] = json?.data?.blogs ?? json?.blogs ?? [];
-        const blogData: BlogPost[] = list.map(toBlogPost);
-        if (blogData.length > 0) {
-          setFeaturedPost(blogData[0]);
-          setPosts(blogData.slice(1));
-        }
-      })
-      .catch((err) => console.error("Error fetching blogs:", err))
-      .finally(() => setIsLoading(false));
+  const applyList = useCallback((blogData: BlogPost[]) => {
+    if (blogData.length > 0) {
+      setFeaturedPost(blogData[0]);
+      setPosts(blogData.slice(1));
+    } else {
+      setFeaturedPost(null);
+      setPosts([]);
+    }
   }, []);
+
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 12000);
+    try {
+      const r = await fetch("/api/blogs?status=Published", {
+        signal: ac.signal,
+        cache: "no-store",
+      });
+      const json = r.ok ? await r.json() : null;
+      const list: ApiBlog[] = json?.data?.blogs ?? json?.blogs ?? [];
+      let blogData = list.map(toBlogPost);
+      if (blogData.length === 0) {
+        blogData = staticFallback();
+      }
+      applyList(blogData);
+    } catch {
+      setLoadError(true);
+      applyList(staticFallback());
+    } finally {
+      clearTimeout(timer);
+      setIsLoading(false);
+    }
+  }, [applyList]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const categories = [
     "সকল পোস্ট",
@@ -84,33 +149,11 @@ export default function BlogListingPage() {
   const displayFeatured =
     featuredPost && activeCategory === "সকল পোস্ট" && searchQuery === "";
 
-  if (isLoading) {
-    return (
-      <>
-        <HeroBanner
-          align="center"
-          badge="LandBD জার্নাল"
-          title={
-            <>
-              ভূমি সম্পর্কিত{" "}
-              <span className="text-[#006a4e]">জ্ঞানের ভাণ্ডার</span>
-            </>
-          }
-          description="বাংলাদেশের ভূমি আইন, ডিজিটাল জরিপ এবং উত্তরাধিকার সম্পর্কে ইনসাইট, গাইড এবং আপডেট।"
-          pattern="none"
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#006a4e]" />
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <HeroBanner
         align="center"
-        badge="LandBD জার্নাল"
+        badge="ভূমি জ্ঞানভাণ্ডার"
         title={
           <>
             ভূমি সম্পর্কিত{" "}
@@ -122,77 +165,102 @@ export default function BlogListingPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible min-h-screen">
-        {displayFeatured && featuredPost && (
-          <section className="mb-16">
-            <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
-              ফিচার্ড আর্টিকেল
-            </h4>
-            <BlogCard post={featuredPost} featured={true} />
-          </section>
+        {loadError && (
+          <p className="mb-6 text-center text-sm text-amber-700 dark:text-amber-400">
+            সার্ভার থেকে লোড বিলম্বিত — স্থানীয় গাইড পোস্ট দেখানো হচ্ছে।{" "}
+            <button type="button" className="font-bold underline" onClick={() => void load()}>
+              আবার চেষ্টা
+            </button>
+          </p>
         )}
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex gap-2 w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 rounded-full font-bold whitespace-nowrap transition-colors ${
-                  activeCategory === cat
-                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
-                    : "border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-          <div className="w-full md:w-80 relative">
-            <input
-              type="text"
-              placeholder="আর্টিকেল খুঁজুন..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-full px-5 py-2.5 pl-10 focus:outline-none focus:border-[#006a4e] transition-colors"
-            />
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-          </div>
-        </div>
+        {isLoading ? (
+          <BlogSkeleton />
+        ) : (
+          <>
+            {displayFeatured && featuredPost && (
+              <section className="mb-16">
+                <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
+                  ফিচার্ড আর্টিকেল
+                </h4>
+                <BlogCard post={featuredPost} featured={true} />
+              </section>
+            )}
 
-        <section className="mb-16">
-          {filteredPosts.length > 0 ? (
-            <>
-              <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
-                {searchQuery || activeCategory !== "সকল পোস্ট"
-                  ? "ফলাফল"
-                  : "সাম্প্রতিক পোস্টসমূহ"}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(searchQuery || activeCategory !== "সকল পোস্ট"
-                  ? filteredPosts
-                  : displayFeatured
-                    ? posts
-                    : allPosts
-                ).map((post) => (
-                  <BlogCard key={post.slug} post={post} />
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex gap-2 w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-5 py-2 rounded-full font-bold whitespace-nowrap transition-colors ${
+                      activeCategory === cat
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                        : "border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600"
+                    }`}
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
-            </>
-          ) : (
-            <div className="text-center py-20">
-              <p className="text-xl text-slate-500 dark:text-slate-400">
-                কোনো পোস্ট পাওয়া যায়নি।
-              </p>
+              <div className="w-full md:w-80 relative">
+                <input
+                  type="text"
+                  placeholder="আর্টিকেল খুঁজুন..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-full px-5 py-2.5 pl-10 focus:outline-none focus:border-[#006a4e] transition-colors"
+                />
+                <Search
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+              </div>
             </div>
-          )}
-        </section>
 
-        <section className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-16">
-          <NewsletterCta />
-        </section>
+            <section className="mb-16">
+              {filteredPosts.length > 0 ? (
+                <>
+                  <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
+                    {searchQuery || activeCategory !== "সকল পোস্ট"
+                      ? "ফলাফল"
+                      : "সাম্প্রতিক পোস্টসমূহ"}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {(searchQuery || activeCategory !== "সকল পোস্ট"
+                      ? filteredPosts
+                      : displayFeatured
+                        ? posts
+                        : allPosts
+                    ).map((post) => (
+                      <BlogCard key={post.slug} post={post} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-20">
+                  <p className="text-xl text-slate-500 dark:text-slate-400 mb-4">
+                    কোনো পোস্ট পাওয়া যায়নি।
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setActiveCategory("সকল পোস্ট");
+                    }}
+                    className="font-bold text-[#006a4e] underline"
+                  >
+                    ফিল্টার মুছুন
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <section className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-16">
+              <NewsletterCta />
+            </section>
+          </>
+        )}
       </div>
     </>
   );
