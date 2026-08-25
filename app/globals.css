@@ -30,8 +30,9 @@
   --radius-lg: .875rem;
   --radius-md: .75rem;
   --radius-sm: .625rem;
-  --font-tiro-bangla: "Tiro Bangla", "Noto Sans Bengali", "Hind Siliguri", "Nirmala UI", "Segoe UI", sans-serif;
-  --font-sans: var(--font-tiro-bangla);
+  /* next/font injects --font-hind-siliguri / --font-noto-bengali on <html> */
+  --font-bangla: var(--font-hind-siliguri), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-bangla);
 }
 
 @layer base {
@@ -72,7 +73,7 @@
     margin: 0;
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-tiro-bangla);
+    font-family: var(--font-bangla);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
