@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { claimsForRole } from "@/src/modules/auth/roles";
+import { claimsForRole, isSuperAdminRole } from "@/src/modules/auth/roles";
 import { auth, collections } from "@/src/modules/database/firebaseAdmin";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await verifyAdminAuth(request);
+    const actor = await verifyAdminAuth(request);
     const { id } = await params;
 
     const body = await request.json();
@@ -25,6 +25,28 @@ export async function PUT(
 
     if (!docSnap.exists) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+    }
+
+    const existingRole = docSnap.data()?.role as string | undefined;
+
+    if (validated.role === "Super Admin" && !isSuperAdminRole(actor.role)) {
+      return NextResponse.json(
+        { success: false, message: "শুধুমাত্র Super Admin এই রোল দিতে পারেন।" },
+        { status: 403 },
+      );
+    }
+
+    // Prevent non–Super Admin from demoting an existing Super Admin
+    if (
+      existingRole === "Super Admin" &&
+      validated.role &&
+      validated.role !== "Super Admin" &&
+      !isSuperAdminRole(actor.role)
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Super Admin রোল পরিবর্তনের অনুমতি নেই।" },
+        { status: 403 },
+      );
     }
 
     if (validated.name) {
@@ -77,7 +99,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await verifyAdminAuth(request);
+    const actor = await verifyAdminAuth(request);
     const { id } = await params;
 
     const docRef = collections.users.doc(id);
@@ -85,6 +107,21 @@ export async function DELETE(
 
     if (!docSnap.exists) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+    }
+
+    const targetRole = docSnap.data()?.role as string | undefined;
+    if (targetRole === "Super Admin" && !isSuperAdminRole(actor.role)) {
+      return NextResponse.json(
+        { success: false, message: "Super Admin মুছে ফেলার অনুমতি নেই।" },
+        { status: 403 },
+      );
+    }
+
+    if (id === actor.id) {
+      return NextResponse.json(
+        { success: false, message: "নিজের অ্যাকাউন্ট মুছতে পারবেন না।" },
+        { status: 400 },
+      );
     }
 
     try {
