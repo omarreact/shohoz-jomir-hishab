@@ -45,6 +45,24 @@ type ApiBlog = {
   createdAt: string;
 };
 
+/** Next.js sometimes leaves path segments percent-encoded; never double-encode. */
+function normalizeRouteParam(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value ?? "";
+  if (!raw) return "";
+  let out = raw;
+  // Decode until stable (handles accidental double-encoding from the router)
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(out);
+      if (next === out) break;
+      out = next;
+    } catch {
+      break;
+    }
+  }
+  return out;
+}
+
 function apiBlogToPost(b: ApiBlog): PostData {
   return {
     id: b.id,
@@ -69,9 +87,12 @@ function apiBlogToPost(b: ApiBlog): PostData {
       const t = (b as any).tags;
       if (!t) return [];
       if (Array.isArray(t)) return t;
-      if (typeof t === 'string') {
-        try { return JSON.parse(t); } 
-        catch { return t.split(',').map(s => s.trim()).filter(Boolean); }
+      if (typeof t === "string") {
+        try {
+          return JSON.parse(t);
+        } catch {
+          return t.split(",").map((s) => s.trim()).filter(Boolean);
+        }
       }
       return [];
     })(),
@@ -80,7 +101,7 @@ function apiBlogToPost(b: ApiBlog): PostData {
 
 export default function SingleBlogPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = normalizeRouteParam(params.slug as string | string[] | undefined);
 
   const [post, setPost] = useState<PostData | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
@@ -91,15 +112,20 @@ export default function SingleBlogPage() {
   useEffect(() => {
     if (!slug) return;
     setErrorMsg(null);
+    setNotFound(false);
+    setIsLoading(true);
 
-    // Try by slug first, fall back to id lookup
+    // Try by slug first, fall back to Firestore document id
     fetch(`/api/blogs?slug=${encodeURIComponent(slug)}`)
       .then((r) => {
         if (r.status === 404) return fetch(`/api/blogs/${encodeURIComponent(slug)}`);
         return r;
       })
       .then((r) => {
-        if (r.status === 404) { setNotFound(true); return null; }
+        if (r.status === 404) {
+          setNotFound(true);
+          return null;
+        }
         if (r.status === 500) throw new Error("সার্ভারের সাথে সংযোগ করা যাচ্ছে না।");
         if (!r.ok) throw new Error("ব্লগ লোড করতে সমস্যা হয়েছে।");
         return r.json();
@@ -109,38 +135,40 @@ export default function SingleBlogPage() {
         if (!json.success) {
           throw new Error(json.message || "ব্লগ লোড করতে সমস্যা হয়েছে।");
         }
-        
+
         const blog = json.data.blog;
         setPost(apiBlogToPost(blog));
 
-        // Fetch related posts (same category)
         if (blog.category) {
           fetch(`/api/blogs?status=Published`)
-            .then((r) => r.ok ? r.json() : { data: { blogs: [] } })
+            .then((r) => (r.ok ? r.json() : { data: { blogs: [] } }))
             .then((resJson) => {
               const blogs: ApiBlog[] = resJson?.data?.blogs || [];
               const related = blogs
                 .filter((b) => b.category === blog.category && b.id !== blog.id)
                 .slice(0, 3)
-                .map((b) => ({
-                  slug: b.slug || b.id,
-                  title: b.title,
-                  excerpt: b.excerpt || "",
-                  coverImage:
-                    b.coverImage ||
-                    "https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop",
-                  author: b.author || "অ্যাডমিন",
-                  date: b.createdAt
-                    ? new Date(b.createdAt).toLocaleDateString("bn-BD", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
-                    : "",
-                  readingTime: b.readingTime || "৫ মিনিট পাঠ",
-                  category: b.category || "সাধারণ",
-                  categorySlug: b.categorySlug || "general",
-                } as BlogPost));
+                .map(
+                  (b) =>
+                    ({
+                      slug: b.slug || b.id,
+                      title: b.title,
+                      excerpt: b.excerpt || "",
+                      coverImage:
+                        b.coverImage ||
+                        "https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop",
+                      author: b.author || "অ্যাডমিন",
+                      date: b.createdAt
+                        ? new Date(b.createdAt).toLocaleDateString("bn-BD", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "",
+                      readingTime: b.readingTime || "৫ মিনিট পাঠ",
+                      category: b.category || "সাধারণ",
+                      categorySlug: b.categorySlug || "general",
+                    }) as BlogPost,
+                );
               setRelatedPosts(related);
             })
             .catch(() => {});
@@ -193,12 +221,19 @@ export default function SingleBlogPage() {
       <div className="relative flex items-center justify-center pt-32 pb-24 min-h-[500px]">
         <div
           className="absolute inset-0 w-full h-full opacity-20"
-          style={{ backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 1200)})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          style={{
+            backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 1200)})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         />
         <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent" />
 
         <div className="max-w-4xl mx-auto px-4 relative z-10 text-center mt-10">
-          <Link href="/blog" className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#006a4e] transition-colors mb-6 font-bold">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#006a4e] transition-colors mb-6 font-bold"
+          >
             <ArrowLeft size={18} /> জার্নালে ফিরে যান
           </Link>
           <div className="mb-6">
@@ -229,24 +264,27 @@ export default function SingleBlogPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Main Content */}
           <div className="lg:col-span-8 lg:col-start-1">
             <article
               className="prose prose-lg prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-white prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-a:text-[#006a4e] prose-strong:text-slate-900 dark:prose-strong:text-white prose-li:text-slate-600 dark:prose-li:text-slate-400"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
-            {/* Share and Tags */}
             <div className="flex flex-col md:flex-row justify-between items-center py-6 mt-12 border-t border-b border-slate-200 dark:border-slate-800 gap-6">
               <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag, i) => (
-                  <span key={i} className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span
+                    key={i}
+                    className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full text-sm font-medium"
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-bold text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">শেয়ার করুন:</span>
+                <span className="font-bold text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
+                  শেয়ার করুন:
+                </span>
                 <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:border-blue-400 hover:bg-blue-400/10 transition-colors">
                   <Share2 size={18} />
                 </button>
@@ -262,7 +300,6 @@ export default function SingleBlogPage() {
               </div>
             </div>
 
-            {/* Author Box */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm my-12 p-8 flex flex-col md:flex-row gap-6 items-center md:items-start border-l-4 border-l-blue-500">
               <div className="bg-slate-200 dark:bg-slate-800 rounded-full w-24 h-24 flex-shrink-0" />
               <div className="text-center md:text-left">
@@ -290,7 +327,6 @@ export default function SingleBlogPage() {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="hidden lg:block lg:col-span-4 lg:col-start-9">
             <TableOfContents />
           </div>
