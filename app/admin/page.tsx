@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -13,6 +13,8 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 
 type Tone = "green" | "amber" | "red" | "slate" | "blue";
 
@@ -29,34 +31,8 @@ type StatusRow = {
   detail: string;
   status: string;
   tone: Tone;
+  href?: string;
 };
-
-const serviceCards = [
-  {
-    title: "ডেটা মনিটর",
-    description: "Rajuk, Firebase ও LandBD API-র বর্তমান অবস্থা দেখুন।",
-    href: "/admin/data-monitor",
-    icon: BarChart3,
-  },
-  {
-    title: "ব্লগ ম্যানেজমেন্ট",
-    description: "পোস্ট তৈরি, সম্পাদনা ও প্রকাশ নিয়ন্ত্রণ করুন।",
-    href: "/admin/blog",
-    icon: PenTool,
-  },
-  {
-    title: "ইউজার ম্যানেজমেন্ট",
-    description: "অ্যাডমিন ও ইউজারদের রোল ও অ্যাক্সেস নিয়ন্ত্রণ করুন।",
-    href: "/admin/users",
-    icon: Users,
-  },
-  {
-    title: "সেটিংস",
-    description: "সাইট কনফিগ ও রক্ষণাবেক্ষণ মোড পরিচালনা করুন।",
-    href: "/admin/settings",
-    icon: Database,
-  },
-];
 
 const toneCard: Record<Tone, string> = {
   green:
@@ -115,123 +91,188 @@ function StatusSkeleton() {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const admin = isAdminRole(user?.role);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KpiCard[]>([]);
   const [statusRows, setStatusRows] = useState<StatusRow[]>([]);
 
+  const serviceCards = useMemo(() => {
+    const all = [
+      {
+        title: "ব্লগ ম্যানেজমেন্ট",
+        description: "পোস্ট তৈরি, সম্পাদনা ও প্রকাশ নিয়ন্ত্রণ করুন।",
+        href: "/admin/blog",
+        icon: PenTool,
+        adminOnly: false,
+      },
+      {
+        title: "কাস্টম পেজ",
+        description: "স্থির পেজ ও কন্টেন্ট পরিচালনা করুন।",
+        href: "/admin/custom-pages",
+        icon: FileText,
+        adminOnly: false,
+      },
+      {
+        title: "ডেটা মনিটর",
+        description: "Rajuk, Firebase ও LandBD API-র অবস্থা দেখুন।",
+        href: "/admin/data-monitor",
+        icon: BarChart3,
+        adminOnly: true,
+      },
+      {
+        title: "ইউজার ম্যানেজমেন্ট",
+        description: "রোল ও অ্যাক্সেস নিয়ন্ত্রণ করুন।",
+        href: "/admin/users",
+        icon: Users,
+        adminOnly: true,
+      },
+      {
+        title: "সেটিংস",
+        description: "সাইট কনফিগ ও রক্ষণাবেক্ষণ মোড।",
+        href: "/admin/settings",
+        icon: Database,
+        adminOnly: true,
+      },
+    ];
+    return all.filter((c) => (c.adminOnly ? admin : true));
+  }, [admin]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, healthRes] = await Promise.all([
-        fetch("/api/admin/stats", { cache: "no-store" }),
-        fetch("/api/admin/health", { cache: "no-store" }),
-      ]);
+      const res = await fetch("/api/admin/dashboard-kpis", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ড্যাশবোর্ড ডেটা লোড হয়নি");
 
-      const stats = statsRes.ok ? await statsRes.json() : null;
-      const health = healthRes.ok ? await healthRes.json() : null;
-
-      if (!stats && !health) {
-        throw new Error("ড্যাশবোর্ড ডেটা লোড হয়নি");
-      }
-
-      const userCount =
-        typeof stats?.userCount === "number" ? stats.userCount : null;
       const blogCount =
-        typeof stats?.blogCount === "number" ? stats.blogCount : null;
+        typeof data.blogCount === "number" ? data.blogCount : null;
       const pageCount =
-        typeof stats?.pageCount === "number" ? stats.pageCount : null;
-      const rajukSet = stats?.rajukTokenSet === true;
-      const maintenance = stats?.maintenanceMode === true;
-
-      const dbOk = health?.database?.connected === true;
-      const healthStatus = health?.status as string | undefined;
+        typeof data.pageCount === "number" ? data.pageCount : null;
+      const userCount =
+        typeof data.userCount === "number" ? data.userCount : null;
+      const rajukSet = data.rajukTokenSet === true;
+      const maintenance = data.maintenanceMode === true;
+      const dbOk = data.database?.connected === true;
+      const healthStatus = data.healthStatus as string | null;
       const latency =
-        typeof health?.database?.latency === "number"
-          ? health.database.latency
+        typeof data.database?.latency === "number"
+          ? data.database.latency
           : null;
 
-      const nextKpis: KpiCard[] = [
-        {
+      const nextKpis: KpiCard[] = [];
+
+      if (userCount != null) {
+        nextKpis.push({
           title: "মোট ইউজার",
-          value: userCount != null ? userCount.toLocaleString("bn-BD") : "—",
+          value: userCount.toLocaleString("bn-BD"),
           helper: "রেজিস্টার্ড অ্যাকাউন্ট",
           icon: Users,
           tone: "blue",
-        },
-        {
-          title: "ব্লগ পোস্ট",
-          value: blogCount != null ? blogCount.toLocaleString("bn-BD") : "—",
-          helper:
-            pageCount != null
-              ? `${pageCount.toLocaleString("bn-BD")} কাস্টম পেজ`
-              : "প্রকাশিত কন্টেন্ট",
-          icon: FileText,
-          tone: "green",
-        },
-        {
+        });
+      }
+
+      nextKpis.push({
+        title: "ব্লগ পোস্ট",
+        value: blogCount != null ? blogCount.toLocaleString("bn-BD") : "—",
+        helper:
+          pageCount != null
+            ? `${pageCount.toLocaleString("bn-BD")} কাস্টম পেজ`
+            : "কন্টেন্ট",
+        icon: FileText,
+        tone: "green",
+      });
+
+      if (data.rajukTokenSet != null) {
+        nextKpis.push({
           title: "রাজউক টোকেন",
           value: rajukSet ? "সেট" : "নেই",
           helper: rajukSet ? "কনফিগার করা আছে" : "সেটিংস থেকে যোগ করুন",
           icon: Zap,
           tone: rajukSet ? "green" : "amber",
-        },
-        {
+        });
+      }
+
+      if (healthStatus != null) {
+        nextKpis.push({
           title: "সিস্টেম হেলথ",
           value:
             healthStatus === "healthy"
               ? "সচল"
               : healthStatus === "degraded"
                 ? "দুর্বল"
-                : healthStatus
-                  ? "বন্ধ"
-                  : "—",
+                : "বন্ধ",
           helper:
             latency != null
               ? `DB ${latency} ms`
               : maintenance
                 ? "রক্ষণাবেক্ষণ মোড চালু"
-                : "Firestore / API",
+                : "Firestore",
           icon: Activity,
           tone:
             healthStatus === "healthy"
               ? "green"
               : healthStatus === "degraded"
                 ? "amber"
-                : healthStatus
-                  ? "red"
-                  : "slate",
-        },
-      ];
+                : "red",
+        });
+      }
+
+      if (nextKpis.length < 2 && pageCount != null) {
+        nextKpis.push({
+          title: "কাস্টম পেজ",
+          value: pageCount.toLocaleString("bn-BD"),
+          helper: "সম্পাদনাযোগ্য পেজ",
+          icon: FileText,
+          tone: "slate",
+        });
+      }
 
       setKpis(nextKpis);
-      setStatusRows([
-        {
-          name: "Firebase / Firestore",
-          detail: dbOk
-            ? "ইউজার, ব্লগ ও সেটিংস সিঙ্ক সচল"
-            : "ডাটাবেস সংযোগ যাচাই করুন",
-          status: dbOk ? "সচল" : "সমস্যা",
-          tone: dbOk ? "green" : "red",
-        },
-        {
-          name: "Rajuk Token",
-          detail: rajukSet
-            ? "সাইট সেটিংসে টোকেন সংরক্ষিত"
-            : "টোকেন সেট করা হয়নি",
-          status: rajukSet ? "কনফিগারড" : "অনুপস্থিত",
-          tone: rajukSet ? "green" : "amber",
-        },
-        {
-          name: "রক্ষণাবেক্ষণ মোড",
-          detail: maintenance
-            ? "পাবলিক সাইট লক করা থাকতে পারে"
-            : "পাবলিক সাইট উন্মুক্ত",
-          status: maintenance ? "চালু" : "বন্ধ",
-          tone: maintenance ? "amber" : "green",
-        },
-      ]);
+
+      if (data.database != null || data.rajukTokenSet != null) {
+        setStatusRows([
+          {
+            name: "Firebase / Firestore",
+            detail: dbOk
+              ? "ইউজার, ব্লগ ও সেটিংস সিঙ্ক সচল"
+              : "ডাটাবেস সংযোগ যাচাই করুন",
+            status: dbOk ? "সচল" : "সমস্যা",
+            tone: dbOk ? "green" : "red",
+            href: "/admin/data-monitor",
+          },
+          {
+            name: "Rajuk Token",
+            detail: rajukSet
+              ? "সাইট সেটিংসে টোকেন সংরক্ষিত"
+              : "টোকেন সেট করা হয়নি",
+            status: rajukSet ? "কনফিগারড" : "অনুপস্থিত",
+            tone: rajukSet ? "green" : "amber",
+            href: "/admin/settings",
+          },
+          {
+            name: "রক্ষণাবেক্ষণ মোড",
+            detail: maintenance
+              ? "পাবলিক সাইট লক থাকতে পারে"
+              : "পাবলিক সাইট উন্মুক্ত",
+            status: maintenance ? "চালু" : "বন্ধ",
+            tone: maintenance ? "amber" : "green",
+            href: "/admin/settings",
+          },
+        ]);
+      } else {
+        setStatusRows([
+          {
+            name: "কন্টেন্ট ওয়ার্কস্পেস",
+            detail: "ব্লগ ও কাস্টম পেজ সম্পাদনা করতে দ্রুত এক্সেস ব্যবহার করুন",
+            status: "প্রস্তুত",
+            tone: "green",
+            href: "/admin/blog",
+          },
+        ]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "লোড ব্যর্থ");
       setKpis([]);
@@ -253,7 +294,14 @@ export default function AdminDashboard() {
             অ্যাডমিন ড্যাশবোর্ড
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
-            ইউজার, কন্টেন্ট ও সিস্টেম স্বাস্থ্য এক নজরে — লাইভ ডেটা।
+            {admin
+              ? "ইউজার, কন্টেন্ট ও সিস্টেম স্বাস্থ্য — লাইভ ডেটা।"
+              : "ব্লগ ও পেজ পরিচালনা — আপনার ওয়ার্কস্পেস।"}
+            {user?.role ? (
+              <span className="ml-2 text-xs font-semibold text-[#006a4e]">
+                ({user.role})
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
@@ -266,11 +314,13 @@ export default function AdminDashboard() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             রিফ্রেশ
           </button>
-          <Link href="/admin/data-monitor" className="text-decoration-none">
-            <button className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:bg-[#00523b] hover:-translate-y-0.5 transition-all shadow-md">
-              ডেটা মনিটর
-            </button>
-          </Link>
+          {admin && (
+            <Link href="/admin/data-monitor" className="text-decoration-none">
+              <button className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:bg-[#00523b] hover:-translate-y-0.5 transition-all shadow-md">
+                ডেটা মনিটর
+              </button>
+            </Link>
+          )}
           <Link href="/" className="text-decoration-none">
             <button className="px-6 py-2.5 rounded-full font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm">
               ওয়েবসাইটে যান
@@ -282,11 +332,7 @@ export default function AdminDashboard() {
       {error && (
         <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
           <span>{error}</span>
-          <button
-            type="button"
-            className="font-bold underline"
-            onClick={() => void load()}
-          >
+          <button type="button" className="font-bold underline" onClick={() => void load()}>
             আবার চেষ্টা
           </button>
         </div>
@@ -324,41 +370,52 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm h-full p-8 border-l-4 border-l-[#006a4e]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-              <div>
-                <h5 className="font-bold text-xl text-slate-900 dark:text-white mb-2">
-                  সিস্টেম অবস্থা
-                </h5>
-                <p className="text-slate-500 dark:text-slate-400 mb-0">
-                  Firebase, রাজউক ও রক্ষণাবেক্ষণ মোডের সারাংশ।
-                </p>
-              </div>
+            <div className="mb-8">
+              <h5 className="font-bold text-xl text-slate-900 dark:text-white mb-2">
+                {admin ? "সিস্টেম অবস্থা" : "কাজের সারাংশ"}
+              </h5>
+              <p className="text-slate-500 dark:text-slate-400 mb-0">
+                {admin
+                  ? "Firebase, রাজউক ও রক্ষণাবেক্ষণ — বিস্তারিত লিংক সহ।"
+                  : "কন্টেন্ট ওয়ার্কস্পেসের দ্রুত অবস্থা।"}
+              </p>
             </div>
 
             {loading ? (
               <StatusSkeleton />
             ) : (
               <div className="space-y-4">
-                {statusRows.map((row) => (
-                  <div
-                    key={row.name}
-                    className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white mb-1 text-lg">
-                        {row.name}
+                {statusRows.map((row) => {
+                  const inner = (
+                    <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#006a4e]/40 transition-colors">
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-white mb-1 text-lg">
+                          {row.name}
+                        </div>
+                        <div className="text-slate-500 dark:text-slate-400 text-sm">
+                          {row.detail}
+                          {row.href ? (
+                            <span className="ml-2 text-[#006a4e] font-semibold text-xs">
+                              বিস্তারিত →
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="text-slate-500 dark:text-slate-400 text-sm">
-                        {row.detail}
-                      </div>
+                      <span
+                        className={`px-4 py-2 rounded-full font-bold text-sm shrink-0 border ${tonePill[row.tone]}`}
+                      >
+                        {row.status}
+                      </span>
                     </div>
-                    <span
-                      className={`px-4 py-2 rounded-full font-bold text-sm shrink-0 border ${tonePill[row.tone]}`}
-                    >
-                      {row.status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                  return row.href ? (
+                    <Link key={row.name} href={row.href} className="block no-underline">
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div key={row.name}>{inner}</div>
+                  );
+                })}
               </div>
             )}
           </div>
