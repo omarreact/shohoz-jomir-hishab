@@ -1,26 +1,29 @@
 import { NextRequest } from "next/server";
+import {
+  isAdminRole,
+  isStaffRole,
+  normalizeRole,
+  type AppRole,
+} from "@/src/modules/auth/roles";
 
 export interface ServerUser {
   id: string;
   email: string;
   name: string | null;
-  role: string;
+  role: AppRole;
 }
 
 /**
  * Firebase Admin is loaded lazily so a serverless route can still return a
- * JSON error when its Admin credentials/configuration are invalid. A failed
- * module-level Firebase initialization must not turn an API response into
- * Next.js's HTML error document.
+ * JSON error when Admin credentials are invalid.
  */
 async function getAdminServices() {
   return import("@/src/modules/database/firebaseAdmin");
 }
 
 /**
- * Validates the request's access_token cookie or Bearer token.
- * The Firestore user role is authoritative when present; the Firebase
- * custom `admin: true` claim is accepted as an Admin fallback.
+ * Validates access_token cookie or Bearer token.
+ * Firestore users/{uid}.role is authoritative when present.
  */
 export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
   const cookieToken = req.cookies.get("access_token")?.value ?? null;
@@ -30,7 +33,11 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
 
   if (!token) throw new Error("Unauthorized");
 
-  const { auth, collections } = await getAdminServices();
+  const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
+  if (!isFirebaseAdminReady()) {
+    // Still attempt verifyIdToken — may work with ADC in some environments
+  }
+
   const decodedToken = await auth.verifyIdToken(token);
   const userDoc = await collections.users.doc(decodedToken.uid).get();
 
@@ -41,8 +48,8 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
     return {
       id: decodedToken.uid,
       email: decodedToken.email || "",
-      name: decodedToken.name || null,
-      role: claimRole || (claimIsAdmin ? "Admin" : "User"),
+      name: (decodedToken.name as string) || null,
+      role: normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User")),
     };
   }
 
@@ -50,18 +57,27 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
   return {
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
-    name: userData.name ?? decodedToken.name ?? null,
-    role: userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
+    name: userData.name ?? (decodedToken.name as string) ?? null,
+    role: normalizeRole(
+      userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
+    ),
   };
 }
 
-/**
- * Validates the request and throws an error if the user is not an Admin.
- */
+/** Admin or Super Admin only (users, settings, metrics). */
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (user.role !== "Admin" && user.role !== "Super Admin") {
+  if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
+  }
+  return user;
+}
+
+/** Editor+ (blog / pages). */
+export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
+  const user = await verifyServerAuth(req);
+  if (!isStaffRole(user.role)) {
+    throw new Error("Forbidden: Staff access required");
   }
   return user;
 }
