@@ -1,149 +1,181 @@
 "use client";
 
 import Link from "next/link";
-import { Calculator, Ruler, Scale, BookOpen, ArrowRight, Map } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  Calculator,
+  Ruler,
+  Scale,
+  Map,
+  FileText,
+  BookOpen,
+  ArrowRight,
+} from "lucide-react";
+import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+import { SITE_CONFIG } from "@/src/shared/config/site";
+
+const PRIMARY_CTAS = [
+  {
+    href: FEATURE_ROUTES.records,
+    label: "খতিয়ান ক্যালকুলেটর",
+    icon: Calculator,
+    primary: true,
+  },
+  {
+    href: FEATURE_ROUTES.landMeasurement,
+    label: "জমি পরিমাপ",
+    icon: Ruler,
+    primary: false,
+  },
+] as const;
+
+const QUICK_LINKS = [
+  { href: FEATURE_ROUTES.landMap, label: "নগর পরিকল্পনা মানচিত্র", icon: Map },
+  { href: FEATURE_ROUTES.inheritance, label: "ফারায়েজ", icon: Scale },
+  { href: FEATURE_ROUTES.documents, label: "পর্চা", icon: FileText },
+  { href: FEATURE_ROUTES.blog, label: "ব্লগ", icon: BookOpen },
+] as const;
+
+const HIGHLIGHTS = [
+  {
+    icon: Calculator,
+    title: "আনা-গন্ডা হিসাব",
+    desc: "সিএস, এসএ, আরএস খতিয়ান",
+    tone: "dark" as const,
+  },
+  {
+    icon: Scale,
+    title: "নির্ভুল বন্টন",
+    desc: "কোরআনিক নিয়মে ফারায়েজ",
+    tone: "light" as const,
+  },
+  {
+    icon: Ruler,
+    title: "জমি মাপ",
+    desc: "স্কয়ার ফিট, শতাংশ, কাঠা",
+    tone: "light" as const,
+  },
+  {
+    icon: Map,
+    title: "RS · MS মানচিত্র",
+    desc: "মৌজা টাইল ও প্লট ট্যাপ",
+    tone: "light" as const,
+  },
+];
 
 export default function HeroSection() {
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
   return (
-    <section className="relative overflow-hidden py-12 lg:py-20 bg-slate-50 dark:bg-slate-950">
-      {/* Decorative blur orbs */}
+    <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-slate-50 via-white to-slate-50 py-12 dark:border-slate-800 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 lg:py-16">
       <div
-        className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 bg-[#006a4e]/20 rounded-full pointer-events-none"
-        style={{ width: 400, height: 400, filter: "blur(80px)" }}
+        className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-[#006a4e]/15 blur-3xl"
+        aria-hidden
       />
       <div
-        className="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/3 bg-[#006a4e]/10 rounded-full pointer-events-none"
-        style={{ width: 500, height: 500, filter: "blur(100px)" }}
+        className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-[#006a4e]/10 blur-3xl"
+        aria-hidden
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left: Headline + CTA */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="text-center lg:text-left">
-            <div
-              className={`inline-flex items-center bg-white dark:bg-slate-900 rounded-full px-4 py-2 shadow-sm mb-6 border border-[#006a4e]/25 fade-in ${isLoaded ? 'visible' : ''}`}
-            >
-              <span className="bg-[#f42a41] text-white rounded-full mr-3 px-3 py-1 text-xs font-bold">১০০% ফ্রি</span>
-              <span className="text-slate-800 dark:text-slate-200 text-sm font-bold">বাংলাদেশের সবচেয়ে নির্ভুল ভূমি ক্যালকুলেটর!</span>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#006a4e]/25 bg-white px-3 py-1.5 shadow-sm dark:bg-slate-900">
+              <span className="rounded-full bg-[#f42a41] px-2.5 py-0.5 text-[11px] font-bold text-white">
+                ১০০% ফ্রি
+              </span>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 sm:text-sm">
+                বাংলাদেশের ভূমি হিসাব টুলস
+              </span>
             </div>
 
-            <h1
-              className={`font-extrabold text-4xl lg:text-5xl mb-6 text-slate-900 dark:text-white leading-tight fade-in ${isLoaded ? 'visible' : ''}`}
-              style={{ transitionDelay: "100ms" }}
-            >
-              ভূমি হিসাব ও ফারায়েজের{" "}
-              <br className="hidden lg:block" />
-              <span className="text-[#006a4e] relative inline-block">
-                সবচেয়ে স্মার্ট সমাধান
-                <svg
-                  className="absolute w-full left-0 bottom-0 opacity-30"
-                  viewBox="0 0 100 15"
-                  preserveAspectRatio="none"
-                  style={{ height: 12, transform: "translateY(5px)" }}
-                >
-                  <path
-                    d="M0 10 Q 50 0 100 10"
-                    stroke="#006a4e"
-                    strokeWidth="4"
-                    fill="transparent"
-                  />
-                </svg>
+            <h1 className="mb-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-4xl lg:text-[2.75rem]">
+              {SITE_CONFIG.name}
+              <span className="mt-1 block text-[#006a4e]">
+                খতিয়ান · পরিমাপ · ফারায়েজ · মানচিত্র
               </span>
             </h1>
 
-            <p
-              className={`text-slate-600 dark:text-slate-400 mb-10 text-lg leading-relaxed max-w-lg mx-auto lg:mx-0 fade-in ${isLoaded ? 'visible' : ''}`}
-              style={{ transitionDelay: "200ms" }}
-            >
-              খতিয়ানের আনা-গন্ডা, জমির সঠিক পরিমাপ এবং আইনি উত্তরাধিকার
-              (ফারায়েজ)—সবকিছুর নির্ভুল হিসাব করুন এক ক্লিকেই। কোনো
-              খাতা-কলমের প্রয়োজন নেই!
+            <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-400 lg:mx-0 lg:text-lg">
+              খতিয়ানের আনা-গন্ডা, জমির সঠিক পরিমাপ, আইনি উত্তরাধিকার (ফারায়েজ)
+              এবং RS/MS মৌজা মানচিত্র—এক জায়গায়। কোনো খাতা-কলমের প্রয়োজন নেই।
             </p>
 
-            <div
-              className={`flex flex-wrap justify-center lg:justify-start gap-4 fade-in ${isLoaded ? 'visible' : ''}`}
-              style={{ transitionDelay: "300ms" }}
-            >
-              <Link
-                href="/khatiyan"
-                className="bg-[#006a4e] text-white rounded-full px-6 py-4 font-bold shadow-lg flex items-center hover:shadow-xl hover:-translate-y-1 transition-all no-underline"
-              >
-                <Calculator size={20} className="mr-2" /> খতিয়ান ক্যালকুলেটর
-              </Link>
-              <Link
-                href="/land-measurement"
-                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-full px-6 py-4 font-bold flex items-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all no-underline"
-              >
-                <Ruler size={20} className="mr-2 text-[#006a4e]" /> জমি পরিমাপ
-              </Link>
+            <div className="mb-6 flex flex-wrap justify-center gap-3 lg:justify-start">
+              {PRIMARY_CTAS.map((cta) => (
+                <Link
+                  key={cta.href}
+                  href={cta.href}
+                  className={
+                    cta.primary
+                      ? "inline-flex items-center gap-2 rounded-full bg-[#006a4e] px-6 py-3.5 text-sm font-bold text-white no-underline shadow-lg shadow-[#006a4e]/25 transition hover:-translate-y-0.5 hover:bg-[#005a42] hover:shadow-xl"
+                      : "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-900 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-[#006a4e]/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  }
+                >
+                  <cta.icon size={18} className={cta.primary ? "" : "text-[#006a4e]"} />
+                  {cta.label}
+                </Link>
+              ))}
             </div>
 
-            {/* Quick-access chip row */}
-            <div className={`flex flex-wrap gap-2 mt-8 justify-center lg:justify-start fade-in ${isLoaded ? 'visible' : ''}`} style={{ transitionDelay: "400ms" }}>
-              <Link href="/dap-map" className="bg-slate-900 dark:bg-slate-800 text-white no-underline px-4 py-2 rounded-full text-sm flex items-center gap-2 hover:bg-slate-800 transition-colors">
-                <Map size={14} /> ফুল ড্যাপ ম্যাপ
-              </Link>
-              <Link href="/faraez" className="bg-slate-900 dark:bg-slate-800 text-white no-underline px-4 py-2 rounded-full text-sm flex items-center gap-2 hover:bg-slate-800 transition-colors">
-                <ArrowRight size={14} /> ফারায়েজ ক্যালকুলেটর
-              </Link>
-              <Link href="/blog" className="bg-slate-900 dark:bg-slate-800 text-white no-underline px-4 py-2 rounded-full text-sm flex items-center gap-2 hover:bg-slate-800 transition-colors">
-                <BookOpen size={14} /> ভূমি ব্লগ
-              </Link>
+            <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+              {QUICK_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white no-underline transition hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700"
+                >
+                  <link.icon size={13} />
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
 
-          {/* Right: Floating Cards (desktop only) */}
-          <div className={`hidden lg:block fade-in ${isLoaded ? 'visible' : ''}`} style={{ transitionDelay: "500ms" }}>
-            <div className="grid grid-cols-2 gap-6 items-center">
-              <div className="space-y-6">
-                <div
-                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center hover:-translate-y-2 transition-transform duration-300"
-                  style={{ transform: "translateY(20px)" }}
-                >
-                  <div className="bg-[#006a4e]/10 rounded-full inline-flex p-4 mb-4">
-                    <Scale size={40} className="text-[#006a4e]" />
+          {/* Feature tiles — desktop */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-2 gap-4">
+              {HIGHLIGHTS.map((item, i) => {
+                const dark = item.tone === "dark";
+                return (
+                  <div
+                    key={item.title}
+                    className={`rounded-3xl border p-5 text-center shadow-lg transition hover:-translate-y-1 ${
+                      dark
+                        ? "border-slate-800 bg-slate-900 text-white"
+                        : "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
+                    } ${i % 2 === 1 ? "-mt-4" : "mt-4"}`}
+                  >
+                    <div
+                      className={`mb-3 inline-flex rounded-2xl p-3 ${
+                        dark ? "bg-white/10" : "bg-[#006a4e]/10"
+                      }`}
+                    >
+                      <item.icon
+                        size={28}
+                        className={dark ? "text-white" : "text-[#006a4e]"}
+                      />
+                    </div>
+                    <h3
+                      className={`mb-1 text-base font-bold ${
+                        dark ? "text-white" : "text-slate-900 dark:text-white"
+                      }`}
+                    >
+                      {item.title}
+                    </h3>
+                    <p
+                      className={`m-0 text-sm ${
+                        dark ? "text-white/70" : "text-slate-500 dark:text-slate-400"
+                      }`}
+                    >
+                      {item.desc}
+                    </p>
                   </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white text-lg">নির্ভুল বন্টন</h5>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm m-0">কোরআনিক নিয়মে ফারায়েজ</p>
-                </div>
-                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 text-center hover:-translate-y-2 transition-transform duration-300">
-                  <div className="bg-white/10 rounded-full inline-flex p-4 mb-4">
-                    <Calculator size={40} className="text-white" />
-                  </div>
-                  <h5 className="font-bold text-white text-lg">আনা-গন্ডা হিসাব</h5>
-                  <p className="text-white/75 text-sm m-0">সিএস, এসএ, আরএস খতিয়ান</p>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div
-                  className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center hover:-translate-y-2 transition-transform duration-300"
-                  style={{ transform: "translateY(-20px)" }}
-                >
-                  <div className="bg-[#006a4e]/10 rounded-full inline-flex p-4 mb-4">
-                    <Ruler size={40} className="text-[#006a4e]" />
-                  </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white text-lg">জমি মাপ</h5>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm m-0">স্কয়ার ফিট ও শতাংশ</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden hover:-translate-y-2 transition-transform duration-300">
-                  <div className="bg-[#f42a41]/10 rounded-full inline-flex p-4 mb-4">
-                    <BookOpen size={40} className="text-[#f42a41]" />
-                  </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white text-lg">আইনি পরামর্শ</h5>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm m-0">জমি ক্রয়-বিক্রয় ব্লগ</p>
-                </div>
-              </div>
+                );
+              })}
             </div>
+            <p className="mt-4 flex items-center justify-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <ArrowRight size={12} className="text-[#006a4e]" />
+              টুল বেছে নিন — হিসাব শুরু করুন
+            </p>
           </div>
-
         </div>
       </div>
     </section>
