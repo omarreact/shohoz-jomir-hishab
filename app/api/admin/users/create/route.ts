@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { claimsForRole } from "@/src/modules/auth/roles";
+import { claimsForRole, isSuperAdminRole } from "@/src/modules/auth/roles";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   let createdUid: string | null = null;
 
   try {
-    await verifyAdminAuth(request);
+    const actor = await verifyAdminAuth(request);
     const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: unknown;
@@ -54,6 +54,10 @@ export async function POST(request: NextRequest) {
 
     const validated = createUserSchema.parse(body);
 
+    if (validated.role === "Super Admin" && !isSuperAdminRole(actor.role)) {
+      return jsonError("শুধুমাত্র Super Admin নতুন Super Admin তৈরি করতে পারেন।", 403, undefined, requestId);
+    }
+
     const userRecord = await auth.createUser({
       email: validated.email,
       password: validated.password,
@@ -61,7 +65,6 @@ export async function POST(request: NextRequest) {
     });
     createdUid = userRecord.uid;
 
-    // Custom claims for Security Rules + client (role + admin flag)
     await auth.setCustomUserClaims(userRecord.uid, claimsForRole(validated.role));
 
     const now = new Date().toISOString();
