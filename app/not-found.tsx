@@ -1,16 +1,44 @@
 import Link from "next/link";
-import { AlertTriangle, Home } from "lucide-react";
+import { FEATURE_ROUTES, FEATURE_LABELS } from "@/src/shared/config/feature-routes";
+import { SITE_CONFIG } from "@/src/shared/config/site";
 
 export default function NotFound() {
   return (
-    <div className="container py-5 text-center fade-in d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "70vh" }}>
-      <AlertTriangle size={80} className="text-warning mb-4" />
-      <h1 className="fw-bold display-4 text-dark mb-2">৪0৪</h1>
-      <h4 className="text-secondary mb-4">দুঃখিত! আপনি যে পেজটি খুঁজছেন তা পাওয়া যায়নি।</h4>
-      <p className="text-muted mb-4">হয়তো লিংকটি পরিবর্তন করা হয়েছে অথবা মুছে ফেলা হয়েছে।</p>
-      <Link href="/" className="btn btn-success rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center shadow-sm">
-        <Home size={18} className="me-2" /> হোমপেজে ফিরে যান
-      </Link>
+    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-16 text-center">
+      <p className="text-sm font-bold text-[#006a4e] mb-2">৪০৪</p>
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
+        পেজ পাওয়া যায়নি
+      </h1>
+      <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
+        আপনি যে ঠিকানায় গেছেন সেটি নেই বা সরানো হয়েছে। {SITE_CONFIG.name} এর মূল
+        সেবাগুলো থেকে বেছে নিন।
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Link
+          href={FEATURE_ROUTES.home}
+          className="rounded-full bg-[#006a4e] px-6 py-2.5 text-sm font-bold text-white no-underline hover:bg-[#00523b]"
+        >
+          হোমে যান
+        </Link>
+        <Link
+          href={FEATURE_ROUTES.records}
+          className="rounded-full border border-slate-200 dark:border-slate-700 px-6 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 no-underline"
+        >
+          {FEATURE_LABELS.records.bn}
+        </Link>
+        <Link
+          href={FEATURE_ROUTES.landMap}
+          className="rounded-full border border-slate-200 dark:border-slate-700 px-6 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 no-underline"
+        >
+          {FEATURE_LABELS.landMap.bn}
+        </Link>
+        <Link
+          href={FEATURE_ROUTES.blog}
+          className="rounded-full border border-slate-200 dark:border-slate-700 px-6 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 no-underline"
+        >
+          {FEATURE_LABELS.blog.bn}
+        </Link>
+      </div>
     </div>
   );
 }
