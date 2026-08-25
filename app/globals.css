@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+/* next-themes sets class="dark" on <html> — do not rely on prefers-color-scheme alone */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-bd-green: var(--primary);
   --color-bd-red: #ef4444;
@@ -52,7 +55,8 @@
     --radius: .875rem;
   }
 
-  .dark, [data-theme="dark"] {
+  .dark,
+  [data-theme="dark"] {
     color-scheme: dark;
     --background: #0b0b0b;
     --foreground: #f5f5f5;
