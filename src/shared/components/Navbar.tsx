@@ -48,7 +48,6 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   admin: ShieldCheck,
 };
 
-/** Optional specialist tools (search/mobile only). */
 const SECONDARY_NAV: NavItem[] = [
   { href: "/dap-map", label: "ArcGIS DAP", icon: Map },
 ];
@@ -70,6 +69,16 @@ const SEARCH_NAV: NavItem[] = [
     href: FEATURE_ROUTES.mapQa,
     label: FEATURE_LABELS.mapQa.bn,
     icon: Map,
+  },
+  {
+    href: FEATURE_ROUTES.contact,
+    label: FEATURE_LABELS.contact.bn,
+    icon: Users,
+  },
+  {
+    href: FEATURE_ROUTES.faq,
+    label: FEATURE_LABELS.faq.bn,
+    icon: BookOpen,
   },
 ];
 
@@ -136,16 +145,15 @@ export default function Navbar() {
         >
           <Link
             href={FEATURE_ROUTES.home}
-            className="flex shrink-0 items-center gap-2 no-underline"
+            className="flex min-w-0 shrink items-center gap-2 no-underline"
             onClick={() => setMobileOpen(false)}
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
               <Calculator size={18} />
             </span>
-            <span className="hidden text-base font-bold tracking-tight sm:block">
-              সহজ জমির হিসাব
+            <span className="truncate text-sm font-bold tracking-tight sm:text-base">
+              {SITE_CONFIG.name}
             </span>
-            <span className="text-sm font-bold sm:hidden">{SITE_CONFIG.name}</span>
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
@@ -239,14 +247,14 @@ export default function Navbar() {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="সেবা বা পেজ খুঁজুন..."
+                placeholder="টুল, ব্লগ বা পেজ খুঁজুন..."
                 className="h-14 flex-1 bg-transparent text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
               />
               <button type="button" onClick={() => setSearchOpen(false)}>
                 <X size={18} />
               </button>
             </div>
-            <div className="p-2">
+            <div className="max-h-80 overflow-y-auto p-2">
               {results.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
@@ -287,14 +295,19 @@ export default function Navbar() {
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
                   <Calculator size={18} />
                 </span>
-                <strong>সহজ জমির হিসাব</strong>
+                <strong className="text-sm">{SITE_CONFIG.name}</strong>
               </Link>
               <button type="button" onClick={() => setMobileOpen(false)}>
                 <X />
               </button>
             </div>
             <div className="flex flex-1 flex-col gap-1 overflow-y-auto py-4">
-              {PRIMARY_NAV.map(({ href, label, icon: Icon }) => (
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                হিসাব টুলস
+              </p>
+              {PRIMARY_NAV.filter((i) =>
+                ["/khatiyan", "/land-measurement", "/faraez", "/porcha"].includes(i.href),
+              ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
@@ -308,22 +321,38 @@ export default function Navbar() {
                   <Icon size={18} /> {label}
                 </Link>
               ))}
-              {SECONDARY_NAV.map(({ href, label, icon: Icon }) => (
+              <p className="mt-3 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                মানচিত্র ও জ্ঞান
+              </p>
+              {PRIMARY_NAV.filter((i) =>
+                ["/geospatial-map", "/blog"].includes(i.href),
+              ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline ${
+                    activePath(pathname, href)
+                      ? "bg-[var(--secondary)]"
+                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                  }`}
                 >
                   <Icon size={18} /> {label}
                 </Link>
               ))}
               <Link
-                href={FEATURE_ROUTES.mapQa}
+                href={FEATURE_ROUTES.faq}
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline hover:bg-[var(--secondary)]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
               >
-                <Map size={18} /> {FEATURE_LABELS.mapQa.bn}
+                <BookOpen size={18} /> {FEATURE_LABELS.faq.bn}
+              </Link>
+              <Link
+                href={FEATURE_ROUTES.contact}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+              >
+                <Users size={18} /> {FEATURE_LABELS.contact.bn}
               </Link>
             </div>
             <div className="border-t border-[var(--border-color)] pt-4">
