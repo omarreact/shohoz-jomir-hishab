@@ -1,25 +1,25 @@
 /**
  * Canonical product routes used by navigation and CTAs.
- * Internal RAJUK/tile API identifiers remain technical.
  */
 export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
-  /** Unified নগর পরিকল্পনা মানচিত্র. */
   landMap: "/geospatial-map",
   mapQa: "/rajuk-test",
   documents: "/porcha",
   blog: "/blog",
   faq: "/faq",
+  contact: "/contact",
+  privacy: "/privacy",
+  terms: "/terms",
   login: "/login",
   admin: "/admin",
 } as const;
 
 export type FeatureRouteKey = keyof typeof FEATURE_ROUTES;
 
-/** Product-facing labels (bn-first where used in shell). */
 export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }> = {
   home: { en: "Home", bn: "হোম" },
   records: { en: "Land records", bn: "খতিয়ান" },
@@ -30,11 +30,13 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   documents: { en: "Documents", bn: "পর্চা" },
   blog: { en: "Blog", bn: "ব্লগ" },
   faq: { en: "FAQ", bn: "প্রশ্নোত্তর" },
-  login: { en: "Login", bn: "লগইন" },
+  contact: { en: "Contact", bn: "যোগাযোগ" },
+  privacy: { en: "Privacy", bn: "প্রাইভেসি" },
+  terms: { en: "Terms", bn: "শর্তাবলী" },
+  login: { en: "Staff login", bn: "স্টাফ লগইন" },
   admin: { en: "Admin", bn: "অ্যাডমিন" },
 };
 
-/** Primary public tools shown in global navigation. */
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
   "landMeasurement",
@@ -42,4 +44,20 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "landMap",
   "documents",
   "blog",
+];
+
+/** Footer / sitemap static links (always available). */
+export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
+  "records",
+  "inheritance",
+  "landMeasurement",
+  "landMap",
+  "blog",
+];
+
+export const FOOTER_LEGAL_LINKS: FeatureRouteKey[] = [
+  "privacy",
+  "terms",
+  "faq",
+  "contact",
 ];
