@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { claimsForRole } from "@/src/modules/auth/roles";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -53,7 +54,6 @@ export async function POST(request: NextRequest) {
 
     const validated = createUserSchema.parse(body);
 
-    // 1. Create Firebase Auth user.
     const userRecord = await auth.createUser({
       email: validated.email,
       password: validated.password,
@@ -61,12 +61,9 @@ export async function POST(request: NextRequest) {
     });
     createdUid = userRecord.uid;
 
-    // 2. Set custom claims for elevated roles.
-    if (["Admin", "Super Admin"].includes(validated.role)) {
-      await auth.setCustomUserClaims(userRecord.uid, { admin: true });
-    }
+    // Custom claims for Security Rules + client (role + admin flag)
+    await auth.setCustomUserClaims(userRecord.uid, claimsForRole(validated.role));
 
-    // 3. Create the authoritative Firestore profile.
     const now = new Date().toISOString();
     const userData = {
       email: validated.email,
@@ -83,14 +80,16 @@ export async function POST(request: NextRequest) {
 
     try {
       await collections.users.doc(userRecord.uid).set(userData);
-    } catch (firestoreError) {
+    } catch {
       try {
         await auth.deleteUser(userRecord.uid);
         createdUid = null;
       } catch (rollbackError) {
         console.error("User create rollback failed:", rollbackError);
       }
-      throw new Error("Failed to create user profile in database. Auth account was rolled back where possible.");
+      throw new Error(
+        "Failed to create user profile in database. Auth account was rolled back where possible.",
+      );
     }
 
     return json(
