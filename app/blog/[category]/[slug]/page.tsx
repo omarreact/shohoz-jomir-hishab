@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,8 +8,8 @@ import {
   Clock,
   Share2,
   Link as LinkIcon,
-  MessageCircle,
   Loader2,
+  Check,
 } from "lucide-react";
 import { optimizeCloudinaryUrl } from "@/src/shared/utils";
 import TableOfContents from "@/src/features/blog/components/TableOfContents";
@@ -50,7 +50,6 @@ function normalizeRouteParam(value: string | string[] | undefined): string {
   const raw = Array.isArray(value) ? value[0] : value ?? "";
   if (!raw) return "";
   let out = raw;
-  // Decode until stable (handles accidental double-encoding from the router)
   for (let i = 0; i < 3; i++) {
     try {
       const next = decodeURIComponent(out);
@@ -61,6 +60,22 @@ function normalizeRouteParam(value: string | string[] | undefined): string {
     }
   }
   return out;
+}
+
+/** Editor HTML often has inline black colors + &nbsp; between words — normalize for reading. */
+function sanitizeBlogHtml(html: string): string {
+  if (!html) return "";
+  return (
+    html
+      // strip forced dark colors from rich-text editors
+      .replace(/\s*style="[^"]*color\s*:[^"]*"/gi, "")
+      .replace(/\s*style='[^']*color\s*:[^']*'/gi, "")
+      .replace(/\s*color="[^"]*"/gi, "")
+      // collapse excessive non-breaking spaces between Bangla words
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s{2,}/g, " ")
+  );
 }
 
 function apiBlogToPost(b: ApiBlog): PostData {
@@ -81,8 +96,8 @@ function apiBlogToPost(b: ApiBlog): PostData {
       "https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop",
     category: b.category || "সাধারণ",
     categorySlug: b.categorySlug || "general",
-    content: (b as any).content || "",
-    excerpt: b.excerpt || "",
+    content: sanitizeBlogHtml((b as any).content || ""),
+    excerpt: sanitizeBlogHtml(b.excerpt || ""),
     tags: (() => {
       const t = (b as any).tags;
       if (!t) return [];
@@ -108,6 +123,7 @@ export default function SingleBlogPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -115,7 +131,6 @@ export default function SingleBlogPage() {
     setNotFound(false);
     setIsLoading(true);
 
-    // Try by slug first, fall back to Firestore document id
     fetch(`/api/blogs?slug=${encodeURIComponent(slug)}`)
       .then((r) => {
         if (r.status === 404) return fetch(`/api/blogs/${encodeURIComponent(slug)}`);
@@ -181,6 +196,67 @@ export default function SingleBlogPage() {
       .finally(() => setIsLoading(false));
   }, [slug]);
 
+  const tocHeaders = useMemo(() => {
+    if (!post?.content) return [];
+    if (typeof window === "undefined") return [];
+    try {
+      const doc = new DOMParser().parseFromString(post.content, "text/html");
+      const nodes = doc.querySelectorAll("h2, h3");
+      const items: { id: string; text: string; level: number }[] = [];
+      nodes.forEach((el, i) => {
+        const text = (el.textContent || "").trim();
+        if (!text) return;
+        const id = el.id || `section-${i}`;
+        items.push({
+          id,
+          text,
+          level: el.tagName.toLowerCase() === "h3" ? 3 : 2,
+        });
+      });
+      return items;
+    } catch {
+      return [];
+    }
+  }, [post?.content]);
+
+  // Inject ids into rendered headings for TOC anchors
+  const contentWithIds = useMemo(() => {
+    if (!post?.content) return "";
+    let i = 0;
+    return post.content.replace(/<(h2|h3)(\s[^>]*)?>/gi, (match, tag, attrs = "") => {
+      if (/\sid=/i.test(attrs)) return match;
+      const id = `section-${i++}`;
+      return `<${tag}${attrs} id="${id}">`;
+    });
+  }, [post?.content]);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleShare = async () => {
+    if (!post) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: post.excerpt || post.title,
+          url: window.location.href,
+        });
+        return;
+      } catch {
+        /* user cancelled */
+      }
+    }
+    handleCopyLink();
+  };
+
   if (isLoading) {
     return (
       <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center">
@@ -191,10 +267,10 @@ export default function SingleBlogPage() {
 
   if (errorMsg) {
     return (
-      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4">
-        <h1 className="text-3xl font-bold text-red-500">ত্রুটি</h1>
-        <p className="text-slate-500 dark:text-slate-400">{errorMsg}</p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-bold">
+      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+        <h1 className="text-2xl font-bold text-red-500">ত্রুটি</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-center">{errorMsg}</p>
+        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-semibold">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -203,10 +279,12 @@ export default function SingleBlogPage() {
 
   if (notFound || !post) {
     return (
-      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">পোস্ট পাওয়া যায়নি</h1>
-        <p className="text-slate-500 dark:text-slate-400">আপনার অনুরোধকৃত ব্লগ পোস্টটি খুঁজে পাওয়া যায়নি।</p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-bold">
+      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">পোস্ট পাওয়া যায়নি</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-center">
+          আপনার অনুরোধকৃত ব্লগ পোস্টটি খুঁজে পাওয়া যায়নি।
+        </p>
+        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-semibold">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -217,108 +295,158 @@ export default function SingleBlogPage() {
     <div className="bg-slate-50 dark:bg-slate-950 min-h-screen">
       <ReadingProgress />
 
-      {/* Hero Banner */}
-      <div className="relative flex items-center justify-center pt-32 pb-24 min-h-[500px]">
+      {/* Compact hero */}
+      <header className="relative overflow-hidden border-b border-slate-200/80 dark:border-slate-800">
         <div
-          className="absolute inset-0 w-full h-full opacity-20"
+          className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18]"
           style={{
-            backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 1200)})`,
+            backgroundImage: `url(${optimizeCloudinaryUrl(post.coverImage, 1400)})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         />
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/90 via-slate-50/95 to-slate-50 dark:from-slate-950/90 dark:via-slate-950/95 dark:to-slate-950" />
 
-        <div className="max-w-4xl mx-auto px-4 relative z-10 text-center mt-10">
+        <div className="relative z-10 mx-auto max-w-4xl px-4 pt-24 pb-10 sm:pt-28 sm:pb-12">
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#006a4e] transition-colors mb-6 font-bold"
+            className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-[#006a4e] dark:text-slate-400"
           >
-            <ArrowLeft size={18} /> জার্নালে ফিরে যান
+            <ArrowLeft size={16} />
+            জার্নালে ফিরে যান
           </Link>
-          <div className="mb-6">
-            <span className="bg-[#006a4e] text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-md inline-block">
+
+          <div className="mb-4">
+            <span className="inline-block rounded-full bg-[#006a4e] px-3.5 py-1 text-xs font-bold text-white shadow-sm">
               {post.category}
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 mx-auto text-slate-900 dark:text-white leading-tight">
+
+          <h1 className="text-balance text-2xl font-bold leading-snug text-slate-900 sm:text-3xl md:text-4xl dark:text-white">
             {post.title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-slate-500 dark:text-slate-400 font-medium">
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-200 dark:bg-slate-800 rounded-full w-10 h-10 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-bold text-slate-900 dark:text-white">{post.author.name}</div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#006a4e]/15 text-sm font-bold text-[#006a4e]">
+                {(post.author.name || "A").charAt(0)}
+              </div>
+              <div>
+                <div className="font-semibold text-slate-800 dark:text-slate-100">{post.author.name}</div>
                 <div className="text-xs">{post.author.role}</div>
               </div>
             </div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden md:block" />
-            <div>{post.date}</div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden md:block" />
-            <div className="flex items-center gap-2">
-              <Clock size={18} className="text-[#006a4e]" /> {post.readingTime}
-            </div>
+            <span className="hidden h-4 w-px bg-slate-300 sm:block dark:bg-slate-700" />
+            <span>{post.date}</span>
+            <span className="hidden h-4 w-px bg-slate-300 sm:block dark:bg-slate-700" />
+            <span className="inline-flex items-center gap-1.5">
+              <Clock size={15} className="text-[#006a4e]" />
+              {post.readingTime}
+            </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8 lg:col-start-1">
-            <article
-              className="prose prose-lg prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-white prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-a:text-[#006a4e] prose-strong:text-slate-900 dark:prose-strong:text-white prose-li:text-slate-600 dark:prose-li:text-slate-400"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-
-            <div className="flex flex-col md:flex-row justify-between items-center py-6 mt-12 border-t border-b border-slate-200 dark:border-slate-800 gap-6">
-              <div className="flex flex-wrap gap-2">
-                {post.tags.map((tag, i) => (
-                  <span
-                    key={i}
-                    className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full text-sm font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+          {/* Main column */}
+          <div className="lg:col-span-8">
+            {/* Cover */}
+            {post.coverImage && (
+              <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={optimizeCloudinaryUrl(post.coverImage, 1200)}
+                  alt={post.title}
+                  className="h-48 w-full object-cover sm:h-64 md:h-72"
+                />
               </div>
-              <div className="flex items-center gap-4">
-                <span className="font-bold text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
-                  শেয়ার করুন:
-                </span>
-                <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:border-blue-400 hover:bg-blue-400/10 transition-colors">
-                  <Share2 size={18} />
-                </button>
-                <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-green-400 hover:border-green-400 hover:bg-green-400/10 transition-colors">
-                  <MessageCircle size={18} />
+            )}
+
+            {/* Article card — guarantees readable contrast */}
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+              <div
+                className="blog-article-body prose prose-slate max-w-none dark:prose-invert
+                  prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white
+                  prose-p:leading-relaxed prose-p:text-slate-700 dark:prose-p:text-slate-300
+                  prose-li:text-slate-700 dark:prose-li:text-slate-300
+                  prose-strong:text-slate-900 dark:prose-strong:text-white
+                  prose-a:font-semibold prose-a:text-[#006a4e] prose-a:no-underline hover:prose-a:underline
+                  prose-hr:border-slate-200 dark:prose-hr:border-slate-700
+                  prose-blockquote:border-l-[#006a4e] prose-blockquote:text-slate-600 dark:prose-blockquote:text-slate-400"
+                dangerouslySetInnerHTML={{ __html: contentWithIds }}
+              />
+            </article>
+
+            {/* Tags + share */}
+            <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap gap-2">
+                {post.tags.length > 0 ? (
+                  post.tags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-400">ট্যাগ নেই</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">শেয়ার</span>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#006a4e] hover:text-[#006a4e] dark:border-slate-700 dark:text-slate-400"
+                  aria-label="শেয়ার করুন"
+                >
+                  <Share2 size={16} />
                 </button>
                 <button
-                  onClick={() => navigator.clipboard.writeText(window.location.href)}
-                  className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#006a4e] hover:text-[#006a4e] dark:border-slate-700 dark:text-slate-400"
+                  aria-label="লিংক কপি"
                 >
-                  <LinkIcon size={18} />
+                  {copied ? <Check size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
                 </button>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm my-12 p-8 flex flex-col md:flex-row gap-6 items-center md:items-start border-l-4 border-l-blue-500">
-              <div className="bg-slate-200 dark:bg-slate-800 rounded-full w-24 h-24 flex-shrink-0" />
-              <div className="text-center md:text-left">
-                <h4 className="text-2xl font-bold mb-1 text-slate-900 dark:text-white">{post.author.name}</h4>
-                <p className="text-[#006a4e] font-bold uppercase text-sm tracking-wider mb-4">{post.author.role}</p>
-                <p className="text-slate-500 dark:text-slate-400 mb-0 leading-relaxed text-lg">{post.excerpt}</p>
+            {/* Author */}
+            <div className="mt-6 flex flex-col items-center gap-4 rounded-2xl border border-slate-200 border-l-4 border-l-[#006a4e] bg-white p-6 sm:flex-row sm:items-start dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#006a4e]/15 text-2xl font-bold text-[#006a4e]">
+                {(post.author.name || "A").charAt(0)}
+              </div>
+              <div className="text-center sm:text-left">
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white">{post.author.name}</h4>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#006a4e]">
+                  {post.author.role}
+                </p>
+                {post.excerpt ? (
+                  <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{post.excerpt}</p>
+                ) : null}
               </div>
             </div>
 
-            <NewsletterCta />
+            <div className="mt-8">
+              <NewsletterCta />
+            </div>
 
-            {post.id && <BlogComments blogId={post.id} />}
+            {post.id && (
+              <div className="mt-8">
+                <BlogComments blogId={post.id} />
+              </div>
+            )}
 
             {relatedPosts.length > 0 && (
-              <section className="mt-16">
-                <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
+              <section className="mt-12">
+                <h4 className="mb-5 border-l-4 border-[#006a4e] pl-3 text-xl font-bold text-slate-900 dark:text-white">
                   সম্পর্কিত পোস্ট
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {relatedPosts.map((rp) => (
                     <BlogCard key={rp.slug} post={rp} />
                   ))}
@@ -327,9 +455,10 @@ export default function SingleBlogPage() {
             )}
           </div>
 
-          <div className="hidden lg:block lg:col-span-4 lg:col-start-9">
-            <TableOfContents />
-          </div>
+          {/* Sidebar TOC */}
+          <aside className="hidden lg:col-span-4 lg:block">
+            <TableOfContents headers={tocHeaders} />
+          </aside>
         </div>
       </div>
     </div>

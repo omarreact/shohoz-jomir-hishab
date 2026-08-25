@@ -1,36 +1,74 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export default function TableOfContents() {
+export type TocHeader = {
+  id: string;
+  text: string;
+  level?: number;
+};
+
+export default function TableOfContents({
+  headers = [],
+}: {
+  headers?: TocHeader[];
+}) {
   const [activeId, setActiveId] = useState<string>("");
 
-  // In a real app, you'd parse headers from markdown/html
-  const dummyHeaders = [
-    { id: "introduction", text: "LandBD এর ভূমিকা" },
-    { id: "how-it-works", text: "সার্চ ইঞ্জিন কীভাবে কাজ করে" },
-    { id: "benefits", text: "সার্ভেয়ারদের জন্য সুবিধাসমূহ" },
-    { id: "future", text: "ভবিষ্যতের রূপরেখা" },
-  ];
-
   useEffect(() => {
-    // Simple intersection observer logic for active states could go here
-  }, []);
+    if (!headers.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]?.target?.id) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-20% 0px -65% 0px", threshold: [0, 1] },
+    );
+
+    headers.forEach((h) => {
+      const el = document.getElementById(h.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [headers]);
+
+  if (!headers.length) {
+    return (
+      <div className="sticky top-24">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h5 className="mb-2 border-b border-slate-100 pb-3 text-base font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+            সূচিপত্র
+          </h5>
+          <p className="text-sm text-slate-400">এই পোস্টে শিরোনাম নেই।</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="sticky top-24">
-      <div className="card-new overflow-hidden border-l-4 border-l-[#006a4e]">
-        <div className="p-6">
-          <h5 className="font-bold mb-5 text-slate-900 dark:text-white text-xl border-b border-slate-200 dark:border-slate-800 pb-3">সূচিপত্র</h5>
-          <nav className="flex flex-col gap-2">
-            {dummyHeaders.map((header) => (
+      <div className="overflow-hidden rounded-2xl border border-slate-200 border-l-4 border-l-[#006a4e] bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="p-5">
+          <h5 className="mb-4 border-b border-slate-100 pb-3 text-base font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+            সূচিপত্র
+          </h5>
+          <nav className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto">
+            {headers.map((header) => (
               <a
                 key={header.id}
                 href={`#${header.id}`}
-                className={`transition-colors p-3 rounded-lg font-medium ${
-                  activeId === header.id 
-                  ? "bg-[#006a4e]/10 text-[#006a4e]" 
-                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:bg-slate-800 hover:text-slate-900 dark:text-white"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  header.level === 3 ? "pl-5 text-[13px]" : ""
+                } ${
+                  activeId === header.id
+                    ? "bg-[#006a4e]/10 text-[#006a4e]"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                 }`}
                 onClick={() => setActiveId(header.id)}
               >

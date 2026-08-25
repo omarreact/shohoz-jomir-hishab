@@ -110,4 +110,49 @@
   }
   .fade-in { animation: fadeIn .35s ease-out; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Blog article body: override editor inline colors so dark mode stays readable */
+  .blog-article-body {
+    color: #334155; /* slate-700 */
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+  .dark .blog-article-body {
+    color: #cbd5e1; /* slate-300 */
+  }
+  .blog-article-body p,
+  .blog-article-body li,
+  .blog-article-body span,
+  .blog-article-body div {
+    color: inherit;
+  }
+  .blog-article-body h1,
+  .blog-article-body h2,
+  .blog-article-body h3,
+  .blog-article-body h4,
+  .blog-article-body strong,
+  .blog-article-body b {
+    color: #0f172a; /* slate-900 */
+  }
+  .dark .blog-article-body h1,
+  .dark .blog-article-body h2,
+  .dark .blog-article-body h3,
+  .dark .blog-article-body h4,
+  .dark .blog-article-body strong,
+  .dark .blog-article-body b {
+    color: #f8fafc; /* slate-50 */
+  }
+  .blog-article-body a {
+    color: #006a4e;
+    font-weight: 600;
+  }
+  .blog-article-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+  .blog-article-body ul,
+  .blog-article-body ol {
+    padding-left: 1.25rem;
+  }
 }
