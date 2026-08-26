@@ -127,7 +127,7 @@ export default function BlogManagementPage() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Link
-                            href={`/blog/${blog.categorySlug || "general"}/${blog.slug || blog.id}`}
+                            href={`/blog/${blog.categorySlug || "general"}/${blog.id}`}
                             target="_blank"
                           >
                             <Button variant="outline" size="sm" className="h-8 w-8 p-0">
