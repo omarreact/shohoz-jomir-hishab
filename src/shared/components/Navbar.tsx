@@ -325,7 +325,7 @@ export default function Navbar() {
                 মানচিত্র ও জ্ঞান
               </p>
               {PRIMARY_NAV.filter((i) =>
-                ["/geospatial-map", "/blog"].includes(i.href),
+                ["/geospatial-map", "/rajuk-test", "/blog"].includes(i.href),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
@@ -333,7 +333,7 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline ${
                     activePath(pathname, href)
-                      ? "bg-[var(--secondary)]"
+                      ? "bg-[var(--secondary)] text-[var(--foreground)]"
                       : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
                   }`}
                 >
