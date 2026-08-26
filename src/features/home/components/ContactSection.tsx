@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Facebook, Mail, MessageCircle, ArrowRight } from "lucide-react";
+import { Mail, MessageCircle, ArrowRight } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
@@ -35,7 +35,8 @@ export default function ContactSection() {
               onClick={(e) => e.preventDefault()}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-5 py-3 text-sm font-bold text-[var(--foreground)] no-underline hover:bg-[var(--secondary)]"
             >
-              <Facebook size={16} /> Facebook
+              <span aria-hidden="true" className="text-base font-black leading-none">f</span>
+              Facebook
             </a>
             <a
               href="#"
