@@ -6,6 +6,7 @@ import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
 import { Search } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
+import { toPlainText } from "@/src/features/blog/sanitizeBlogText";
 
 type ApiBlog = {
   id: string;
@@ -23,9 +24,10 @@ type ApiBlog = {
 
 function toBlogPost(b: ApiBlog): BlogPost {
   return {
+    id: b.id,
     slug: b.slug || b.id,
     title: b.title,
-    excerpt: b.excerpt || "",
+    excerpt: toPlainText(b.excerpt || ""),
     coverImage:
       b.coverImage ||
       "https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop",
@@ -63,14 +65,14 @@ function staticFallback(): BlogPost[] {
 
 function BlogSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pulse"
+          className="animate-pulse overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800"
         >
           <div className="h-44 bg-slate-200 dark:bg-slate-800" />
-          <div className="p-4 space-y-3">
+          <div className="space-y-3 p-4">
             <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
             <div className="h-5 w-full rounded bg-slate-200 dark:bg-slate-700" />
             <div className="h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700" />
@@ -164,10 +166,10 @@ export default function BlogListingPage() {
         pattern="none"
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 fade-in visible min-h-screen">
+      <div className="fade-in visible mx-auto min-h-screen max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {loadError && (
           <p className="mb-6 text-center text-sm text-amber-700 dark:text-amber-400">
-            সার্ভার থেকে লোড বিলম্বিত — স্থানীয় গাইড পোস্ট দেখানো হচ্ছে।{" "}
+            সার্ভার থেকে লোড বিলম্বিত — স্থানীয় গাইড পোস্ট দেখানো হচ্ছে.{" "}
             <button type="button" className="font-bold underline" onClick={() => void load()}>
               আবার চেষ্টা
             </button>
@@ -180,36 +182,37 @@ export default function BlogListingPage() {
           <>
             {displayFeatured && featuredPost && (
               <section className="mb-16">
-                <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
+                <h4 className="mb-6 border-l-4 border-[#006a4e] pl-4 text-2xl font-bold text-slate-900 dark:text-white">
                   ফিচার্ড আর্টিকেল
                 </h4>
                 <BlogCard post={featuredPost} featured={true} />
               </section>
             )}
 
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-10 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="flex gap-2 w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+            <div className="mb-10 flex flex-col items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row">
+              <div className="hide-scrollbar flex w-full gap-2 overflow-x-auto pb-2 md:pb-0">
                 {categories.map((cat) => (
                   <button
                     key={cat}
+                    type="button"
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-5 py-2 rounded-full font-bold whitespace-nowrap transition-colors ${
+                    className={`whitespace-nowrap rounded-full px-5 py-2 font-bold transition-colors ${
                       activeCategory === cat
-                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
-                        : "border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600"
+                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                        : "border border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-white"
                     }`}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
-              <div className="w-full md:w-80 relative">
+              <div className="relative w-full md:w-80">
                 <input
                   type="text"
                   placeholder="আর্টিকেল খুঁজুন..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-full px-5 py-2.5 pl-10 focus:outline-none focus:border-[#006a4e] transition-colors"
+                  className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-5 text-slate-900 transition-colors focus:border-[#006a4e] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
                 <Search
                   size={18}
@@ -221,25 +224,25 @@ export default function BlogListingPage() {
             <section className="mb-16">
               {filteredPosts.length > 0 ? (
                 <>
-                  <h4 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white border-l-4 border-[#006a4e] pl-4">
+                  <h4 className="mb-6 border-l-4 border-[#006a4e] pl-4 text-2xl font-bold text-slate-900 dark:text-white">
                     {searchQuery || activeCategory !== "সকল পোস্ট"
                       ? "ফলাফল"
                       : "সাম্প্রতিক পোস্টসমূহ"}
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {(searchQuery || activeCategory !== "সকল পোস্ট"
                       ? filteredPosts
                       : displayFeatured
                         ? posts
                         : allPosts
                     ).map((post) => (
-                      <BlogCard key={post.slug} post={post} />
+                      <BlogCard key={post.id || post.slug} post={post} />
                     ))}
                   </div>
                 </>
               ) : (
-                <div className="text-center py-20">
-                  <p className="text-xl text-slate-500 dark:text-slate-400 mb-4">
+                <div className="py-20 text-center">
+                  <p className="mb-4 text-xl text-slate-500 dark:text-slate-400">
                     কোনো পোস্ট পাওয়া যায়নি।
                   </p>
                   <button
@@ -256,7 +259,7 @@ export default function BlogListingPage() {
               )}
             </section>
 
-            <section className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-16">
+            <section className="mt-20 border-t border-slate-200 pt-16 dark:border-slate-800">
               <NewsletterCta />
             </section>
           </>
