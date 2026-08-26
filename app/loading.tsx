@@ -1,13 +1,18 @@
-import { Calculator } from "lucide-react";
+import { Skeleton } from "@/src/shared/ui/Skeleton";
 
 export default function Loading() {
   return (
-    <div className="d-flex justify-content-center align-items-center flex-column fade-in" style={{ minHeight: "60vh" }}>
-      <div className="bg-success bg-opacity-10 text-success p-3 rounded-circle mb-3 shadow-sm placeholder-glow">
-        <Calculator size={40} className="spinner-border spinner-border-sm" role="status" />
+    <main className="mx-auto min-h-[60vh] max-w-7xl px-4 py-12 sm:px-6 lg:px-8" aria-label="পেজ লোড হচ্ছে">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-14 w-3/4" />
+        <Skeleton className="h-5 w-2/3" />
+        <div className="grid gap-4 pt-4 md:grid-cols-3">
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        </div>
       </div>
-      <h5 className="fw-bold text-success">লোড হচ্ছে...</h5>
-      <p className="text-muted small">অনুগ্রহ করে একটু অপেক্ষা করুন</p>
-    </div>
+    </main>
   );
 }
