@@ -42,6 +42,7 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "landMeasurement",
   "inheritance",
   "landMap",
+  "mapQa",
   "documents",
   "blog",
 ];
@@ -51,6 +52,7 @@ export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "inheritance",
   "landMeasurement",
   "landMap",
+  "mapQa",
   "blog",
 ];
 
