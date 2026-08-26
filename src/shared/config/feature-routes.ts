@@ -25,7 +25,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   records: { en: "Land records", bn: "খতিয়ান" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
   inheritance: { en: "Inheritance", bn: "ফারায়েজ" },
-  landMap: { en: "Urban planning map", bn: "নগর পরিকল্পনা মানচিত্র" },
+  landMap: { en: "GIS map", bn: "GIS মানচিত্র" },
   mapQa: { en: "Map QA", bn: "মানচিত্র পরীক্ষা" },
   documents: { en: "Documents", bn: "পর্চা" },
   blog: { en: "Blog", bn: "ব্লগ" },
@@ -46,7 +46,6 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "blog",
 ];
 
-/** Footer / sitemap static links (always available). */
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
   "inheritance",
