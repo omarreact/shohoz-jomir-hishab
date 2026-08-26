@@ -17,6 +17,7 @@ import NewsletterCta from "@/src/features/blog/components/NewsletterCta";
 import BlogCard, { BlogPost } from "@/src/features/blog/components/BlogCard";
 import BlogComments from "@/src/features/blog/components/BlogComments";
 import { ReadingProgress } from "@/src/features/blog/components/ReadingProgress";
+import { sanitizeBlogHtml, toPlainText } from "@/src/features/blog/sanitizeBlogText";
 
 type PostData = {
   id: string;
@@ -62,22 +63,6 @@ function normalizeRouteParam(value: string | string[] | undefined): string {
   return out;
 }
 
-/** Editor HTML often has inline black colors + &nbsp; between words — normalize for reading. */
-function sanitizeBlogHtml(html: string): string {
-  if (!html) return "";
-  return (
-    html
-      // strip forced dark colors from rich-text editors
-      .replace(/\s*style="[^"]*color\s*:[^"]*"/gi, "")
-      .replace(/\s*style='[^']*color\s*:[^']*'/gi, "")
-      .replace(/\s*color="[^"]*"/gi, "")
-      // collapse excessive non-breaking spaces between Bangla words
-      .replace(/&nbsp;/gi, " ")
-      .replace(/\u00a0/g, " ")
-      .replace(/\s{2,}/g, " ")
-  );
-}
-
 function apiBlogToPost(b: ApiBlog): PostData {
   return {
     id: b.id,
@@ -97,7 +82,7 @@ function apiBlogToPost(b: ApiBlog): PostData {
     category: b.category || "সাধারণ",
     categorySlug: b.categorySlug || "general",
     content: sanitizeBlogHtml((b as any).content || ""),
-    excerpt: sanitizeBlogHtml(b.excerpt || ""),
+    excerpt: toPlainText(b.excerpt || ""),
     tags: (() => {
       const t = (b as any).tags;
       if (!t) return [];
@@ -116,7 +101,8 @@ function apiBlogToPost(b: ApiBlog): PostData {
 
 export default function SingleBlogPage() {
   const params = useParams();
-  const slug = normalizeRouteParam(params.slug as string | string[] | undefined);
+  // URL segment is now post id (preferred); old slug URLs still work via fallback
+  const paramKey = normalizeRouteParam(params.slug as string | string[] | undefined);
 
   const [post, setPost] = useState<PostData | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
@@ -126,14 +112,17 @@ export default function SingleBlogPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!paramKey) return;
     setErrorMsg(null);
     setNotFound(false);
     setIsLoading(true);
 
-    fetch(`/api/blogs?slug=${encodeURIComponent(slug)}`)
+    // Prefer id lookup (short stable URL), then legacy slug query
+    fetch(`/api/blogs/${encodeURIComponent(paramKey)}`)
       .then((r) => {
-        if (r.status === 404) return fetch(`/api/blogs/${encodeURIComponent(slug)}`);
+        if (r.status === 404) {
+          return fetch(`/api/blogs?slug=${encodeURIComponent(paramKey)}`);
+        }
         return r;
       })
       .then((r) => {
@@ -165,9 +154,10 @@ export default function SingleBlogPage() {
                 .map(
                   (b) =>
                     ({
+                      id: b.id,
                       slug: b.slug || b.id,
                       title: b.title,
-                      excerpt: b.excerpt || "",
+                      excerpt: toPlainText(b.excerpt || ""),
                       coverImage:
                         b.coverImage ||
                         "https://images.unsplash.com/photo-1524813686514-a57563d77965?q=80&w=1200&auto=format&fit=crop",
@@ -194,7 +184,7 @@ export default function SingleBlogPage() {
         setErrorMsg(err.message || "ব্লগ লোড করতে সমস্যা হয়েছে।");
       })
       .finally(() => setIsLoading(false));
-  }, [slug]);
+  }, [paramKey]);
 
   const tocHeaders = useMemo(() => {
     if (!post?.content) return [];
@@ -219,7 +209,6 @@ export default function SingleBlogPage() {
     }
   }, [post?.content]);
 
-  // Inject ids into rendered headings for TOC anchors
   const contentWithIds = useMemo(() => {
     if (!post?.content) return "";
     let i = 0;
@@ -259,7 +248,7 @@ export default function SingleBlogPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-[#006a4e]" />
       </div>
     );
@@ -267,10 +256,10 @@ export default function SingleBlogPage() {
 
   if (errorMsg) {
     return (
-      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4 dark:bg-slate-950">
         <h1 className="text-2xl font-bold text-red-500">ত্রুটি</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-center">{errorMsg}</p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-semibold">
+        <p className="text-center text-slate-500 dark:text-slate-400">{errorMsg}</p>
+        <Link href="/blog" className="inline-flex items-center gap-2 font-semibold text-[#006a4e] hover:underline">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -279,12 +268,12 @@ export default function SingleBlogPage() {
 
   if (notFound || !post) {
     return (
-      <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4 dark:bg-slate-950">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">পোস্ট পাওয়া যায়নি</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-center">
+        <p className="text-center text-slate-500 dark:text-slate-400">
           আপনার অনুরোধকৃত ব্লগ পোস্টটি খুঁজে পাওয়া যায়নি।
         </p>
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[#006a4e] hover:underline font-semibold">
+        <Link href="/blog" className="inline-flex items-center gap-2 font-semibold text-[#006a4e] hover:underline">
           <ArrowLeft size={18} /> জার্নালে ফিরে যান
         </Link>
       </div>
@@ -292,10 +281,9 @@ export default function SingleBlogPage() {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <ReadingProgress />
 
-      {/* Compact hero */}
       <header className="relative overflow-hidden border-b border-slate-200/80 dark:border-slate-800">
         <div
           className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18]"
@@ -307,7 +295,7 @@ export default function SingleBlogPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50/90 via-slate-50/95 to-slate-50 dark:from-slate-950/90 dark:via-slate-950/95 dark:to-slate-950" />
 
-        <div className="relative z-10 mx-auto max-w-4xl px-4 pt-24 pb-10 sm:pt-28 sm:pb-12">
+        <div className="relative z-10 mx-auto max-w-4xl px-4 pb-10 pt-24 sm:pb-12 sm:pt-28">
           <Link
             href="/blog"
             className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-[#006a4e] dark:text-slate-400"
@@ -349,9 +337,7 @@ export default function SingleBlogPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-          {/* Main column */}
           <div className="lg:col-span-8">
-            {/* Cover */}
             {post.coverImage && (
               <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -363,7 +349,6 @@ export default function SingleBlogPage() {
               </div>
             )}
 
-            {/* Article card — guarantees readable contrast */}
             <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
               <div
                 className="blog-article-body prose prose-slate max-w-none dark:prose-invert
@@ -378,7 +363,6 @@ export default function SingleBlogPage() {
               />
             </article>
 
-            {/* Tags + share */}
             <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
               <div className="flex flex-wrap gap-2">
                 {post.tags.length > 0 ? (
@@ -415,7 +399,6 @@ export default function SingleBlogPage() {
               </div>
             </div>
 
-            {/* Author */}
             <div className="mt-6 flex flex-col items-center gap-4 rounded-2xl border border-slate-200 border-l-4 border-l-[#006a4e] bg-white p-6 sm:flex-row sm:items-start dark:border-slate-800 dark:bg-slate-900">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#006a4e]/15 text-2xl font-bold text-[#006a4e]">
                 {(post.author.name || "A").charAt(0)}
@@ -448,14 +431,13 @@ export default function SingleBlogPage() {
                 </h4>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {relatedPosts.map((rp) => (
-                    <BlogCard key={rp.slug} post={rp} />
+                    <BlogCard key={rp.id || rp.slug} post={rp} />
                   ))}
                 </div>
               </section>
             )}
           </div>
 
-          {/* Sidebar TOC */}
           <aside className="hidden lg:col-span-4 lg:block">
             <TableOfContents headers={tocHeaders} />
           </aside>
