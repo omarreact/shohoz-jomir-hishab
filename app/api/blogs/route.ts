@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import { STATIC_BLOG_POSTS, getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import {
+  makeExcerpt,
+  sanitizeBlogHtml,
+  toPlainText,
+} from "@/src/features/blog/sanitizeBlogText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,8 +43,32 @@ function jsonError(message: string, status = 500, requestId?: string) {
   );
 }
 
-function staticAsListItem(p: (typeof STATIC_BLOG_POSTS)[number]) {
+function cleanListItem(b: {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  content?: string;
+  coverImage?: string | null;
+  author?: string;
+  category?: string;
+  categorySlug?: string;
+  status?: string;
+  readingTime?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  tags?: string[];
+  comments?: unknown[];
+}) {
   return {
+    ...b,
+    excerpt: toPlainText(b.excerpt || ""),
+    content: b.content !== undefined ? sanitizeBlogHtml(b.content) : undefined,
+  };
+}
+
+function staticAsListItem(p: (typeof STATIC_BLOG_POSTS)[number]) {
+  return cleanListItem({
     id: p.id,
     title: p.title,
     slug: p.slug,
@@ -52,7 +81,7 @@ function staticAsListItem(p: (typeof STATIC_BLOG_POSTS)[number]) {
     readingTime: p.readingTime,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
-  };
+  });
 }
 
 // GET /api/blogs — public list, or single by ?slug=xxx
@@ -70,10 +99,10 @@ export async function GET(req: NextRequest) {
           {
             success: true,
             data: {
-              blog: {
+              blog: cleanListItem({
                 ...staticPost,
                 comments: [],
-              },
+              }),
             },
           },
           200,
@@ -91,7 +120,16 @@ export async function GET(req: NextRequest) {
         .map((c: any) => ({ id: c.id, ...c.data() }))
         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       return json(
-        { success: true, data: { blog: { id: doc.id, ...blogData, comments } } },
+        {
+          success: true,
+          data: {
+            blog: cleanListItem({
+              id: doc.id,
+              ...blogData,
+              comments,
+            } as any),
+          },
+        },
         200,
         requestId,
       );
@@ -105,7 +143,7 @@ export async function GET(req: NextRequest) {
       const snapshot = await query.get();
       firestoreBlogs = snapshot.docs.map((doc: any) => {
         const data = doc.data();
-        return {
+        return cleanListItem({
           id: doc.id,
           title: data.title,
           slug: data.slug,
@@ -124,7 +162,7 @@ export async function GET(req: NextRequest) {
             typeof data.updatedAt?.toDate === "function"
               ? data.updatedAt.toDate().toISOString()
               : data.updatedAt,
-        };
+        });
       });
     } catch (fbError) {
       console.warn("Firestore blogs unavailable, serving static only:", fbError);
@@ -134,17 +172,15 @@ export async function GET(req: NextRequest) {
       (p) => !status || p.status === status,
     ).map(staticAsListItem);
 
-    // Prefer Firestore if same slug exists; otherwise include static
     const firestoreSlugs = new Set(firestoreBlogs.map((b) => b.slug));
     const merged = [
       ...staticList.filter((s) => !firestoreSlugs.has(s.slug)),
       ...firestoreBlogs,
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    ].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
     return json({ success: true, data: { blogs: merged } }, 200, requestId);
   } catch (error: any) {
     console.error("GET /api/blogs failed:", { requestId, error });
-    // Last resort: static posts only
     try {
       const staticList = STATIC_BLOG_POSTS.map(staticAsListItem);
       return json({ success: true, data: { blogs: staticList } }, 200, requestId);
@@ -173,7 +209,9 @@ export async function POST(req: NextRequest) {
       return jsonError("title and content are required", 400, requestId);
     }
 
-    const slug = generateSlug(title.trim());
+    const cleanedContent = sanitizeBlogHtml(content);
+    // Prefer short ASCII/id-friendly slug; keep Bangla only if needed
+    const slug = generateSlug(title.trim()) || `post-${Date.now()}`;
     if (!slug) return jsonError("A valid title is required to generate the blog slug", 400, requestId);
 
     const existingSnapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
@@ -181,18 +219,17 @@ export async function POST(req: NextRequest) {
 
     const categoryValue = typeof category === "string" && category.trim() ? category.trim() : "সাধারণ";
     const authorValue = typeof author === "string" && author.trim() ? author.trim() : "মো. ওমর ফারুক";
-    const plainText = content.replace(/<[^>]+>/g, "").trim();
-    const excerpt = plainText.length > 150 ? plainText.slice(0, 150) + "..." : plainText;
+    const excerpt = makeExcerpt(cleanedContent, 150);
     const now = new Date().toISOString();
     const data = {
       title: title.trim(),
       slug,
       excerpt,
-      content,
+      content: cleanedContent,
       coverImage: typeof coverImage === "string" && coverImage.trim() ? coverImage.trim() : null,
       author: authorValue,
       category: categoryValue,
-      categorySlug: generateSlug(categoryValue || "general"),
+      categorySlug: generateSlug(categoryValue || "general") || "general",
       status: "Published",
       createdAt: now,
       updatedAt: now,
@@ -201,7 +238,7 @@ export async function POST(req: NextRequest) {
     const ref = await collections.blogs.add(data);
     const doc = await ref.get();
     const blogData = doc.data() as any;
-    const blog = {
+    const blog = cleanListItem({
       id: doc.id,
       ...blogData,
       createdAt:
@@ -212,7 +249,7 @@ export async function POST(req: NextRequest) {
         typeof blogData.updatedAt?.toDate === "function"
           ? blogData.updatedAt.toDate().toISOString()
           : blogData.updatedAt,
-    };
+    });
     revalidatePath("/", "layout");
     revalidatePath("/blog", "page");
     return json({ success: true, data: { blog } }, 201, requestId);

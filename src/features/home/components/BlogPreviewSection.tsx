@@ -2,44 +2,30 @@ import Link from "next/link";
 import { ArrowRight, Clock } from "lucide-react";
 import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+import { toPlainText } from "@/src/features/blog/sanitizeBlogText";
 
-function formatBnDate(iso?: string): string {
-  if (!iso) return "";
+function formatBnDate(iso: string) {
   try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString("bn-BD", {
-      day: "numeric",
-      month: "long",
+    return new Date(iso).toLocaleDateString("bn-BD", {
       year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   } catch {
-    return iso;
+    return "";
   }
 }
 
 export default function BlogPreviewSection() {
-  const posts = STATIC_BLOG_POSTS.filter((p) => p.status === "Published")
-    .slice()
-    .sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return tb - ta;
-    })
-    .slice(0, 3);
-
-  if (!posts.length) return null;
+  const posts = STATIC_BLOG_POSTS.filter((p) => p.status === "Published").slice(0, 3);
 
   return (
-    <section className="border-t border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-950 md:py-20">
+    <section className="bg-white py-16 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#006a4e]">
-              ব্লগ
-            </p>
             <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
-              আইন ও <span className="text-[#006a4e]">নির্দেশিকা</span>
+              ভূমি <span className="text-[#006a4e]">নির্দেশিকা</span>
             </h2>
             <p className="m-0 text-base text-slate-500 dark:text-slate-400">
               ভূমি সংক্রান্ত ব্যবহারিক টিপস ও আইনি সারাংশ।
@@ -55,7 +41,7 @@ export default function BlogPreviewSection() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {posts.map((post) => {
-            const href = `/blog/${post.categorySlug || "general"}/${post.slug || post.id}`;
+            const href = `/blog/${post.categorySlug || "general"}/${post.id}`;
             return (
               <Link
                 key={post.id}
@@ -79,7 +65,7 @@ export default function BlogPreviewSection() {
                   </h3>
                   {post.excerpt && (
                     <p className="mb-4 line-clamp-2 flex-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                      {post.excerpt}
+                      {toPlainText(post.excerpt)}
                     </p>
                   )}
                   <span className="inline-flex items-center gap-1 text-sm font-bold text-[#006a4e] transition group-hover:gap-2">
