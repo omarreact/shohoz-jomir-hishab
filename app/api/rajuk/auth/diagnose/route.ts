@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateToken, getValidToken, hasRajukCredential, RAJUK_SERVER } from "@/src/services/rajuk/rajukAuth.service";
+import { getValidToken, hasRajukCredential, RAJUK_SERVER } from "@/src/services/rajuk/rajukAuth.service";
 import { hasUpstashConfig } from "@/src/services/rajuk/rajukRedis.service";
 
 export const dynamic = "force-dynamic";
@@ -21,31 +21,18 @@ export async function GET() {
       }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
 
-    if (portalTokenConfigured) {
-      const token = await generateToken(RAJUK_SERVER);
-      return NextResponse.json({
-        ok: true,
-        portalTokenConfigured: true,
-        serverTokenConfigured,
-        serverTokenGenerated: Boolean(token.token),
-        expiresAt: token.expiresAt,
-        upstashConfigured: hasUpstashConfig(),
-        server: RAJUK_SERVER,
-        mode: "portal-to-server-exchange",
-      }, { headers: { "Cache-Control": "no-store" } });
-    }
-
-    // Do not expose the token. This only verifies that the configured server credential
-    // can be used by the backend and, when Redis is configured, can be cached.
+    // getValidToken handles either a configured server token or the Portal → Server
+    // exchange. Never expose the actual credential or token in the diagnostic response.
     const token = await getValidToken(RAJUK_SERVER);
+
     return NextResponse.json({
       ok: Boolean(token),
-      portalTokenConfigured: false,
-      serverTokenConfigured: true,
+      portalTokenConfigured,
+      serverTokenConfigured,
       serverTokenGenerated: Boolean(token),
       upstashConfigured: hasUpstashConfig(),
       server: RAJUK_SERVER,
-      mode: "configured-server-token",
+      mode: portalTokenConfigured ? "portal-to-server-exchange" : "configured-server-token",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json({
