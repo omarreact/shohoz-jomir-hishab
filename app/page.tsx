@@ -1,32 +1,30 @@
 import AnnouncementBanner from "@/src/features/home/components/AnnouncementBanner";
-import HeroSection from "@/src/features/home/components/HeroSection";
-import ServicesSection from "@/src/features/home/components/ServicesSection";
-import MapPreviewSection from "@/src/features/home/components/MapPreviewSection";
-import StatisticsSection from "@/src/features/home/components/StatisticsSection";
-import HowItWorksSection from "@/src/features/home/components/HowItWorksSection";
-import BlogPreviewSection from "@/src/features/home/components/BlogPreviewSection";
+import EasyToolsHub from "@/src/features/home/components/EasyToolsHub";
 import FaqSection from "@/src/features/home/components/FaqSection";
-import ContactSection from "@/src/features/home/components/ContactSection";
+import { refreshToken, RAJUK_SERVER } from "@/src/services/rajuk/rajukAuth.service";
 
-// The public homepage is intentionally independent of RAJUK authentication.
-// GIS authentication is performed by the GIS/API routes only when those
-// features are actually used. A temporary RAJUK outage or bad credential must
-// never make the public homepage unavailable.
+// Server-side token warm-up for GIS features; never expose token to browser.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function HomePage() {
+async function warmRajukAuthentication() {
+  if (!process.env.RAJUK_API_KEY) return;
+  try {
+    await refreshToken(RAJUK_SERVER);
+  } catch (error) {
+    console.error("[RAJUK] Home authentication refresh failed:", error);
+  }
+}
+
+export default async function HomePage() {
+  await warmRajukAuthentication();
+
   return (
     <div className="flex w-full flex-col">
       <AnnouncementBanner />
-      <HeroSection />
-      <ServicesSection />
-      <MapPreviewSection />
-      <StatisticsSection />
-      <HowItWorksSection />
-      <BlogPreviewSection />
+      {/* সব সুবিধা সরাসরি — তরুণ থেকে বৃদ্ধ সবার জন্য সহজ */}
+      <EasyToolsHub />
       <FaqSection />
-      <ContactSection />
     </div>
   );
 }
