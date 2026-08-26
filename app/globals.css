@@ -107,3 +107,62 @@
   .blog-article-body img { max-width: 100%; height: auto; border-radius: .75rem; }
   .blog-article-body ul, .blog-article-body ol { padding-left: 1.25rem; }
 }
+
+/*
+ * Dark-mode compatibility for older pages that still use Tailwind's
+ * slate/white utility classes. New components should use the semantic
+ * theme tokens above, but these fallbacks keep legacy screens consistent
+ * while they are being migrated.
+ */
+@layer utilities {
+  .dark .bg-white,
+  [data-theme="dark"] .bg-white { background-color: var(--card-bg) !important; }
+
+  .dark .bg-slate-50,
+  [data-theme="dark"] .bg-slate-50 { background-color: var(--background) !important; }
+
+  .dark .bg-slate-100,
+  [data-theme="dark"] .bg-slate-100 { background-color: var(--secondary) !important; }
+
+  .dark .bg-slate-200,
+  [data-theme="dark"] .bg-slate-200 { background-color: var(--muted) !important; }
+
+  .dark .text-slate-900,
+  [data-theme="dark"] .text-slate-900 { color: var(--foreground) !important; }
+
+  .dark .text-slate-800,
+  [data-theme="dark"] .text-slate-800 { color: var(--foreground) !important; }
+
+  .dark .text-slate-700,
+  [data-theme="dark"] .text-slate-700 { color: var(--foreground) !important; }
+
+  .dark .text-slate-600,
+  [data-theme="dark"] .text-slate-600 { color: var(--muted-foreground) !important; }
+
+  .dark .text-slate-500,
+  [data-theme="dark"] .text-slate-500 { color: var(--muted-foreground) !important; }
+
+  .dark .text-slate-400,
+  [data-theme="dark"] .text-slate-400 { color: #8fa69a !important; }
+
+  .dark .border-slate-200,
+  [data-theme="dark"] .border-slate-200 { border-color: var(--border-color) !important; }
+
+  .dark .border-slate-300,
+  [data-theme="dark"] .border-slate-300 { border-color: var(--border-color) !important; }
+
+  .dark .disabled\:bg-slate-50:disabled,
+  [data-theme="dark"] .disabled\:bg-slate-50:disabled {
+    background-color: var(--secondary) !important;
+  }
+
+  .dark .hover\:bg-slate-50:hover,
+  [data-theme="dark"] .hover\:bg-slate-50:hover {
+    background-color: var(--secondary) !important;
+  }
+
+  .dark .hover\:bg-slate-100:hover,
+  [data-theme="dark"] .hover\:bg-slate-100:hover {
+    background-color: var(--secondary) !important;
+  }
+}
