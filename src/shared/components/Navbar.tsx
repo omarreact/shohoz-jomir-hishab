@@ -66,11 +66,6 @@ const SEARCH_NAV: NavItem[] = [
   ...PRIMARY_NAV,
   ...SECONDARY_NAV,
   {
-    href: FEATURE_ROUTES.mapQa,
-    label: FEATURE_LABELS.mapQa.bn,
-    icon: Map,
-  },
-  {
     href: FEATURE_ROUTES.contact,
     label: FEATURE_LABELS.contact.bn,
     icon: Users,
