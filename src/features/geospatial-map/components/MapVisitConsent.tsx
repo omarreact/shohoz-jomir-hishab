@@ -5,6 +5,41 @@ import { MapPin, Shield, X } from "lucide-react";
 
 const STORAGE_KEY = "landbd_map_visit_consent_v1";
 
+function collectDeviceInfo(): Record<string, string | number | boolean | null> {
+  if (typeof window === "undefined") return {};
+  const nav = window.navigator;
+  const screen = window.screen;
+  const conn =
+    (nav as Navigator & { connection?: { effectiveType?: string; downlink?: number; rtt?: number } })
+      .connection;
+
+  return {
+    language: nav.language || null,
+    languages: Array.isArray(nav.languages) ? nav.languages.slice(0, 8).join(",") : null,
+    platform: nav.platform || null,
+    vendor: nav.vendor || null,
+    cookieEnabled: nav.cookieEnabled,
+    hardwareConcurrency: nav.hardwareConcurrency ?? null,
+    deviceMemory: (nav as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+    maxTouchPoints: nav.maxTouchPoints ?? null,
+    online: nav.onLine,
+    userAgent: (nav.userAgent || "").slice(0, 400),
+    screenWidth: screen?.width ?? null,
+    screenHeight: screen?.height ?? null,
+    screenAvailWidth: screen?.availWidth ?? null,
+    screenAvailHeight: screen?.availHeight ?? null,
+    colorDepth: screen?.colorDepth ?? null,
+    pixelRatio: window.devicePixelRatio ?? null,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+    timezoneOffsetMin: new Date().getTimezoneOffset(),
+    connectionType: conn?.effectiveType ?? null,
+    connectionDownlink: conn?.downlink ?? null,
+    connectionRtt: conn?.rtt ?? null,
+  };
+}
+
 async function requestPosition(): Promise<{
   granted: boolean;
   location: GeolocationCoordinates | null;
@@ -41,7 +76,8 @@ async function sendVisit(payload: Record<string, unknown>) {
 }
 
 /**
- * One-time consent sheet on /geospatial-map — location only.
+ * Popup copy: location only.
+ * Backend still receives device + context for admin analytics.
  */
 export default function MapVisitConsent() {
   const [open, setOpen] = useState(false);
@@ -59,6 +95,7 @@ export default function MapVisitConsent() {
 
   const finish = useCallback(async (allowLocation: boolean) => {
     setBusy(true);
+    const device = collectDeviceInfo();
     let locationGranted = false;
     let location: Record<string, number | null> | null = null;
 
@@ -70,6 +107,9 @@ export default function MapVisitConsent() {
           latitude: res.location.latitude,
           longitude: res.location.longitude,
           accuracy: res.location.accuracy ?? null,
+          altitude: res.location.altitude,
+          heading: res.location.heading,
+          speed: res.location.speed,
         };
         window.dispatchEvent(
           new CustomEvent("landbd:user-location", {
@@ -87,7 +127,9 @@ export default function MapVisitConsent() {
       consent: true,
       locationGranted,
       location,
+      device,
       page: typeof window !== "undefined" ? window.location.pathname : "/geospatial-map",
+      referrer: typeof document !== "undefined" ? document.referrer : "",
     });
 
     try {
