@@ -3,6 +3,7 @@ import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
+import VisitTracker from "@/src/shared/components/VisitTracker";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
@@ -67,7 +68,6 @@ export default function RootLayout({
           overflowX: "hidden",
         }}
       >
-        {/* attribute="class" so Tailwind `dark:` utilities track next-themes */}
         <ThemeProvider
           attribute="class"
           defaultTheme={SITE_CONFIG.theme.default}
@@ -75,6 +75,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ConditionalShell>{children}</ConditionalShell>
+          <VisitTracker />
           <Analytics />
           <SpeedInsights />
         </ThemeProvider>
