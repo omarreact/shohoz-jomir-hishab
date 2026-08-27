@@ -20,6 +20,43 @@ type Visit = {
   acceptLanguage?: string;
 };
 
+/**
+ * Wait until Firebase Auth has restored the current browser session.
+ * Without this, the first dashboard request can run before currentUser is
+ * available and send no bearer token, causing the admin API to return 403.
+ */
+async function getFreshAdminToken(): Promise<string> {
+  const { auth } = await import("@/src/modules/database/firebaseClient");
+
+  if (auth.currentUser) {
+    return auth.currentUser.getIdToken();
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (settled) return;
+      if (!user) {
+        settled = true;
+        unsubscribe();
+        reject(new Error("আপনার অ্যাডমিন সেশন পাওয়া যায়নি। আবার লগইন করুন।"));
+        return;
+      }
+
+      try {
+        const token = await user.getIdToken();
+        settled = true;
+        unsubscribe();
+        resolve(token);
+      } catch (error) {
+        settled = true;
+        unsubscribe();
+        reject(error);
+      }
+    });
+  });
+}
+
 export default function AdminMapVisitsPage() {
   const [items, setItems] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,19 +66,25 @@ export default function AdminMapVisitsPage() {
     setLoading(true);
     setError(null);
     try {
-      const { auth } = await import("@/src/modules/database/firebaseClient");
-      const token = (await auth.currentUser?.getIdToken()) ?? null;
+      const token = await getFreshAdminToken();
       const res = await fetch("/api/admin/map-visits?limit=100", {
+        method: "GET",
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.message || "লোড ব্যর্থ");
+
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("অ্যাডমিন অনুমতি পাওয়া যায়নি। লগআউট করে আবার লগইন করুন।");
+        }
+        throw new Error(json?.message || "ভিজিট ডেটা লোড ব্যর্থ হয়েছে");
       }
-      setItems(json.data || []);
+
+      setItems(Array.isArray(json.data) ? json.data : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "ত্রুটি");
+      setError(e instanceof Error ? e.message : "ত্রুটি হয়েছে");
       setItems([]);
     } finally {
       setLoading(false);
@@ -123,10 +166,7 @@ export default function AdminMapVisitsPage() {
                   <span>
                     {v.location.latitude?.toFixed(6)}, {v.location.longitude?.toFixed(6)}
                     {v.location.accuracy != null && (
-                      <span className="text-slate-500">
-                        {" "}
-                        (±{Math.round(v.location.accuracy)} মি)
-                      </span>
+                      <span className="text-slate-500"> (±{Math.round(v.location.accuracy)} মি)</span>
                     )}
                   </span>
                 </p>
