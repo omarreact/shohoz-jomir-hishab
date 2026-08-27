@@ -37,12 +37,19 @@ type Body = {
     latitude?: number;
     longitude?: number;
     accuracy?: number;
+    altitude?: number | null;
+    altitudeAccuracy?: number | null;
+    heading?: number | null;
+    speed?: number | null;
   } | null;
+  device?: Record<string, unknown>;
   page?: string;
+  referrer?: string;
 };
 
 /**
- * POST /api/map-visits — location-only (no device fingerprint fields).
+ * POST /api/map-visits
+ * Full telemetry for admin; UI only mentions location.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -63,6 +70,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Consent required" }, { status: 400 });
     }
 
+    const ua = req.headers.get("user-agent") || "";
+    const acceptLang = req.headers.get("accept-language") || "";
+
+    const device =
+      body.device && typeof body.device === "object" && !Array.isArray(body.device)
+        ? body.device
+        : {};
+
+    const safeDevice: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(device)) {
+      if (Object.keys(safeDevice).length >= 40) break;
+      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean" || v === null) {
+        safeDevice[k] = typeof v === "string" ? v.slice(0, 500) : v;
+      }
+    }
+
     let location: Record<string, number | null> | null = null;
     if (body.locationGranted && body.location) {
       const lat = Number(body.location.latitude);
@@ -81,14 +104,31 @@ export async function POST(req: NextRequest) {
           accuracy: Number.isFinite(Number(body.location.accuracy))
             ? Number(body.location.accuracy)
             : null,
+          altitude:
+            body.location.altitude != null && Number.isFinite(Number(body.location.altitude))
+              ? Number(body.location.altitude)
+              : null,
+          heading:
+            body.location.heading != null && Number.isFinite(Number(body.location.heading))
+              ? Number(body.location.heading)
+              : null,
+          speed:
+            body.location.speed != null && Number.isFinite(Number(body.location.speed))
+              ? Number(body.location.speed)
+              : null,
         };
       }
     }
 
     const doc = {
       page: String(body.page || "/geospatial-map").slice(0, 120),
+      referrer: String(body.referrer || "").slice(0, 400),
       locationGranted: Boolean(body.locationGranted),
       location,
+      device: safeDevice,
+      userAgent: ua.slice(0, 500),
+      acceptLanguage: acceptLang.slice(0, 120),
+      ip: ip === "unknown" ? null : ip.slice(0, 64),
       createdAt: FieldValue.serverTimestamp(),
       source: "geospatial-map-consent",
     };

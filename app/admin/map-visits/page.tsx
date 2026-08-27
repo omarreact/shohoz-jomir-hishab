@@ -1,18 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MapPin, RefreshCw } from "lucide-react";
+import { MapPin, RefreshCw, Smartphone } from "lucide-react";
 
 type Visit = {
   id: string;
   createdAt?: string | null;
   page?: string;
+  referrer?: string;
   locationGranted?: boolean;
   location?: {
     latitude?: number;
     longitude?: number;
     accuracy?: number;
   } | null;
+  device?: Record<string, unknown>;
+  userAgent?: string;
+  ip?: string | null;
+  acceptLanguage?: string;
 };
 
 export default function AdminMapVisitsPage() {
@@ -55,7 +60,7 @@ export default function AdminMapVisitsPage() {
             মানচিত্র ভিজিটর
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            geospatial-map থেকে সংগৃহীত লোকেশন (অনুমতি দিলে)
+            লোকেশন, ডিভাইস, ব্রাউজার ও কনটেক্সট তথ্য
           </p>
         </div>
         <button
@@ -79,7 +84,7 @@ export default function AdminMapVisitsPage() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+              className="h-28 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
             />
           ))}
         </div>
@@ -96,6 +101,11 @@ export default function AdminMapVisitsPage() {
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                 <span>{v.createdAt ? new Date(v.createdAt).toLocaleString("bn-BD") : "—"}</span>
+                {v.ip && (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
+                    IP: {v.ip}
+                  </span>
+                )}
                 <span
                   className={`rounded-full px-2 py-0.5 ${
                     v.locationGranted
@@ -107,8 +117,8 @@ export default function AdminMapVisitsPage() {
                 </span>
               </div>
 
-              {v.location ? (
-                <p className="m-0 flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
+              {v.location && (
+                <p className="mb-2 flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
                   <MapPin className="mt-0.5 h-4 w-4 text-[#006a4e]" />
                   <span>
                     {v.location.latitude?.toFixed(6)}, {v.location.longitude?.toFixed(6)}
@@ -120,9 +130,35 @@ export default function AdminMapVisitsPage() {
                     )}
                   </span>
                 </p>
-              ) : (
-                <p className="m-0 text-sm text-slate-500">লোকেশন দেওয়া হয়নি</p>
               )}
+
+              <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <Smartphone className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="min-w-0 space-y-1">
+                  <p className="m-0 break-all text-xs">
+                    {v.userAgent || String(v.device?.userAgent || "—")}
+                  </p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {[
+                      v.device?.platform && `প্ল্যাটফর্ম: ${v.device.platform}`,
+                      v.device?.language && `ভাষা: ${v.device.language}`,
+                      v.device?.timezone && `টাইমজোন: ${v.device.timezone}`,
+                      v.device?.screenWidth &&
+                        v.device?.screenHeight &&
+                        `স্ক্রিন: ${v.device.screenWidth}×${v.device.screenHeight}`,
+                      v.device?.connectionType && `নেট: ${v.device.connectionType}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {v.referrer ? (
+                    <p className="m-0 truncate text-xs text-slate-400">রেফারার: {v.referrer}</p>
+                  ) : null}
+                  {v.page ? (
+                    <p className="m-0 text-xs text-slate-400">পেজ: {v.page}</p>
+                  ) : null}
+                </div>
+              </div>
             </article>
           ))}
         </div>
