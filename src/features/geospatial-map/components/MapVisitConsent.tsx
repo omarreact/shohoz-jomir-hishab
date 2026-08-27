@@ -99,7 +99,6 @@ export default function MapVisitConsent() {
       setOpen(false);
     } catch (error) {
       console.error("[map-visits] client tracking failed", error);
-      // Do not block the map if tracking fails.
       setOpen(false);
     } finally { setBusy(false); }
   }, []);
@@ -108,9 +107,6 @@ export default function MapVisitConsent() {
     let recorded = false;
     try { recorded = Boolean(localStorage.getItem(STORAGE_KEY)); } catch {}
     if (recorded) return;
-
-    // Show the location explanation immediately, then capture automatically
-    // when the visitor chooses. A browser cannot grant GPS silently.
     const t = window.setTimeout(() => setOpen(true), 400);
     return () => window.clearTimeout(t);
   }, []);
@@ -125,7 +121,6 @@ export default function MapVisitConsent() {
         </div>
         <h2 className="mb-2 text-xl font-extrabold text-slate-900 dark:text-white">আপনার লোকেশন ব্যবহার করবেন?</h2>
         <p className="mb-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">মানচিত্রে আপনার অবস্থান দেখাতে এবং সর্বশেষ অবস্থান সংরক্ষণ করতে ব্রাউজারের লোকেশন অনুমতি প্রয়োজন।</p>
-        <div className="mb-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200"><div className="flex gap-2"><Shield className="mt-0.5 h-4 w-4 shrink-0 text-[#006a4e]" />অনুমতি দিলে অক্ষাংশ, দ্রাঘিমাংশ ও নির্ভুলতা admin-এর মানচিত্রে সর্বশেষ অবস্থান হিসেবে দেখা যাবে।</div></div>
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
           <button type="button" disabled={busy} onClick={() => void capture(true)} className="min-h-12 flex-1 rounded-xl bg-[#006a4e] px-4 text-base font-bold text-white disabled:opacity-60">{busy ? "লোকেশন নেওয়া হচ্ছে…" : "অনুমতি দিন ও চালিয়ে যান"}</button>
           <button type="button" disabled={busy} onClick={() => void capture(false)} className="min-h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-800 disabled:opacity-60">এখন নয়</button>
