@@ -181,15 +181,7 @@ export default function MapVisitConsent() {
             <Shield className="mt-0.5 h-4 w-4 shrink-0 text-[#006a4e]" />
             অবস্থান (অনুমতি দিলে): অক্ষাংশ, দ্রাঘিমাংশ, নির্ভুলতা
           </li>
-          <li className="flex gap-2">
-            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-[#006a4e]" />
-            ডিভাইস: ব্রাউজার, স্ক্রিন, ভাষা, টাইমজোন, নেটওয়ার্ক ধরন
-          </li>
         </ul>
-        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-          তথ্য শুধু অ্যাডমিন প্যানেলে দেখা যায়। মানচিত্র ছাড়া অন্য কোনো ব্যক্তিগত
-          তথ্য সংগ্রহ করা হয় না।
-        </p>
 
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
           <button
