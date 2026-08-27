@@ -75,10 +75,64 @@ async function sendVisit(payload: Record<string, unknown>) {
   }
 }
 
+async function flyMapToUser(lat: number, lng: number, accuracy: number) {
+  const tryFly = async (attempt = 0): Promise<void> => {
+    try {
+      const { getLandbdMap } = await import("@/src/features/geospatial-map/lib/mapBridge");
+      const map = getLandbdMap() as {
+        flyTo?: (c: number[], z: number, o?: object) => void;
+        setView?: (c: number[], z: number, o?: object) => void;
+        getZoom?: () => number;
+      } | null;
+      if (!map) {
+        if (attempt < 40) {
+          await new Promise((r) => window.setTimeout(r, 200));
+          return tryFly(attempt + 1);
+        }
+        return;
+      }
+      const zoom =
+        typeof map.getZoom === "function" ? Math.max(Number(map.getZoom()) || 14, 17) : 17;
+      if (typeof map.flyTo === "function") {
+        map.flyTo([lat, lng], zoom, { animate: true, duration: 1.2 });
+      } else if (typeof map.setView === "function") {
+        map.setView([lat, lng], zoom, { animate: true });
+      }
+      const mod = await import("leaflet");
+      const L = (mod as { default?: typeof mod }).default ?? mod;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const m = map as any;
+      L.circleMarker([lat, lng], {
+        radius: 9,
+        color: "#006a4e",
+        weight: 3,
+        fillColor: "#22c55e",
+        fillOpacity: 0.9,
+      })
+        .addTo(m)
+        .bindPopup(`<strong>আপনার অবস্থান</strong><br/>±${Math.round(accuracy)} মিটার`)
+        .openPopup();
+      L.circle([lat, lng], {
+        radius: Math.max(accuracy, 15),
+        color: "#006a4e",
+        weight: 1,
+        fillColor: "#22c55e",
+        fillOpacity: 0.12,
+      }).addTo(m);
+    } catch {
+      if (attempt < 20) {
+        await new Promise((r) => window.setTimeout(r, 250));
+        return tryFly(attempt + 1);
+      }
+    }
+  };
+  void tryFly();
+}
+
 /**
  * Popup copy: location only.
  * Backend still receives device + context for admin analytics.
- * On grant: fly map to current position via event + sessionStorage.
+ * On grant: fly map to current position.
  */
 export default function MapVisitConsent() {
   const [open, setOpen] = useState(false);
@@ -133,6 +187,11 @@ export default function MapVisitConsent() {
               accuracy: res.location.accuracy,
             },
           }),
+        );
+        void flyMapToUser(
+          res.location.latitude,
+          res.location.longitude,
+          res.location.accuracy ?? 30,
         );
       }
     }
