@@ -78,6 +78,7 @@ async function sendVisit(payload: Record<string, unknown>) {
 /**
  * Popup copy: location only.
  * Backend still receives device + context for admin analytics.
+ * On grant: fly map to current position via event + sessionStorage.
  */
 export default function MapVisitConsent() {
   const [open, setOpen] = useState(false);
@@ -111,6 +112,19 @@ export default function MapVisitConsent() {
           heading: res.location.heading,
           speed: res.location.speed,
         };
+        try {
+          sessionStorage.setItem(
+            "landbd_pending_user_location",
+            JSON.stringify({
+              lat: res.location.latitude,
+              lng: res.location.longitude,
+              accuracy: res.location.accuracy ?? 30,
+              t: Date.now(),
+            }),
+          );
+        } catch {
+          /* ignore */
+        }
         window.dispatchEvent(
           new CustomEvent("landbd:user-location", {
             detail: {
