@@ -16,6 +16,7 @@ import {
   Moon,
   BarChart3,
   PenTool,
+  MapPin,
   X,
   ChevronRight,
 } from "lucide-react";
@@ -56,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "কাস্টম পেজ", path: "/admin/custom-pages", icon: FileText, roles: ["Super Admin", "Admin", "Editor"] },
     { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users", icon: Users, roles: ["Super Admin", "Admin"] },
     { name: "ডেটা মনিটর", path: "/admin/data-monitor", icon: BarChart3, roles: ["Super Admin", "Admin"] },
+    { name: "মানচিত্র ভিজিটর", path: "/admin/map-visits", icon: MapPin, roles: ["Super Admin", "Admin"] },
     { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: ["Super Admin", "Admin"] },
   ];
   const navItems = allNavItems.filter(
