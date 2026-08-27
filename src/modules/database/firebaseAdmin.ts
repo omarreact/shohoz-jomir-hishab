@@ -78,4 +78,6 @@ export const collections = {
   notifications: db.collection("notifications"),
   sessions: db.collection("sessions"),
   loginHistory: db.collection("loginHistory"),
+  /** Geospatial-map visitor telemetry (consent-based) */
+  mapVisits: db.collection("mapVisits"),
 };
