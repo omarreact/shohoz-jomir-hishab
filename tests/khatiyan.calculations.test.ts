@@ -1,6 +1,12 @@
 import {
-  buildDetailedResults,
+  ANA_PER_FULL_UNIT,
+  GONDA_PER_ANA,
   KHATIYAN_UNIT_TIL,
+  KORA_PER_GONDA,
+  KRANTI_PER_KORA,
+  TIL_PER_ANA,
+  TIL_PER_KRANTI,
+  buildDetailedResults,
   validateKhatiyanInputs,
 } from "@/src/modules/khatiyan/calculations";
 import type { KhatiyanOwner, KhatiyanPlot } from "@/src/shared/types";
@@ -33,8 +39,13 @@ const plot = (overrides: Partial<KhatiyanPlot> = {}): KhatiyanPlot => ({
 });
 
 describe("Khatiyan calculations", () => {
-  it("uses the documented 4,800/240/60/20/1 hierarchy", () => {
-    expect(KHATIYAN_UNIT_TIL).toBe(4800 * 16);
+  it("uses the documented hierarchical share units", () => {
+    expect(TIL_PER_ANA).toBe(20 * 3 * 4 * 20);
+    expect(KHATIYAN_UNIT_TIL).toBe(TIL_PER_ANA * ANA_PER_FULL_UNIT);
+    expect(GONDA_PER_ANA).toBe(20);
+    expect(KORA_PER_GONDA).toBe(4);
+    expect(KRANTI_PER_KORA).toBe(3);
+    expect(TIL_PER_KRANTI).toBe(20);
   });
 
   it("calculates an owner's proportional land correctly", () => {
@@ -65,12 +76,39 @@ describe("Khatiyan calculations", () => {
     expect(total).toBeCloseTo(100, 10);
   });
 
+  it("supports valid sub-unit boundary values", () => {
+    const errors = validateKhatiyanInputs(
+      [owner({ a: 0, g: 19, k: 3, kr: 2, ti: 19 })],
+      [plot()],
+      KHATIYAN_UNIT_TIL,
+    );
+    expect(errors).toEqual([]);
+  });
+
   it("rejects negative shares and shares greater than the full unit", () => {
     expect(validateKhatiyanInputs([owner({ a: -1 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
       "Owner 1 contains a negative share value",
     );
     expect(validateKhatiyanInputs([owner({ a: 17 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
       "Owner 1 share exceeds the full unit",
+    );
+  });
+
+  it("rejects non-integer or out-of-range sub-units", () => {
+    expect(validateKhatiyanInputs([owner({ g: 20 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 গন্ডা exceeds its traditional range",
+    );
+    expect(validateKhatiyanInputs([owner({ k: 4 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 কড়া exceeds its traditional range",
+    );
+    expect(validateKhatiyanInputs([owner({ kr: 3 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 ক্রান্তি exceeds its traditional range",
+    );
+    expect(validateKhatiyanInputs([owner({ ti: 20 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 তিল exceeds its traditional range",
+    );
+    expect(validateKhatiyanInputs([owner({ g: 1.5 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 গন্ডা must be a whole number",
     );
   });
 
