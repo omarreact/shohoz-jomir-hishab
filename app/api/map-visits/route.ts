@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
-import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
+import { collections, db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,7 +77,42 @@ export async function POST(req: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
       source: "geospatial-map-consent",
     };
+
     const ref = await collections.mapVisits.add(doc);
+
+    // Maintain a compact per-visitor aggregate. The transaction makes concurrent
+    // visits safe and avoids the admin dashboard scanning only the latest 200 events.
+    if (safeVisitorId) {
+      const visitorRef = collections.mapVisitors.doc(safeVisitorId);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(visitorRef);
+        const current = snap.exists ? snap.data() || {} : {};
+        const now = FieldValue.serverTimestamp();
+        const aggregate: Record<string, unknown> = {
+          visitorId: safeVisitorId,
+          firstSeen: current.firstSeen ?? now,
+          lastSeen: now,
+          visitCount: (typeof current.visitCount === "number" ? current.visitCount : 0) + 1,
+          lastPage: doc.page,
+          lastReferrer: doc.referrer || null,
+          locationGranted: doc.locationGranted,
+          updatedAt: now,
+        };
+        if (location) {
+          aggregate.lastLocation = location;
+          aggregate.locationUpdatedAt = now;
+        } else if (current.lastLocation) {
+          aggregate.lastLocation = current.lastLocation;
+          aggregate.locationUpdatedAt = current.locationUpdatedAt ?? null;
+        }
+        if (doc.device && Object.keys(safeDevice).length) aggregate.device = safeDevice;
+        if (doc.userAgent) aggregate.userAgent = doc.userAgent;
+        if (doc.acceptLanguage) aggregate.acceptLanguage = doc.acceptLanguage;
+        if (doc.ip) aggregate.ip = doc.ip;
+        tx.set(visitorRef, aggregate, { merge: true });
+      });
+    }
+
     return NextResponse.json({ ok: true, id: ref.id });
   } catch (error) {
     console.error("[map-visits] POST", error);
