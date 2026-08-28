@@ -76,6 +76,15 @@ describe("Khatiyan calculations", () => {
     expect(total).toBeCloseTo(100, 10);
   });
 
+  it("accepts exactly one full 16-আনা share", () => {
+    const errors = validateKhatiyanInputs(
+      [owner({ a: 16 })],
+      [plot()],
+      KHATIYAN_UNIT_TIL,
+    );
+    expect(errors).toEqual([]);
+  });
+
   it("supports valid sub-unit boundary values", () => {
     const errors = validateKhatiyanInputs(
       [owner({ a: 0, g: 19, k: 3, kr: 2, ti: 19 })],
@@ -90,6 +99,9 @@ describe("Khatiyan calculations", () => {
       "Owner 1 contains a negative share value",
     );
     expect(validateKhatiyanInputs([owner({ a: 17 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
+      "Owner 1 share exceeds the full unit",
+    );
+    expect(validateKhatiyanInputs([owner({ a: 16, ti: 1 })], [plot()], KHATIYAN_UNIT_TIL)).toContain(
       "Owner 1 share exceeds the full unit",
     );
   });
