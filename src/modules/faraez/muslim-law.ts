@@ -1,9 +1,19 @@
 import { HeirsInput, HeirResult, DeceasedGender, AssetsInput } from "./types";
+import { assertValidMuslimFaraezInput } from "./validation";
 
 export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender, assets: AssetsInput): HeirResult[] {
+  // Validate at the production boundary as well as in the test suite. This prevents
+  // callers from bypassing the Faraez validation layer and receiving a result for
+  // an estate/input combination that the current UI cannot calculate safely.
+  assertValidMuslimFaraezInput(input, assets);
+
   let results: Omit<HeirResult, 'assets'>[] = [];
   
-  // --- নতুন লজিক: কাফন, ঋণ ও অসিয়ত বাদ দিয়ে নীট সম্পত্তি (Net Assets) বের করা ---
+  // Funeral costs, debt and wasiyat are settled before inheritance. The current
+  // asset model stores land, gold and cash in different units and has no valuation
+  // field, so deductions are only applied to cash. validation.ts rejects cases
+  // where those deductions cannot be covered by the represented cash estate rather
+  // than silently converting incomparable units.
   const netLand = assets.land || 0;
   const netGold = assets.gold || 0;
   let netCash = assets.cash || 0;
@@ -12,18 +22,10 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
   const debt = assets.debt || 0;
   const wasiyat = assets.wasiyat || 0;
   const totalExpenses = funeral + debt + wasiyat;
+  netCash -= totalExpenses;
 
-  // নগদ টাকা থেকে খরচগুলো বাদ দেওয়া হচ্ছে
-  if (totalExpenses > 0) {
-    if (netCash >= totalExpenses) {
-      netCash -= totalExpenses;
-    } else {
-      netCash = 0;
-    }
-  }
-
-  const effectiveSons = input.sons + input.deadSons;
-  const effectiveDaughters = input.daughters + input.deadDaughters;
+  const effectiveSons = input.sons;
+  const effectiveDaughters = input.daughters;
   
   const hasMaleDescendant = effectiveSons > 0;
   const hasChildOrAgnaticGrandChild = effectiveSons > 0 || effectiveDaughters > 0;
@@ -72,13 +74,11 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
     addExcluded("দাদা", input.paternalGrandFather, "পিতা জীবিত থাকায় দাদা বঞ্চিত (ফিকহ)।");
     addExcluded("দাদি", input.paternalGrandMother, "পিতা জীবিত থাকায় দাদি বঞ্চিত (ফিকহ)।");
   } else {
-    let gfAsaba = false;
     if (input.paternalGrandFather > 0) {
       if (hasMaleDescendant) {
         addResult("দাদা", 1, 1/6, "পিতা না থাকায় এবং পুত্র থাকায় দাদা ১/৬ অংশ পাবেন (ইজমা)।");
       } else {
         addResult("দাদা", 1, 1/6, "দাদা ১/৬ অংশ পাবেন এবং আসাবা হিসেবে অবশিষ্ট ভোগী হবেন (ইজমা)।");
-        gfAsaba = true;
       }
     }
     if (input.mother > 0) {
@@ -94,13 +94,11 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
     addResult("নানি", 1, 1/6, "মাতা না থাকায় নানি ১/৬ অংশ পাবেন (সুন্নাহ)।");
   }
 
-  let daughterTotalShare = 0;
   if (effectiveDaughters > 0 && effectiveSons === 0) {
-    daughterTotalShare = effectiveDaughters === 1 ? 1/2 : 2/3;
+    let daughterTotalShare = effectiveDaughters === 1 ? 1/2 : 2/3;
     daughterTotalShare = Math.min(daughterTotalShare, remainingShare);
     const perDaughter = daughterTotalShare / effectiveDaughters;
     if (input.daughters > 0) addResult("কন্যা", input.daughters, perDaughter * input.daughters, effectiveDaughters === 1 ? "একমাত্র কন্যা ১/২ অংশ পাবেন (সূরা আন-নিসা: ১১)।" : "একাধিক কন্যা ২/৩ অংশ পাবেন (সূরা আন-নিসা: ১১)।");
-    if (input.deadDaughters > 0) addResult("মৃত কন্যার সন্তান", input.deadDaughters, perDaughter * input.deadDaughters, "মৃত কন্যার সন্তানরা তাদের মায়ের প্রাপ্য অংশ পাবেন (মুসলিম পারিবারিক আইন ১৯৬১, ধারা ৪)।");
   }
 
   if (hasChildOrAgnaticGrandChild || input.father > 0 || input.paternalGrandFather > 0) {
@@ -142,22 +140,20 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
   }
 
   if (remainingShare > 0.0001) {
-    if (effectiveSons > 0 || effectiveDaughters > 0) {
-      if (effectiveSons > 0) {
-        const parts = (effectiveSons * 2) + effectiveDaughters;
-        const val = remainingShare / parts;
-        if (input.sons > 0) addResult("পুত্র", input.sons, val * 2 * input.sons, "অবশিষ্টভোগী হিসেবে পুত্র ও কন্যা ২:১ হারে পাবেন (সূরা আন-নিসা: ১১)।");
-        if (input.deadSons > 0) addResult("মৃত পুত্রের সন্তান", input.deadSons, val * 2 * input.deadSons, "মৃত পুত্রের সন্তানরা তাদের পিতার অংশ পাবেন (পারিবারিক আইন ১৯৬১: ৪)।");
-        if (input.daughters > 0) addResult("কন্যা", input.daughters, val * input.daughters, "অবশিষ্টভোগী হিসেবে পুত্র ও কন্যা ২:১ হারে পাবেন (সূরা আন-নিসা: ১১)।");
-        if (input.deadDaughters > 0) addResult("মৃত কন্যার সন্তান", input.deadDaughters, val * input.deadDaughters, "মৃত কন্যার সন্তানরা তাদের মায়ের অংশ পাবেন (পারিবারিক আইন ১৯৬১: ৪)।");
-        remainingShare = 0;
-      }
+    if (effectiveSons > 0) {
+      const parts = (effectiveSons * 2) + effectiveDaughters;
+      const val = remainingShare / parts;
+      if (input.sons > 0) addResult("পুত্র", input.sons, val * 2 * input.sons, "অবশিষ্টভোগী হিসেবে পুত্র ও কন্যা ২:১ হারে পাবেন (সূরা আন-নিসা: ১১)।");
+      if (input.daughters > 0) addResult("কন্যা", input.daughters, val * input.daughters, "অবশিষ্টভোগী হিসেবে পুত্র ও কন্যা ২:১ হারে পাবেন (সূরা আন-নিসা: ১১)।");
+      remainingShare = 0;
     } else if (fatherAsaba) {
       const idx = results.findIndex(r => r.heirType === "পিতা");
-      results[idx].totalShare += remainingShare;
-      results[idx].fraction = results[idx].totalShare;
-      remainingShare = 0;
-    } else if (input.paternalGrandFather > 0 && !fatherAsaba) {
+      if (idx !== -1) {
+        results[idx].totalShare += remainingShare;
+        results[idx].fraction = results[idx].totalShare;
+        remainingShare = 0;
+      }
+    } else if (input.paternalGrandFather > 0) {
       const idx = results.findIndex(r => r.heirType === "দাদা");
       if (idx !== -1) {
         results[idx].totalShare += remainingShare;
@@ -207,7 +203,7 @@ export function calculateMuslimFaraez(input: HeirsInput, gender: DeceasedGender,
           remainingShare = 0;
           break;
         } else if (heir.count > 0) {
-           addExcluded(heir.name, heir.count, "উর্ধ্বতন অগ্রাধিকারপ্রাপ্ত ওয়ারিশ থাকায় বঞ্চিত।");
+          addExcluded(heir.name, heir.count, "উর্ধ্বতন অগ্রাধিকারপ্রাপ্ত ওয়ারিশ থাকায় বঞ্চিত।");
         }
       }
     }
