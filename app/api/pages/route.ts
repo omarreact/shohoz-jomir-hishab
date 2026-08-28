@@ -12,7 +12,7 @@ function json(data: unknown, status = 200, requestId?: string) {
       "Cache-Control": "no-store, max-age=0",
       "Content-Type": "application/json; charset=utf-8",
       ...(requestId ? { "X-Request-Id": requestId } : {}),
-    },
+      },
   });
 }
 
@@ -47,23 +47,25 @@ export async function GET(req: NextRequest) {
       return json({ success: true, data: { page } }, 200, requestId);
     }
 
-    const snapshot = await collections.pages
-      .where("published", "==", true)
-      .orderBy("createdAt", "asc")
-      .get();
-    const pages = snapshot.docs.map((doc: any) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title,
-        slug: data.slug,
-        category: data.category,
-        createdAt:
-          typeof data.createdAt?.toDate === "function"
-            ? data.createdAt.toDate().toISOString()
-            : data.createdAt,
-      };
-    });
+    // Filter first, then sort in memory. This avoids a composite-index dependency
+    // for the public endpoint while page counts remain small.
+    const snapshot = await collections.pages.where("published", "==", true).get();
+    const pages = snapshot.docs
+      .map((doc: any) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          slug: data.slug,
+          category: data.category,
+          createdAt:
+            typeof data.createdAt?.toDate === "function"
+              ? data.createdAt.toDate().toISOString()
+              : data.createdAt,
+        };
+      })
+      .sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+
     return json({ success: true, data: { pages } }, 200, requestId);
   } catch (error: any) {
     console.error("GET /api/pages failed:", { requestId, error });
