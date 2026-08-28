@@ -5,16 +5,23 @@ type NumberParser = (value: string | number) => number;
 
 /**
  * Traditional Khatiyan share units expressed in তিল.
- * 16 আনা = 1 full share.
+ * 16 আনা = 1 full share; 1 আনা = 20 গন্ডা; 1 গন্ডা = 4 কড়া;
+ * 1 কড়া = 3 ক্রান্তি; 1 ক্রান্তি = 20 তিল.
  */
-export const KHATIYAN_UNIT_TIL = 4800 * 16;
+export const TIL_PER_KRANTI = 20;
+export const KRANTI_PER_KORA = 3;
+export const KORA_PER_GONDA = 4;
+export const GONDA_PER_ANA = 20;
+export const TIL_PER_ANA = TIL_PER_KRANTI * KRANTI_PER_KORA * KORA_PER_GONDA * GONDA_PER_ANA;
+export const ANA_PER_FULL_UNIT = 16;
+export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
 
 function shareToTil(owner: KhatiyanOwner): number {
   return (
-    Number(owner.a) * 4800 +
-    Number(owner.g) * 240 +
-    Number(owner.k) * 60 +
-    Number(owner.kr) * 20 +
+    Number(owner.a) * TIL_PER_ANA +
+    Number(owner.g) * (TIL_PER_KRANTI * KRANTI_PER_KORA * KORA_PER_GONDA) +
+    Number(owner.k) * (TIL_PER_KRANTI * KRANTI_PER_KORA) +
+    Number(owner.kr) * TIL_PER_KRANTI +
     Number(owner.ti)
   );
 }
@@ -45,6 +52,23 @@ export function validateKhatiyanInputs(
       errors.push(`Owner ${index + 1} contains a negative share value`);
       return;
     }
+
+    const [a, g, k, kr, ti] = values;
+    const ranges: Array<[string, number, number]> = [
+      ["আনা", a, ANA_PER_FULL_UNIT],
+      ["গন্ডা", g, GONDA_PER_ANA],
+      ["কড়া", k, KORA_PER_GONDA],
+      ["ক্রান্তি", kr, KRANTI_PER_KORA],
+      ["তিল", ti, TIL_PER_KRANTI],
+    ];
+
+    ranges.forEach(([unit, value, exclusiveMax]) => {
+      if (!Number.isInteger(value)) {
+        errors.push(`Owner ${index + 1} ${unit} must be a whole number`);
+      } else if (value >= exclusiveMax) {
+        errors.push(`Owner ${index + 1} ${unit} exceeds its traditional range`);
+      }
+    });
 
     const shareTil = shareToTil(owner);
     if (shareTil > fullUnitTil) {
