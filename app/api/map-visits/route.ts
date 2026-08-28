@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { collections, db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
+import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const hits = new Map<string, { n: number; t: number }>();
-const WINDOW_MS = 10 * 60 * 1000;
+const WINDOW_SECONDS = 10 * 60;
 const MAX_HITS = 5;
-
-function clientIp(req: NextRequest): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-}
-function rateLimit(ip: string): boolean {
-  const now = Date.now();
-  const row = hits.get(ip);
-  if (!row || now - row.t > WINDOW_MS) { hits.set(ip, { n: 1, t: now }); return true; }
-  if (row.n >= MAX_HITS) return false;
-  row.n += 1;
-  return true;
-}
+const RETENTION_DAYS = 90;
 
 type Body = {
   consent: boolean;
@@ -31,11 +20,19 @@ type Body = {
   referrer?: string;
 };
 
+function clientIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!isFirebaseAdminReady()) return NextResponse.json({ ok: false, error: "Database not configured" }, { status: 503 });
     const ip = clientIp(req);
-    if (!rateLimit(ip)) return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+    const rateKey = ip === "unknown" ? "unknown" : ip.slice(0, 64);
+    if (!(await allowRateLimit(`map-visits:ip:${rateKey}`, MAX_HITS, WINDOW_SECONDS))) {
+      return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+    }
+
     const body = (await req.json()) as Body;
     if (!body?.consent) return NextResponse.json({ ok: false, error: "Consent required" }, { status: 400 });
 
@@ -64,6 +61,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const expiresAt = new Date(Date.now() + RETENTION_DAYS * 24 * 60 * 60 * 1000);
     const doc = {
       visitorId: safeVisitorId,
       page: String(body.page || "/geospatial-map").slice(0, 120),
@@ -75,13 +73,12 @@ export async function POST(req: NextRequest) {
       acceptLanguage: acceptLang.slice(0, 120),
       ip: ip === "unknown" ? null : ip.slice(0, 64),
       createdAt: FieldValue.serverTimestamp(),
+      expiresAt,
       source: "geospatial-map-consent",
     };
 
     const ref = await collections.mapVisits.add(doc);
 
-    // Maintain a compact per-visitor aggregate. The transaction makes concurrent
-    // visits safe and avoids the admin dashboard scanning only the latest 200 events.
     if (safeVisitorId) {
       const visitorRef = collections.mapVisitors.doc(safeVisitorId);
       await db.runTransaction(async (tx) => {
@@ -97,6 +94,7 @@ export async function POST(req: NextRequest) {
           lastReferrer: doc.referrer || null,
           locationGranted: doc.locationGranted,
           updatedAt: now,
+          expiresAt,
         };
         if (location) {
           aggregate.lastLocation = location;
@@ -105,7 +103,7 @@ export async function POST(req: NextRequest) {
           aggregate.lastLocation = current.lastLocation;
           aggregate.locationUpdatedAt = current.locationUpdatedAt ?? null;
         }
-        if (doc.device && Object.keys(safeDevice).length) aggregate.device = safeDevice;
+        if (Object.keys(safeDevice).length) aggregate.device = safeDevice;
         if (doc.userAgent) aggregate.userAgent = doc.userAgent;
         if (doc.acceptLanguage) aggregate.acceptLanguage = doc.acceptLanguage;
         if (doc.ip) aggregate.ip = doc.ip;
