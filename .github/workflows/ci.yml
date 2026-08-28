@@ -24,14 +24,16 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # Use npm install until package-lock is regenerated after dep removals
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Tests
+        run: npm test -- --ci
 
       - name: Production build
         run: npm run build
