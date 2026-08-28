@@ -14,6 +14,8 @@ import {
 } from "@/src/modules/faraez/types";
 import { calculateMuslimFaraez } from "@/src/modules/faraez/muslim-law";
 import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
+import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
+import { prepareFaraezEstate } from "@/src/modules/faraez/estate";
 import { Calculator, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import dynamic from "next/dynamic";
@@ -79,18 +81,36 @@ export default function FaraezPage() {
   const [results, setResults] = useState<HeirResult[]>([]);
 
   const handleCalculate = () => {
-    if (religion === "muslim") {
-      setResults(calculateMuslimFaraez(heirs, gender, assets));
-    } else {
-      setResults(calculateHinduDayabhaga(heirs, gender, assets));
-    }
-    setTimeout(
-      () =>
-        document
-          .getElementById("resultSection")
-          ?.scrollIntoView({ behavior: "smooth" }),
+    try {
+      if (religion === "muslim") {
+        const validationErrors = validateMuslimFaraezInput(heirs, assets);
+        if (validationErrors.length > 0) {
+          setResults([]);
+          alert(`ইনপুটে সমস্যা আছে:\n\n${validationErrors.join("\n")}`);
+          return;
+        }
+
+        // Prepare the estate before the inheritance engine runs. The existing
+        // engine expects deduction fields to be zero after settlement, so this
+        // prevents funeral/debt/wasiyat from being deducted from cash alone.
+        const preparedEstate = prepareFaraezEstate(assets);
+        setResults(calculateMuslimFaraez(heirs, gender, preparedEstate.assets));
+      } else {
+        setResults(calculateHinduDayabhaga(heirs, gender, assets));
+      }
+
+      setTimeout(
+        () =>
+          document
+            .getElementById("resultSection")
+            ?.scrollIntoView({ behavior: "smooth" }),
         100,
-    );
+      );
+    } catch (error) {
+      console.error("Faraez calculation failed:", error);
+      setResults([]);
+      alert("হিসাব করা যায়নি। অনুগ্রহ করে ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
+    }
   };
 
   const downloadMultiPagePDF = async () => {
