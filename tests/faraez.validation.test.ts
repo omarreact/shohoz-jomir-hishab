@@ -1,4 +1,5 @@
 import { calculateMuslimFaraez } from "@/src/modules/faraez/muslim-law";
+import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
 import type { AssetsInput, HeirsInput } from "@/src/modules/faraez/types";
 
 const heirs: HeirsInput = {
@@ -43,15 +44,24 @@ const assets: AssetsInput = {
 
 describe("Muslim Faraez input safety", () => {
   it("rejects negative asset values", () => {
-    expect(() =>
-      calculateMuslimFaraez(heirs, "male", { ...assets, cash: -1 }),
-    ).toThrow(/negative|invalid/i);
+    expect(validateMuslimFaraezInput(heirs, { ...assets, cash: -1 })).toContain(
+      "Asset cash cannot be negative",
+    );
   });
 
   it("rejects a bequest above one third of the estate", () => {
-    expect(() =>
-      calculateMuslimFaraez(heirs, "male", { ...assets, wasiyat: 33334 }),
-    ).toThrow(/one third|1\/3|wasiyat/i);
+    expect(validateMuslimFaraezInput(heirs, { ...assets, wasiyat: 33334 })).toContain(
+      "Wasiyat cannot exceed one third of the estate after funeral cost and debt",
+    );
+  });
+
+  it("rejects fractional or negative heir counts", () => {
+    expect(
+      validateMuslimFaraezInput({ ...heirs, sons: 1.5 }, assets),
+    ).toContain("Heir count sons must be a non-negative integer");
+    expect(
+      validateMuslimFaraezInput({ ...heirs, daughters: -1 }, assets),
+    ).toContain("Heir count daughters must be a non-negative integer");
   });
 
   it("does not create NaN or Infinity in a normal spouse-only case", () => {
