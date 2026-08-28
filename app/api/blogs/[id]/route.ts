@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifyAdminAuth, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
 import {
   makeExcerpt,
@@ -25,8 +25,17 @@ function cleanBlog(blog: Record<string, unknown>) {
   };
 }
 
-// GET /api/blogs/[id] — Firestore id or static id (e.g. static-land-01)
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+function authError(error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown error";
+  const status =
+    message === "Unauthorized" ? 401 :
+    message === "Account locked" || message === "Account disabled" ? 403 :
+    message.startsWith("Forbidden") ? 403 : 500;
+  return { message, status };
+}
+
+// GET /api/blogs/[id] — published content is public; staff may preview private content
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   let id = rawId;
   try {
@@ -49,11 +58,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!doc.exists) {
       return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     }
+
+    const blogData = doc.data() as Record<string, any>;
+    if (blogData.status !== "Published") {
+      try {
+        await verifyStaffAuth(req);
+      } catch {
+        // Deliberately return 404 so private document state is not disclosed.
+        return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+      }
+    }
+
     const commentsSnapshot = await collections.comments.where("blogId", "==", doc.id).get();
     const comments = commentsSnapshot.docs
       .map((c: any) => ({ id: c.id, ...c.data() }))
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const blogData = doc.data() as any;
     const blog = cleanBlog({
       id: doc.id,
       ...blogData,
@@ -120,8 +139,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     revalidatePath("/blog", "page");
     return NextResponse.json({ success: true, data: { blog } }, { status: 200 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message === "Unauthorized" ? 401 : message.startsWith("Forbidden") ? 403 : 500;
+    const { message, status } = authError(error);
     return NextResponse.json({ success: false, message }, { status });
   }
 }
@@ -140,8 +158,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     revalidatePath("/blog", "page");
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message === "Unauthorized" ? 401 : message.startsWith("Forbidden") ? 403 : 500;
+    const { message, status } = authError(error);
     return NextResponse.json({ success: false, message }, { status });
   }
 }
