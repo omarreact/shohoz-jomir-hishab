@@ -22,7 +22,7 @@ async function getAdminServices() {
 }
 
 /**
- * Validates access_token cookie or Bearer token.
+ * Validates access_token cookie or Bearer token and enforces account state.
  * Firestore users/{uid}.role is authoritative when present.
  */
 export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
@@ -54,6 +54,23 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
   }
 
   const userData = userDoc.data()!;
+
+  // Account state is server-authoritative. A client-side lock check is only UX.
+  if (userData.status === "deleted") {
+    throw new Error("Account disabled");
+  }
+
+  if (userData.lockedUntil) {
+    const lockedUntil =
+      typeof userData.lockedUntil?.toDate === "function"
+        ? userData.lockedUntil.toDate()
+        : new Date(userData.lockedUntil);
+
+    if (!Number.isNaN(lockedUntil.getTime()) && lockedUntil.getTime() > Date.now()) {
+      throw new Error("Account locked");
+    }
+  }
+
   return {
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
