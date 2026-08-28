@@ -1,87 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationService } from "@/src/modules/notification/notification.service";
+import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { logger } from "@/src/shared/logger";
 
 const notificationService = new NotificationService();
 
-// PATCH /api/notifications/[id]?userId=...  - Mark a notification as read
+function authStatus(error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown error";
+  return {
+    message,
+    status:
+      message === "Unauthorized" ? 401 :
+      message === "Account locked" || message === "Account disabled" ? 403 : 500,
+  };
+}
+
+// PATCH /api/notifications/[id] — mark the authenticated user's notification as read
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing required parameter: userId" },
-        { status: 400 },
-      );
-    }
-
-    const notification = await notificationService.markAsRead(id, userId);
-
+    const user = await verifyServerAuth(request);
+    const notification = await notificationService.markAsRead(id, user.id);
     return NextResponse.json(notification);
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    logger.error(
-      { err: msg, notificationId: id },
-      "Failed to mark notification as read",
-    );
+    const { message, status } = authStatus(error);
+    logger.error({ err: message, notificationId: id }, "Failed to mark notification as read");
 
-    if (msg === "Notification not found") {
-      return NextResponse.json(
-        { error: "Notification not found" },
-        { status: 404 },
-      );
+    if (message === "Notification not found") {
+      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
-
-    return NextResponse.json(
-      { error: "Failed to mark notification as read" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: status === 500 ? "Failed to mark notification as read" : message }, { status });
   }
 }
 
-// DELETE /api/notifications/[id]?userId=...  - Delete a notification
+// DELETE /api/notifications/[id] — delete the authenticated user's notification
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing required parameter: userId" },
-        { status: 400 },
-      );
-    }
-
-    const result = await notificationService.delete(id, userId);
-
+    const user = await verifyServerAuth(request);
+    const result = await notificationService.delete(id, user.id);
     return NextResponse.json(result);
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    logger.error(
-      { err: msg, notificationId: id },
-      "Failed to delete notification",
-    );
+    const { message, status } = authStatus(error);
+    logger.error({ err: message, notificationId: id }, "Failed to delete notification");
 
-    if (msg === "Notification not found") {
-      return NextResponse.json(
-        { error: "Notification not found" },
-        { status: 404 },
-      );
+    if (message === "Notification not found") {
+      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
-
-    return NextResponse.json(
-      { error: "Failed to delete notification" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: status === 500 ? "Failed to delete notification" : message }, { status });
   }
 }
