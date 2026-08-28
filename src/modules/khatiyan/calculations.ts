@@ -1,4 +1,5 @@
 import type { KhatiyanOwner, KhatiyanOwnerResult, KhatiyanPlot } from "@/src/shared/types";
+import { BANGLADESH_STANDARD } from "@/src/modules/land/standards";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
@@ -26,11 +27,6 @@ function shareToTil(owner: KhatiyanOwner): number {
   );
 }
 
-/**
- * Validates calculation inputs before any proportional allocation is performed.
- * Returning messages keeps this helper usable by both the UI and tests without
- * coupling the calculation engine to a particular form implementation.
- */
 export function validateKhatiyanInputs(
   owners: KhatiyanOwner[],
   plots: KhatiyanPlot[],
@@ -62,7 +58,16 @@ export function validateKhatiyanInputs(
       ["তিল", ti, TIL_PER_KRANTI],
     ];
 
-    ranges.forEach(([unit, value, exclusiveMax]) => {
+    // আনা may equal exactly 16 when the lower-order units are all zero.
+    // Lower units are digits in a mixed-radix representation and therefore
+    // remain strictly below their base.
+    if (!Number.isInteger(a)) {
+      errors.push(`Owner ${index + 1} আনা must be a whole number`);
+    } else if (a > ANA_PER_FULL_UNIT) {
+      errors.push(`Owner ${index + 1} share exceeds the full unit`);
+    }
+
+    ranges.slice(1).forEach(([unit, value, exclusiveMax]) => {
       if (!Number.isInteger(value)) {
         errors.push(`Owner ${index + 1} ${unit} must be a whole number`);
       } else if (value >= exclusiveMax) {
@@ -188,7 +193,7 @@ export function generateCSVFromResults(
         p.plotClass,
         toBn(p.totalArea),
         toBn(p.gotArea.toFixed(4)),
-        toBn((p.gotArea * 435.6).toFixed(1)),
+        toBn((p.gotArea * BANGLADESH_STANDARD.squareFeetPerDecimal).toFixed(1)),
       ]);
     });
 
@@ -200,7 +205,7 @@ export function generateCSVFromResults(
       "",
       "মোট প্রাপ্ত:",
       toBn(res.totalLand.toFixed(3)),
-      toBn((res.totalLand / 1.65).toFixed(2)) + " কাঠা",
+      toBn((res.totalLand / (BANGLADESH_STANDARD.squareFeetPerKatha / BANGLADESH_STANDARD.squareFeetPerDecimal)).toFixed(2)) + " কাঠা",
     ]);
     ws_data.push([]);
     ws_data.push([
