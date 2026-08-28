@@ -12,24 +12,23 @@ function json(data: unknown, status = 200, requestId?: string) {
       "Cache-Control": "no-store, max-age=0",
       "Content-Type": "application/json; charset=utf-8",
       ...(requestId ? { "X-Request-Id": requestId } : {}),
-    },
+      },
   });
 }
 
-function jsonError(message: string, status = 500, error?: unknown, requestId?: string) {
+function jsonError(message: string, status = 500, requestId?: string) {
   return json(
     {
       success: false,
       message: message || "Internal server error",
       ...(requestId ? { requestId } : {}),
-      ...(error ? { error } : {}),
     },
     status,
     requestId,
   );
 }
 
-// GET /api/pages — public list, or single page by ?slug=xxx
+// GET /api/pages — public list, or a published page by ?slug=xxx
 export async function GET(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
@@ -37,31 +36,40 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get("slug");
 
     if (slug) {
-      const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
-      if (snapshot.empty) return jsonError("Not found", 404, undefined, requestId);
+      const snapshot = await collections.pages
+        .where("slug", "==", slug)
+        .where("published", "==", true)
+        .limit(1)
+        .get();
+      if (snapshot.empty) return jsonError("Not found", 404, requestId);
       const doc = snapshot.docs[0];
       const page = { id: doc.id, ...doc.data() };
       return json({ success: true, data: { page } }, 200, requestId);
     }
 
-    const snapshot = await collections.pages.orderBy("createdAt", "asc").get();
-    const pages = snapshot.docs.map((doc: any) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title,
-        slug: data.slug,
-        category: data.category,
-        createdAt:
-          typeof data.createdAt?.toDate === "function"
-            ? data.createdAt.toDate().toISOString()
-            : data.createdAt,
-      };
-    });
+    // Filter first, then sort in memory. This avoids a composite-index dependency
+    // for the public endpoint while page counts remain small.
+    const snapshot = await collections.pages.where("published", "==", true).get();
+    const pages = snapshot.docs
+      .map((doc: any) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          slug: data.slug,
+          category: data.category,
+          createdAt:
+            typeof data.createdAt?.toDate === "function"
+              ? data.createdAt.toDate().toISOString()
+              : data.createdAt,
+        };
+      })
+      .sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+
     return json({ success: true, data: { pages } }, 200, requestId);
   } catch (error: any) {
     console.error("GET /api/pages failed:", { requestId, error });
-    return jsonError(error?.message || "Failed to load pages", 500, undefined, requestId);
+    return jsonError(error?.message || "Failed to load pages", 500, requestId);
   }
 }
 
@@ -76,22 +84,22 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json();
     } catch {
-      return jsonError("Request body must be valid JSON", 400, undefined, requestId);
+      return jsonError("Request body must be valid JSON", 400, requestId);
     }
 
-    const { title, slug, category, content } = body || {};
+    const { title, slug, category, content, published } = body || {};
     if (
       typeof title !== "string" || !title.trim() ||
       typeof slug !== "string" || !slug.trim() ||
       typeof content !== "string" || !content.trim()
     ) {
-      return jsonError("title, slug, and content are required", 400, undefined, requestId);
+      return jsonError("title, slug, and content are required", 400, requestId);
     }
 
     const formattedSlug = slug.trim().toLowerCase().replace(/\s+/g, "-");
     const existingSnapshot = await collections.pages.where("slug", "==", formattedSlug).limit(1).get();
     if (!existingSnapshot.empty) {
-      return jsonError("A page with this slug already exists", 409, undefined, requestId);
+      return jsonError("A page with this slug already exists", 409, requestId);
     }
 
     const now = new Date().toISOString();
@@ -103,6 +111,7 @@ export async function POST(req: NextRequest) {
           ? category.trim()
           : "সাধারণ (General)",
       content,
+      published: published !== false,
       createdAt: now,
       updatedAt: now,
     };
@@ -119,9 +128,11 @@ export async function POST(req: NextRequest) {
     const status =
       error?.message === "Unauthorized"
         ? 401
-        : error?.message?.startsWith("Forbidden")
+        : error?.message === "Account locked" || error?.message === "Account disabled"
           ? 403
-          : 500;
-    return jsonError(error?.message || "Failed to create page", status, undefined, requestId);
+          : error?.message?.startsWith("Forbidden")
+            ? 403
+            : 500;
+    return jsonError(error?.message || "Failed to create page", status, requestId);
   }
 }

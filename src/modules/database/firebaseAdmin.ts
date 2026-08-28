@@ -1,4 +1,4 @@
-import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
 
@@ -7,64 +7,34 @@ let adminReady = false;
 function normalizePrivateKey(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   let key = raw.trim();
-  if (
-    (key.startsWith('"') && key.endsWith('"')) ||
-    (key.startsWith("'") && key.endsWith("'"))
-  ) {
-    key = key.slice(1, -1);
-  }
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) key = key.slice(1, -1);
   return key.replace(/\\n/g, "\n");
 }
 
 function initAdmin(): void {
-  if (getApps().length) {
-    adminReady = true;
-    return;
-  }
-
-  const projectId =
-    process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (getApps().length) { adminReady = true; return; }
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
-
   try {
     if (projectId && clientEmail && privateKey) {
-      initializeApp({
-        projectId,
-        credential: cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      });
+      initializeApp({ projectId, credential: cert({ projectId, clientEmail, privateKey }) });
       adminReady = true;
       return;
     }
-
-    console.warn(
-      "[FirebaseAdmin] Missing FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY. Using project-only fallback (token verify may fail).",
-    );
+    console.warn("[FirebaseAdmin] Missing service-account credentials. Using project-only fallback (token verify may fail).");
     initializeApp({ projectId: projectId || "demo-project" });
     adminReady = false;
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error("[FirebaseAdmin] initialization error:", msg);
-    if (!getApps().length) {
-      initializeApp({
-        projectId: projectId || "demo-project",
-      });
-    }
+    console.error("[FirebaseAdmin] initialization error:", error instanceof Error ? error.message : String(error));
+    if (!getApps().length) initializeApp({ projectId: projectId || "demo-project" });
     adminReady = false;
   }
 }
 
 initAdmin();
 
-/** True when full service-account credentials were loaded. */
-export function isFirebaseAdminReady(): boolean {
-  return adminReady;
-}
-
+export function isFirebaseAdminReady(): boolean { return adminReady; }
 export const db: Firestore = getFirestore();
 export const auth: Auth = getAuth();
 
@@ -78,6 +48,6 @@ export const collections = {
   notifications: db.collection("notifications"),
   sessions: db.collection("sessions"),
   loginHistory: db.collection("loginHistory"),
-  /** Geospatial-map visitor telemetry (consent-based) */
   mapVisits: db.collection("mapVisits"),
+  mapVisitors: db.collection("mapVisitors"),
 };

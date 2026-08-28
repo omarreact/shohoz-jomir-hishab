@@ -84,12 +84,11 @@ function staticAsListItem(p: (typeof STATIC_BLOG_POSTS)[number]) {
   });
 }
 
-// GET /api/blogs — public list, or single by ?slug=xxx
+// GET /api/blogs — public list, or a published blog by ?slug=xxx
 export async function GET(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
     const { searchParams } = req.nextUrl;
-    const status = searchParams.get("status");
     const slug = searchParams.get("slug");
 
     if (slug) {
@@ -111,7 +110,11 @@ export async function GET(req: NextRequest) {
       }
 
       const { collections } = await import("@/src/modules/database/firebaseAdmin");
-      const snapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
+      const snapshot = await collections.blogs
+        .where("slug", "==", slug)
+        .where("status", "==", "Published")
+        .limit(1)
+        .get();
       if (snapshot.empty) return jsonError("Not found", 404, requestId);
       const doc = snapshot.docs[0];
       const blogData = doc.data();
@@ -138,9 +141,8 @@ export async function GET(req: NextRequest) {
     let firestoreBlogs: ReturnType<typeof staticAsListItem>[] = [];
     try {
       const { collections } = await import("@/src/modules/database/firebaseAdmin");
-      let query: any = collections.blogs;
-      if (status) query = query.where("status", "==", status);
-      const snapshot = await query.get();
+      // Public API never accepts a status override: drafts/review content is private.
+      const snapshot = await collections.blogs.where("status", "==", "Published").get();
       firestoreBlogs = snapshot.docs.map((doc: any) => {
         const data = doc.data();
         return cleanListItem({
@@ -168,9 +170,9 @@ export async function GET(req: NextRequest) {
       console.warn("Firestore blogs unavailable, serving static only:", fbError);
     }
 
-    const staticList = STATIC_BLOG_POSTS.filter(
-      (p) => !status || p.status === status,
-    ).map(staticAsListItem);
+    const staticList = STATIC_BLOG_POSTS
+      .filter((p) => p.status === "Published")
+      .map(staticAsListItem);
 
     const firestoreSlugs = new Set(firestoreBlogs.map((b) => b.slug));
     const merged = [
@@ -182,7 +184,9 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("GET /api/blogs failed:", { requestId, error });
     try {
-      const staticList = STATIC_BLOG_POSTS.map(staticAsListItem);
+      const staticList = STATIC_BLOG_POSTS
+        .filter((p) => p.status === "Published")
+        .map(staticAsListItem);
       return json({ success: true, data: { blogs: staticList } }, 200, requestId);
     } catch {
       return jsonError(error?.message || "Failed to load blogs", 500, requestId);
@@ -210,7 +214,6 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanedContent = sanitizeBlogHtml(content);
-    // Prefer short ASCII/id-friendly slug; keep Bangla only if needed
     const slug = generateSlug(title.trim()) || `post-${Date.now()}`;
     if (!slug) return jsonError("A valid title is required to generate the blog slug", 400, requestId);
 
@@ -256,11 +259,10 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("POST /api/blogs failed:", { requestId, error });
     const status =
-      error?.message === "Unauthorized"
-        ? 401
-        : error?.message?.startsWith("Forbidden")
-          ? 403
-          : 500;
+      error?.message === "Unauthorized" ? 401
+        : error?.message === "Account locked" || error?.message === "Account disabled" ? 403
+        : error?.message?.startsWith("Forbidden") ? 403
+        : 500;
     return jsonError(error?.message || "Failed to create blog", status, requestId);
   }
 }

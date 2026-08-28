@@ -23,8 +23,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      # package-lock.json is currently behind package.json. Keep CI executable
+      # while the lockfile is regenerated in the repository in the next step.
       - name: Install dependencies
-        # Use npm install until package-lock is regenerated after dep removals
         run: npm install --no-audit --no-fund
 
       - name: Lint
@@ -32,6 +33,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Tests
+        run: npm test -- --ci
 
       - name: Production build
         run: npm run build

@@ -1,9 +1,66 @@
-
-
 import type { KhatiyanOwner, KhatiyanOwnerResult, KhatiyanPlot } from "@/src/shared/types";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
+
+/**
+ * Traditional Khatiyan share units expressed in তিল.
+ * 16 আনা = 1 full share.
+ */
+export const KHATIYAN_UNIT_TIL = 4800 * 16;
+
+function shareToTil(owner: KhatiyanOwner): number {
+  return (
+    Number(owner.a) * 4800 +
+    Number(owner.g) * 240 +
+    Number(owner.k) * 60 +
+    Number(owner.kr) * 20 +
+    Number(owner.ti)
+  );
+}
+
+/**
+ * Validates calculation inputs before any proportional allocation is performed.
+ * Returning messages keeps this helper usable by both the UI and tests without
+ * coupling the calculation engine to a particular form implementation.
+ */
+export function validateKhatiyanInputs(
+  owners: KhatiyanOwner[],
+  plots: KhatiyanPlot[],
+  fullUnitTil: number,
+): string[] {
+  const errors: string[] = [];
+
+  if (!Number.isFinite(fullUnitTil) || fullUnitTil <= 0) {
+    errors.push("Full Khatiyan unit must be a positive finite number");
+  }
+
+  owners.forEach((owner, index) => {
+    const values = [owner.a, owner.g, owner.k, owner.kr, owner.ti].map(Number);
+    if (values.some((value) => !Number.isFinite(value))) {
+      errors.push(`Owner ${index + 1} contains a non-finite share value`);
+      return;
+    }
+    if (values.some((value) => value < 0)) {
+      errors.push(`Owner ${index + 1} contains a negative share value`);
+      return;
+    }
+
+    const shareTil = shareToTil(owner);
+    if (shareTil > fullUnitTil) {
+      errors.push(`Owner ${index + 1} share exceeds the full unit`);
+    }
+  });
+
+  plots.forEach((plot, index) => {
+    const area = Number(plot.a);
+    if (!Number.isFinite(area) || area <= 0) {
+      errors.push(`Plot ${index + 1} must have a positive finite area`);
+    }
+  });
+
+  return errors;
+}
 
 export function buildDetailedResults(
   owners: KhatiyanOwner[],
@@ -12,41 +69,38 @@ export function buildDetailedResults(
   toEn: NumberParser,
   toBn: NumberFormatter,
 ) {
+  const validationErrors = validateKhatiyanInputs(owners, plots, fullUnitTil);
+  if (validationErrors.length > 0) {
+    throw new Error(`Invalid Khatiyan input: ${validationErrors.join("; ")}`);
+  }
+
   let hasData = false;
   const computedResults: KhatiyanOwnerResult[] = [];
 
-  owners.forEach((o:any) => {
-    const shareTil =
-      Number(o.a) * 4800 +
-      Number(o.g) * 240 +
-      Number(o.k) * 60 +
-      Number(o.kr) * 20 +
-      Number(o.ti);
+  owners.forEach((o) => {
+    const shareTil = shareToTil(o);
     const share = shareTil / fullUnitTil;
 
     if (share > 0) {
       hasData = true;
       let totalLand = 0;
-      const ownerPlots: any[] = [];
+      const ownerPlots = [];
 
-
-      plots.forEach((p:any) => {
+      plots.forEach((p) => {
         const area = toEn(p.a);
-        if (area > 0) {
-          const got = area * share;
-          totalLand += got;
-          const dagStrings = [];
-          if (p.cs) dagStrings.push(`সিএস/এসএ: ${p.cs}`);
-          if (p.rs) dagStrings.push(`আরএস: ${p.rs}`);
-          if (p.city) dagStrings.push(`সিটি: ${p.city}`);
-          if (p.bds) dagStrings.push(`বিডিএস: ${p.bds}`);
-          ownerPlots.push({
-            dagText: dagStrings.length > 0 ? dagStrings : ["-"],
-            plotClass: p.t || "-",
-            totalArea: area,
-            gotArea: got,
-          });
-        }
+        const got = area * share;
+        totalLand += got;
+        const dagStrings: string[] = [];
+        if (p.cs) dagStrings.push(`সিএস/এসএ: ${p.cs}`);
+        if (p.rs) dagStrings.push(`আরএস: ${p.rs}`);
+        if (p.city) dagStrings.push(`সিটি: ${p.city}`);
+        if (p.bds) dagStrings.push(`বিডিএস: ${p.bds}`);
+        ownerPlots.push({
+          dagText: dagStrings.length > 0 ? dagStrings : ["-"],
+          plotClass: p.t || "-",
+          totalArea: area,
+          gotArea: got,
+        });
       });
 
       if (ownerPlots.length > 0) {
@@ -76,12 +130,12 @@ export function generateCSVFromResults(
   detailedResults: KhatiyanOwnerResult[],
   toBn: NumberFormatter,
 ) {
-  const ws_data = [];
+  const ws_data: (string | number)[][] = [];
   ws_data.push(["জমির পরিমাপ ও বন্টন বিবরণী"]);
   ws_data.push(["তারিখ: " + new Date().toLocaleDateString("bn-BD")]);
   ws_data.push([]);
 
-  detailedResults.forEach((res:any) => {
+  detailedResults.forEach((res) => {
     ws_data.push(["মালিকের নাম:", res.name]);
     ws_data.push(["পিতা/স্বামী:", res.rel]);
     ws_data.push(["অংশ:", res.shareText]);
@@ -97,9 +151,9 @@ export function generateCSVFromResults(
       "বর্গফুট",
     ]);
 
-    res.ownerPlots.forEach((p:any) => {
-      const extractDag = (prefix:any) => {
-        const found = p.dagText.find((d:any) => d.startsWith(prefix));
+    res.ownerPlots.forEach((p) => {
+      const extractDag = (prefix: string) => {
+        const found = p.dagText.find((d) => d.startsWith(prefix));
         return found ? found.replace(prefix, "").trim() : "-";
       };
       ws_data.push([
@@ -135,7 +189,7 @@ export function generateCSVFromResults(
   ws_data.forEach((rowArray) => {
     const row = rowArray
       .map((cell) => {
-        const cellStr = String(cell || "").replace(/"/g, '""');
+        const cellStr = String(cell ?? "").replace(/"/g, '""');
         return `"${cellStr}"`;
       })
       .join(",");
