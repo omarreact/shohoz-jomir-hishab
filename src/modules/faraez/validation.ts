@@ -29,20 +29,25 @@ export function validateMuslimFaraezInput(heirs: HeirsInput, assets: AssetsInput
     else if (!Number.isInteger(value) || value < 0) errors.push(`Heir count ${field} must be a non-negative integer`);
   }
 
-  // Bangladesh Muslim Family Laws Ordinance, 1961, section 4 uses per-stirpes
-  // representation for children of a predeceased son/daughter. The current UI
-  // has no descendant tree for a deceased child, so refusing this case is safer
-  // than incorrectly treating the deceased child as a living heir.
+  // Bangladesh Muslim Family Laws Ordinance, 1961, section 4 provides per-stirpes
+  // representation for children of a predeceased son/daughter. The current input
+  // model has only a count and no descendant tree, so treating a deceased child as
+  // a living heir would produce a legally unsafe result.
   if (heirs.deadSons > 0 || heirs.deadDaughters > 0) {
     errors.push("Predeceased son/daughter cases require their surviving descendants to be entered separately under section 4; this calculator cannot safely calculate that case yet.");
   }
 
-  const grossEstate = assets.land + assets.gold + assets.cash;
-  const estateAfterFuneralAndDebt = grossEstate - assets.funeralCost - assets.debt;
-  if (estateAfterFuneralAndDebt < 0) errors.push("Funeral cost and debt cannot exceed the gross estate");
+  // land, gold and cash are different units in the current data model. We must not
+  // add them together or proportionally convert a cash debt into land/gold without
+  // an explicit valuation. Until the model supports asset valuation, deductions
+  // must therefore be covered by the cash component.
+  const cashAfterFuneralAndDebt = assets.cash - assets.funeralCost - assets.debt;
+  if (cashAfterFuneralAndDebt < 0) {
+    errors.push("Funeral cost and debt exceed the represented cash estate; provide an asset valuation/deduction source before calculating inheritance");
+  }
 
-  if (assets.wasiyat > 0 && assets.wasiyat > Math.max(0, estateAfterFuneralAndDebt) / 3) {
-    errors.push("Wasiyat cannot exceed one third of the estate after funeral cost and debt");
+  if (assets.wasiyat > cashAfterFuneralAndDebt / 3) {
+    errors.push("Wasiyat cannot exceed one third of the cash estate remaining after funeral cost and debt; mixed-asset wasiyat requires explicit asset valuation");
   }
 
   return errors;
