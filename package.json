@@ -11,7 +11,9 @@
     "test": "jest --runInBand",
     "rajuk:export": "tsx scripts/rajuk-export.ts"
   },
-  "engines": { "node": ">=20.9.0" },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@monaco-editor/react": "^4.7.0",
@@ -24,8 +26,10 @@
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.80.10",
+    "bwip-js": "^4.9.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
+    "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.10.0",
@@ -47,8 +51,8 @@
     "opossum": "^10.0.0",
     "pino": "^10.3.0",
     "pino-pretty": "^13.1.3",
-    "prom-client": "^15.0.0",
-    "radix-ui": "^1.6.0",
+    "prom-client": "^15.1.3",
+    "radix-ui": "^1.6.2",
     "react": "19.2.3",
     "react-day-picker": "^10.0.1",
     "react-dom": "19.2.3",
@@ -58,29 +62,34 @@
     "react-resizable-panels": "^4.12.2",
     "recharts": "^3.8.0",
     "redlock": "^5.0.0-beta.2",
-    "sonner": "^2.0.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
     "tsyringe": "^4.10.0",
-    "uuid": "^14.0.0",
+    "uuid": "^14.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "firebase-admin": { "jwks-rsa": { "jose": "4.15.9" } }
+    "firebase-admin": {
+      "jwks-rsa": {
+        "jose": "4.15.9"
+      }
+    }
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "25.3.5",
     "@types/node-cron": "^3.0.11",
-    "@types/opossum": "^8.0.0",
+    "@types/opossum": "^8.1.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "firebase-tools": "^15.24.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "tsx": "4.19.2",
