@@ -11,9 +11,7 @@
     "test": "jest --runInBand",
     "rajuk:export": "tsx scripts/rajuk-export.ts"
   },
-  "engines": {
-    "node": ">=20.9.0"
-  },
+  "engines": { "node": ">=20.9.0" },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@monaco-editor/react": "^4.7.0",
@@ -47,7 +45,7 @@
     "next-themes": "^0.4.6",
     "node-cron": "^4.6.0",
     "opossum": "^10.0.0",
-    "pino": "^10.3.0",
+    "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
     "prom-client": "^15.0.0",
     "radix-ui": "^1.6.0",
@@ -70,11 +68,7 @@
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "firebase-admin": {
-      "jwks-rsa": {
-        "jose": "4.15.9"
-      }
-    }
+    "firebase-admin": { "jwks-rsa": { "jose": "4.15.9" } }
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
@@ -84,6 +78,7 @@
     "@types/opossum": "^8.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jest": "^30.4.2",
