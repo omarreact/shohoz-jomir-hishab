@@ -39,60 +39,66 @@ export function areaFromSquareMeters(sqm: number): MeasurementResult {
 }
 
 /**
- * Geodesic (spherical) area of a polygon ring in m².
- * Coordinates are [lng, lat] in WGS84 — the GIS বহুভুজ itself.
+ * Signed geodesic area of a polygon ring in m².
+ * Coordinates are [lng, lat] in WGS84.
+ *
+ * The sign is intentionally preserved: ArcGIS polygon rings use winding
+ * direction to distinguish exterior rings from holes. Keeping that sign
+ * allows multipart polygons and holes to be combined without assuming that
+ * every ring after the first one is a hole.
  */
-export function ringAreaSquareMeters(ring: number[][]): number {
+function signedRingAreaSquareMeters(ring: number[][]): number {
   if (!Array.isArray(ring) || ring.length < 3) return 0;
 
-  let total = 0;
   const toRad = Math.PI / 180;
-  const n = ring.length;
+  let total = 0;
 
-  for (let i = 0; i < n - 1; i++) {
-    const lon1 = Number(ring[i][0]);
-    const lat1 = Number(ring[i][1]);
-    const lon2 = Number(ring[i + 1][0]);
-    const lat2 = Number(ring[i + 1][1]);
+  // Treat the ring as closed even when the final coordinate is omitted.
+  for (let i = 0; i < ring.length; i++) {
+    const current = ring[i];
+    const next = ring[(i + 1) % ring.length];
+    if (!Array.isArray(current) || !Array.isArray(next)) continue;
+
+    const lon1 = Number(current[0]);
+    const lat1 = Number(current[1]);
+    const lon2 = Number(next[0]);
+    const lat2 = Number(next[1]);
     if (![lon1, lat1, lon2, lat2].every(Number.isFinite)) continue;
+
     total +=
       (lon2 - lon1) *
       toRad *
       (2 + Math.sin(lat1 * toRad) + Math.sin(lat2 * toRad));
   }
 
-  // Close ring if first ≠ last
-  const a = ring[0];
-  const b = ring[n - 1];
-  if (a && b && (a[0] !== b[0] || a[1] !== b[1])) {
-    const lon1 = Number(b[0]);
-    const lat1 = Number(b[1]);
-    const lon2 = Number(a[0]);
-    const lat2 = Number(a[1]);
-    if ([lon1, lat1, lon2, lat2].every(Number.isFinite)) {
-      total +=
-        (lon2 - lon1) *
-        toRad *
-        (2 + Math.sin(lat1 * toRad) + Math.sin(lat2 * toRad));
-    }
-  }
+  return (total * EARTH_RADIUS_M * EARTH_RADIUS_M) / 2;
+}
 
-  return (Math.abs(total) * EARTH_RADIUS_M * EARTH_RADIUS_M) / 2;
+/**
+ * Geodesic area of a polygon ring in m².
+ * Coordinates are [lng, lat] in WGS84 — the GIS বহুভুজ itself.
+ */
+export function ringAreaSquareMeters(ring: number[][]): number {
+  return Math.abs(signedRingAreaSquareMeters(ring));
 }
 
 /**
  * Area of ArcGIS-style geometry `{ rings: number[][][] }` in m².
- * First ring = exterior; subsequent rings treated as holes (subtracted).
+ *
+ * ArcGIS rings encode polygon topology through winding direction. Summing
+ * signed ring areas therefore supports multipart polygons and holes. The
+ * absolute value is applied only after all rings have been combined.
  */
 export function areaFromGisRings(rings: number[][][] | undefined | null): number {
   if (!Array.isArray(rings) || rings.length === 0) return 0;
-  let area = 0;
-  for (let i = 0; i < rings.length; i++) {
-    const part = ringAreaSquareMeters(rings[i]);
-    if (i === 0) area += part;
-    else area -= part;
+
+  let signedArea = 0;
+  for (const ring of rings) {
+    signedArea += signedRingAreaSquareMeters(ring);
   }
-  return area > 0 ? area : 0;
+
+  const area = Math.abs(signedArea);
+  return Number.isFinite(area) && area > 0 ? area : 0;
 }
 
 export type GisAreaSource = "geometry" | "shape_area" | "none";
