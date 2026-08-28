@@ -17,6 +17,7 @@ jobs:
 
       - name: Restore full map UI from redesign (keep current mobile CSS)
         run: |
+          git fetch origin redesign/landbd-ux-2026:redesign/landbd-ux-2026
           # Full component: layers panel, basemap toggle, results (public + auth)
           git show redesign/landbd-ux-2026:src/features/geospatial-map/components/GeospatialMap.tsx > src/features/geospatial-map/components/GeospatialMap.tsx
           # Do NOT overwrite GeospatialMap.module.css — main already has iPhone/safe-area CSS
