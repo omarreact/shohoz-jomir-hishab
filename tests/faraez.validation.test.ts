@@ -27,7 +27,8 @@ const heirs: HeirsInput = {
   fullCousin: 0,
   consCousin: 0,
   fullCousinSon: 0,
-  consCousinSonSon: 0,
+  consCousinSon: 0,
+  fullCousinSonSon: 0,
   consCousinSonSon: 0,
 };
 
