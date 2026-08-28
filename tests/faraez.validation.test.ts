@@ -56,12 +56,18 @@ describe("Muslim Faraez input safety", () => {
   });
 
   it("rejects fractional or negative heir counts", () => {
-    expect(
-      validateMuslimFaraezInput({ ...heirs, sons: 1.5 }, assets),
-    ).toContain("Heir count sons must be a non-negative integer");
-    expect(
-      validateMuslimFaraezInput({ ...heirs, daughters: -1 }, assets),
-    ).toContain("Heir count daughters must be a non-negative integer");
+    expect(validateMuslimFaraezInput({ ...heirs, sons: 1.5 }, assets)).toContain(
+      "Heir count sons must be a non-negative integer",
+    );
+    expect(validateMuslimFaraezInput({ ...heirs, daughters: -1 }, assets)).toContain(
+      "Heir count daughters must be a non-negative integer",
+    );
+  });
+
+  it("refuses predeceased-child cases until per-stirpes descendants are modeled", () => {
+    expect(validateMuslimFaraezInput({ ...heirs, deadSons: 1 }, assets)).toContain(
+      "Predeceased son/daughter cases require their surviving descendants to be entered separately under section 4; this calculator cannot safely calculate that case yet.",
+    );
   });
 
   it("does not create NaN or Infinity in a normal spouse-only case", () => {
