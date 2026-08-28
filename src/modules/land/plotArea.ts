@@ -1,18 +1,32 @@
 import type { MeasurementResult } from "./geometry";
+import { BANGLADESH_STANDARD, getLandMeasurementStandard, type LandMeasurementStandard } from "./standards";
 
 /** 1 m² ≈ 10.7639104167 ft² (international foot) */
 const SQM_TO_SQFT = 10.76391041671;
 
-/** Dhaka / RAJUK urban standard: 1 কাঠা = 720 sq ft */
-const SQFT_PER_KATHA = 720;
-
 /** WGS84 authalic mean radius (m) — matches common GIS geodesic area */
 const EARTH_RADIUS_M = 6_371_008.8;
 
+export type AreaConversionOptions = {
+  standard?: LandMeasurementStandard["id"] | LandMeasurementStandard;
+};
+
+function resolveStandard(options?: AreaConversionOptions): LandMeasurementStandard {
+  if (typeof options?.standard === "object") return options.standard;
+  return getLandMeasurementStandard(options?.standard ?? BANGLADESH_STANDARD.id);
+}
+
 /**
- * Convert square metres into BD land units (কাঠা / শতক / বিঘা / একর).
+ * Convert square metres into Bangladesh land units.
+ *
+ * The standard is explicit so a caller can deliberately select a local/deed
+ * profile instead of silently assuming that every katha/bigha convention is
+ * identical.
  */
-export function areaFromSquareMeters(sqm: number): MeasurementResult {
+export function areaFromSquareMeters(
+  sqm: number,
+  options?: AreaConversionOptions,
+): MeasurementResult {
   if (!Number.isFinite(sqm) || sqm <= 0) {
     return {
       isValid: false,
@@ -26,16 +40,77 @@ export function areaFromSquareMeters(sqm: number): MeasurementResult {
     };
   }
 
+  const standard = resolveStandard(options);
   const sqFt = sqm * SQM_TO_SQFT;
+  const katha = sqFt / standard.squareFeetPerKatha;
+
   return {
     isValid: true,
     sqFt,
-    shotok: sqFt / 435.6,
-    katha: sqFt / SQFT_PER_KATHA,
-    bigha: sqFt / 14400,
-    acre: sqFt / 43560,
-    ojutangsho: sqFt / 4.356,
+    shotok: sqFt / standard.squareFeetPerDecimal,
+    katha,
+    bigha: katha / standard.kathasPerBigha,
+    acre: sqFt / (standard.squareFeetPerDecimal * standard.decimalsPerAcre),
+    ojutangsho: sqFt / (standard.squareFeetPerDecimal / 100),
   };
+}
+
+/** Convert square feet to the same explicit land-measurement profile. */
+export function areaFromSquareFeet(
+  sqFt: number,
+  options?: AreaConversionOptions,
+): MeasurementResult {
+  if (!Number.isFinite(sqFt) || sqFt <= 0) {
+    return {
+      isValid: false,
+      errorMsg: "ক্ষেত্রফল পাওয়া যায়নি।",
+      sqFt: 0,
+      shotok: 0,
+      katha: 0,
+      bigha: 0,
+      acre: 0,
+      ojutangsho: 0,
+    };
+  }
+
+  return areaFromSquareMeters(sqFt / SQM_TO_SQFT, options);
+}
+
+/** Reverse conversion helpers using the same explicit standard. */
+export function squareFeetFromKatha(
+  katha: number,
+  options?: AreaConversionOptions,
+): number {
+  const standard = resolveStandard(options);
+  return Number.isFinite(katha) ? katha * standard.squareFeetPerKatha : NaN;
+}
+
+export function squareFeetFromBigha(
+  bigha: number,
+  options?: AreaConversionOptions,
+): number {
+  const standard = resolveStandard(options);
+  return Number.isFinite(bigha)
+    ? bigha * standard.kathasPerBigha * standard.squareFeetPerKatha
+    : NaN;
+}
+
+export function squareFeetFromShotok(
+  shotok: number,
+  options?: AreaConversionOptions,
+): number {
+  const standard = resolveStandard(options);
+  return Number.isFinite(shotok) ? shotok * standard.squareFeetPerDecimal : NaN;
+}
+
+export function squareFeetFromAcre(
+  acre: number,
+  options?: AreaConversionOptions,
+): number {
+  const standard = resolveStandard(options);
+  return Number.isFinite(acre)
+    ? acre * standard.decimalsPerAcre * standard.squareFeetPerDecimal
+    : NaN;
 }
 
 /**
@@ -74,21 +149,10 @@ function signedRingAreaSquareMeters(ring: number[][]): number {
   return (total * EARTH_RADIUS_M * EARTH_RADIUS_M) / 2;
 }
 
-/**
- * Geodesic area of a polygon ring in m².
- * Coordinates are [lng, lat] in WGS84 — the GIS বহুভুজ itself.
- */
 export function ringAreaSquareMeters(ring: number[][]): number {
   return Math.abs(signedRingAreaSquareMeters(ring));
 }
 
-/**
- * Area of ArcGIS-style geometry `{ rings: number[][][] }` in m².
- *
- * ArcGIS rings encode polygon topology through winding direction. Summing
- * signed ring areas therefore supports multipart polygons and holes. The
- * absolute value is applied only after all rings have been combined.
- */
 export function areaFromGisRings(rings: number[][][] | undefined | null): number {
   if (!Array.isArray(rings) || rings.length === 0) return 0;
 
@@ -103,10 +167,6 @@ export function areaFromGisRings(rings: number[][][] | undefined | null): number
 
 export type GisAreaSource = "geometry" | "shape_area" | "none";
 
-/**
- * Prefer the actual GIS polygon (rings) when present — closest to বহুভুজ ক্ষেত্রফল.
- * Fall back to Shape__Area (m²) from the FeatureServer attribute.
- */
 export function resolveGisAreaSqm(input: {
   rings?: number[][][] | null;
   attributes?: Record<string, unknown> | null;
@@ -129,15 +189,19 @@ export function resolveGisAreaSqm(input: {
 export function areaFromGisFeature(input: {
   rings?: number[][][] | null;
   attributes?: Record<string, unknown> | null;
+  standard?: AreaConversionOptions["standard"];
 }): MeasurementResult & { source: GisAreaSource; area_sq_m: number } {
   const { sqm, source } = resolveGisAreaSqm(input);
-  const result = areaFromSquareMeters(sqm);
+  const result = areaFromSquareMeters(sqm, { standard: input.standard });
   return { ...result, source, area_sq_m: sqm };
 }
 
 /** Attributes-only path (Shape__Area). Prefer areaFromGisFeature when rings exist. */
-export function areaFromPlotAttributes(attributes: Record<string, unknown>): MeasurementResult {
-  return areaFromGisFeature({ attributes });
+export function areaFromPlotAttributes(
+  attributes: Record<string, unknown>,
+  options?: AreaConversionOptions,
+): MeasurementResult {
+  return areaFromGisFeature({ attributes, standard: options?.standard });
 }
 
 export function formatAreaValue(n: number, digits = 4): string {
