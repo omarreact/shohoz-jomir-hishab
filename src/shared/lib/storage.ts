@@ -63,12 +63,29 @@ export function readCalculationStorage<TDraft = unknown>(): CalculationStorageEn
   }
 }
 
-export function writeCalculationStorage<TDraft>(storage: CalculationStorageEnvelope<TDraft>): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CALCULATIONS_STORAGE_KEY, stringifyStorage(storage));
+/**
+ * Persist calculation history without allowing storage quota/security failures
+ * to break the calculator UI. LocalStorage is an optional offline cache, not
+ * the source of truth for an in-progress calculation.
+ */
+export function writeCalculationStorage<TDraft>(storage: CalculationStorageEnvelope<TDraft>): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.setItem(CALCULATIONS_STORAGE_KEY, stringifyStorage(storage));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function clearCalculationStorage(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(CALCULATIONS_STORAGE_KEY);
+export function clearCalculationStorage(): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.removeItem(CALCULATIONS_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
