@@ -35,6 +35,47 @@ async function identifyWithCalculationBoundary(lat: number, lng: number) {
   };
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const body: unknown = await request.json();
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "JSON request body is required" }, { status: 400 });
+    }
+
+    const payload = body as { action?: unknown; feature?: unknown; shapeAreaUnit?: unknown };
+    if (payload.action !== "adapt-for-khatiyan") {
+      return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    }
+
+    if (!payload.feature || typeof payload.feature !== "object") {
+      return NextResponse.json({ error: "feature is required", code: "INVALID_FEATURE" }, { status: 400 });
+    }
+
+    const unit = payload.shapeAreaUnit === "square-meters" ? "square-meters" : "square-feet";
+    const adapted = adaptParcel(payload.feature as RajukPlotFeature, unit);
+
+    return NextResponse.json({
+      source: "RAJUK",
+      measurementProfile: "khatiyan-record",
+      shapeAreaUnit: unit,
+      plot: adapted.plot,
+      provenance: adapted.source,
+    });
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 });
+    }
+    if (error instanceof RajukParcelDomainError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
+    const message = error instanceof Error ? error.message : "RAJUK request failed";
+    if (isRajukAuthFailure(message)) {
+      return NextResponse.json({ error: message, code: "RAJUK_AUTH", hint: "Open /api/rajuk/auth/diagnose for token status." }, { status: 503 });
+    }
+    return NextResponse.json({ error: message, code: "RAJUK_UPSTREAM" }, { status: 502 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const p = request.nextUrl.searchParams;
