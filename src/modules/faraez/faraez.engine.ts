@@ -4,7 +4,7 @@ import type {
   FaraezInput,
   FaraezResult,
 } from "./contracts";
-import { add, rational } from "./rational";
+import { add, compare, equals, rational } from "./rational";
 import { determineEligibility } from "./eligibility";
 import { determinePrescribedShares } from "./prescribed-shares";
 import { applyFaraezAdjustments } from "./adjustments";
@@ -35,7 +35,6 @@ export function calculateFaraez(input: FaraezInput): FaraezResult {
     eligibility,
   );
 
-  // Conservation is validated before any measurement rounding occurs.
   const conservation = validateConservation(allocations);
 
   // Expand grouped heir allocations to individual shares so Largest Remainder
@@ -66,7 +65,6 @@ function assertSupportedInput(input: FaraezInput): void {
       "The hardened Faraez engine currently supports the existing Sunni Muslim ruleset only",
     );
   }
-
   if (Object.values(input.heirs).some((value) => !Number.isInteger(value) || value < 0)) {
     throw new RangeError("Heir counts must be non-negative integers");
   }
@@ -88,7 +86,7 @@ function inferAdjustments(
     rational(0n),
   );
 
-  if (prescribedTotal.numerator > prescribedTotal.denominator) {
+  if (compare(prescribedTotal, rational(1n)) > 0) {
     return [{
       kind: "awl",
       factor: rational(prescribedTotal.denominator, prescribedTotal.numerator),
@@ -96,11 +94,11 @@ function inferAdjustments(
     }];
   }
 
-  if (finalTotal.numerator === prescribedTotal.numerator && finalTotal.denominator === prescribedTotal.denominator) {
+  if (equals(finalTotal, prescribedTotal)) {
     return [{ kind: "none", reasoning: "নির্দিষ্ট অংশের পর আর কোনো সমন্বয় প্রয়োজন হয়নি।" }];
   }
 
-  if (finalTotal.numerator > prescribedTotal.numerator) {
+  if (compare(finalTotal, prescribedTotal) > 0) {
     const hasResidual = allocations.some(
       (allocation) => !prescribedShares.some((share) => share.heirType === allocation.heirType),
     );
