@@ -1,4 +1,4 @@
-import { shareToTil, TIL_PER_FULL_UNIT, type KhatiyanShare } from "./share-normalization";
+import { shareToTilExact, TIL_PER_FULL_UNIT_BIGINT, type KhatiyanShare } from "./share-normalization";
 
 const INTERNAL_SCALE = 1_000_000;
 
@@ -19,32 +19,26 @@ function fromScaledArea(area: bigint): number {
   return Number(area) / INTERNAL_SCALE;
 }
 
-/**
- * Allocate one recorded plot among owners using exact Til share integers.
- * Allocation is rounded only at the final display scale, with the largest-
- * remainder rule ensuring that the rounded owner allocations conserve the
- * rounded recorded area exactly.
- */
 export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): AreaAllocation[] {
-  const totalTil = shares.reduce((sum, share) => sum + shareToTil(share), 0);
-  if (totalTil !== TIL_PER_FULL_UNIT) {
+  const totalTil = shares.reduce((sum, share) => sum + shareToTilExact(share), 0n);
+  if (totalTil !== TIL_PER_FULL_UNIT_BIGINT) {
     throw new Error("Plot allocation requires owner shares to total exactly 16 আনা");
   }
 
   const scaledTotal = toScaledArea(totalArea);
   const rows = shares.map((share, index) => {
-    const shareTil = shareToTil(share);
-    const numerator = scaledTotal * BigInt(shareTil);
-    const base = numerator / BigInt(TIL_PER_FULL_UNIT);
-    const remainder = Number(numerator % BigInt(TIL_PER_FULL_UNIT)) / TIL_PER_FULL_UNIT;
-    return { index, shareTil, base, remainder };
+    const shareTil = shareToTilExact(share);
+    const numerator = scaledTotal * shareTil;
+    const base = numerator / TIL_PER_FULL_UNIT_BIGINT;
+    const remainderNumerator = numerator % TIL_PER_FULL_UNIT_BIGINT;
+    return { index, shareTil, base, remainderNumerator };
   });
 
   const assigned = rows.reduce((sum, row) => sum + row.base, 0n);
   let remaining = scaledTotal - assigned;
 
   [...rows]
-    .sort((a, b) => b.remainder - a.remainder || a.index - b.index)
+    .sort((a, b) => b.remainderNumerator > a.remainderNumerator ? 1 : b.remainderNumerator < a.remainderNumerator ? -1 : a.index - b.index)
     .forEach((row) => {
       if (remaining > 0n) {
         row.base += 1n;
@@ -56,10 +50,10 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
     .sort((a, b) => a.index - b.index)
     .map((row) => ({
       index: row.index,
-      shareTil: row.shareTil,
-      exactArea: totalArea * row.shareTil / TIL_PER_FULL_UNIT,
+      shareTil: Number(row.shareTil),
+      exactArea: totalArea * Number(row.shareTil) / Number(TIL_PER_FULL_UNIT_BIGINT),
       allocatedArea: fromScaledArea(row.base),
-      remainder: row.remainder,
+      remainder: Number(row.remainderNumerator) / Number(TIL_PER_FULL_UNIT_BIGINT),
     }));
 }
 
