@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { List, Zap, Calculator, Trash2, Printer } from "lucide-react";
+import { List, Zap, Calculator, Trash2, Printer, MapPinned, ShieldCheck } from "lucide-react";
 import { FULL_UNIT_TIL } from "@/src/shared/constants";
 import { toBn, toEn, makeBanglaStr } from "@/src/shared/utils";
 import { buildDetailedResults } from "@/src/modules/khatiyan/calculations";
+import { useKhatiyanGisBridge } from "@/src/modules/khatiyan/gis-bridge";
 import PrintStyles from "@/src/shared/components/PrintStyles";
 import DetailedCalculator from "@/src/features/khatiyan/components/DetailedCalculator";
 import QuickCalculator from "@/src/features/khatiyan/components/QuickCalculator";
@@ -31,9 +32,21 @@ export default function SmartKhatiyanApp() {
   const [detailedResults, setDetailedResults] = useState<any[] | null>(null);
   const [quickData, setQuickData] = useState<QuickData>({ totalLand: "", a: 0, g: 0, k: 0, kr: 0, ti: 0 });
   const [quickResult, setQuickResult] = useState<QuickResult | null>(null);
+  const [gisSelection, setGisSelection] = useState<ReturnType<typeof useKhatiyanGisBridge.getState>["pendingPlot"]>(null);
 
   useEffect(() => { const saved = localStorage.getItem("khatiyanNextData"); if (saved) { try { const d = JSON.parse(saved); if (d.plots?.length) setPlots(d.plots); if (d.owners?.length) setOwners(d.owners); } catch {} } }, []);
   useEffect(() => { const t = setTimeout(() => localStorage.setItem("khatiyanNextData", JSON.stringify({ plots, owners })), 500); return () => clearTimeout(t); }, [plots, owners]);
+
+  // GIS → Khatiyan handoff is consumed exactly once. The authoritative area is locked in the plot editor.
+  useEffect(() => {
+    const pending = useKhatiyanGisBridge.getState().consumePendingPlot();
+    if (!pending) return;
+    setGisSelection(pending);
+    setPlots([pending.plot]);
+    setDetailedResults(null);
+    setValidationAttempted(false);
+  }, []);
+
   const addPlot = () => setPlots((p) => [...p, initialPlot(nextPlotId.current++)]);
   const removePlot = (id: number) => setPlots((p) => p.filter((x) => x.id !== id));
   const updatePlot = (id: number, field: keyof Plot, value: string) => setPlots((p) => p.map((x) => x.id === id ? { ...x, [field]: ["cs", "rs", "city", "bds", "a"].includes(field) ? makeBanglaStr(value) : value } : x));
@@ -44,11 +57,16 @@ export default function SmartKhatiyanApp() {
 
   const calculateDetailed = () => {
     setValidationAttempted(true);
-    const { hasData, computedResults } = buildDetailedResults(owners, plots, FULL_UNIT_TIL, toEn, toBn);
-    if (hasData && computedResults.length) {
-      setDetailedResults(computedResults);
-      setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 50);
-    } else alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।");
+    try {
+      const { hasData, computedResults } = buildDetailedResults(owners, plots, FULL_UNIT_TIL, toEn, toBn);
+      if (hasData && computedResults.length) {
+        setDetailedResults(computedResults);
+        setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 50);
+      } else alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "হিসাব করা যায়নি।");
+      setDetailedResults(null);
+    }
   };
 
   const calculateQuick = () => {
@@ -62,7 +80,7 @@ export default function SmartKhatiyanApp() {
   const clearAll = () => {
     if (!confirm("সব ডাটা মুছে ফেলতে চান?")) return;
     nextPlotId.current = 3; nextOwnerId.current = 4;
-    setPlots([initialPlot(1)]); setOwners([initialOwner(2)]); setDetailedResults(null); setValidationAttempted(false); localStorage.removeItem("khatiyanNextData");
+    setPlots([initialPlot(1)]); setOwners([initialOwner(2)]); setDetailedResults(null); setValidationAttempted(false); setGisSelection(null); useKhatiyanGisBridge.getState().clearPendingPlot(); localStorage.removeItem("khatiyanNextData");
   };
   const handleQuickDataChange = (d: Partial<QuickData>) => setQuickData((p) => ({ ...p, ...d, ...(d.totalLand !== undefined ? { totalLand: makeBanglaStr(d.totalLand) } : {}) }));
 
@@ -70,9 +88,15 @@ export default function SmartKhatiyanApp() {
     <HeroBanner align="center" badge="খতিয়ান ক্যালকুলেটর" title={<>স্মার্ট <span className="text-[#1A6B3C]">খতিয়ান</span> হিসাব</>} description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন।" pattern="none" />
     <PrintStyles />
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 no-print">
+      {gisSelection && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3"><MapPinned className="mt-0.5 shrink-0" size={20} /><div><p className="font-bold">RAJUK GIS প্লট সংযুক্ত হয়েছে</p><p className="text-sm">Plot ID: {gisSelection.plot.id} · রেকর্ডকৃত এলাকা: <strong>{gisSelection.plot.a} শতাংশ</strong></p></div></div>
+          <span className="inline-flex items-center gap-1 text-xs font-semibold"><ShieldCheck size={15} /> Server validated</span>
+        </div>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-10 flex justify-center"><TabsList className="h-auto rounded-full border bg-slate-100 p-1 dark:bg-slate-900"><TabsTrigger value="detailed" className="min-h-11 rounded-full px-6 py-3 font-bold"><List size={18} className="mr-2" /> বিস্তারিত হিসাব</TabsTrigger><TabsTrigger value="quick" className="min-h-11 rounded-full px-6 py-3 font-bold"><Zap size={18} className="mr-2" /> কুইক</TabsTrigger></TabsList></div>
-        <TabsContent value="detailed" className="mt-0"><div className="rounded-3xl border bg-white p-6 shadow-sm dark:bg-slate-900 md:p-8"><DetailedCalculator validationAttempted={validationAttempted} plots={plots} owners={owners} totalOwnerTil={totalOwnerTil} onAddPlot={addPlot} onRemovePlot={removePlot} onUpdatePlot={updatePlot} onAddOwner={addOwner} onRemoveOwner={removeOwner} onUpdateOwner={updateOwner} /><div className="mt-8 flex flex-col justify-center gap-3 border-t pt-8 sm:flex-row"><button onClick={clearAll} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-red-500 px-6 py-3 font-bold text-red-500"><Trash2 size={18} className="mr-2" /> মুছে ফেলুন</button><button onClick={calculateDetailed} className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#1A6B3C] px-8 py-3 font-bold text-white"><Calculator size={18} className="mr-2" /> হিসাব করুন</button></div></div></TabsContent>
+        <TabsContent value="detailed" className="mt-0"><div className="rounded-3xl border bg-white p-6 shadow-sm dark:bg-slate-900 md:p-8"><DetailedCalculator validationAttempted={validationAttempted} plots={plots} owners={owners} totalOwnerTil={totalOwnerTil} onAddPlot={addPlot} onRemovePlot={removePlot} onUpdatePlot={updatePlot} onAddOwner={addOwner} onRemoveOwner={removeOwner} onUpdateOwner={updateOwner} lockedAreaIds={gisSelection ? [gisSelection.plot.id] : []} /><div className="mt-8 flex flex-col justify-center gap-3 border-t pt-8 sm:flex-row"><button onClick={clearAll} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-red-500 px-6 py-3 font-bold text-red-500"><Trash2 size={18} className="mr-2" /> মুছে ফেলুন</button><button onClick={calculateDetailed} className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#1A6B3C] px-8 py-3 font-bold text-white"><Calculator size={18} className="mr-2" /> হিসাব করুন</button></div></div></TabsContent>
         <TabsContent value="quick" className="mt-0"><div className="mx-auto max-w-3xl rounded-3xl border bg-white p-6 shadow-sm dark:bg-slate-900 md:p-8"><QuickCalculator quickData={quickData} quickResult={quickResult} onQuickDataChange={handleQuickDataChange} onCalculateQuick={calculateQuick} /></div></TabsContent>
       </Tabs>
       {detailedResults && <div className="no-print mx-auto mt-5 flex max-w-7xl justify-end"><button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-5 py-3 text-sm font-bold text-[var(--foreground)] hover:bg-[var(--secondary)]"><Printer size={16} /> প্রিন্ট করুন</button></div>}
