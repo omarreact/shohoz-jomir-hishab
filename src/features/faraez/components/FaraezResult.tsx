@@ -2,6 +2,7 @@
 
 import { HeirResult, Religion } from "@/src/modules/faraez/types";
 import { toBn } from "@/src/shared/utils";
+import { downloadElementAsPdf, downloadTextFile, rowsToCsv } from "@/src/shared/lib/export";
 import { Scale, Info, FileDown, FileSpreadsheet, PieChart as PieChartIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/src/shared/ui/Card";
@@ -14,11 +15,51 @@ function measurementText(measurement: HeirResult["measurements"] extends readonl
   return `${toBn(measurement.ana.toString())} আনা · ${toBn(measurement.gonda.toString())} গন্ডা · ${toBn(measurement.kora.toString())} কড়া · ${toBn(measurement.kranti.toString())} ক্রান্তি · ${toBn(measurement.til.toString())} তিল`;
 }
 
-export default function FaraezResult({ results, exportRef, onDownloadPDF, onDownloadExcel, religion }: Props) {
+export default function FaraezResult({ results, exportRef, religion }: Props) {
   if (!results.length) return null;
   const validResults = results.filter((r) => r.count > 0);
   const pieData = validResults.filter((r) => r.fraction > 0).map((r) => ({ name: r.count > 1 ? `${r.heirType} (${toBn(r.count)} জন)` : r.heirType, value: Number((r.fraction * 100).toFixed(2)) }));
   const today = toBn(new Date().toLocaleDateString("en-GB"));
+
+  const downloadFaraezPdf = async () => {
+    if (!exportRef.current) return;
+    try {
+      await downloadElementAsPdf(exportRef.current, "Faraez_Result.pdf");
+    } catch (error) {
+      console.error("Faraez PDF export failed:", error);
+      alert("PDF তৈরিতে সমস্যা হয়েছে।");
+    }
+  };
+
+  const downloadFaraezCsv = () => {
+    try {
+      const rows: unknown[][] = [["ওয়ারিশ", "অংশ (%)", "খতিয়ানি অংশ", "আনা", "গন্ডা", "কড়া", "ক্রান্তি", "তিল", "প্রাপ্ত জমি (শতাংশ)", "প্রাপ্ত স্বর্ণ (ভরি)", "প্রাপ্ত অর্থ (টাকা)", "আইনি ব্যাখ্যা"]];
+      validResults.forEach((res) => {
+        for (let i = 1; i <= res.count; i++) {
+          const measurement = res.measurements?.[i - 1];
+          rows.push([
+            res.count > 1 ? `${res.heirType} ${i}` : res.heirType,
+            res.fraction === 0 ? "বঞ্চিত" : `${(res.fraction * 100).toFixed(2)}%`,
+            measurement ? measurementText(measurement) : "—",
+            measurement?.ana.toString() ?? "",
+            measurement?.gonda.toString() ?? "",
+            measurement?.kora.toString() ?? "",
+            measurement?.kranti.toString() ?? "",
+            measurement?.til.toString() ?? "",
+            res.assets.land.toFixed(3),
+            res.assets.gold.toFixed(3),
+            res.assets.cash.toFixed(2),
+            res.reasoning,
+          ]);
+        }
+      });
+      downloadTextFile(rowsToCsv(rows), "Faraez_Result.csv");
+    } catch (error) {
+      console.error("Faraez CSV export failed:", error);
+      alert("CSV তৈরিতে সমস্যা হয়েছে।");
+    }
+  };
+
   return <div id="resultSection" className="container mx-auto pb-8 animate-in fade-in zoom-in-95 mt-4">
     <Card className="shadow-lg overflow-hidden border-success/30 border-2">
       <CardHeader className="bg-success text-success-foreground text-center py-4 no-print"><CardTitle className="text-xl flex justify-center items-center m-0"><Scale className="mr-2" /> বিস্তারিত বন্টন ফলাফল</CardTitle></CardHeader>
@@ -30,7 +71,7 @@ export default function FaraezResult({ results, exportRef, onDownloadPDF, onDown
         </table></div>
         <div className="text-center text-muted-foreground text-sm pt-8 mt-6"><p className="mb-2 border-t border-border pt-4 inline-block px-8">* এই দলিলটি <strong className="text-foreground">LandBD</strong> ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত।</p><p>চূড়ান্ত আইনি বা দাপ্তরিক কাজের জন্য অভিজ্ঞ আইনজীবী বা মুফতির পরামর্শ গ্রহণ করুন।</p></div>
       </CardContent>
-      <CardFooter className="bg-muted/30 p-6 no-print flex flex-wrap justify-center gap-4 border-t border-success/30 rounded-b-xl"><Button onClick={onDownloadPDF} variant="destructive" className="px-6 font-bold shadow-sm rounded-full"><FileDown size={18} className="mr-2" /> PDF ডাউনলোড</Button><Button onClick={onDownloadExcel} variant="outline" className="px-6 font-bold shadow-sm rounded-full border-success text-success hover:bg-success hover:text-success-foreground"><FileSpreadsheet size={18} className="mr-2" /> Excel (CSV)</Button></CardFooter>
+      <CardFooter className="bg-muted/30 p-6 no-print flex flex-wrap justify-center gap-4 border-t border-success/30 rounded-b-xl"><Button onClick={downloadFaraezPdf} variant="destructive" className="px-6 font-bold shadow-sm rounded-full"><FileDown size={18} className="mr-2" /> PDF ডাউনলোড</Button><Button onClick={downloadFaraezCsv} variant="outline" className="px-6 font-bold shadow-sm rounded-full border-success text-success hover:bg-success hover:text-success-foreground"><FileSpreadsheet size={18} className="mr-2" /> CSV</Button></CardFooter>
     </Card>
   </div>;
 }
