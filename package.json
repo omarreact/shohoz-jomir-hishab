@@ -11,14 +11,16 @@
     "test": "jest --runInBand",
     "rajuk:export": "tsx scripts/rajuk-export.ts"
   },
-  "engines": { "node": ">=20.9.0" },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@upstash/redis": "^1.35.0",
+    "@upstash/redis": "^1.35.3",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.18.1",
@@ -68,7 +70,11 @@
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "firebase-admin": { "jwks-rsa": { "jose": "4.15.9" } }
+    "firebase-admin": {
+      "jwks-rsa": {
+        "jose": "4.15.9"
+      }
+    }
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
