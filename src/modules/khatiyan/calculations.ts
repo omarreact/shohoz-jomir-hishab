@@ -1,20 +1,30 @@
 import type { KhatiyanOwner, KhatiyanOwnerResult, KhatiyanPlot } from "@/src/shared/types";
 import { KHATIYAN_RECORD_STANDARD } from "@/src/modules/khatiyan/standards";
+import {
+  ANA_PER_FULL_UNIT,
+  GONDA_PER_ANA,
+  KORA_PER_GONDA,
+  KRANTI_PER_KORA,
+  TIL_PER_ANA,
+  TIL_PER_KRANTI,
+  shareToTil as canonicalShareToTil,
+} from "./share-normalization";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
 
-export const TIL_PER_KRANTI = 20;
-export const KRANTI_PER_KORA = 3;
-export const KORA_PER_GONDA = 4;
-export const GONDA_PER_ANA = 20;
-export const TIL_PER_ANA = TIL_PER_KRANTI * KRANTI_PER_KORA * KORA_PER_GONDA * GONDA_PER_ANA;
-export const ANA_PER_FULL_UNIT = 16;
+export { ANA_PER_FULL_UNIT, GONDA_PER_ANA, KORA_PER_GONDA, KRANTI_PER_KORA, TIL_PER_ANA, TIL_PER_KRANTI };
 export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
 const CONSERVATION_EPSILON = 1e-10;
 
 function shareToTil(owner: KhatiyanOwner): number {
-  return Number(owner.a) * TIL_PER_ANA + Number(owner.g) * (TIL_PER_KRANTI * KRANTI_PER_KORA * KORA_PER_GONDA) + Number(owner.k) * (TIL_PER_KRANTI * KRANTI_PER_KORA) + Number(owner.kr) * TIL_PER_KRANTI + Number(owner.ti);
+  return canonicalShareToTil({
+    a: Number(owner.a),
+    g: Number(owner.g),
+    k: Number(owner.k),
+    kr: Number(owner.kr),
+    ti: Number(owner.ti),
+  });
 }
 
 export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number): string[] {
@@ -43,9 +53,13 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
       else if (value >= exclusiveMax) errors.push(`Owner ${index + 1} ${unit} exceeds its traditional range`);
     });
 
-    const shareTil = shareToTil(owner);
-    if (shareTil > fullUnitTil) errors.push(`Owner ${index + 1} share exceeds the full unit`);
-    else totalOwnerTil += shareTil;
+    try {
+      const shareTil = shareToTil(owner);
+      if (shareTil > fullUnitTil) errors.push(`Owner ${index + 1} share exceeds the full unit`);
+      else totalOwnerTil += shareTil;
+    } catch {
+      errors.push(`Owner ${index + 1} contains a non-canonical share`);
+    }
   });
 
   if (Number.isFinite(fullUnitTil) && totalOwnerTil > fullUnitTil + CONSERVATION_EPSILON) errors.push("Total owner shares exceed the full Khatiyan unit");
