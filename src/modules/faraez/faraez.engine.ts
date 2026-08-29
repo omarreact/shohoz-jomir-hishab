@@ -4,6 +4,7 @@ import type {
   FaraezInput,
   FaraezResult,
 } from "./contracts";
+import { add, rational } from "./rational";
 import { determineEligibility } from "./eligibility";
 import { determinePrescribedShares } from "./prescribed-shares";
 import { applyFaraezAdjustments } from "./adjustments";
@@ -12,7 +13,7 @@ import { faraezFractionsToKhatiyan } from "./measurement-adapter";
 
 /**
  * The single public domain facade for the currently supported Sunni Faraez
- * ruleset. It intentionally contains no React, Next.js, routing, or UI logic.
+ * ruleset. It contains no React, Next.js, routing, or UI logic.
  *
  * Pipeline:
  * Eligibility → prescribed shares → Awl/residual/Radd → exact conservation
@@ -27,7 +28,6 @@ export function calculateFaraez(input: FaraezInput): FaraezResult {
     input.deceasedGender,
     eligibility,
   );
-
   const allocations = applyFaraezAdjustments(
     input.heirs,
     input.deceasedGender,
@@ -35,20 +35,22 @@ export function calculateFaraez(input: FaraezInput): FaraezResult {
     eligibility,
   );
 
+  // Conservation is validated before any measurement rounding occurs.
   const conservation = validateConservation(allocations);
+
+  // Expand grouped heir allocations to individual shares so Largest Remainder
+  // can distribute any unavoidable Til rounding across the complete estate.
   const measurementAllocations = faraezFractionsToKhatiyan(
     allocations.flatMap((allocation) =>
       Array.from({ length: allocation.count }, () => allocation.fraction),
     ),
   );
 
-  const adjustments = inferAdjustments(prescribedShares, allocations);
-
   return {
     ruleset: input.ruleset,
     eligibleHeirs: eligibility.heirs,
     prescribedShares,
-    adjustments,
+    adjustments: inferAdjustments(prescribedShares, allocations),
     allocations,
     measurementAllocations,
     conservation,
@@ -60,52 +62,56 @@ function assertSupportedInput(input: FaraezInput): void {
     throw new RangeError("Unsupported Faraez ruleset");
   }
   if (input.religion !== "muslim") {
-    throw new RangeError("The hardened Faraez engine currently supports the existing Sunni Muslim ruleset only");
+    throw new RangeError(
+      "The hardened Faraez engine currently supports the existing Sunni Muslim ruleset only",
+    );
   }
 
-  const heirValues = Object.values(input.heirs);
-  if (heirValues.some((value) => !Number.isInteger(value) || value < 0)) {
+  if (Object.values(input.heirs).some((value) => !Number.isInteger(value) || value < 0)) {
     throw new RangeError("Heir counts must be non-negative integers");
   }
-
-  const estateValues = Object.values(input.estate);
-  if (estateValues.some((value) => !Number.isFinite(value) || value < 0)) {
+  if (Object.values(input.estate).some((value) => !Number.isFinite(value) || value < 0)) {
     throw new RangeError("Estate values and deductions must be finite non-negative numbers");
   }
 }
 
 function inferAdjustments(
-  prescribedShares: readonly { totalShare: { numerator: bigint; denominator: bigint } }[],
+  prescribedShares: FaraezResult["prescribedShares"],
   allocations: readonly FaraezHeirShare[],
 ): readonly FaraezAdjustment[] {
   const prescribedTotal = prescribedShares.reduce(
-    (sum, share) => sum + share.totalShare.numerator * (1n),
-    0n,
+    (sum, share) => add(sum, share.totalShare),
+    rational(0n),
   );
-  const prescribedDenominator = prescribedShares.length === 0
-    ? 1n
-    : prescribedShares[0].totalShare.denominator;
-  const finalTotal = allocations.length === 0
-    ? 0n
-    : allocations.reduce((sum, share) => sum + share.totalShare.numerator, 0n);
+  const finalTotal = allocations.reduce(
+    (sum, share) => add(sum, share.totalShare),
+    rational(0n),
+  );
 
-  if (prescribedShares.length === 0) {
-    return [{ kind: "none", reasoning: "কোনো নির্দিষ্ট অংশ নির্ধারিত হয়নি; অবশিষ্টভোগী/রদ স্তর সিদ্ধান্ত নিয়েছে।" }];
+  if (prescribedTotal.numerator > prescribedTotal.denominator) {
+    return [{
+      kind: "awl",
+      factor: rational(prescribedTotal.denominator, prescribedTotal.numerator),
+      reasoning: "নির্দিষ্ট অংশের যোগফল ১-এর বেশি হওয়ায় আউল প্রয়োগ হয়েছে।",
+    }];
   }
 
-  const prescribedIsOver = prescribedTotal > prescribedDenominator;
-  const prescribedIsUnder = prescribedTotal < prescribedDenominator;
-  if (prescribedIsOver) return [{ kind: "awl", reasoning: "নির্দিষ্ট অংশের যোগফল ১-এর বেশি হওয়ায় আউল প্রয়োগ হয়েছে।" }];
-  if (prescribedIsUnder && finalTotal > prescribedTotal) {
-    const hasResidual = allocations.some((allocation) =>
-      !prescribedShares.some((share) => share.heirType === allocation.heirType),
+  if (finalTotal.numerator === prescribedTotal.numerator && finalTotal.denominator === prescribedTotal.denominator) {
+    return [{ kind: "none", reasoning: "নির্দিষ্ট অংশের পর আর কোনো সমন্বয় প্রয়োজন হয়নি।" }];
+  }
+
+  if (finalTotal.numerator > prescribedTotal.numerator) {
+    const hasResidual = allocations.some(
+      (allocation) => !prescribedShares.some((share) => share.heirType === allocation.heirType),
     );
     return [{
       kind: hasResidual ? "residual" : "radd",
+      remainder: add(rational(1n), rational(-prescribedTotal.numerator, prescribedTotal.denominator)),
       reasoning: hasResidual
         ? "নির্দিষ্ট অংশের পর অবশিষ্ট অংশ আসাবাদের মধ্যে বণ্টিত হয়েছে।"
         : "আসাবা না থাকায় অবশিষ্ট অংশ রদ নীতিতে পুনর্বণ্টিত হয়েছে।",
     }];
   }
+
   return [{ kind: "none", reasoning: "কোনো অতিরিক্ত সমন্বয় প্রয়োজন হয়নি।" }];
 }
