@@ -1,0 +1,137 @@
+name: Apply Map UI Refinement
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  refine:
+    if: ${{ !contains(github.event.head_commit.message, 'refactor(map): refine MapLibre UI') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply surgical MapLibre changes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          map_file = root / 'src/features/geospatial-map/maplibre/MapLibreMap.tsx'
+          layers_file = root / 'src/features/geospatial-map/maplibre/layers.ts'
+          types_file = root / 'src/features/geospatial-map/maplibre/types.ts'
+
+          text = map_file.read_text()
+          original = text
+
+          text = text.replace(
+              '  Database,\n  Layers3,',
+              '  Database,\n  Download,\n  Filter,\n  Layers3,'
+          )
+          text = text.replace(
+              'import { BASEMAP_RASTER_LAYERS, RAJUK_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";',
+              'import { BASEMAP_RASTER_LAYERS, RAJUK_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";\nimport { exportMapAsHighResolutionPng } from "./exportMap";'
+          )
+          text = text.replace(
+              '  const identifyModeRef = useRef(true);',
+              '  const identifyModeRef = useRef(true);\n  const mouzaRef = useRef("");\n  const loadExtentRef = useRef<(() => Promise<void>) | null>(null);'
+          )
+          text = text.replace(
+              '  const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);',
+              '  const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);\n  const [mouza, setMouza] = useState("");\n  const [mouzaOpen, setMouzaOpen] = useState(false);\n  const [mouzaLoaded, setMouzaLoaded] = useState(false);\n  const [exporting, setExporting] = useState(false);'
+          )
+          text = text.replace(
+              '  identifyModeRef.current = identifyMode;',
+              '  identifyModeRef.current = identifyMode;\n  mouzaRef.current = mouza;'
+          )
+          text = text.replace(
+              '      renderWorldCopies: false,\n    });',
+              '      renderWorldCopies: false,\n      preserveDrawingBuffer: true,\n    });'
+          )
+
+          old_click = '''    const handleClick = (event: maplibregl.MapMouseEvent) => {\n      if (!identifyModeRef.current) return;\n  \n const features = map.queryRenderedFeatures(event.point, {\n   layers: ["vector-rs-boundary-fill", "vector-ms-boundary-fill"],\n });\n      const vector = features.find((feature: MapGeoJSONFeature) => feature.geometry?.type === "Polygon");\n      if (!vector) return;\n      const sourceKind = String(vector.properties?._layer_source ?? "").toLowerCase() === "ms" || String(vector.properties?.plot_kind ?? "").toLowerCase() === "ms" ? "ms" : "rs";\n      const parcel = renderedFeatureToRajuk(vector, sourceKind);\n      if (!parcel) return;\n      setSelected(parcel);\n      setResults((current) => {\n        const id = parcel.attributes.objectid;\n        const filtered = current.filter((item) => item.attributes.objectid !== id);\n        return [parcel, ...filtered];\n      });\n      setTab("results");\n      setPanelOpen(true);\n      updateSourceData(map, VECTOR_SOURCES.selectedPlot, featuresToFc([parcel]) as FeatureCollection<Geometry>);\n    };'''
+          new_click = '''    const handleClick = async (event: maplibregl.MapMouseEvent) => {\n      if (!identifyModeRef.current) return;\n      const params = new URLSearchParams({\n        action: "identify",\n        lat: String(event.lngLat.lat),\n        lng: String(event.lngLat.lng),\n      });\n      try {\n        const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`);\n        const data = (await response.json().catch(() => null)) as { features?: RajukPlotFeature[]; error?: string } | null;\n        if (!response.ok) throw new Error(data?.error || "দাগ শনাক্ত করা যায়নি");\n        const found = Array.isArray(data?.features) ? data.features : [];\n        setResults(found);\n        setSelected(found[0] ?? null);\n        setTab("results");\n        setPanelOpen(true);\n        if (found[0]) {\n          updateSourceData(map, VECTOR_SOURCES.selectedPlot, featuresToFc([found[0]]) as FeatureCollection<Geometry>);\n        } else {\n          updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);\n          notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");\n        }\n      } catch (error) {\n        if (error instanceof DOMException && error.name === "AbortError") return;\n        notify(error instanceof Error ? error.message : "দাগ শনাক্ত করা যায়নি");\n      }\n    };'''
+          if old_click not in text:
+              raise SystemExit('Expected MapLibre click handler was not found; refusing unsafe rewrite.')
+          text = text.replace(old_click, new_click)
+
+          text = text.replace(
+              '        VECTOR_LAYER_STYLES.msBoundaryLine,\n        VECTOR_LAYER_STYLES.selectedPlotFill,',
+              '        VECTOR_LAYER_STYLES.msBoundaryLine,\n        VECTOR_LAYER_STYLES.rsPlotLabels,\n        VECTOR_LAYER_STYLES.msPlotLabels,\n        VECTOR_LAYER_STYLES.selectedPlotFill,'
+          )
+
+          text = text.replace(
+              '      map.off("zoomend", handleMove);\n      map.remove();',
+              '      map.off("zoomend", handleMove);\n      loadExtentRef.current = null;\n      map.remove();'
+          )
+
+          old_query = '''      const query = (kind: "rs" | "ms") => {\n        const params = new URLSearchParams({\n          action: "extent",\n          kind,\n          xmin: String(bounds.getWest()),\n          ymin: String(bounds.getSouth()),\n          xmax: String(bounds.getEast()),\n          ymax: String(bounds.getNorth()),\n          limit: "400",\n        });\n        return fetchWithTimeout(`/api/rajuk/query?${params.toString()}`, {}, controller.signal).then(async (response) => {\n          if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || `RAJUK ${kind.toUpperCase()} request failed`);\n          return (await response.json()) as { features?: RajukPlotFeature[] };\n        });\n      };'''
+          new_query = '''      const selectedMouza = mouzaRef.current.trim();\n      const query = selectedMouza\n        ? () => {\n            const params = new URLSearchParams({ action: "plots", mouza: selectedMouza, kind: "all", limit: "800" });\n            return fetchWithTimeout(`/api/rajuk/query?${params.toString()}`, {}, controller.signal).then(async (response) => {\n              if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "নির্বাচিত মৌজার দাগ লোড করা যায়নি");\n              return (await response.json()) as { features?: RajukPlotFeature[] };\n            });\n          }\n        : (kind: "rs" | "ms") => {\n            const params = new URLSearchParams({\n              action: "extent", kind, xmin: String(bounds.getWest()), ymin: String(bounds.getSouth()),\n              xmax: String(bounds.getEast()), ymax: String(bounds.getNorth()), limit: "400",\n            });\n            return fetchWithTimeout(`/api/rajuk/query?${params.toString()}`, {}, controller.signal).then(async (response) => {\n              if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || `RAJUK ${kind.toUpperCase()} request failed`);\n              return (await response.json()) as { features?: RajukPlotFeature[] };\n            });\n          };'''
+          if old_query not in text:
+              raise SystemExit('Expected extent query block was not found; refusing unsafe rewrite.')
+          text = text.replace(old_query, new_query)
+
+          old_parallel = '''        const [rs, ms] = await Promise.all([query("rs"), query("ms")]);\n        if (controller.signal.aborted || requestId !== extentRequestIdRef.current) return;\n        const rsFeatures = Array.isArray(rs.features) ? rs.features : [];\n        const msFeatures = Array.isArray(ms.features) ? ms.features : [];\n        updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);\n        updateSourceData(map, VECTOR_SOURCES.msBoundary, featuresToFc(msFeatures) as FeatureCollection<Geometry>);\n        setVectorStatus(`${rsFeatures.length + msFeatures.length}টি দাগ লোড হয়েছে`);'''
+          new_parallel = '''        if (selectedMouza) {\n          const data = await query();\n          if (controller.signal.aborted || requestId !== extentRequestIdRef.current) return;\n          const found = Array.isArray(data.features) ? data.features : [];\n          const rsFeatures = found.filter((feature) => isRsFeature(feature));\n          const msFeatures = found.filter((feature) => isMsFeature(feature));\n          updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);\n          updateSourceData(map, VECTOR_SOURCES.msBoundary, featuresToFc(msFeatures) as FeatureCollection<Geometry>);\n          setMouzaLoaded(true);\n          setVectorStatus(`${found.length}টি দাগ লোড হয়েছে`);\n        } else {\n          const [rs, ms] = await Promise.all([query("rs"), query("ms")]);\n          if (controller.signal.aborted || requestId !== extentRequestIdRef.current) return;\n          const rsFeatures = Array.isArray(rs.features) ? rs.features : [];\n          const msFeatures = Array.isArray(ms.features) ? ms.features : [];\n          updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);\n          updateSourceData(map, VECTOR_SOURCES.msBoundary, featuresToFc(msFeatures) as FeatureCollection<Geometry>);\n          setMouzaLoaded(false);\n          setVectorStatus(`${rsFeatures.length + msFeatures.length}টি দাগ লোড হয়েছে`);\n        }'''
+          if old_parallel not in text:
+              raise SystemExit('Expected extent response block was not found; refusing unsafe rewrite.')
+          text = text.replace(old_parallel, new_parallel)
+
+          anchor = '''    }\n  }, []);\n\n  useEffect(() => {'''
+          replacement = '''    }\n    loadExtentRef.current = loadExtent;\n  }, []);\n\n  const applyMouzaFilter = useCallback(() => {\n    const value = mouza.trim();\n    if (!value) {\n      notify("মৌজার নাম লিখুন");\n      return;\n    }\n    setMouzaLoaded(false);\n    setMouzaOpen(false);\n    void loadExtentRef.current?.();\n  }, [mouza, notify]);\n\n  const exportHighResolutionMap = useCallback(async () => {\n    const map = mapRef.current;\n    if (!map || !mouzaLoaded) return;\n    setExporting(true);\n    try {\n      await exportMapAsHighResolutionPng(map, {\n        width: 3840,\n        height: 2160,\n        filename: `landbd-${mouza.trim().replace(/[^a-zA-Z0-9\\u0980-\\u09FF]+/g, "-") || "mouza"}-4k.png`,\n      });\n      notify("উচ্চ-রেজোলিউশনের মানচিত্র ডাউনলোড হয়েছে");\n    } catch (error) {\n      notify(error instanceof Error ? error.message : "মানচিত্র ডাউনলোড করা যায়নি");\n    } finally {\n      setExporting(false);\n    }\n  }, [mouza, mouzaLoaded, notify]);\n\n  useEffect(() => {'''
+          if anchor not in text:
+              raise SystemExit('Expected effect boundary was not found; refusing unsafe rewrite.')
+          text = text.replace(anchor, replacement, 1)
+
+          text = text.replace(
+              '    if (map.getLayer(VECTOR_LAYERS.msBoundaryLine)) map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", showMsBoundary ? "visible" : "none");',
+              '    if (map.getLayer(VECTOR_LAYERS.msBoundaryLine)) map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", showMsBoundary ? "visible" : "none");\n    if (map.getLayer(VECTOR_LAYERS.rsPlotLabels)) map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", showRsBoundary ? "visible" : "none");\n    if (map.getLayer(VECTOR_LAYERS.msPlotLabels)) map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");'
+          )
+
+          anchor_ui = '''        <button onClick={goToMyLocation} disabled={locating} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted" aria-label="আমার অবস্থান">{locating ? <Loader2 className="animate-spin" size={19} /> : <LocateFixed size={19} />}</button>\n      </div>'''
+          replacement_ui = '''        <button onClick={goToMyLocation} disabled={locating} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted" aria-label="আমার অবস্থান">{locating ? <Loader2 className="animate-spin" size={19} /> : <LocateFixed size={19} />}</button>\n        <button onClick={() => setMouzaOpen((value) => !value)} className={`rounded-xl border border-border p-2.5 shadow-lg backdrop-blur ${mouzaOpen ? "bg-primary text-primary-foreground" : "bg-background/95 hover:bg-muted"}`} aria-label="মৌজা ফিল্টার"><Filter size={19} /></button>\n        {mouzaOpen && (\n          <form onSubmit={(event) => { event.preventDefault(); applyMouzaFilter(); }} className="absolute left-0 top-12 w-72 rounded-xl border border-border bg-background/95 p-3 shadow-xl backdrop-blur">\n            <label className="mb-1 block text-xs font-bold">মৌজার নাম</label>\n            <div className="flex gap-2">\n              <input value={mouza} onChange={(event) => setMouza(event.target.value)} placeholder="মৌজার নাম লিখুন" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />\n              <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">লোড</button>\n            </div>\n            <p className="mt-2 text-[10px] text-muted-foreground">শুধু নির্বাচিত মৌজার দাগ লোড হবে।</p>\n          </form>\n        )}\n      </div>'''
+          if anchor_ui not in text:
+              raise SystemExit('Expected map control anchor was not found; refusing unsafe rewrite.')
+          text = text.replace(anchor_ui, replacement_ui, 1)
+
+          anchor_right = '''        <button onClick={() => setPanelOpen((value) => !value)} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted" aria-label="প্যানেল">{panelOpen ? <X size={19} /> : <PanelRight size={19} />}</button>\n      </div>'''
+          replacement_right = '''        {mouzaLoaded && <button onClick={() => void exportHighResolutionMap()} disabled={exporting} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted disabled:opacity-50" aria-label="মানচিত্র ডাউনলোড">{exporting ? <Loader2 className="animate-spin" size={19} /> : <Download size={19} />}</button>}\n        <button onClick={() => setPanelOpen((value) => !value)} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted" aria-label="প্যানেল">{panelOpen ? <X size={19} /> : <PanelRight size={19} />}</button>\n      </div>'''
+          if anchor_right not in text:
+              raise SystemExit('Expected right-control anchor was not found; refusing unsafe rewrite.')
+          text = text.replace(anchor_right, replacement_right, 1)
+
+          if text == original:
+              raise SystemExit('No MapLibre changes were applied.')
+          map_file.write_text(text)
+
+          layer = layers_file.read_text()
+          layer = layer.replace('  LineLayerSpecification,\n  RasterLayerSpecification,', '  LineLayerSpecification,\n  RasterLayerSpecification,\n  SymbolLayerSpecification,')
+          layer = layer.replace('''      "fill-color": "#3b82f6",\n      "fill-opacity": 0.08,''', '''      "fill-color": "#bfdbfe",\n      "fill-opacity": 0.045,''')
+          layer = layer.replace('''      "fill-color": "#a78bfa",\n      "fill-opacity": 0.08,''', '''      "fill-color": "#ddd6fe",\n      "fill-opacity": 0.045,''')
+          label_anchor = '''  locationPoint: {'''
+          label_block = '''  rsPlotLabels: {\n    id: VECTOR_LAYERS.rsPlotLabels,\n    type: "symbol",\n    source: VECTOR_SOURCES.rsBoundary,\n    layout: {\n      "text-field": ["coalesce", ["get", "rs_plot_no"], ["get", "plot_no"], ""],\n      "text-size": 11,\n      "text-anchor": "center",\n      "text-allow-overlap": false,\n      "symbol-placement": "point",\n    },\n    paint: {\n      "text-color": "#1e3a8a",\n      "text-halo-color": "#ffffff",\n      "text-halo-width": 1.25,\n      "text-halo-blur": 0.15,\n    },\n  } satisfies SymbolLayerSpecification,\n\n  msPlotLabels: {\n    id: VECTOR_LAYERS.msPlotLabels,\n    type: "symbol",\n    source: VECTOR_SOURCES.msBoundary,\n    layout: {\n      "text-field": ["coalesce", ["get", "ms_plot_no"], ["get", "plot_no"], ""],\n      "text-size": 11,\n      "text-anchor": "center",\n      "text-allow-overlap": false,\n      "symbol-placement": "point",\n    },\n    paint: {\n      "text-color": "#5b21b6",\n      "text-halo-color": "#ffffff",\n      "text-halo-width": 1.25,\n      "text-halo-blur": 0.15,\n    },\n  } satisfies SymbolLayerSpecification,\n\n'''
+          if label_anchor not in layer:
+              raise SystemExit('Expected layer anchor was not found.')
+          layer = layer.replace(label_anchor, label_block + label_anchor, 1)
+          layers_file.write_text(layer)
+
+          types = types_file.read_text()
+          types = types.replace('''  locationPoint: "vector-location-point",\n  accuracyFill:''', '''  locationPoint: "vector-location-point",\n  rsPlotLabels: "vector-rs-plot-labels",\n  msPlotLabels: "vector-ms-plot-labels",\n  accuracyFill:''')
+          types_file.write_text(types)
+
+      - name: Verify and commit
+        run: |
+          grep -q 'preserveDrawingBuffer: true' src/features/geospatial-map/maplibre/MapLibreMap.tsx
+          grep -q 'action: "identify"' src/features/geospatial-map/maplibre/MapLibreMap.tsx
+          grep -q 'rsPlotLabels' src/features/geospatial-map/maplibre/layers.ts
+          grep -q 'msPlotLabels' src/features/geospatial-map/maplibre/layers.ts
+          grep -q 'mouza: selectedMouza' src/features/geospatial-map/maplibre/MapLibreMap.tsx
+          git config user.name 'LandBD CI'
+          git config user.email 'ci@landbd.local'
+          git add src/features/geospatial-map/maplibre/MapLibreMap.tsx src/features/geospatial-map/maplibre/layers.ts src/features/geospatial-map/maplibre/types.ts .github/workflows/apply-map-ui-refinement.yml
+          git rm .github/workflows/apply-map-ui-refinement.yml
+          git commit -m 'refactor(map): refine MapLibre UI'
+          git push origin HEAD:main
