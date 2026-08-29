@@ -6,12 +6,10 @@ import OfflineMapNotice from "@/src/shared/components/OfflineMapNotice";
 
 /**
  * Canonical urban planning map page.
- * Merges the former Geospatial + LIOS map entry points into one experience.
- * The offline notice is deliberately page-level so the Leaflet implementation
- * remains isolated from browser network-state concerns.
+ * MapLibre is now the production WebGL rendering engine.
  */
-const GeospatialMap = dynamic(
-  () => import("@/src/features/geospatial-map/components/GeospatialMap"),
+const MapLibreMap = dynamic(
+  () => import("@/src/features/geospatial-map/maplibre/MapLibreMap"),
   {
     ssr: false,
     loading: () => (
@@ -25,7 +23,7 @@ const GeospatialMap = dynamic(
 export default function UrbanPlanningMapPage() {
   return (
     <div className="relative h-full min-h-screen w-full">
-      <GeospatialMap />
+      <MapLibreMap />
       <OfflineMapNotice />
       <MapVisitConsent />
     </div>
