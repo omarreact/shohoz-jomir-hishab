@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import maplibregl, { type GeoJSONSource, type Map as MapLibreInstance } from "maplibre-gl";
+import maplibregl, { type GeoJSONSource, type GeoJSONSourceSpecification, type Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import {
   BASEMAP_SOURCE_DEFINITIONS,
@@ -58,33 +58,28 @@ export default function MapLibreMap() {
                 ? "basemapSatellite"
                 : "basemapSatellite2003"
         ];
-        if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[key]);
-        }
+        if (!map.getSource(sourceId)) map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[key]);
       });
 
       (Object.keys(RAJUK_RASTER_SOURCE_DEFINITIONS) as Array<keyof typeof RAJUK_RASTER_SOURCE_DEFINITIONS>).forEach((key) => {
         const sourceId = RASTER_SOURCES[key];
-        if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, RAJUK_RASTER_SOURCE_DEFINITIONS[key]);
-        }
+        if (!map.getSource(sourceId)) map.addSource(sourceId, RAJUK_RASTER_SOURCE_DEFINITIONS[key]);
       });
     };
 
     const addVectorSources = () => {
-      const emptySource = (): GeoJSON.GeoJSONSourceSpecification => ({
+      const emptySource = (): GeoJSONSourceSpecification => ({
         type: "geojson",
         data: EMPTY_GEOJSON,
       });
 
-      (Object.values(VECTOR_SOURCES)).forEach((sourceId) => {
+      Object.values(VECTOR_SOURCES).forEach((sourceId) => {
         if (!map.getSource(sourceId)) map.addSource(sourceId, emptySource());
       });
     };
 
     const addLayers = () => {
-      const basemapLayers = Object.values(BASEMAP_RASTER_LAYERS);
-      basemapLayers.forEach((layer) => {
+      Object.values(BASEMAP_RASTER_LAYERS).forEach((layer) => {
         if (!map.getLayer(layer.id)) {
           map.addLayer({
             ...layer,
