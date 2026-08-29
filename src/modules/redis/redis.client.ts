@@ -3,8 +3,6 @@ import Redis from "ioredis";
 // Global connection pool to prevent exhausting connections in Next.js Hot Module Replacement (HMR)
 const globalForRedis = global as unknown as { redis: Redis | null };
 
-let redisInstance: Redis | null = null;
-
 function createRedisClient(): Redis | null {
   const url = process.env.REDIS_URL;
   if (!url) {
