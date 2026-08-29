@@ -1,11 +1,10 @@
 import type { KhatiyanOwner, KhatiyanOwnerResult, KhatiyanPlot } from "@/src/shared/types";
-import { BANGLADESH_STANDARD } from "@/src/modules/land/standards";
 import { KHATIYAN_RECORD_STANDARD } from "@/src/modules/khatiyan/standards";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
 
-aexport const TIL_PER_KRANTI = 20;
+export const TIL_PER_KRANTI = 20;
 export const KRANTI_PER_KORA = 3;
 export const KORA_PER_GONDA = 4;
 export const GONDA_PER_ANA = 20;
@@ -103,13 +102,7 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
   return { hasData, computedResults };
 }
 
-/**
- * Export Khatiyan results using the Ministry's Khatiyan-record reference
- * standard, not the general land-measurement calculator standard.
- *
- * This distinction prevents the general 720 sq-ft Katha / 435.6 sq-ft Decimal
- * baseline from silently changing a Khatiyan-record export.
- */
+/** Export Khatiyan results using the Ministry's Khatiyan-record reference standard. */
 export function generateCSVFromResults(detailedResults: KhatiyanOwnerResult[], toBn: NumberFormatter) {
   const ws_data: (string | number)[][] = [];
   ws_data.push(["জমির পরিমাপ ও বন্টন বিবরণী"]);
@@ -128,22 +121,9 @@ export function generateCSVFromResults(detailedResults: KhatiyanOwnerResult[], t
         const found = p.dagText.find((d) => d.startsWith(prefix));
         return found ? found.replace(prefix, "").trim() : "-";
       };
-      ws_data.push([
-        toBn(extractDag("সিএস/এসএ:")),
-        toBn(extractDag("আরএস:")),
-        toBn(extractDag("সিটি:")),
-        toBn(extractDag("বিডিএস:")),
-        p.plotClass,
-        toBn(p.totalArea),
-        toBn(p.gotArea.toFixed(4)),
-        toBn((p.gotArea * KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal).toFixed(1)),
-      ]);
+      ws_data.push([toBn(extractDag("সিএস/এসএ:")), toBn(extractDag("আরএস:")), toBn(extractDag("সিটি:")), toBn(extractDag("বিডিএস:")), p.plotClass, toBn(p.totalArea), toBn(p.gotArea.toFixed(4)), toBn((p.gotArea * KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal).toFixed(1))]);
     });
-    ws_data.push([
-      "", "", "", "", "", "মোট প্রাপ্ত:",
-      toBn(res.totalLand.toFixed(3)),
-      toBn((res.totalLand / (KHATIYAN_RECORD_STANDARD.squareFeetPerKatha / KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal)).toFixed(2)) + " কাঠা",
-    ]);
+    ws_data.push(["", "", "", "", "", "মোট প্রাপ্ত:", toBn(res.totalLand.toFixed(3)), toBn((res.totalLand / (KHATIYAN_RECORD_STANDARD.squareFeetPerKatha / KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal)).toFixed(2)) + " কাঠা"]);
     ws_data.push([]);
     ws_data.push(["------------------------------------------------------------------------------------------------"]);
     ws_data.push([]);
