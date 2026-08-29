@@ -6,6 +6,7 @@ import { FULL_UNIT_TIL } from "@/src/shared/constants";
 import { toBn, toEn, makeBanglaStr } from "@/src/shared/utils";
 import { buildDetailedResults } from "@/src/modules/khatiyan/calculations";
 import { useKhatiyanGisBridge } from "@/src/modules/khatiyan/gis-bridge";
+import { useHistoryStore } from "@/src/shared/stores/useHistoryStore";
 import PrintStyles from "@/src/shared/components/PrintStyles";
 import DetailedCalculator from "@/src/features/khatiyan/components/DetailedCalculator";
 import QuickCalculator from "@/src/features/khatiyan/components/QuickCalculator";
@@ -27,6 +28,8 @@ export default function SmartKhatiyanApp() {
   const nextPlotId = useRef(3);
   const nextOwnerId = useRef(4);
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const historyDraftId = useRef<string | undefined>(undefined);
+  const historyHydrated = useRef(false);
   const [plots, setPlots] = useState<Plot[]>([initialPlot(1)]);
   const [owners, setOwners] = useState<Owner[]>([initialOwner(2)]);
   const [detailedResults, setDetailedResults] = useState<any[] | null>(null);
@@ -34,18 +37,65 @@ export default function SmartKhatiyanApp() {
   const [quickResult, setQuickResult] = useState<QuickResult | null>(null);
   const [gisSelection, setGisSelection] = useState<ReturnType<typeof useKhatiyanGisBridge.getState>["pendingPlot"]>(null);
 
-  useEffect(() => { const saved = localStorage.getItem("khatiyanNextData"); if (saved) { try { const d = JSON.parse(saved); if (d.plots?.length) setPlots(d.plots); if (d.owners?.length) setOwners(d.owners); } catch {} } }, []);
-  useEffect(() => { const t = setTimeout(() => localStorage.setItem("khatiyanNextData", JSON.stringify({ plots, owners })), 500); return () => clearTimeout(t); }, [plots, owners]);
-
-  // GIS → Khatiyan handoff is consumed exactly once. The authoritative area is locked in the plot editor.
   useEffect(() => {
+    const state = useHistoryStore.getState();
+    const existingId = state.history.find((id) => state.drafts[id]?.domain === "khatiyan");
+    if (existingId) {
+      const draft = state.loadDraft(existingId);
+      if (draft?.domain === "khatiyan") {
+        const input = draft.input as Partial<{ plots: Plot[]; owners: Owner[]; quickData: QuickData; quickResult: QuickResult | null }>;
+        if (input.plots?.length) setPlots(input.plots);
+        if (input.owners?.length) setOwners(input.owners);
+        if (input.quickData) setQuickData(input.quickData);
+        if (input.quickResult !== undefined) setQuickResult(input.quickResult);
+        if (draft.result) setDetailedResults(draft.result as any[]);
+        if (draft.provenance?.source === "rajuk") {
+          setGisSelection({
+            plot: draft.provenance.plot as never,
+            source: "rajuk",
+            selectedAt: Number(draft.provenance.selectedAt ?? Date.now()),
+            selectionId: String(draft.provenance.selectionId ?? draft.id),
+          });
+        }
+        historyDraftId.current = draft.id;
+      }
+    }
+
     const pending = useKhatiyanGisBridge.getState().consumePendingPlot();
-    if (!pending) return;
-    setGisSelection(pending);
-    setPlots([pending.plot]);
-    setDetailedResults(null);
-    setValidationAttempted(false);
+    if (pending) {
+      setGisSelection(pending);
+      setPlots([pending.plot]);
+      setDetailedResults(null);
+      setValidationAttempted(false);
+      historyDraftId.current = undefined;
+    }
+    historyHydrated.current = true;
   }, []);
+
+  useEffect(() => {
+    if (!historyHydrated.current) return;
+    const timer = window.setTimeout(() => {
+      historyDraftId.current = useHistoryStore.getState().saveDraft({
+        id: historyDraftId.current,
+        domain: "khatiyan",
+        input: { plots, owners, quickData, quickResult },
+        result: detailedResults,
+        provenance: gisSelection
+          ? {
+              source: gisSelection.source,
+              plotId: gisSelection.plot.plotId,
+              selectionId: gisSelection.selectionId,
+              selectedAt: gisSelection.selectedAt,
+              measurementProfile: gisSelection.plot.measurementProfile,
+              shapeAreaUnit: gisSelection.plot.shapeAreaUnit,
+              lockedArea: gisSelection.plot.a,
+              plot: gisSelection.plot,
+            }
+          : undefined,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [plots, owners, quickData, quickResult, detailedResults, gisSelection]);
 
   const addPlot = () => setPlots((p) => [...p, initialPlot(nextPlotId.current++)]);
   const removePlot = (id: number) => setPlots((p) => p.filter((x) => x.id !== id));
@@ -80,7 +130,9 @@ export default function SmartKhatiyanApp() {
   const clearAll = () => {
     if (!confirm("সব ডাটা মুছে ফেলতে চান?")) return;
     nextPlotId.current = 3; nextOwnerId.current = 4;
-    setPlots([initialPlot(1)]); setOwners([initialOwner(2)]); setDetailedResults(null); setValidationAttempted(false); setGisSelection(null); useKhatiyanGisBridge.getState().clearPendingPlot(); localStorage.removeItem("khatiyanNextData");
+    setPlots([initialPlot(1)]); setOwners([initialOwner(2)]); setDetailedResults(null); setQuickData({ totalLand: "", a: 0, g: 0, k: 0, kr: 0, ti: 0 }); setQuickResult(null); setValidationAttempted(false); setGisSelection(null); useKhatiyanGisBridge.getState().clearPendingPlot();
+    if (historyDraftId.current) useHistoryStore.getState().deleteCalculation(historyDraftId.current);
+    historyDraftId.current = undefined;
   };
   const handleQuickDataChange = (d: Partial<QuickData>) => setQuickData((p) => ({ ...p, ...d, ...(d.totalLand !== undefined ? { totalLand: makeBanglaStr(d.totalLand) } : {}) }));
 
