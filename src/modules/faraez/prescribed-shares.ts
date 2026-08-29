@@ -1,92 +1,24 @@
 import { rational } from "./rational";
-import type {
-  FaraezHeirsInput,
-  FaraezPrescribedShare,
-  EligibilityResult,
-} from "./contracts";
+import type { FaraezHeirsInput, FaraezPrescribedShare, EligibilityResult } from "./contracts";
 import { determineEligibility } from "./eligibility";
 
 /**
  * Fixed shares only. No Awl, Radd, or residual allocation is performed here.
- * The conditions intentionally mirror the currently supported muslim-law.ts
- * ruleset, including its existing treatment of the paternal/maternal grandmothers.
+ * Conditions mirror the currently supported muslim-law.ts ruleset.
  */
 export function determinePrescribedShares(
-  input: FaraezHeirsInput,
-  eligibility: EligibilityResult = determineEligibility(input),
-): readonly FaraezPrescribedShare[] {
-  const h = input;
-  const eligible = new Set(
-    eligibility.heirs.filter((item) => item.eligible).map((item) => item.heirType),
-  );
-  const hasMaleDescendant = h.sons > 0;
-  const hasDescendant = hasMaleDescendant || h.daughters > 0;
-  const totalSiblings =
-    h.fullBrothers +
-    h.fullSisters +
-    h.consanguineBrothers +
-    h.consanguineSisters +
-    h.uterineBrothers +
-    h.uterineSisters;
-  const shares: FaraezPrescribedShare[] = [];
-
-  const add = (
-    heirType: string,
-    count: number,
-    sharePerHeir: ReturnType<typeof rational>,
-    reasoning: string,
-  ) => {
-    if (count <= 0 || !eligible.has(heirType)) return;
-    shares.push({
-      heirType,
-      count,
-      sharePerHeir,
-      totalShare: rational(sharePerHeir.numerator * BigInt(count), sharePerHeir.denominator),
-      reasoning,
-    });
-  };
-
-  if (h.spouse > 0) {
-    const share = h.deceasedGenderForRules === undefined
-      ? null
-      : null;
-    void share;
-  }
-
-  // The deceased gender is intentionally supplied through the caller's
-  // existing gender-aware wrapper; this function uses the conventional spouse
-  // labels by accepting an optional runtime property without changing the old
-  // HeirsInput contract. See the overload below for the public typed entry point.
-  return shares;
-}
-
-/** Gender-aware prescribed-share entry point. */
-export function calculatePrescribedShares(
   input: FaraezHeirsInput,
   deceasedGender: "male" | "female",
   eligibility: EligibilityResult = determineEligibility(input),
 ): readonly FaraezPrescribedShare[] {
   const h = input;
-  const eligible = new Set(
-    eligibility.heirs.filter((item) => item.eligible).map((item) => item.heirType),
-  );
+  const eligible = new Set(eligibility.heirs.filter((item) => item.eligible).map((item) => item.heirType));
   const hasMaleDescendant = h.sons > 0;
   const hasDescendant = hasMaleDescendant || h.daughters > 0;
-  const totalSiblings =
-    h.fullBrothers +
-    h.fullSisters +
-    h.consanguineBrothers +
-    h.consanguineSisters +
-    h.uterineBrothers +
-    h.uterineSisters;
+  const totalSiblings = h.fullBrothers + h.fullSisters + h.consanguineBrothers + h.consanguineSisters + h.uterineBrothers + h.uterineSisters;
   const shares: FaraezPrescribedShare[] = [];
 
-  const add = (
-    heirType: string,
-    count: number,
-    sharePerHeir: ReturnType<typeof rational>,
-    reasoning: string,
-  ) => {
+  const add = (heirType: string, count: number, sharePerHeir: ReturnType<typeof rational>, reasoning: string) => {
     if (count <= 0 || !eligible.has(heirType)) return;
     shares.push({
       heirType,
@@ -98,15 +30,12 @@ export function calculatePrescribedShares(
   };
 
   if (h.spouse > 0) {
-    if (deceasedGender === "male") {
-      add("স্বামী/স্ত্রী", h.spouse, hasDescendant ? rational(1n, 8n) : rational(1n, 4n), hasDescendant
-        ? "সন্তান থাকায় স্ত্রী ১/৮ অংশ পাবেন (সূরা আন-নিসা: ১২)।"
-        : "সন্তান না থাকায় স্ত্রী ১/৪ অংশ পাবেন (সূরা আন-নিসা: ১২).");
-    } else {
-      add("স্বামী/স্ত্রী", h.spouse, hasDescendant ? rational(1n, 4n) : rational(1n, 2n), hasDescendant
-        ? "সন্তান থাকায় স্বামী ১/৪ অংশ পাবেন (সূরা আন-নিসা: ১২)।"
-        : "সন্তান না থাকায় স্বামী ১/২ অংশ পাবেন (সূরা আন-নিসা: ১২)।");
-    }
+    const share = deceasedGender === "male"
+      ? (hasDescendant ? rational(1n, 8n) : rational(1n, 4n))
+      : (hasDescendant ? rational(1n, 4n) : rational(1n, 2n));
+    add("স্বামী/স্ত্রী", h.spouse, share, deceasedGender === "male"
+      ? (hasDescendant ? "সন্তান থাকায় স্ত্রী ১/৮ অংশ পাবেন (সূরা আন-নিসা: ১২)।" : "সন্তান না থাকায় স্ত্রী ১/৪ অংশ পাবেন (সূরা আন-নিসা: ১২)।")
+      : (hasDescendant ? "সন্তান থাকায় স্বামী ১/৪ অংশ পাবেন (সূরা আন-নিসা: ১২)।" : "সন্তান না থাকায় স্বামী ১/২ অংশ পাবেন (সূরা আন-নিসা: ১২)।"));
   }
 
   if (h.mother > 0) {
@@ -150,14 +79,7 @@ export function calculatePrescribedShares(
       : "আপন ভাই না থাকায় একাধিক বোন ২/৩ অংশ পাবেন (সূরা আন-নিসা: ১৭৬)।");
   }
 
-  if (
-    !hasMaleDescendant &&
-    h.father === 0 &&
-    h.paternalGrandFather === 0 &&
-    h.fullBrothers === 0 &&
-    h.consanguineBrothers === 0 &&
-    h.consanguineSisters > 0
-  ) {
+  if (!hasMaleDescendant && h.father === 0 && h.paternalGrandFather === 0 && h.fullBrothers === 0 && h.consanguineBrothers === 0 && h.consanguineSisters > 0) {
     if (h.fullSisters === 1) {
       add("সৎ বোন (বৈমাত্রেয়)", h.consanguineSisters, rational(1n, 6n), "এক আপন বোন থাকায় ২/৩ পূর্ণ করতে বৈমাত্রেয় বোন ১/৬ অংশ পাবেন (বর্তমান প্রকল্পের নিয়ম)।");
     } else if (h.fullSisters === 0) {
