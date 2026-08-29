@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "next/dynamic";
 import MapVisitConsent from "@/src/features/geospatial-map/components/MapVisitConsent";
 import OfflineMapNotice from "@/src/shared/components/OfflineMapNotice";
