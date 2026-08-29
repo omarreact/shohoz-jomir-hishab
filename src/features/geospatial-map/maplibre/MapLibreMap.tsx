@@ -315,9 +315,10 @@ export default function MapLibreMap() {
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
       if (!identifyModeRef.current) return;
-      const features = map.queryRenderedFeatures(event.point, {
-        layers: [VECTOR_LAYERS.rsBoundaryFill, VECTOR_LAYERS.rsBoundaryLine, VECTOR_LAYERS.msBoundaryFill, VECTOR_LAYERS.msBoundaryLine, RASTER_LAYERS.rs, RASTER_LAYERS.ms],
-      });
+  
+ const features = map.queryRenderedFeatures(event.point, {
+   layers: ["vector-rs-boundary-fill", "vector-ms-boundary-fill"],
+ });
       const vector = features.find((feature: MapGeoJSONFeature) => feature.geometry?.type === "Polygon");
       if (!vector) return;
       const sourceKind = String(vector.properties?._layer_source ?? "").toLowerCase() === "ms" || String(vector.properties?.plot_kind ?? "").toLowerCase() === "ms" ? "ms" : "rs";
