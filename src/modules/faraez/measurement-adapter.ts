@@ -1,14 +1,6 @@
-import { rational, type Rational } from "./rational";
+import { rational, add, type Rational } from "./rational";
 import type { FaraezMeasurementAdapterResult } from "./contracts";
-import {
-  TIL_PER_FULL_UNIT,
-  tilToShare,
-} from "@/src/modules/khatiyan/share-normalization";
-
-type FractionAllocation = {
-  fraction: Rational;
-  index: number;
-};
+import { TIL_PER_FULL_UNIT, tilToShare } from "@/src/modules/khatiyan/share-normalization";
 
 /**
  * Convert one fraction to the nearest canonical Til count.
@@ -29,10 +21,9 @@ export function faraezFractionToKhatiyan(fraction: Rational): FaraezMeasurementA
 /**
  * Convert all heir fractions together using Largest Remainder.
  *
- * The exact estate represented by the fractions is one full Khatiyan unit.
- * Floors are assigned first, then the remaining Tils are awarded to the
- * largest fractional remainders. Therefore the final Til counts sum exactly
- * to the estate's canonical Til total whenever the input fractions sum to 1.
+ * When the input fractions sum exactly to 1, floors are assigned first and
+ * the remaining Tils are awarded to the largest exact fractional remainders.
+ * The resulting integer Til counts therefore sum exactly to one full unit.
  */
 export function faraezFractionsToKhatiyan(
   fractions: readonly Rational[],
@@ -41,6 +32,11 @@ export function faraezFractionsToKhatiyan(
 
   const normalized = fractions.map((fraction) => rational(fraction.numerator, fraction.denominator));
   normalized.forEach(validateFraction);
+
+  const total = normalized.reduce((sum, fraction) => add(sum, fraction), rational(0n));
+  if (total.numerator !== total.denominator) {
+    throw new RangeError("Faraez fractions must sum exactly to 1/1 for collective measurement allocation");
+  }
 
   const fullUnitTil = BigInt(TIL_PER_FULL_UNIT);
   const exact = normalized.map((fraction, index) => {
@@ -53,21 +49,6 @@ export function faraezFractionsToKhatiyan(
       denominator: fraction.denominator,
     };
   });
-
-  const exactTotalNumerator = normalized.reduce(
-    (sum, fraction) => sum * fraction.denominator + fraction.numerator * 1n,
-    0n,
-  );
-  // Validate the input sum independently with the Rational engine.
-  const total = normalized.reduce((sum, fraction) => {
-    const numerator = sum.numerator * fraction.denominator + fraction.numerator * sum.denominator;
-    const denominator = sum.denominator * fraction.denominator;
-    return rational(numerator, denominator);
-  }, rational(0n));
-  if (total.numerator !== total.denominator) {
-    throw new RangeError("Faraez fractions must sum exactly to 1/1 for collective measurement allocation");
-  }
-  void exactTotalNumerator;
 
   const floorTotal = exact.reduce((sum, item) => sum + item.floorTil, 0n);
   let remaining = fullUnitTil - floorTotal;
