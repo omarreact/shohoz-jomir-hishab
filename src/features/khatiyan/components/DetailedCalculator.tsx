@@ -17,6 +17,7 @@ interface DetailedCalculatorProps {
   onAddOwner: () => void;
   onRemoveOwner: (id: number) => void;
   onUpdateOwner: <Key extends keyof KhatiyanOwner>(id: number, field: Key, value: KhatiyanOwner[Key]) => void;
+  lockedAreaIds?: readonly number[];
 }
 
 function formatShare(til: number) {
@@ -47,6 +48,7 @@ export default function DetailedCalculator({
   onAddOwner,
   onRemoveOwner,
   onUpdateOwner,
+  lockedAreaIds = [],
 }: DetailedCalculatorProps) {
   return (
     <div>
@@ -63,25 +65,21 @@ export default function DetailedCalculator({
             <Alert variant="destructive" className="border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>ভুল হিসাব</AlertTitle>
-              <AlertDescription className="font-bold">
-                ১৬ আনার বেশি হয়েছে! (অতিরিক্ত: {formatShare(totalOwnerTil - FULL_UNIT_TIL)})
-              </AlertDescription>
+              <AlertDescription className="font-bold">১৬ আনার বেশি হয়েছে! (অতিরিক্ত: {formatShare(totalOwnerTil - FULL_UNIT_TIL)})</AlertDescription>
             </Alert>
           )}
           {totalOwnerTil < FULL_UNIT_TIL && (
             <Alert className="border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-400">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>অসম্পূর্ণ হিসাব</AlertTitle>
-              <AlertDescription className="font-bold">
-                ১৬ আনা পূর্ণ হয়নি। (বাকি: {formatShare(FULL_UNIT_TIL - totalOwnerTil)})
-              </AlertDescription>
+              <AlertDescription className="font-bold">১৬ আনা পূর্ণ হয়নি। (বাকি: {formatShare(FULL_UNIT_TIL - totalOwnerTil)})</AlertDescription>
             </Alert>
           )}
         </div>
       )}
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <PlotsCard plots={plots} onAddPlot={onAddPlot} onRemovePlot={onRemovePlot} onUpdatePlot={onUpdatePlot} />
+        <PlotsCard plots={plots} onAddPlot={onAddPlot} onRemovePlot={onRemovePlot} onUpdatePlot={onUpdatePlot} lockedAreaIds={lockedAreaIds} />
         <OwnersCard owners={owners} onAddOwner={onAddOwner} onRemoveOwner={onRemoveOwner} onUpdateOwner={onUpdateOwner} />
       </div>
     </div>
