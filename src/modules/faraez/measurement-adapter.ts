@@ -3,11 +3,13 @@ import type { FaraezMeasurementAdapterResult } from "./contracts";
 import { TIL_PER_FULL_UNIT, tilToShare } from "@/src/modules/khatiyan/share-normalization";
 
 /**
- * Convert one fraction to the nearest canonical Til count.
+ * Convert one inheritance fraction to the nearest canonical Til count.
  *
- * A single fraction cannot guarantee estate-level conservation when its Til
- * count is fractional. Use faraezFractionsToKhatiyan for a set of heirs so the
- * Largest-Remainder method can distribute the remaining Tils collectively.
+ * Fractions such as 1/3 are exactly representable because the canonical
+ * Khatiyan unit contains 76,800 Tils. Non-terminating fractions are rounded
+ * to the nearest Til here. For an estate containing multiple heirs, use
+ * faraezFractionsToKhatiyan so rounding is performed collectively with the
+ * Largest-Remainder method and the estate total is conserved exactly.
  */
 export function faraezFractionToKhatiyan(fraction: Rational): FaraezMeasurementAdapterResult {
   const normalized = rational(fraction.numerator, fraction.denominator);
@@ -19,11 +21,12 @@ export function faraezFractionToKhatiyan(fraction: Rational): FaraezMeasurementA
 }
 
 /**
- * Convert all heir fractions together using Largest Remainder.
+ * Convert all heir fractions together using exact Largest Remainder allocation.
  *
- * When the input fractions sum exactly to 1, floors are assigned first and
- * the remaining Tils are awarded to the largest exact fractional remainders.
- * The resulting integer Til counts therefore sum exactly to one full unit.
+ * The fractions must sum exactly to 1/1. Each exact Til amount is first floored;
+ * the remaining Tils are then awarded to the largest exact fractional
+ * remainders. Integer comparison is done by cross multiplication, so no
+ * floating-point arithmetic is used for ranking or allocation.
  */
 export function faraezFractionsToKhatiyan(
   fractions: readonly Rational[],
@@ -70,6 +73,10 @@ export function faraezFractionsToKhatiyan(
     remaining -= extra;
   }
 
+  if (remaining !== 0n) {
+    throw new RangeError("Largest-Remainder allocation failed to conserve the full Til estate");
+  }
+
   return exact
     .sort((a, b) => a.index - b.index)
     .map((item) => toResult(item.fraction, item.floorTil + (awarded.get(item.index) ?? 0n)));
@@ -87,6 +94,8 @@ function roundNearestInteger(numerator: bigint, denominator: bigint): bigint {
 }
 
 function toResult(fraction: Rational, til: bigint): FaraezMeasurementAdapterResult {
+  // TIL_PER_FULL_UNIT is 76,800, so this conversion is safely within Number's
+  // exact-integer range. All inheritance arithmetic remains bigint/rational.
   const share = tilToShare(Number(til));
   return {
     fraction,
