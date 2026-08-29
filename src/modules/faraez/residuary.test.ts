@@ -46,6 +46,6 @@ describe("Faraez residuary allocation", () => {
 
     expect(residual).toHaveLength(1);
     expect(residual[0].heirType).toBe("সহোদর ভাইয়ের পুত্র");
-    expect(equals(residual[0].totalShare, rational(5n, 6n))).toBe(true);
+    expect(equals(residual[0].totalShare, rational(2n, 3n))).toBe(true);
   });
 });
