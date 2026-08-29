@@ -6,11 +6,10 @@ import AdBanner from "@/src/shared/components/AdBanner";
 import AssetInput from "@/src/features/faraez/components/AssetInput";
 import FamilyTreeInput from "@/src/features/faraez/components/FamilyTreeInput";
 import { Religion, DeceasedGender, HeirsInput, HeirResult, AssetsInput } from "@/src/modules/faraez/types";
-import { calculateMuslimFaraez } from "@/src/modules/faraez/muslim-law";
 import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
-import { prepareFaraezEstate } from "@/src/modules/faraez/estate";
-import { applySunniAdjustments } from "@/src/modules/faraez/sunni-adjustments";
+import { calculateFaraez } from "@/src/modules/faraez/faraez.engine";
+import type { FaraezInput, FaraezResult as FaraezDomainResult } from "@/src/modules/faraez/contracts";
 import { Calculator, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import dynamic from "next/dynamic";
@@ -26,6 +25,32 @@ const FaraezResult = dynamic(() => import("@/src/features/faraez/components/Fara
     </div>
   ),
 });
+
+function rationalToNumber(value: { numerator: bigint; denominator: bigint }): number {
+  return Number(value.numerator) / Number(value.denominator);
+}
+
+function toUiResults(result: FaraezDomainResult, assets: AssetsInput): HeirResult[] {
+  const totalLand = assets.land - assets.funeralCost - assets.debt - assets.wasiyat;
+  const totalGold = assets.gold;
+  const totalCash = assets.cash - assets.funeralCost - assets.debt - assets.wasiyat;
+
+  return result.allocations.map((allocation) => {
+    const fraction = rationalToNumber(allocation.fraction);
+    return {
+      heirType: allocation.heirType,
+      count: allocation.count,
+      fraction,
+      totalShare: rationalToNumber(allocation.totalShare),
+      reasoning: allocation.reasoning,
+      assets: {
+        land: Math.max(0, totalLand) * fraction,
+        gold: Math.max(0, totalGold) * fraction,
+        cash: Math.max(0, totalCash) * fraction,
+      },
+    };
+  });
+}
 
 export default function FaraezPage() {
   const [religion, setReligion] = useState<Religion>("muslim");
@@ -54,9 +79,24 @@ export default function FaraezPage() {
           alert(`ইনপুটে সমস্যা আছে:\n\n${validationErrors.join("\n")}`);
           return;
         }
-        const preparedEstate = prepareFaraezEstate(assets);
-        const baseResults = calculateMuslimFaraez(heirs, gender, preparedEstate.assets);
-        setResults(applySunniAdjustments(heirs, gender, baseResults));
+
+        const input: FaraezInput = {
+          religion: "muslim",
+          deceasedGender: gender,
+          heirs,
+          estate: {
+            land: assets.land,
+            gold: assets.gold,
+            cash: assets.cash,
+            funeralCost: assets.funeralCost,
+            debt: assets.debt,
+            wasiyat: assets.wasiyat,
+          },
+          ruleset: "existing-sunni-project-rules",
+        };
+
+        const faraezResult = calculateFaraez(input);
+        setResults(toUiResults(faraezResult, assets));
       } else {
         setResults(calculateHinduDayabhaga(heirs, gender, assets));
       }
