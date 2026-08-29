@@ -40,7 +40,7 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
     return { index, shareTil, base, remainder };
   });
 
-  let assigned = rows.reduce((sum, row) => sum + row.base, 0n);
+  const assigned = rows.reduce((sum, row) => sum + row.base, 0n);
   let remaining = scaledTotal - assigned;
 
   [...rows]
