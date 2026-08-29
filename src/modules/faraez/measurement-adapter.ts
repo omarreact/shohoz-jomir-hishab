@@ -5,30 +5,110 @@ import {
   tilToShare,
 } from "@/src/modules/khatiyan/share-normalization";
 
+type FractionAllocation = {
+  fraction: Rational;
+  index: number;
+};
+
 /**
- * Convert an exact Faraez fraction into the canonical Khatiyan mixed-radix
- * representation. The conversion is intentionally exact: fractions that cannot
- * be represented by an integer Til count are rejected rather than rounded.
+ * Convert one fraction to the nearest canonical Til count.
+ *
+ * A single fraction cannot guarantee estate-level conservation when its Til
+ * count is fractional. Use faraezFractionsToKhatiyan for a set of heirs so the
+ * Largest-Remainder method can distribute the remaining Tils collectively.
  */
 export function faraezFractionToKhatiyan(fraction: Rational): FaraezMeasurementAdapterResult {
   const normalized = rational(fraction.numerator, fraction.denominator);
-  if (normalized.numerator < 0n) throw new RangeError("Inheritance fraction cannot be negative");
-  if (normalized.numerator > normalized.denominator) throw new RangeError("Inheritance fraction cannot exceed 1/1");
+  validateFraction(normalized);
+
+  const scaled = normalized.numerator * BigInt(TIL_PER_FULL_UNIT);
+  const roundedTil = roundNearestInteger(scaled, normalized.denominator);
+  return toResult(normalized, roundedTil);
+}
+
+/**
+ * Convert all heir fractions together using Largest Remainder.
+ *
+ * The exact estate represented by the fractions is one full Khatiyan unit.
+ * Floors are assigned first, then the remaining Tils are awarded to the
+ * largest fractional remainders. Therefore the final Til counts sum exactly
+ * to the estate's canonical Til total whenever the input fractions sum to 1.
+ */
+export function faraezFractionsToKhatiyan(
+  fractions: readonly Rational[],
+): readonly FaraezMeasurementAdapterResult[] {
+  if (fractions.length === 0) return [];
+
+  const normalized = fractions.map((fraction) => rational(fraction.numerator, fraction.denominator));
+  normalized.forEach(validateFraction);
 
   const fullUnitTil = BigInt(TIL_PER_FULL_UNIT);
-  const scaled = normalized.numerator * fullUnitTil;
-  const til = scaled / normalized.denominator;
-  const remainder = scaled % normalized.denominator;
+  const exact = normalized.map((fraction, index) => {
+    const scaled = fraction.numerator * fullUnitTil;
+    return {
+      fraction,
+      index,
+      floorTil: scaled / fraction.denominator,
+      remainderNumerator: scaled % fraction.denominator,
+      denominator: fraction.denominator,
+    };
+  });
 
-  if (remainder !== 0n) {
-    throw new RangeError(
-      `Inheritance fraction ${normalized.numerator}/${normalized.denominator} is not exactly representable in the canonical Khatiyan Til grid`,
-    );
+  const exactTotalNumerator = normalized.reduce(
+    (sum, fraction) => sum * fraction.denominator + fraction.numerator * 1n,
+    0n,
+  );
+  // Validate the input sum independently with the Rational engine.
+  const total = normalized.reduce((sum, fraction) => {
+    const numerator = sum.numerator * fraction.denominator + fraction.numerator * sum.denominator;
+    const denominator = sum.denominator * fraction.denominator;
+    return rational(numerator, denominator);
+  }, rational(0n));
+  if (total.numerator !== total.denominator) {
+    throw new RangeError("Faraez fractions must sum exactly to 1/1 for collective measurement allocation");
+  }
+  void exactTotalNumerator;
+
+  const floorTotal = exact.reduce((sum, item) => sum + item.floorTil, 0n);
+  let remaining = fullUnitTil - floorTotal;
+  if (remaining < 0n || remaining > BigInt(exact.length)) {
+    throw new RangeError("Largest-Remainder allocation produced an invalid Til remainder");
   }
 
+  const ranked = [...exact].sort((a, b) => {
+    const left = a.remainderNumerator * b.denominator;
+    const right = b.remainderNumerator * a.denominator;
+    if (left === right) return a.index - b.index;
+    return left > right ? -1 : 1;
+  });
+
+  const awarded = new Map<number, bigint>();
+  for (const item of ranked) {
+    const extra = remaining > 0n ? 1n : 0n;
+    awarded.set(item.index, extra);
+    remaining -= extra;
+  }
+
+  return exact
+    .sort((a, b) => a.index - b.index)
+    .map((item) => toResult(item.fraction, item.floorTil + (awarded.get(item.index) ?? 0n)));
+}
+
+function validateFraction(fraction: Rational): void {
+  if (fraction.numerator < 0n) throw new RangeError("Inheritance fraction cannot be negative");
+  if (fraction.numerator > fraction.denominator) throw new RangeError("Inheritance fraction cannot exceed 1/1");
+}
+
+function roundNearestInteger(numerator: bigint, denominator: bigint): bigint {
+  const floor = numerator / denominator;
+  const remainder = numerator % denominator;
+  return remainder * 2n >= denominator ? floor + 1n : floor;
+}
+
+function toResult(fraction: Rational, til: bigint): FaraezMeasurementAdapterResult {
   const share = tilToShare(Number(til));
   return {
-    fraction: normalized,
+    fraction,
     ana: BigInt(share.a),
     gonda: BigInt(share.g),
     kora: BigInt(share.k),
