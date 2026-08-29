@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { KhatiyanPlot } from "@/src/services/rajuk/rajukKhatiyanAdapter";
+import type { KhatiyanPlot } from "@/src/shared/types";
 
 /**
  * Explicit boundary between remote GIS selection state and the Khatiyan/Faraez
