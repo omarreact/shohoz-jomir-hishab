@@ -1,4 +1,4 @@
-import { useKhatiyanGisBridge, sendPlotToKhatiyan } from "./gis-bridge";
+import { useKhatiyanGisBridge, sendPlotToKhatiyan, sendPlotToFaraez } from "./gis-bridge";
 import type { KhatiyanPlot } from "@/src/shared/types";
 
 const plot = (overrides: Partial<KhatiyanPlot> = {}): KhatiyanPlot => ({
@@ -28,6 +28,16 @@ describe("Khatiyan GIS bridge", () => {
     expect(pending?.selectedAt).toEqual(expect.any(Number));
   });
 
+  it("stores the same validated parcel for the Faraez handoff", () => {
+    const value = plot({ id: 202, a: "125.50" });
+    sendPlotToFaraez(value);
+
+    const pending = useKhatiyanGisBridge.getState().pendingPlot;
+    expect(pending?.plot).toEqual(value);
+    expect(pending?.source).toBe("rajuk");
+    expect(pending?.plot.a).toBe("125.50");
+  });
+
   it("consumes the pending plot exactly once", () => {
     sendPlotToKhatiyan(plot());
 
@@ -41,7 +51,7 @@ describe("Khatiyan GIS bridge", () => {
 
   it("replaces an older pending selection with the newest selection", () => {
     sendPlotToKhatiyan(plot({ id: 1 }));
-    sendPlotToKhatiyan(plot({ id: 2 }));
+    sendPlotToFaraez(plot({ id: 2 }));
 
     expect(useKhatiyanGisBridge.getState().pendingPlot?.plot.id).toBe(2);
   });
