@@ -99,6 +99,10 @@ export function toCalculationSafeKhatiyanPlot(
   const record = options.record ?? {};
   const plot: KhatiyanPlot = {
     id: attrs.objectid,
+    plotId: attrs.plot_no ?? attrs.objectid,
+    source: "rajuk",
+    measurementProfile: options.measurementProfile,
+    shapeAreaUnit: options.shapeAreaUnit,
     cs: record.cs ?? "",
     rs: record.rs ?? (attrs.rs_plot_no ?? ""),
     city: record.city ?? "",
