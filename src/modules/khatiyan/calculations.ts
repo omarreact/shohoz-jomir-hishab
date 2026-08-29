@@ -8,7 +8,9 @@ import {
   TIL_PER_ANA,
   TIL_PER_KRANTI,
   shareToTil as canonicalShareToTil,
+  TIL_PER_FULL_UNIT,
 } from "./share-normalization";
+import { allocatePlotArea } from "./area-allocation";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
@@ -74,21 +76,31 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
 export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number, toEn: NumberParser, toBn: NumberFormatter) {
   const validationErrors = validateKhatiyanInputs(owners, plots, fullUnitTil);
   if (validationErrors.length > 0) throw new Error(`Invalid Khatiyan input: ${validationErrors.join("; ")}`);
+  if (fullUnitTil !== TIL_PER_FULL_UNIT) throw new Error("Khatiyan allocation requires the canonical 16-আনা unit");
 
   let hasData = false;
   const computedResults: KhatiyanOwnerResult[] = [];
   const totalPlotArea = plots.reduce((sum, plot) => sum + toEn(plot.a), 0);
+  const shareInputs = owners.map((owner) => ({
+    a: Number(owner.a),
+    g: Number(owner.g),
+    k: Number(owner.k),
+    kr: Number(owner.kr),
+    ti: Number(owner.ti),
+  }));
+  const allocationsByPlot = plots.map((plot) => allocatePlotArea(toEn(plot.a), shareInputs));
 
-  owners.forEach((o) => {
-    const share = shareToTil(o) / fullUnitTil;
+  owners.forEach((o, ownerIndex) => {
+    const shareTil = shareToTil(o);
+    const share = shareTil / fullUnitTil;
     if (share <= 0) return;
     hasData = true;
     let totalLand = 0;
     const ownerPlots = [];
 
-    plots.forEach((p) => {
+    plots.forEach((p, plotIndex) => {
       const area = toEn(p.a);
-      const got = area * share;
+      const got = allocationsByPlot[plotIndex][ownerIndex]?.allocatedArea ?? 0;
       totalLand += got;
       const dagStrings: string[] = [];
       if (p.cs) dagStrings.push(`সিএস/এসএ: ${p.cs}`);
@@ -112,6 +124,12 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
   const allocatedLand = computedResults.reduce((sum, result) => sum + result.totalLand, 0);
   const tolerance = Math.max(1, totalPlotArea) * CONSERVATION_EPSILON;
   if (allocatedLand > totalPlotArea + tolerance) throw new Error("Calculated ownership allocation exceeds the recorded plot area");
+
+  const allocatedByPlot = allocationsByPlot.reduce((sum, allocations) => sum + allocations.reduce((plotSum, allocation) => plotSum + allocation.allocatedArea, 0), 0);
+  const roundedTotalPlotArea = plots.reduce((sum, plot) => sum + Math.round(toEn(plot.a) * 1_000_000) / 1_000_000, 0);
+  if (Math.abs(allocatedByPlot - roundedTotalPlotArea) > CONSERVATION_EPSILON * Math.max(1, totalPlotArea)) {
+    throw new Error("Rounded Khatiyan allocations do not conserve recorded plot area");
+  }
 
   return { hasData, computedResults };
 }
