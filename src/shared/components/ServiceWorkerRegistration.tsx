@@ -7,9 +7,24 @@ export default function ServiceWorkerRegistration() {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
 
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+    let reloadedForControllerChange = false;
+    const handleControllerChange = () => {
+      if (reloadedForControllerChange) return;
+      reloadedForControllerChange = true;
+      window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+
+    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
+      void registration.update();
+    }).catch((error) => {
       console.warn("PWA service worker registration failed:", error);
     });
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+    };
   }, []);
 
   return null;
