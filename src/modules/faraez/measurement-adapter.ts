@@ -5,18 +5,22 @@ import { TIL_PER_FULL_UNIT, tilToShare } from "@/src/modules/khatiyan/share-norm
 /**
  * Convert one inheritance fraction to the nearest canonical Til count.
  *
- * Fractions such as 1/3 are exactly representable because the canonical
- * Khatiyan unit contains 76,800 Tils. Non-terminating fractions are rounded
- * to the nearest Til here. For an estate containing multiple heirs, use
- * faraezFractionsToKhatiyan so rounding is performed collectively with the
- * Largest-Remainder method and the estate total is conserved exactly.
+ * The canonical 16-Ana estate contains exactly 76,800 Tils. Therefore common
+ * fractions such as 1/3, 1/6 and 2/3 are exactly representable in the
+ * mixed-radix Ana/Gonda/Kora/Kranti/Til system. A fraction that is not an
+ * integer number of Tils is rounded to the nearest Til; it is never rejected
+ * merely because its decimal representation is non-terminating.
+ *
+ * IMPORTANT: for a complete estate containing multiple heirs, use
+ * faraezFractionsToKhatiyan(). It applies Largest Remainder collectively so
+ * the rounded heir allocations sum to exactly the full estate.
  */
 export function faraezFractionToKhatiyan(fraction: Rational): FaraezMeasurementAdapterResult {
   const normalized = rational(fraction.numerator, fraction.denominator);
   validateFraction(normalized);
 
   const scaled = normalized.numerator * BigInt(TIL_PER_FULL_UNIT);
-  const roundedTil = roundNearestInteger(scaled, normalized.denominator);
+  const roundedTil = roundNearestTil(scaled, normalized.denominator);
   return toResult(normalized, roundedTil);
 }
 
@@ -87,7 +91,7 @@ function validateFraction(fraction: Rational): void {
   if (fraction.numerator > fraction.denominator) throw new RangeError("Inheritance fraction cannot exceed 1/1");
 }
 
-function roundNearestInteger(numerator: bigint, denominator: bigint): bigint {
+function roundNearestTil(numerator: bigint, denominator: bigint): bigint {
   const floor = numerator / denominator;
   const remainder = numerator % denominator;
   return remainder * 2n >= denominator ? floor + 1n : floor;
