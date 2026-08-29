@@ -2,8 +2,8 @@ import { create } from "zustand";
 import type { KhatiyanPlot } from "@/src/services/rajuk/rajukKhatiyanAdapter";
 
 /**
- * Explicit boundary between remote GIS selection state and the Khatiyan domain.
- * Only server-validated calculation-safe plots may cross this boundary.
+ * Explicit boundary between remote GIS selection state and the Khatiyan/Faraez
+ * domains. Only server-validated calculation-safe plots may cross this boundary.
  */
 export interface PendingKhatiyanPlot {
   readonly plot: KhatiyanPlot;
@@ -46,10 +46,11 @@ export const useKhatiyanGisBridge = create<KhatiyanGisBridgeState>((set, get) =>
   clearPendingPlot: () => set({ pendingPlot: null }),
 }));
 
-/**
- * Non-React command for map event handlers. Keeps Leaflet event code decoupled
- * from the Khatiyan calculator component tree.
- */
 export function sendPlotToKhatiyan(plot: KhatiyanPlot): void {
+  useKhatiyanGisBridge.getState().setPendingPlot(plot);
+}
+
+/** Same server-validated parcel boundary, consumed by the Faraez calculator. */
+export function sendPlotToFaraez(plot: KhatiyanPlot): void {
   useKhatiyanGisBridge.getState().setPendingPlot(plot);
 }
