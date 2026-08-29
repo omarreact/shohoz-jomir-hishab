@@ -22,6 +22,19 @@ function adaptParcel(feature: RajukPlotFeature, unit: "square-feet" | "square-me
   });
 }
 
+async function identifyWithCalculationBoundary(lat: number, lng: number) {
+  const result = await identifyByPoint(lat, lng);
+  const features = Array.isArray(result.features) ? result.features : [];
+  const shapeAreaUnit = "square-feet" as const;
+  const adapted = features.map((feature) => adaptParcel(feature, shapeAreaUnit));
+  return {
+    ...result,
+    measurementProfile: "khatiyan-record" as const,
+    shapeAreaUnit,
+    calculationSafePlots: adapted,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const p = request.nextUrl.searchParams;
@@ -82,14 +95,9 @@ export async function GET(request: NextRequest) {
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
         return NextResponse.json({ error: "Valid lat/lng are required" }, { status: 400 });
       }
-      return NextResponse.json(await identifyByPoint(lat, lng));
+      return NextResponse.json(await identifyWithCalculationBoundary(lat, lng));
     }
 
-    /**
-     * Strict GIS → Khatiyan boundary. Only a server-returned RajukPlotFeature
-     * may cross this boundary; the adapter validates the remote payload before
-     * producing a calculation-safe plot.
-     */
     if (action === "parcel") {
       const lat = Number(p.get("lat"));
       const lng = Number(p.get("lng"));
@@ -99,15 +107,9 @@ export async function GET(request: NextRequest) {
       const result = await identifyByPoint(lat, lng);
       const features = Array.isArray(result.features) ? result.features : [];
       if (!features.length) return NextResponse.json({ error: "No parcel found at this location", code: "PARCEL_NOT_FOUND" }, { status: 404 });
-
       const unit = parseShapeAreaUnit(p.get("shape_area_unit"));
       const adapted = features.map((feature) => adaptParcel(feature, unit));
-      return NextResponse.json({
-        source: "RAJUK",
-        measurementProfile: "khatiyan-record",
-        shapeAreaUnit: unit,
-        parcels: adapted,
-      });
+      return NextResponse.json({ source: "RAJUK", measurementProfile: "khatiyan-record", shapeAreaUnit: unit, parcels: adapted });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
