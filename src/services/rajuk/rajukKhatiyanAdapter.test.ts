@@ -19,17 +19,16 @@ const feature = (area: number): RajukPlotFeature => ({
 });
 
 describe("RAJUK → Khatiyan adapter", () => {
+  const options = { measurementProfile: "khatiyan-record" as const, shapeAreaUnit: "square-feet" as const };
+
   it("converts a valid square-foot parcel to a calculation-safe plot", () => {
-    const result = toCalculationSafeKhatiyanPlot(feature(432), {
-      measurementProfile: "khatiyan-record",
-      shapeAreaUnit: "square-feet",
-    });
+    const result = toCalculationSafeKhatiyanPlot(feature(432), options);
     expect(Number(result.plot.a)).toBe(1);
     expect(result.source.measurementProfile).toBe("khatiyan-record");
   });
 
   it("converts square metres using the selected profile", () => {
-    const result = toCalculationSafeKhatiyanPlot(feature(40.468564224)), {
+    const result = toCalculationSafeKhatiyanPlot(feature(40.468564224), {
       measurementProfile: "khatiyan-record",
       shapeAreaUnit: "square-meters",
     });
@@ -37,27 +36,18 @@ describe("RAJUK → Khatiyan adapter", () => {
   });
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid Shape__Area: %p", (area) => {
-    expect(() => toCalculationSafeKhatiyanPlot(feature(area), {
-      measurementProfile: "khatiyan-record",
-      shapeAreaUnit: "square-feet",
-    })).toThrow(RajukParcelDomainError);
+    expect(() => toCalculationSafeKhatiyanPlot(feature(area), options)).toThrow(RajukParcelDomainError);
   });
 
   it("rejects out-of-range coordinates", () => {
     const invalid = feature(432);
     invalid.geometry.rings[0][1] = [181, 23.7];
-    expect(() => toCalculationSafeKhatiyanPlot(invalid, {
-      measurementProfile: "khatiyan-record",
-      shapeAreaUnit: "square-feet",
-    })).toThrow(/WGS84 bounds/);
+    expect(() => toCalculationSafeKhatiyanPlot(invalid, options)).toThrow(/WGS84 bounds/);
   });
 
   it("rejects malformed geometry before creating a calculation plot", () => {
     const invalid = feature(432);
     invalid.geometry.rings = [];
-    expect(() => toCalculationSafeKhatiyanPlot(invalid, {
-      measurementProfile: "khatiyan-record",
-      shapeAreaUnit: "square-feet",
-    })).toThrow(/geometry/);
+    expect(() => toCalculationSafeKhatiyanPlot(invalid, options)).toThrow(/geometry/);
   });
 });
