@@ -112,15 +112,6 @@ export interface FaraezConservation {
   readonly exact: boolean;
 }
 
-export interface FaraezResult {
-  readonly ruleset: FaraezInput["ruleset"];
-  readonly eligibleHeirs: readonly FaraezEligibility[];
-  readonly prescribedShares: readonly FaraezPrescribedShare[];
-  readonly adjustments: readonly FaraezAdjustment[];
-  readonly allocations: readonly FaraezHeirShare[];
-  readonly conservation: FaraezConservation;
-}
-
 export interface FaraezMeasurementAdapterResult {
   readonly fraction: Rational;
   readonly ana: bigint;
@@ -128,4 +119,15 @@ export interface FaraezMeasurementAdapterResult {
   readonly kora: bigint;
   readonly kranti: bigint;
   readonly til: bigint;
+}
+
+export interface FaraezResult {
+  readonly ruleset: FaraezInput["ruleset"];
+  readonly eligibleHeirs: readonly FaraezEligibility[];
+  readonly prescribedShares: readonly FaraezPrescribedShare[];
+  readonly adjustments: readonly FaraezAdjustment[];
+  readonly allocations: readonly FaraezHeirShare[];
+  /** Canonical Khatiyan measurement for each final heir allocation. */
+  readonly measurementAllocations: readonly FaraezMeasurementAdapterResult[];
+  readonly conservation: FaraezConservation;
 }
