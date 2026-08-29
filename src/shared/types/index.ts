@@ -14,6 +14,11 @@ export interface KhatiyanPlot {
   bds: string;
   t: string; // শ্রেণী
   a: string; // মোট জমি (শতাংশ) as string (Bangla digits allowed)
+  /** GIS metadata populated only for server-validated RAJUK selections. */
+  plotId?: string | number;
+  source?: "rajuk" | "manual" | string;
+  measurementProfile?: string;
+  shapeAreaUnit?: string;
 }
 
 export interface KhatiyanOwner {
