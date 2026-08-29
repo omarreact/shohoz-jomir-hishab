@@ -39,7 +39,11 @@ export default function SmartKhatiyanApp() {
 
   useEffect(() => {
     const state = useHistoryStore.getState();
-    const existingId = state.history.find((id) => state.drafts[id]?.domain === "khatiyan");
+    const activeId = state.activeDraftId;
+    const activeDraft = activeId ? state.drafts[activeId] : null;
+    const existingId = activeDraft?.domain === "khatiyan"
+      ? activeDraft.id
+      : state.history.find((id) => state.drafts[id]?.domain === "khatiyan");
     if (existingId) {
       const draft = state.loadDraft(existingId);
       if (draft?.domain === "khatiyan") {
