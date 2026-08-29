@@ -2,10 +2,13 @@
 
 import dynamic from "next/dynamic";
 import MapVisitConsent from "@/src/features/geospatial-map/components/MapVisitConsent";
+import OfflineMapNotice from "@/src/shared/components/OfflineMapNotice";
 
 /**
  * Canonical urban planning map page.
  * Merges the former Geospatial + LIOS map entry points into one experience.
+ * The offline notice is deliberately page-level so the Leaflet implementation
+ * remains isolated from browser network-state concerns.
  */
 const GeospatialMap = dynamic(
   () => import("@/src/features/geospatial-map/components/GeospatialMap"),
@@ -21,9 +24,10 @@ const GeospatialMap = dynamic(
 
 export default function UrbanPlanningMapPage() {
   return (
-    <>
+    <div className="relative h-full min-h-screen w-full">
       <GeospatialMap />
+      <OfflineMapNotice />
       <MapVisitConsent />
-    </>
+    </div>
   );
 }
