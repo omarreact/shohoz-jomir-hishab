@@ -1,5 +1,11 @@
 import { FULL_UNIT_TIL } from "@/src/shared/constants";
-import type { KhatiyanOwner, KhatiyanQuickData, KhatiyanQuickResult } from "@/src/shared/types";
+import type { KhatiyanOwner, KhatiyanQuickData } from "@/src/shared/types";
+
+export interface KhatiyanQuickResult {
+  land: number;
+  sqft: number;
+  katha: number;
+}
 
 /** Convert a Khatiyan owner share to the existing mixed-radix til representation. */
 export function ownerShareToTil(owner: Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">): number {
