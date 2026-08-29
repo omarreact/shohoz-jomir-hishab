@@ -1,4 +1,4 @@
-import { add, rational } from "./rational";
+import { add, divide, rational } from "./rational";
 import { applyAwl } from "./awl";
 import { allocateResidual } from "./residuary";
 import { applyRadd } from "./radd";
@@ -16,6 +16,31 @@ function prescribedAsAllocations(shares: readonly FaraezPrescribedShare[]): Fara
 
 function totalPrescribed(shares: readonly FaraezPrescribedShare[]) {
   return shares.reduce((total, share) => add(total, share.totalShare), rational(0n));
+}
+
+function mergeResidualAllocations(
+  prescribed: readonly FaraezPrescribedShare[],
+  residual: readonly FaraezHeirShare[],
+): readonly FaraezHeirShare[] {
+  const merged = new Map<string, FaraezHeirShare>();
+  for (const share of prescribedAsAllocations(prescribed)) merged.set(share.heirType, share);
+
+  for (const share of residual) {
+    const existing = merged.get(share.heirType);
+    if (!existing) {
+      merged.set(share.heirType, share);
+      continue;
+    }
+    const totalShare = add(existing.totalShare, share.totalShare);
+    merged.set(share.heirType, {
+      ...existing,
+      fraction: divide(totalShare, rational(BigInt(existing.count))),
+      totalShare,
+      reasoning: `${existing.reasoning} ${share.reasoning}`,
+    });
+  }
+
+  return [...merged.values()];
 }
 
 /**
@@ -41,7 +66,7 @@ export function applyFaraezAdjustments(
 
   const residual = allocateResidual(input, prescribed, eligibility);
   if (residual.length > 0) {
-    return [...prescribedAsAllocations(prescribed), ...residual];
+    return mergeResidualAllocations(prescribed, residual);
   }
 
   return prescribedAsAllocations(applyRadd(input, gender, prescribed));
