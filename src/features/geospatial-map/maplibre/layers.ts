@@ -1,4 +1,5 @@
 import type {
+  CircleLayerSpecification,
   FillLayerSpecification,
   LineLayerSpecification,
   RasterLayerSpecification,
@@ -95,14 +96,16 @@ export const VECTOR_LAYER_STYLES = {
 
   locationPoint: {
     id: VECTOR_LAYERS.locationPoint,
-    type: "fill",
+    type: "circle",
     source: VECTOR_SOURCES.location,
     paint: {
-      "fill-color": "#2563eb",
-      "fill-opacity": 0.9,
-      "fill-outline-color": "#ffffff",
+      "circle-color": "#2563eb",
+      "circle-radius": 6,
+      "circle-opacity": 0.9,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2,
     },
-  } satisfies FillLayerSpecification,
+  } satisfies CircleLayerSpecification,
 
   accuracyFill: {
     id: VECTOR_LAYERS.accuracyFill,
