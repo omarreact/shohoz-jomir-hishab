@@ -1,5 +1,5 @@
 import { normalize, type Rational } from "@/src/modules/faraez/rational";
-import { bigintReplacer, bigintReviver, parseStorage, stringifyStorage } from "@/src/shared/lib/storage";
+import { bigintReplacer, bigintReviver, parseStorage, stringifyStorage, writeCalculationStorage } from "@/src/shared/lib/storage";
 
 describe("bigint-safe calculation storage", () => {
   it("preserves a Rational 1/3 through stringify/parse", () => {
@@ -22,5 +22,23 @@ describe("bigint-safe calculation storage", () => {
   it("does not alter ordinary JSON values", () => {
     const input = { text: "123", number: 123, flag: true, empty: null };
     expect(parseStorage<typeof input>(stringifyStorage(input))).toEqual(input);
+  });
+
+  it("fails safely when localStorage is unavailable or rejects writes", () => {
+    const setItem = window.localStorage.setItem;
+    window.localStorage.setItem = jest.fn(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+
+    try {
+      expect(writeCalculationStorage({
+        version: 1,
+        activeDraftId: "khatiyan-test",
+        drafts: {},
+        history: [],
+      })).toBe(false);
+    } finally {
+      window.localStorage.setItem = setItem;
+    }
   });
 });
