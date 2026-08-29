@@ -96,7 +96,7 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
     if (share <= 0) return;
     hasData = true;
     let totalLand = 0;
-    const ownerPlots = [];
+    const ownerPlots: KhatiyanOwnerResult["ownerPlots"] = [];
 
     plots.forEach((p, plotIndex) => {
       const area = toEn(p.a);

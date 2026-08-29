@@ -8,7 +8,7 @@ import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
 import { calculateFaraez } from "@/src/modules/faraez/faraez.engine";
 import type { FaraezInput, FaraezResult as FaraezDomainResult } from "@/src/modules/faraez/contracts";
-import { consumePendingPlot } from "@/src/modules/khatiyan/gis-bridge";
+import { consumePendingPlot, type PendingKhatiyanPlot } from "@/src/modules/khatiyan/gis-bridge";
 import { useHistoryStore } from "@/src/shared/stores/useHistoryStore";
 import { Calculator, HelpCircle, ChevronDown, ChevronUp, MapPinned, ShieldCheck, Trash2 } from "lucide-react";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
@@ -88,7 +88,16 @@ export default function FaraezPage() {
     setResults(Array.isArray(activeDraft.result) ? activeDraft.result as HeirResult[] : []);
 
     if (activeDraft.provenance) {
-      setGisPlot(activeDraft.provenance as ReturnType<typeof consumePendingPlot>);
+      const provenance = activeDraft.provenance as Record<string, unknown>;
+      const plot = provenance.plot;
+      if (plot && typeof plot === "object") {
+        setGisPlot({
+          plot: plot as PendingKhatiyanPlot["plot"],
+          source: "rajuk",
+          selectedAt: typeof provenance.selectedAt === "number" ? provenance.selectedAt : Date.now(),
+          selectionId: typeof provenance.selectionId === "string" ? provenance.selectionId : `${String(provenance.plotId ?? "plot")}-${typeof provenance.selectedAt === "number" ? provenance.selectedAt : Date.now()}`,
+        });
+      }
     }
 
     hydratingRef.current = false;

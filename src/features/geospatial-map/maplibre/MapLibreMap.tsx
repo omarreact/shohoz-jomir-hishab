@@ -274,7 +274,6 @@ export default function MapLibreMap() {
       zoom: HISTORIC_2003_ZOOM,
       minZoom: 8,
       maxZoom: 21,
-      attributionControl: true,
       renderWorldCopies: false,
     });
     mapRef.current = map;

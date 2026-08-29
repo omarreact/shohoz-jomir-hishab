@@ -55,7 +55,7 @@ export interface HeirResult {
   fraction: number;
   totalShare: number;
   reasoning: string;
-  assets: { land: number; gold: number; cash: number };
+  assets: { land: number; gold: number; cash: number; total?: number };
   /** One exact F7 measurement per individual heir in this group. */
   measurements?: readonly KhatiyanMeasurement[];
 }
