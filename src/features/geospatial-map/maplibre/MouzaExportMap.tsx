@@ -142,7 +142,9 @@ export default function MouzaExportMap() {
       minZoom: 8,
       maxZoom: 21,
       renderWorldCopies: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: {
+        preserveDrawingBuffer: true,
+      },
     });
     mapRef.current = map;
 
