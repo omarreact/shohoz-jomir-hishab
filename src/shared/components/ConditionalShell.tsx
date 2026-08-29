@@ -5,6 +5,7 @@ import Navbar from "@/src/shared/components/Navbar";
 import Footer from "@/src/shared/components/Footer";
 import MaintenanceGate from "@/src/shared/components/MaintenanceGate";
 import MobileFloatingNav from "@/src/shared/components/MobileFloatingNav";
+import HistoryShortcut from "@/src/shared/components/HistoryShortcut";
 
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,6 +21,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
       <div className="relative h-screen w-screen overflow-hidden">
         <Navbar />
         <main className="h-full w-full pb-20 md:pb-0">{children}</main>
+        <HistoryShortcut />
         <MobileFloatingNav />
       </div>
     );
@@ -29,6 +31,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
     <MaintenanceGate>
       <Navbar />
       <main className="flex-grow-1">{children}</main>
+      <HistoryShortcut />
       <Footer />
       <MobileFloatingNav />
     </MaintenanceGate>
