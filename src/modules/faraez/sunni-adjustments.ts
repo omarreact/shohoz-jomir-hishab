@@ -34,13 +34,14 @@ function isResiduaryPossible(input: HeirsInput): boolean {
 }
 
 function assetBasis(results: HeirResult[]) {
-  const source = results.find(r => r.totalShare > EPSILON && r.assets.total > EPSILON);
+  const source = results.find(r => r.totalShare > EPSILON);
   if (!source) return { land: 0, gold: 0, cash: 0, total: 0 };
+  const total = source.assets.total ?? source.assets.land + source.assets.gold + source.assets.cash;
   return {
     land: source.assets.land / source.totalShare,
     gold: source.assets.gold / source.totalShare,
     cash: source.assets.cash / source.totalShare,
-    total: source.assets.total / source.totalShare,
+    total: total / source.totalShare,
   };
 }
 
