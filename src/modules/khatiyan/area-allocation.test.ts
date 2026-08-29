@@ -19,8 +19,8 @@ describe("Khatiyan area allocation", () => {
   });
 
   it("uses largest remainder for a repeating fraction", () => {
-    const oneThird = { a: 5, g: 6, k: 2, kr: 0, ti: 0 };
-    const twoThirds = { a: 10, g: 13, k: 1, kr: 0, ti: 0 };
+    const oneThird = { a: 5, g: 6, k: 2, kr: 6, ti: 0 };
+    const twoThirds = { a: 10, g: 10, k: 0, kr: 0, ti: 0 };
     const allocations = allocatePlotArea(100, [oneThird, twoThirds]);
     expect(allocations.reduce((s, x) => s + x.allocatedArea, 0)).toBe(100);
     expect(allocationsConserved(100, allocations)).toBe(true);
