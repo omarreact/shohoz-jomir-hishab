@@ -1,0 +1,30 @@
+name: Temporary lint diagnostic
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  diagnostic:
+    if: ${{ !contains(github.event.head_commit.message, '[lint-diagnostic]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - name: Capture lint output
+        run: npm run lint > lint-diagnostic.txt 2>&1 || true
+      - name: Commit diagnostic output
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lint-diagnostic.txt
+          git diff --cached --quiet && exit 0
+          git commit -m '[lint-diagnostic] capture ESLint output'
+          git push
