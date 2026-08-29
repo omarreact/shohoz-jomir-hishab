@@ -19,6 +19,10 @@ export type KhatiyanShare = {
 
 const EPSILON = 1e-12;
 
+/**
+ * Convert a share to til after enforcing the canonical Khatiyan mixed-radix
+ * constraints. This remains the validated domain entry point.
+ */
 export function shareToTil(share: KhatiyanShare): number {
   const values = [share.a, share.g, share.k, share.kr, share.ti];
   if (values.some((value) => !Number.isFinite(value) || !Number.isInteger(value) || value < 0)) {
@@ -29,6 +33,18 @@ export function shareToTil(share: KhatiyanShare): number {
   if (share.k >= KORA_PER_GONDA) throw new Error("কড়া must be below 4 per গন্ডা");
   if (share.kr >= KRANTI_PER_KORA) throw new Error("ক্রান্তি must be below 3 per কড়া");
   if (share.ti >= TIL_PER_KRANTI) throw new Error("তিল must be below 20 per ক্রান্তি");
+  return shareToTilUnchecked(share);
+}
+
+/**
+ * Compatibility adapter for legacy UI calculations.
+ *
+ * The original quick Khatiyan calculation treated the five numeric inputs as
+ * a direct weighted expression and did not validate mixed-radix ranges.
+ * Keep that behavior isolated here rather than weakening the validated
+ * shareToTil() domain function.
+ */
+export function shareToTilUnchecked(share: KhatiyanShare): number {
   return share.a * TIL_PER_ANA + share.g * TIL_PER_GONDA + share.k * TIL_PER_KORA + share.kr * TIL_PER_KRANTI + share.ti;
 }
 
