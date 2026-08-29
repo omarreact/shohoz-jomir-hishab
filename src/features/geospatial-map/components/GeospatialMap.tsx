@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Layers3,
   Map as MapIcon,
@@ -17,6 +18,7 @@ import {
 import type { Map as LeafletMap, TileLayer, GeoJSON as LeafletGeoJSON, Circle, CircleMarker } from "leaflet";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { sendPlotToKhatiyan, sendPlotToFaraez } from "@/src/modules/khatiyan/gis-bridge";
 import styles from "./GeospatialMap.module.css";
 
 type Tab = "layers" | "basemap" | "results";
@@ -40,7 +42,6 @@ const LAYERS: LayerDef[] = [
   { key: "transport", label: "Transport Network", description: "Transport network tiles", color: "#dc2626", defaultVisible: false },
 ];
 
-/** Public visitor: only RS + MS MapServer tiles at full opacity */
 const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
   dap: false,
   rs: true,
@@ -78,6 +79,8 @@ const GOOGLE_EARTH_2003_URL =
   "https://earth.google.com/web/@23.82810618,90.48911986,3.60010157a,3337.57801622d,35y,-0h,0t,0r/data=ChYqEAgBEgoyMDAzLTAxLTE3GAFCAggBOgMKATBCAggASg0I____________ARAA?authuser=0";
 
 const MIN_ZOOM_FOR_VECTOR = 15;
+const GIS_REQUEST_TIMEOUT_MS = 15_000;
+const GIS_TIMEOUT_MESSAGE = "নেটওয়ার্ক ধীরগতির কারণে অনুরোধ বাতিল হয়েছে";
 const EMPTY_FC = { type: "FeatureCollection" as const, features: [] as never[] };
 
 type BasemapDef = {
@@ -117,7 +120,6 @@ const BASEMAPS: Record<BasemapKey, BasemapDef> = {
   },
 };
 
-/** Basemaps available without login */
 const PUBLIC_BASEMAP_KEYS: BasemapKey[] = ["osm", "satellite"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -240,9 +242,24 @@ function createBasemapLayer(L: LeafletNS, key: BasemapKey): TileLayer {
   return L.tileLayer(def.url, opts);
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), GIS_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(GIS_TIMEOUT_MESSAGE);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export default function GeospatialMap() {
+  const router = useRouter();
   const { isLoggedIn, loading: authLoading } = useAuth();
-  /** Full Present View only when authenticated */
   const isAdvanced = isLoggedIn;
 
   const mapElement = useRef<HTMLDivElement>(null);
@@ -277,6 +294,7 @@ export default function GeospatialMap() {
   const [vectorStatus, setVectorStatus] = useState("");
   const [locating, setLocating] = useState(false);
   const [publicResultsOpen, setPublicResultsOpen] = useState(true);
+  const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);
 
   identifyModeRef.current = identifyMode;
   isAdvancedRef.current = isAdvanced;
@@ -289,7 +307,6 @@ export default function GeospatialMap() {
     window.setTimeout(() => setToast(""), 4000);
   }, []);
 
-  /** Switch public ↔ advanced defaults when auth settles (no fake login). */
   useEffect(() => {
     if (authLoading) return;
     if (isLoggedIn) {
@@ -346,7 +363,6 @@ export default function GeospatialMap() {
   const loadExtentVectors = useCallback(async () => {
     const map = mapRef.current;
     if (!map || !rsVectorRef.current || !msVectorRef.current) return;
-    // Public mode: no FeatureServer boundary overlays (tiles + identify only)
     if (!isAdvancedRef.current) {
       rsVectorRef.current.clearLayers();
       msVectorRef.current.clearLayers();
@@ -379,7 +395,7 @@ export default function GeospatialMap() {
         ymax: String(b.getNorth()),
         limit: "500",
       });
-      const response = await fetch(`/api/rajuk/query?${q}`);
+      const response = await fetchWithTimeout(`/api/rajuk/query?${q}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Extent query failed");
       const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
@@ -391,9 +407,11 @@ export default function GeospatialMap() {
       if (showMsBoundary) msVectorRef.current.addData(featuresToFc(ms) as never);
       setVectorStatus(`FS boundaries: ${rs.length} RS · ${ms.length} MS`);
     } catch (error) {
-      setVectorStatus(error instanceof Error ? error.message : "Boundary load failed");
+      const message = error instanceof Error ? error.message : "Boundary load failed";
+      setVectorStatus(message);
+      if (message === GIS_TIMEOUT_MESSAGE) notify(message);
     }
-  }, [showRsBoundary, showMsBoundary]);
+  }, [showRsBoundary, showMsBoundary, notify]);
 
   loadExtentRef.current = () => {
     void loadExtentVectors();
@@ -429,7 +447,6 @@ export default function GeospatialMap() {
         map.fitBounds(DAP_BOUNDS, { padding: [25, 25] });
         mapRef.current = map;
 
-        // Public default basemap: OpenStreetMap
         const base = createBasemapLayer(L, "osm").addTo(map);
         try {
           base.bringToBack();
@@ -438,7 +455,6 @@ export default function GeospatialMap() {
         }
         basemapRef.current = base;
 
-        // Create all MapServer tile layers; only RS+MS start on the map (public)
         LAYERS.forEach((definition) => {
           const tile = L.tileLayer(`/api/rajuk/tile/${definition.key}/{z}/{y}/{x}`, {
             maxZoom: 21,
@@ -499,12 +515,11 @@ export default function GeospatialMap() {
         map.on("moveend", scheduleExtent);
         map.on("zoomend", scheduleExtent);
 
-        // Plot click → identify RS (FS/0) + MS (FS/5) — available to everyone
         map.on("click", async (event: { latlng: { lat: number; lng: number } }) => {
           if (!identifyModeRef.current) return;
           setSearching(true);
           try {
-            const response = await fetch(
+            const response = await fetchWithTimeout(
               `/api/rajuk/query?action=identify&lat=${encodeURIComponent(event.latlng.lat)}&lng=${encodeURIComponent(event.latlng.lng)}`,
             );
             const data = await response.json();
@@ -630,7 +645,7 @@ export default function GeospatialMap() {
     }
     setSearching(true);
     try {
-      const response = await fetch(`/api/rajuk/query?action=plots&plot_no=${encodeURIComponent(value)}&limit=50`);
+      const response = await fetchWithTimeout(`/api/rajuk/query?action=plots&plot_no=${encodeURIComponent(value)}&limit=50`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Plot search failed");
       const features = (Array.isArray(data.features) ? data.features : []) as RajukPlotFeature[];
@@ -651,6 +666,39 @@ export default function GeospatialMap() {
       setSearching(false);
     }
   };
+
+  const routeToCalculator = useCallback(
+    async (feature: RajukPlotFeature, target: "khatiyan" | "faraez") => {
+      setRoutingCalculator(target);
+      try {
+        const response = await fetchWithTimeout("/api/rajuk/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "adapt-for-khatiyan",
+            shapeAreaUnit: "square-feet",
+            feature,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "প্লট যাচাই ব্যর্থ হয়েছে");
+        if (!data?.plot) throw new Error("সার্ভার যাচাইকৃত প্লট ফেরত দেয়নি");
+
+        if (target === "khatiyan") {
+          sendPlotToKhatiyan(data.plot);
+          router.push("/khatiyan");
+        } else {
+          sendPlotToFaraez(data.plot);
+          router.push("/faraez");
+        }
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "প্লট যাচাই ব্যর্থ হয়েছে");
+      } finally {
+        setRoutingCalculator(null);
+      }
+    },
+    [notify, router],
+  );
 
   const selectFeature = (feature: RajukPlotFeature) => {
     setSelected(feature);
@@ -747,15 +795,22 @@ export default function GeospatialMap() {
         (feature.attributes as { _layer_source?: string })._layer_source;
     const title = kind === "ms" ? msNumber(feature) : rsNumber(feature);
     return (
-      <button
-        type="button"
+      <div
         className={styles.resultCard}
+        role="button"
+        tabIndex={0}
         style={{
           textAlign: "left",
           borderColor: active ? (kind === "ms" ? "#7c3aed" : "#2563eb") : undefined,
           boxShadow: active ? "0 0 0 1px currentColor" : undefined,
         }}
         onClick={() => selectFeature(feature)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            selectFeature(feature);
+          }
+        }}
       >
         <div className={styles.resultTitle}>
           <span
@@ -792,7 +847,37 @@ export default function GeospatialMap() {
             </div>
           ))}
         </div>
-      </button>
+        {active && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginTop: 10,
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.searchButton}
+              disabled={routingCalculator !== null}
+              onClick={() => void routeToCalculator(feature, "khatiyan")}
+            >
+              {routingCalculator === "khatiyan" ? <Loader2 size={14} className="animate-spin" /> : null}
+              খতিয়ান হিসাব করুন
+            </button>
+            <button
+              type="button"
+              className={styles.searchButton}
+              disabled={routingCalculator !== null}
+              onClick={() => void routeToCalculator(feature, "faraez")}
+            >
+              {routingCalculator === "faraez" ? <Loader2 size={14} className="animate-spin" /> : null}
+              ফারায়েজ হিসাব করুন
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -856,7 +941,6 @@ export default function GeospatialMap() {
     <section className={styles.mapShell} aria-label="নগর পরিকল্পনা মানচিত্র">
       <div ref={mapElement} className={styles.mapCanvas} />
 
-      {/* —— PUBLIC: compact basemap (OSM | Satellite) —— */}
       {!isAdvanced && (
         <div className={styles.publicBasemap} role="group" aria-label="বেসম্যাপ">
           <span className={styles.publicBasemapLabel}>বেসম্যাপ</span>
@@ -873,7 +957,6 @@ export default function GeospatialMap() {
         </div>
       )}
 
-      {/* PUBLIC locate */}
       {!isAdvanced && (
         <button
           type="button"
@@ -887,7 +970,6 @@ export default function GeospatialMap() {
         </button>
       )}
 
-      {/* PUBLIC floating results */}
       {!isAdvanced && results.length > 0 && publicResultsOpen && (
         <div className={styles.publicResults} role="dialog" aria-label="প্লট ফলাফল">
           <div className={styles.publicResultsHeader}>
@@ -920,7 +1002,6 @@ export default function GeospatialMap() {
         </div>
       )}
 
-      {/* —— AUTHENTICATED Present View —— */}
       {isAdvanced && (
         <>
           <form
