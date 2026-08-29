@@ -44,7 +44,23 @@ describe("Faraez → Khatiyan measurement adapter", () => {
     });
   });
 
-  it("rounds a non-terminating fraction collectively without throwing", () => {
+  it("does not reject a non-terminating single fraction such as 1/7", () => {
+    expect(() => faraezFractionToKhatiyan(rational(1n, 7n))).not.toThrow();
+
+    const result = faraezFractionToKhatiyan(rational(1n, 7n));
+    const til = shareToTil({
+      a: Number(result.ana),
+      g: Number(result.gonda),
+      k: Number(result.kora),
+      kr: Number(result.kranti),
+      ti: Number(result.til),
+    });
+
+    // 76,800 / 7 = 10,971 + 3/7, so nearest-Til rounding gives 10,971.
+    expect(til).toBe(10971);
+  });
+
+  it("rounds seven 1/7 shares collectively with Largest Remainder and conserves the estate", () => {
     const results = faraezFractionsToKhatiyan(
       Array.from({ length: 7 }, () => rational(1n, 7n)),
     );
