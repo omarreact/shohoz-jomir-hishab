@@ -21,7 +21,6 @@ export type FaraezDeductionPolicyName =
   (typeof FaraezDeductionPolicy)[keyof typeof FaraezDeductionPolicy];
 
 export interface FaraezEstateInput {
-  /** Asset quantities retain their existing project units. */
   readonly land: number;
   readonly gold: number;
   readonly cash: number;
@@ -66,7 +65,6 @@ export interface FaraezInput {
   readonly deceasedGender: DeceasedGender;
   readonly heirs: FaraezHeirsInput;
   readonly estate: FaraezEstateInput;
-  /** Explicit ruleset identifier prevents silent mixing of legal models. */
   readonly ruleset: "existing-sunni-project-rules";
 }
 
@@ -82,7 +80,13 @@ export interface FaraezEligibility {
   readonly heirType: string;
   readonly count: number;
   readonly eligible: boolean;
+  readonly asabah: boolean;
   readonly reason?: string;
+}
+
+export interface EligibilityResult {
+  readonly heirs: readonly FaraezEligibility[];
+  readonly asabahHeirTypes: readonly string[];
 }
 
 export interface FaraezPrescribedShare {
@@ -117,11 +121,6 @@ export interface FaraezResult {
   readonly conservation: FaraezConservation;
 }
 
-/**
- * Measurement remains an adapter concern. Faraez itself only returns exact
- * fractions, so the Ana/Gonda/Kora/Kranti/Til system can be applied later
- * without introducing fractional floating-point arithmetic into inheritance.
- */
 export interface FaraezMeasurementAdapterResult {
   readonly fraction: Rational;
   readonly ana: bigint;
