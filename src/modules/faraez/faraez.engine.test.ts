@@ -61,12 +61,15 @@ describe("calculateFaraez facade", () => {
       ["পিতা", rational(1n, 6n)],
     ]);
 
+    // 1/8 + 1/6 + 1/6 = 11/24; the 13/24 residual is split 2:1
+    // between two sons and one daughter, giving 13/60 per son and 13/120
+    // to the daughter.
     expect(result.allocations.map((share) => [share.heirType, share.totalShare])).toEqual([
       ["স্বামী/স্ত্রী", rational(1n, 8n)],
       ["মাতা", rational(1n, 6n)],
       ["পিতা", rational(1n, 6n)],
-      ["পুত্র", rational(13n, 30n)],
-      ["কন্যা", rational(13n, 60n)],
+      ["পুত্র", rational(13n, 60n)],
+      ["কন্যা", rational(13n, 120n)],
     ]);
 
     const tilCounts = result.measurementAllocations.map((measurement) =>
@@ -79,8 +82,9 @@ describe("calculateFaraez facade", () => {
       }),
     );
 
-    expect(result.measurementAllocations).toHaveLength(5);
-    expect(tilCounts).toEqual([9600, 12800, 12800, 16640, 16640]);
+    // Two sons are expanded to two individual measurement entries.
+    expect(result.measurementAllocations).toHaveLength(6);
+    expect(tilCounts).toEqual([9600, 12800, 12800, 16640, 16640, 8320]);
     expect(tilCounts.reduce((sum, value) => sum + value, 0)).toBe(TIL_PER_FULL_UNIT);
   });
 
