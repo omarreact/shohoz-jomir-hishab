@@ -2,7 +2,8 @@
 
 export const CALCULATIONS_STORAGE_KEY = "landbd.calculations.v1";
 
-const BIGINT_SUFFIX = "n";
+const BIGINT_MARKER = "__landbd_bigint__";
+const LEGACY_BIGINT_PATTERN = /^-?\d+n$/;
 const STORAGE_VERSION = 1 as const;
 
 export interface CalculationStorageEnvelope<TDraft = unknown> {
@@ -12,15 +13,23 @@ export interface CalculationStorageEnvelope<TDraft = unknown> {
   history: string[];
 }
 
-/** JSON replacer that preserves native bigint values without losing precision. */
+/** JSON replacer that preserves native bigint values without colliding with ordinary strings. */
 export function bigintReplacer(_key: string, value: unknown): unknown {
-  return typeof value === "bigint" ? `${value.toString()}${BIGINT_SUFFIX}` : value;
+  return typeof value === "bigint" ? { [BIGINT_MARKER]: value.toString() } : value;
 }
 
-/** JSON reviver that restores bigint values written by bigintReplacer. */
+/** JSON reviver that restores current and legacy bigint values. */
 export function bigintReviver(_key: string, value: unknown): unknown {
-  if (typeof value !== "string" || !/^-?\d+n$/.test(value)) return value;
-  return BigInt(value.slice(0, -BIGINT_SUFFIX.length));
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const candidate = value as Record<string, unknown>;
+    if (Object.keys(candidate).length === 1 && typeof candidate[BIGINT_MARKER] === "string" && /^-?\d+$/.test(candidate[BIGINT_MARKER])) {
+      return BigInt(candidate[BIGINT_MARKER]);
+    }
+  }
+  if (typeof value === "string" && LEGACY_BIGINT_PATTERN.test(value)) {
+    return BigInt(value.slice(0, -1));
+  }
+  return value;
 }
 
 export function stringifyStorage<T>(value: T): string {
@@ -63,11 +72,6 @@ export function readCalculationStorage<TDraft = unknown>(): CalculationStorageEn
   }
 }
 
-/**
- * Persist calculation history without allowing storage quota/security failures
- * to break the calculator UI. LocalStorage is an optional offline cache, not
- * the source of truth for an in-progress calculation.
- */
 export function writeCalculationStorage<TDraft>(storage: CalculationStorageEnvelope<TDraft>): boolean {
   if (typeof window === "undefined") return false;
 
