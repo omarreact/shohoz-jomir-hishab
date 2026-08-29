@@ -1,6 +1,6 @@
 import { FULL_UNIT_TIL } from "@/src/shared/constants";
 import type { KhatiyanOwner, KhatiyanQuickData } from "@/src/shared/types";
-import { shareToTil } from "./share-normalization";
+import { shareToTilUnchecked } from "./share-normalization";
 
 export interface KhatiyanQuickResult {
   land: number;
@@ -8,9 +8,9 @@ export interface KhatiyanQuickResult {
   katha: number;
 }
 
-/** Adapt the shared Khatiyan owner type to the canonical mixed-radix converter. */
+/** Adapt the shared Khatiyan owner type to the legacy quick-calculation semantics. */
 export function ownerShareToTil(owner: Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">): number {
-  return shareToTil({
+  return shareToTilUnchecked({
     a: Number(owner.a),
     g: Number(owner.g),
     k: Number(owner.k),
@@ -19,7 +19,7 @@ export function ownerShareToTil(owner: Pick<KhatiyanOwner, "a" | "g" | "k" | "kr
   });
 }
 
-/** Sum owner shares using the canonical Khatiyan til representation. */
+/** Sum owner shares using the legacy quick-calculation til representation. */
 export function totalOwnerTil(owners: ReadonlyArray<Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">>): number {
   return owners.reduce((sum, owner) => sum + ownerShareToTil(owner), 0);
 }
