@@ -1,0 +1,32 @@
+import { FULL_UNIT_TIL } from "@/src/shared/constants";
+import type { KhatiyanOwner, KhatiyanQuickData, KhatiyanQuickResult } from "@/src/shared/types";
+
+/** Convert a Khatiyan owner share to the existing mixed-radix til representation. */
+export function ownerShareToTil(owner: Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">): number {
+  return Number(owner.a) * 4800 + Number(owner.g) * 240 + Number(owner.k) * 60 + Number(owner.kr) * 20 + Number(owner.ti);
+}
+
+/** Sum owner shares without changing the application's existing share semantics. */
+export function totalOwnerTil(owners: ReadonlyArray<Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">>): number {
+  return owners.reduce((sum, owner) => sum + ownerShareToTil(owner), 0);
+}
+
+/** Existing quick-calculation formula extracted from the page as a pure function. */
+export function calculateQuickKhatiyan(
+  quickData: KhatiyanQuickData,
+  toEn: (value: string | number) => number,
+): KhatiyanQuickResult | null {
+  const total = toEn(quickData.totalLand);
+  const shareTil = ownerShareToTil(quickData);
+  const share = shareTil / FULL_UNIT_TIL;
+
+  if (total > 0 && share > 0) {
+    return {
+      land: total * share,
+      sqft: total * share * 435.6,
+      katha: total * share / 1.65,
+    };
+  }
+
+  return null;
+}
