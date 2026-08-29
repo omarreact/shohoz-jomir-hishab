@@ -3,10 +3,15 @@ import { calculateQuickKhatiyan, ownerShareToTil, totalOwnerTil } from "./quick-
 describe("Khatiyan quick calculation", () => {
   const identity = (value: string | number) => Number(value);
 
-  it("uses the canonical mixed-radix share conversion", () => {
+  it("uses the legacy weighted share conversion", () => {
     const owner = { a: 8, g: 0, k: 0, kr: 0, ti: 0 };
     expect(ownerShareToTil(owner)).toBe(38400);
     expect(totalOwnerTil([owner, { a: 4, g: 0, k: 0, kr: 0, ti: 0 }])).toBe(57600);
+  });
+
+  it("preserves legacy behavior for non-canonical numeric unit inputs", () => {
+    expect(ownerShareToTil({ a: 0, g: 20, k: 0, kr: 0, ti: 0 })).toBe(4800);
+    expect(ownerShareToTil({ a: 0.5, g: 0, k: 0, kr: 0, ti: 0 })).toBe(2400);
   });
 
   it("preserves the existing quick calculation formula", () => {
