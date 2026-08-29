@@ -164,7 +164,7 @@ export default function FaraezPage() {
   const downloadMultiPagePDF = async () => {
     if (!exportRef.current) return;
     const element = exportRef.current; const originalWidth = element.style.width; element.style.width = "800px";
-    try { const html2pdf = (await import("html2pdf.js")).default; await html2pdf().set({ margin: [15, 10, 15, 10] as [number, number, number, number], filename: "Faraez_Result.pdf", image: { type: "jpeg" as const, quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const }, pagebreak: { mode: ["avoid-all", "css", "legacy"] } }).from(element).save(); }
+    try { const html2pdf = (await import("html2pdf.js")).default; await html2pdf().set({ margin: [15, 10, 15, 10] as [number, number, number, number], filename: "Faraez_Result.pdf", image: { type: "jpeg" as const, quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const } }).from(element).save(); }
     catch (err) { console.error(err); alert("PDF তৈরিতে সমস্যা হয়েছে।"); } finally { element.style.width = originalWidth; }
   };
 

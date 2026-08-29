@@ -46,6 +46,10 @@ export const useKhatiyanGisBridge = create<KhatiyanGisBridgeState>((set, get) =>
   clearPendingPlot: () => set({ pendingPlot: null }),
 }));
 
+export function consumePendingPlot(): PendingKhatiyanPlot | null {
+  return useKhatiyanGisBridge.getState().consumePendingPlot();
+}
+
 export function sendPlotToKhatiyan(plot: KhatiyanPlot): void {
   useKhatiyanGisBridge.getState().setPendingPlot(plot);
 }

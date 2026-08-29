@@ -4,10 +4,11 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import maplibregl, {
-  type GeoJSONSource,
-  type Map as MapLibreInstance,
-  type MapGeoJSONFeature,
+import * as maplibregl from "maplibre-gl";
+import type {
+  GeoJSONSource,
+  Map as MapLibreInstance,
+  MapGeoJSONFeature,
 } from "maplibre-gl";
 import type { FeatureCollection, Geometry, Polygon } from "geojson";
 import {
@@ -215,7 +216,7 @@ export default function MapLibreMap() {
   const isAdvanced = isLoggedIn;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreInstance | null>(null);
-  const extentTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const extentTimerRef = useRef<number | null>(null);
   const extentControllerRef = useRef<AbortController | null>(null);
   const extentRequestIdRef = useRef(0);
   const mapReadyRef = useRef(false);
@@ -318,7 +319,7 @@ export default function MapLibreMap() {
       const features = map.queryRenderedFeatures(event.point, {
         layers: [VECTOR_LAYERS.rsBoundaryFill, VECTOR_LAYERS.rsBoundaryLine, VECTOR_LAYERS.msBoundaryFill, VECTOR_LAYERS.msBoundaryLine, RASTER_LAYERS.rs, RASTER_LAYERS.ms],
       });
-      const vector = features.find((feature) => feature.geometry?.type === "Polygon");
+      const vector = features.find((feature: MapGeoJSONFeature) => feature.geometry?.type === "Polygon");
       if (!vector) return;
       const sourceKind = String(vector.properties?._layer_source ?? "").toLowerCase() === "ms" || String(vector.properties?.plot_kind ?? "").toLowerCase() === "ms" ? "ms" : "rs";
       const parcel = renderedFeatureToRajuk(vector, sourceKind);
@@ -483,7 +484,7 @@ export default function MapLibreMap() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
-        const point = { type: "Feature", geometry: { type: "Point", coordinates: [longitude, latitude] }, properties: {} } as const;
+        const point: GeoJSON.Feature<GeoJSON.Point> = { type: "Feature", geometry: { type: "Point", coordinates: [longitude, latitude] }, properties: {} };
         const circle = createAccuracyPolygon(latitude, longitude, accuracy);
         updateSourceData(mapRef.current!, VECTOR_SOURCES.location, { type: "FeatureCollection", features: [point] } as FeatureCollection<Geometry>);
         updateSourceData(mapRef.current!, VECTOR_SOURCES.accuracy, circle);

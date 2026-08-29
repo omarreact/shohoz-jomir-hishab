@@ -10,7 +10,7 @@ import { Button } from "@/src/shared/ui/button";
 
 interface Props { results: HeirResult[]; exportRef: React.RefObject<HTMLDivElement | null>; onDownloadPDF: () => void; onDownloadExcel: () => void; religion: Religion; }
 const COLORS = ['#198754', '#0d6efd', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#0dcaf0', '#adb5bd'];
-function measurementText(measurement: HeirResult["measurements"] extends readonly (infer T)[] | undefined ? T : never): string {
+function measurementText(measurement: HeirResult["measurements"] extends readonly (infer T)[] | undefined ? T | undefined : never): string {
   if (!measurement) return "—";
   return `${toBn(measurement.ana.toString())} আনা · ${toBn(measurement.gonda.toString())} গন্ডা · ${toBn(measurement.kora.toString())} কড়া · ${toBn(measurement.kranti.toString())} ক্রান্তি · ${toBn(measurement.til.toString())} তিল`;
 }
