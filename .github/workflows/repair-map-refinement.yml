@@ -34,3 +34,4 @@ jobs:
           git rm -f .github/workflows/apply-map-ui-refinement.yml .github/workflows/repair-map-refinement.yml scripts/apply-map-ui-refinement.py
           git commit -m 'refactor(map): refine MapLibre UI'
           git push origin HEAD:main
+# Temporary self-cleaning runner for the surgical main-branch refactor.
