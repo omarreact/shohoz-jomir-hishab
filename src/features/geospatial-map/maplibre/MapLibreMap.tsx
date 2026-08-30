@@ -43,6 +43,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import MapLibreMapView from "./MapLibreMapView";
+import { bindMapViewport } from "./mapViewport";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
 
@@ -113,6 +114,7 @@ export default function MapLibreMap() {
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
     mapRef.current = map;
+    const unbindViewport = bindMapViewport(map, containerRef.current!);
 
     const addSources = () => {
       (Object.keys(BASEMAP_SOURCE_DEFINITIONS) as BasemapKey[]).forEach((key) => {
@@ -215,9 +217,6 @@ export default function MapLibreMap() {
       try {
         addSources();
         addLayers();
-        // Ensure WebGL canvas matches container after style/sources mount.
-        map.resize();
-        requestAnimationFrame(() => map.resize());
         mapReadyRef.current = true;
         setMapReady(true);
         void loadExtent();
@@ -232,6 +231,7 @@ export default function MapLibreMap() {
     map.on("zoomend", handleMove);
 
     return () => {
+      unbindViewport();
       if (extentTimerRef.current) window.clearTimeout(extentTimerRef.current);
       extentControllerRef.current?.abort();
       identifyControllerRef.current?.abort();
