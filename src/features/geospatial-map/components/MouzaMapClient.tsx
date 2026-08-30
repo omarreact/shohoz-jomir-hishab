@@ -7,7 +7,7 @@ const MouzaExportMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid h-screen w-screen place-items-center bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
+      <div className="grid min-h-[50vh] w-full flex-1 place-items-center bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
         মৌজা মানচিত্র প্রস্তুত হচ্ছে…
       </div>
     ),
@@ -16,7 +16,7 @@ const MouzaExportMap = dynamic(
 
 export default function MouzaMapClient() {
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
+    <div className="relative min-h-[min(70vh,720px)] w-full flex-1 overflow-hidden md:min-h-[min(75vh,900px)]">
       <MouzaExportMap />
     </div>
   );

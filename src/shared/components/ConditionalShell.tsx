@@ -34,21 +34,29 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
-  const isMapRoute =
-    pathname?.startsWith("/dap-map") ||
-    pathname?.startsWith("/geospatial-map") ||
-    pathname?.startsWith("/mouza-map");
+  // Full-viewport GIS sandboxes only (no shared chrome). Main product map pages
+  // (/geospatial-map, /mouza-map) keep Navbar + Footer for site navigation.
+  const isIsolatedMapSandbox = pathname?.startsWith("/dap-map");
 
-  // GIS routes are deliberately isolated from the application shell. MapLibre owns
-  // the full viewport and must not inherit shared navigation or maintenance UI.
-  if (isAdminRoute || isLoginRoute || isMapRoute) {
+  if (isAdminRoute || isLoginRoute || isIsolatedMapSandbox) {
     return <>{children}</>;
   }
+
+  const isProductMapRoute =
+    pathname?.startsWith("/geospatial-map") || pathname?.startsWith("/mouza-map");
 
   return (
     <MaintenanceGate>
       <Navbar />
-      <main className="flex-grow-1">{children}</main>
+      <main
+        className={
+          isProductMapRoute
+            ? "flex min-h-0 flex-1 flex-col"
+            : "flex-grow-1"
+        }
+      >
+        {children}
+      </main>
       <HistoryShortcut />
       <Footer />
       <MobileFloatingNav />
