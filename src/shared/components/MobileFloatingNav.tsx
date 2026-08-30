@@ -48,6 +48,7 @@ const TABS: Tab[] = [
     match: (p) =>
       p.startsWith(FEATURE_ROUTES.landMap) ||
       p.startsWith("/geospatial-map") ||
+      p.startsWith("/mouza-map") ||
       p.startsWith("/dap-map"),
   },
 ];
@@ -68,21 +69,14 @@ export default function MobileFloatingNav() {
     return null;
   }
 
-  const isMap =
-    pathname.startsWith(FEATURE_ROUTES.landMap) ||
-    pathname.startsWith("/geospatial-map") ||
-    pathname.startsWith("/dap-map");
-
   return (
     <>
-      {/* Spacer only on normal pages — map uses its own bottom padding */}
-      {!isMap && (
-        <div
-          className="h-[4.75rem] md:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          aria-hidden
-        />
-      )}
+      {/* Mobile spacer so page content / footer clear the fixed bottom nav */}
+      <div
+        className="h-[4.75rem] md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-hidden
+      />
 
       <nav
         className="fixed inset-x-0 bottom-0 z-[1100] md:hidden"
