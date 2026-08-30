@@ -172,6 +172,8 @@ export default function MouzaExportMap() {
       for (const layer of vectorLayers) {
         if (!map.getLayer(layer.id)) map.addLayer(layer);
       }
+      map.resize();
+      requestAnimationFrame(() => map.resize());
     };
 
     const onClick = async (event: maplibregl.MapMouseEvent) => {
@@ -245,8 +247,8 @@ export default function MouzaExportMap() {
   }, [isExporting, loadedMouza]);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[var(--background)]">
-      <div ref={containerRef} className="absolute inset-0" aria-label="মৌজা মানচিত্র" />
+    <div className="relative h-screen w-screen overflow-hidden bg-[var(--background)]">
+      <div ref={containerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} aria-label="মৌজা মানচিত্র" />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-4">
         <div className="pointer-events-auto rounded-2xl border border-white/60 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-slate-700/70 dark:bg-slate-950/90">
