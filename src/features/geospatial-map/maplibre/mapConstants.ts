@@ -21,8 +21,10 @@ export const LAYERS: LayerDef[] = [
 
 export const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
   dap: false,
-  rs: true,
-  ms: true,
+  // RAJUK raster proxy currently returns empty GIFs (x-proxy-source: landbd-rajuk-empty).
+  // Keep off by default so satellite basemap remains visible; vectors still load at zoom 15+.
+  rs: false,
+  ms: false,
   flood: false,
   boundary: false,
   transport: false,
