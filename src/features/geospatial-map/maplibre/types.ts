@@ -9,6 +9,9 @@ export type BasemapKey = "osm" | "light" | "satellite" | "satellite2003";
 export type MapRasterKey = "dap" | "rs" | "ms" | "flood" | "boundary" | "transport";
 export type VectorKey = "rsBoundary" | "msBoundary" | "selectedPlot" | "location" | "accuracy" | "rsPlotLabels" | "msPlotLabels";
 
+/** MapLibre/GeoJSON coordinate order: [longitude, latitude]. */
+export type LngLatTuple = [longitude: number, latitude: number];
+
 export const RASTER_SOURCES = {
   basemapOsm: "basemap-osm",
   basemapLight: "basemap-light",
@@ -81,7 +84,8 @@ export const DAP_BOUNDS: [[number, number], [number, number]] = [
   [24.1033, 90.6041],
 ];
 
-export const HISTORIC_2003_CENTER: [number, number] = [23.82810618, 90.48911986];
+/** Historical map center in MapLibre/GeoJSON order: [longitude, latitude]. */
+export const HISTORIC_2003_CENTER: LngLatTuple = [90.48911986, 23.82810618];
 export const HISTORIC_2003_ZOOM = 11;
 export const MIN_ZOOM_FOR_VECTOR = 15;
 export const GIS_REQUEST_TIMEOUT_MS = 15_000;
