@@ -83,7 +83,8 @@ export function shareFraction(share: KhatiyanShare): number {
   return Number(shareToTilExact(share)) / TIL_PER_FULL_UNIT;
 }
 
-export function sharesConserved(shares: KhatiyanShare[], epsilon = EPSILON): boolean {
+/** Exact conservation predicate: ownership shares must equal one complete 16-আনা estate (76,800 Tils). */
+export function sharesConserved(shares: KhatiyanShare[], _epsilon = EPSILON): boolean {
   const totalTil = shares.reduce((sum, share) => sum + shareToTilExact(share), 0n);
-  return totalTil <= TIL_PER_FULL_UNIT_BIGINT && Number(totalTil) === Math.round(Number(totalTil)) && epsilon >= 0;
+  return totalTil === TIL_PER_FULL_UNIT_BIGINT;
 }
