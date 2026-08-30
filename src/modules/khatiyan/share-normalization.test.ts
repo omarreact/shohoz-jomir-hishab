@@ -53,6 +53,11 @@ describe("Khatiyan mixed-radix share normalization", () => {
     expect(sharesConserved(shares)).toBe(true);
   });
 
+  it("rejects an incomplete estate instead of treating it as conserved", () => {
+    expect(sharesConserved([{ a: 8, g: 0, k: 0, kr: 0, ti: 0 }])).toBe(false);
+    expect(sharesConserved([{ a: 15, g: 19, k: 3, kr: 2, ti: 19 }])).toBe(false);
+  });
+
   it("returns a compatibility decimal fraction at the UI boundary", () => {
     expect(shareFraction({ a: 8, g: 0, k: 0, kr: 0, ti: 0 })).toBe(0.5);
     expect(shareFraction({ a: 16, g: 0, k: 0, kr: 0, ti: 0 })).toBe(1);
