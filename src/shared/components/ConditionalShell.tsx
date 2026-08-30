@@ -28,31 +28,34 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
-  const isGisRoute =
-    pathname?.startsWith("/dap-map") || pathname?.startsWith("/geospatial-map");
+  const isMapRoute =
+    pathname?.startsWith("/dap-map") ||
+    pathname?.startsWith("/geospatial-map") ||
+    pathname?.startsWith("/mouza-map");
 
-  if (isAdminRoute || isLoginRoute) return <>{children}</>;
+  // GIS routes are deliberately isolated from the application shell. MapLibre owns
+  // the full viewport and must not inherit Navbar, mobile navigation, history UI,
+  // maintenance gates, or the network/offline listener.
+  if (isAdminRoute || isLoginRoute || isMapRoute) {
+    return (
+      <>
+        {isMapRoute ? null : <ServiceWorkerRegistration />}
+        {children}
+      </>
+    );
+  }
 
   return (
     <>
       <ServiceWorkerRegistration />
       <OfflineIndicator />
-      {isGisRoute ? (
-        <div className="relative h-screen w-screen overflow-hidden">
-          <Navbar />
-          <main className="h-full w-full pb-20 md:pb-0">{children}</main>
-          <HistoryShortcut />
-          <MobileFloatingNav />
-        </div>
-      ) : (
-        <MaintenanceGate>
-          <Navbar />
-          <main className="flex-grow-1">{children}</main>
-          <HistoryShortcut />
-          <Footer />
-          <MobileFloatingNav />
-        </MaintenanceGate>
-      )}
+      <MaintenanceGate>
+        <Navbar />
+        <main className="flex-grow-1">{children}</main>
+        <HistoryShortcut />
+        <Footer />
+        <MobileFloatingNav />
+      </MaintenanceGate>
     </>
   );
 }
