@@ -4,10 +4,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 
-/** Emergency restore: MapLibre map with working Carto Light basemap.
- *  OSM tiles are blocked by tile usage policy (x-blocked).
- *  MapLibre does not expand Leaflet's {r} retina token — use plain {z}/{x}/{y}.
- *  Full GIS UI will be restored in a follow-up commit.
+/** Emergency restore: MapLibre + Esri World Imagery (verified tile HTTP 200).
+ *  OSM is blocked by tile policy; Carto was unconfirmed in browser.
+ *  Full GIS UI will be restored in a follow-up commit from 2dd4f01 + basemap fix.
  */
 export default function MapLibreMap() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -24,27 +23,24 @@ export default function MapLibreMap() {
         style: {
           version: 8,
           sources: {
-            "basemap-light": {
+            "basemap-satellite": {
               type: "raster",
               tiles: [
-                "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-                "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-                "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
               ],
               tileSize: 256,
-              attribution: "© OpenStreetMap © CARTO",
+              attribution: "© Esri",
               maxzoom: 21,
             },
           },
           layers: [
             {
-              id: "basemap-light-layer",
+              id: "basemap-satellite-layer",
               type: "raster",
-              source: "basemap-light",
+              source: "basemap-satellite",
             },
           ],
         },
-        // MapLibre order: [longitude, latitude]
         center: [90.48911986, 23.82810618],
         zoom: 11,
         minZoom: 8,
@@ -83,11 +79,11 @@ export default function MapLibreMap() {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden" style={{ background: "#e5e7eb" }}>
-      <div ref={containerRef} className="absolute inset-0" aria-label="ভূমি তথ্য মানচিত্র" />
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur">
+    <div className="relative h-screen w-full overflow-hidden" style={{ background: "#1a1a1a" }}>
+      <div ref={containerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} aria-label="ভূমি তথ্য মানচিত্র" />
+      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-xs text-white shadow">
         <span className={`h-2 w-2 rounded-full ${ready ? "bg-green-500" : "bg-amber-500"}`} />
-        {ready ? "MapLibre · Carto Light" : "মানচিত্র প্রস্তুত হচ্ছে…"}
+        {ready ? "MapLibre · Esri Satellite" : "মানচিত্র প্রস্তুত হচ্ছে…"}
       </div>
     </div>
   );
