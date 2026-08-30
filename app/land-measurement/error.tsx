@@ -11,8 +11,8 @@ export default function Error({
 }) {
   return (
     <DomainErrorFallback
-      domain="Khatiyan"
-      domainBn="খতিয়ান হিসাব"
+      domain="LandMeasurement"
+      domainBn="জমি পরিমাপ"
       error={error}
       reset={reset}
     />

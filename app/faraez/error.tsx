@@ -11,8 +11,8 @@ export default function Error({
 }) {
   return (
     <DomainErrorFallback
-      domain="Khatiyan"
-      domainBn="খতিয়ান হিসাব"
+      domain="Faraez"
+      domainBn="ফারায়েজ"
       error={error}
       reset={reset}
     />
