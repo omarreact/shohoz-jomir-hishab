@@ -119,6 +119,74 @@ export async function getMouzas(tGuid: string, kind: "rs" | "ms" = "rs"): Promis
   return (data.features ?? []).map((f) => f.attributes);
 }
 
+/** Debounced UI search: distinct mouza names from RS mauza layer (layer 1), fallback to plot attributes. */
+export async function searchMouzas(query: string, limit = 20): Promise<Array<{ mauza: string; jl_no: string; m_guid?: string; upazila_ps?: string; m_district?: string }>> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+  const like = escapeSql(q.replace(/%/g, ""));
+  try {
+    const data = await requestLayer<{ features?: RawFeature[] }>(1, {
+      where: `UPPER(mauza) LIKE UPPER('%${like}%')`,
+      outFields: "mauza,jl_no,m_guid,upazila_ps,m_district",
+      returnGeometry: false,
+      orderByFields: "mauza ASC",
+      resultRecordCount: 500,
+    });
+    const seen = new Set<string>();
+    const rows: Array<{ mauza: string; jl_no: string; m_guid?: string; upazila_ps?: string; m_district?: string }> = [];
+    for (const f of data.features ?? []) {
+      const a = f.attributes;
+      const mauza = attr(a, ["mauza", "mauza_name", "rs_mauza_name"]);
+      const jl = attr(a, ["jl_no", "jl"]);
+      if (!mauza) continue;
+      const key = `${mauza.toLowerCase()}|${jl}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push({
+        mauza,
+        jl_no: jl,
+        m_guid: attr(a, ["m_guid"]) || undefined,
+        upazila_ps: attr(a, ["upazila_ps", "thana_upazila"]) || undefined,
+        m_district: attr(a, ["m_district", "district"]) || undefined,
+      });
+    }
+    const lower = q.toLowerCase();
+    rows.sort((a, b) => {
+      const as = a.mauza.toLowerCase().startsWith(lower) ? 0 : 1;
+      const bs = b.mauza.toLowerCase().startsWith(lower) ? 0 : 1;
+      if (as !== bs) return as - bs;
+      return a.mauza.localeCompare(b.mauza, undefined, { sensitivity: "base" });
+    });
+    return rows.slice(0, safeLimit);
+  } catch {
+    const data = await requestLayer<{ features?: RawFeature[] }>(LAYER_RS_PLOT, {
+      where: `UPPER(address_search) LIKE UPPER('%${like}%') OR UPPER(rs_mauza_name) LIKE UPPER('%${like}%')`,
+      outFields: "rs_mauza_name,mauza,jl_no,rs_jl_no,address_search,thana_upazila,m_district",
+      returnGeometry: false,
+      resultRecordCount: 200,
+    });
+    const seen = new Set<string>();
+    const rows: Array<{ mauza: string; jl_no: string; upazila_ps?: string; m_district?: string }> = [];
+    for (const f of data.features ?? []) {
+      const a = f.attributes;
+      const mauza = attr(a, ["rs_mauza_name", "mauza"]);
+      const jl = attr(a, ["rs_jl_no", "jl_no", "jl"]);
+      if (!mauza) continue;
+      const key = `${mauza.toLowerCase()}|${jl}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push({
+        mauza,
+        jl_no: jl,
+        upazila_ps: attr(a, ["thana_upazila", "upazila_ps"]) || undefined,
+        m_district: attr(a, ["m_district", "district"]) || undefined,
+      });
+    }
+    return rows.slice(0, safeLimit);
+  }
+}
+
 function buildRsWhere(filters: RajukPlotFilters): string {
   const clauses: string[] = []; if (filters.plotNo !== undefined) { const n = Math.trunc(filters.plotNo); const s = escapeSql(String(n)); clauses.push(`(plot_no=${n} OR rs_plot_no='${s}' OR rs_plot_no='RS-${s}' OR rs_plot_no='RS-${String(n).padStart(3, "0")}')`); }
   if (filters.rsPlotNo?.trim()) { const v = escapeSql(filters.rsPlotNo.trim()); const bare = escapeSql(filters.rsPlotNo.trim().replace(/^RS-/i, "")); clauses.push(`(rs_plot_no='${v}' OR rs_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`); }
