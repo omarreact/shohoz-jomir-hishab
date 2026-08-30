@@ -99,8 +99,7 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
 
   owners.forEach((o, ownerIndex) => {
     const shareTilExact = shareToTilExactFromOwner(o);
-    // Display-only ratio at the UI boundary; allocation itself is bigint-scaled in allocatePlotArea.
-    const share = Number(shareTilExact) / fullUnitTil;
+    // Zero-share owners are skipped; plot splits use bigint-scaled allocatePlotArea only.
     if (shareTilExact <= 0n) return;
     hasData = true;
     let totalLand = 0;
