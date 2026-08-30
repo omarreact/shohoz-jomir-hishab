@@ -114,7 +114,7 @@ export default function MapLibreMapView({
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-background">
-      <div ref={containerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} aria-label="ভূমি তথ্য মানচিত্র" />
+      <div ref={containerRef} className="absolute inset-0 [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full" style={{ width: "100%", height: "100%" }} aria-label="ভূমি তথ্য মানচিত্র" />
 
       <div className="absolute left-4 top-4 z-20 flex max-w-[calc(100%-2rem)] items-center gap-2">
         <div className="flex min-w-0 items-center rounded-xl border border-border bg-background/95 shadow-lg backdrop-blur">
