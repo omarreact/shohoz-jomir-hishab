@@ -7,8 +7,10 @@ import {
   KRANTI_PER_KORA,
   TIL_PER_ANA,
   TIL_PER_KRANTI,
-  shareToTil as canonicalShareToTil,
+  shareToTilExact,
   TIL_PER_FULL_UNIT,
+  TIL_PER_FULL_UNIT_BIGINT,
+  type KhatiyanShare,
 } from "./share-normalization";
 import { allocatePlotArea } from "./area-allocation";
 
@@ -19,21 +21,27 @@ export { ANA_PER_FULL_UNIT, GONDA_PER_ANA, KORA_PER_GONDA, KRANTI_PER_KORA, TIL_
 export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
 const CONSERVATION_EPSILON = 1e-10;
 
-function shareToTil(owner: KhatiyanOwner): number {
-  return canonicalShareToTil({
+/** Parse owner share fields into the canonical mixed-radix integer form. */
+function ownerToShare(owner: KhatiyanOwner): KhatiyanShare {
+  return {
     a: Number(owner.a),
     g: Number(owner.g),
     k: Number(owner.k),
     kr: Number(owner.kr),
     ti: Number(owner.ti),
-  });
+  };
+}
+
+/** Authoritative Til count for ledger math — bigint only, never floating-point. */
+function shareToTilExactFromOwner(owner: KhatiyanOwner): bigint {
+  return shareToTilExact(ownerToShare(owner));
 }
 
 export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number): string[] {
   const errors: string[] = [];
   if (!Number.isFinite(fullUnitTil) || fullUnitTil <= 0) errors.push("Full Khatiyan unit must be a positive finite number");
 
-  let totalOwnerTil = 0;
+  let totalOwnerTil = 0n;
   owners.forEach((owner, index) => {
     const values = [owner.a, owner.g, owner.k, owner.kr, owner.ti].map(Number);
     if (values.some((value) => !Number.isFinite(value))) {
@@ -56,15 +64,20 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
     });
 
     try {
-      const shareTil = shareToTil(owner);
-      if (shareTil > fullUnitTil) errors.push(`Owner ${index + 1} share exceeds the full unit`);
+      const shareTil = shareToTilExactFromOwner(owner);
+      if (shareTil > TIL_PER_FULL_UNIT_BIGINT) errors.push(`Owner ${index + 1} share exceeds the full unit`);
       else totalOwnerTil += shareTil;
     } catch {
       errors.push(`Owner ${index + 1} contains a non-canonical share`);
     }
   });
 
-  if (Number.isFinite(fullUnitTil) && totalOwnerTil > fullUnitTil + CONSERVATION_EPSILON) errors.push("Total owner shares exceed the full Khatiyan unit");
+  // Strict 76,800 Til conservation boundary for the full 16-আনা unit (no float epsilon).
+  if (Number.isFinite(fullUnitTil) && fullUnitTil === TIL_PER_FULL_UNIT && totalOwnerTil > TIL_PER_FULL_UNIT_BIGINT) {
+    errors.push("Total owner shares exceed the full Khatiyan unit");
+  } else if (Number.isFinite(fullUnitTil) && fullUnitTil !== TIL_PER_FULL_UNIT && totalOwnerTil > BigInt(Math.trunc(fullUnitTil))) {
+    errors.push("Total owner shares exceed the full Khatiyan unit");
+  }
 
   plots.forEach((plot, index) => {
     const area = Number(plot.a);
@@ -81,19 +94,14 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
   let hasData = false;
   const computedResults: KhatiyanOwnerResult[] = [];
   const totalPlotArea = plots.reduce((sum, plot) => sum + toEn(plot.a), 0);
-  const shareInputs = owners.map((owner) => ({
-    a: Number(owner.a),
-    g: Number(owner.g),
-    k: Number(owner.k),
-    kr: Number(owner.kr),
-    ti: Number(owner.ti),
-  }));
+  const shareInputs: KhatiyanShare[] = owners.map((owner) => ownerToShare(owner));
   const allocationsByPlot = plots.map((plot) => allocatePlotArea(toEn(plot.a), shareInputs));
 
   owners.forEach((o, ownerIndex) => {
-    const shareTil = shareToTil(o);
-    const share = shareTil / fullUnitTil;
-    if (share <= 0) return;
+    const shareTilExact = shareToTilExactFromOwner(o);
+    // Display-only ratio at the UI boundary; allocation itself is bigint-scaled in allocatePlotArea.
+    const share = Number(shareTilExact) / fullUnitTil;
+    if (shareTilExact <= 0n) return;
     hasData = true;
     let totalLand = 0;
     const ownerPlots: KhatiyanOwnerResult["ownerPlots"] = [];
