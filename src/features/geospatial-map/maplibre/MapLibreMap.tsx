@@ -8,7 +8,6 @@ import * as maplibregl from "maplibre-gl";
 import type {
   GeoJSONSource,
   Map as MapLibreInstance,
-  MapGeoJSONFeature,
 } from "maplibre-gl";
 import type { FeatureCollection, Geometry, Polygon } from "geojson";
 import {
@@ -94,7 +93,6 @@ const BASemap_LABELS: Record<BasemapKey, string> = {
 };
 
 const GOOGLE_EARTH_2003_URL = "https://earth.google.com/web/@23.82810618,90.48911986,3.60010157a,3337.57801622d,35y,-0h,0t,0r/data=ChYqEAgBEgoyMDAzLTAxLTE3GAFCAggBOgMKATBCAggASg0I____________ARAA?authuser=0";
-const EMPTY_FEATURES = { type: "FeatureCollection" as const, features: [] as RajukPlotFeature[] };
 
 function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
@@ -175,28 +173,6 @@ function featuresToFc(features: RajukPlotFeature[]): FeatureCollection<Polygon> 
   };
 }
 
-function renderedFeatureToRajuk(feature: MapGeoJSONFeature, sourceKind: "rs" | "ms"): RajukPlotFeature | null {
-  if (!feature.geometry || feature.geometry.type !== "Polygon") return null;
-  const geometry = feature.geometry as GeoJSON.Polygon;
-  if (!geometry.coordinates.length) return null;
-  return {
-    attributes: {
-      ...(feature.properties ?? {}),
-      objectid: Number(feature.properties?.objectid ?? 0),
-      plot_no: feature.properties?.plot_no == null ? null : Number(feature.properties.plot_no),
-      p_guid: feature.properties?.p_guid == null ? null : String(feature.properties.p_guid),
-      rs_plot_no: feature.properties?.rs_plot_no == null ? null : String(feature.properties.rs_plot_no),
-      ms_plot_no: feature.properties?.ms_plot_no == null ? null : String(feature.properties.ms_plot_no),
-      address_search: feature.properties?.address_search == null ? null : String(feature.properties.address_search),
-      Shape__Area: feature.properties?.Shape__Area == null ? null : Number(feature.properties.Shape__Area),
-      Shape__Length: feature.properties?.Shape__Length == null ? null : Number(feature.properties.Shape__Length),
-      plot_kind: sourceKind,
-      _layer_source: sourceKind,
-    },
-    geometry: { rings: geometry.coordinates as number[][][] },
-  };
-}
-
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, externalSignal?: AbortSignal): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), GIS_REQUEST_TIMEOUT_MS);
@@ -218,7 +194,9 @@ export default function MapLibreMap() {
   const mapRef = useRef<MapLibreInstance | null>(null);
   const extentTimerRef = useRef<number | null>(null);
   const extentControllerRef = useRef<AbortController | null>(null);
+  const identifyControllerRef = useRef<AbortController | null>(null);
   const extentRequestIdRef = useRef(0);
+  const identifyRequestIdRef = useRef(0);
   const mapReadyRef = useRef(false);
   const identifyModeRef = useRef(true);
 
@@ -275,6 +253,9 @@ export default function MapLibreMap() {
       minZoom: 8,
       maxZoom: 21,
       renderWorldCopies: false,
+      // MapLibre exposes this through WebGL context attributes in the installed typings.
+      // It is required by the high-resolution export path to keep the drawing buffer readable.
+      canvasContextAttributes: { preserveDrawingBuffer: true },
     });
     mapRef.current = map;
 
@@ -286,7 +267,7 @@ export default function MapLibreMap() {
       (Object.keys(RAJUK_RASTER_SOURCE_DEFINITIONS) as MapRasterKey[]).forEach((key) => {
         if (!map.getSource(RASTER_SOURCES[key])) map.addSource(RASTER_SOURCES[key], RAJUK_RASTER_SOURCE_DEFINITIONS[key]);
       });
-      (Object.values(VECTOR_SOURCES)).forEach((sourceId) => {
+      Object.values(VECTOR_SOURCES).forEach((sourceId) => {
         if (!map.getSource(sourceId)) map.addSource(sourceId, { type: "geojson", data: EMPTY_GEOJSON });
       });
     };
@@ -315,24 +296,39 @@ export default function MapLibreMap() {
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
       if (!identifyModeRef.current) return;
-  
- const features = map.queryRenderedFeatures(event.point, {
-   layers: ["vector-rs-boundary-fill", "vector-ms-boundary-fill"],
- });
-      const vector = features.find((feature: MapGeoJSONFeature) => feature.geometry?.type === "Polygon");
-      if (!vector) return;
-      const sourceKind = String(vector.properties?._layer_source ?? "").toLowerCase() === "ms" || String(vector.properties?.plot_kind ?? "").toLowerCase() === "ms" ? "ms" : "rs";
-      const parcel = renderedFeatureToRajuk(vector, sourceKind);
-      if (!parcel) return;
-      setSelected(parcel);
-      setResults((current) => {
-        const id = parcel.attributes.objectid;
-        const filtered = current.filter((item) => item.attributes.objectid !== id);
-        return [parcel, ...filtered];
-      });
-      setTab("results");
-      setPanelOpen(true);
-      updateSourceData(map, VECTOR_SOURCES.selectedPlot, featuresToFc([parcel]) as FeatureCollection<Geometry>);
+
+      identifyControllerRef.current?.abort();
+      const controller = new AbortController();
+      identifyControllerRef.current = controller;
+      const requestId = ++identifyRequestIdRef.current;
+      const { lat, lng } = event.lngLat;
+
+      void (async () => {
+        try {
+          const params = new URLSearchParams({
+            action: "identify",
+            lat: String(lat),
+            lng: String(lng),
+          });
+          const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`, {}, controller.signal);
+          const data = (await response.json().catch(() => null)) as { features?: RajukPlotFeature[]; error?: string } | null;
+          if (!response.ok) throw new Error(data?.error || "দাগ শনাক্ত করা যায়নি");
+          if (controller.signal.aborted || requestId !== identifyRequestIdRef.current || !mapReadyRef.current) return;
+
+          const found = Array.isArray(data?.features) ? data.features : [];
+          setResults(found);
+          setSelected(found[0] ?? null);
+          setTab("results");
+          setPanelOpen(true);
+          updateSourceData(map, VECTOR_SOURCES.selectedPlot, found[0] ? featuresToFc([found[0]]) as FeatureCollection<Geometry> : EMPTY_GEOJSON);
+
+          if (!found.length) notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");
+        } catch (error) {
+          if (controller.signal.aborted || requestId !== identifyRequestIdRef.current) return;
+          console.error("RAJUK identify failed:", error);
+          notify(error instanceof Error ? error.message : "দাগ শনাক্ত করা যায়নি");
+        }
+      })();
     };
 
     const handleMove = () => {
@@ -360,6 +356,9 @@ export default function MapLibreMap() {
     return () => {
       if (extentTimerRef.current) window.clearTimeout(extentTimerRef.current);
       extentControllerRef.current?.abort();
+      identifyControllerRef.current?.abort();
+      extentRequestIdRef.current += 1;
+      identifyRequestIdRef.current += 1;
       map.off("click", handleClick);
       map.off("moveend", handleMove);
       map.off("zoomend", handleMove);
@@ -402,7 +401,7 @@ export default function MapLibreMap() {
       setVectorStatus("দাগের সীমানা লোড হচ্ছে…");
       try {
         const [rs, ms] = await Promise.all([query("rs"), query("ms")]);
-        if (controller.signal.aborted || requestId !== extentRequestIdRef.current) return;
+        if (controller.signal.aborted || requestId !== extentRequestIdRef.current || !mapReadyRef.current) return;
         const rsFeatures = Array.isArray(rs.features) ? rs.features : [];
         const msFeatures = Array.isArray(ms.features) ? ms.features : [];
         updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);
@@ -414,7 +413,7 @@ export default function MapLibreMap() {
         setVectorStatus(error instanceof Error ? error.message : "দাগের সীমানা লোড করা যায়নি");
       }
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -657,7 +656,8 @@ function createAccuracyPolygon(latitude: number, longitude: number, radiusMeters
   const earthRadius = 6378137;
   const radius = Math.max(1, radiusMeters);
   const latRadius = (radius / earthRadius) * (180 / Math.PI);
-  const lonRadius = latRadius / Math.cos((latitude * Math.PI) / 180);
+  const cosLatitude = Math.cos((latitude * Math.PI) / 180);
+  const lonRadius = latRadius / Math.max(Math.abs(cosLatitude), Number.EPSILON);
   for (let i = 0; i <= 48; i += 1) {
     const angle = (i / 48) * Math.PI * 2;
     points.push([longitude + Math.cos(angle) * lonRadius, latitude + Math.sin(angle) * latRadius]);
@@ -666,6 +666,7 @@ function createAccuracyPolygon(latitude: number, longitude: number, radiusMeters
 }
 
 export function updateSourceData(map: MapLibreInstance, sourceId: string, data: FeatureCollection<Geometry>): boolean {
+  if (!map.isStyleLoaded()) return false;
   const source = map.getSource(sourceId);
   if (!source || source.type !== "geojson") return false;
   (source as GeoJSONSource).setData(data);
