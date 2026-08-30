@@ -146,7 +146,8 @@ export default function MapLibreMap() {
         if (!map.getLayer(layer.id))
           map.addLayer({
             ...layer,
-            layout: { visibility: layer.id === RASTER_LAYERS.rs || layer.id === RASTER_LAYERS.ms ? "visible" : "none" },
+            // Broken empty-GIF proxy tiles must not cover the basemap by default.
+            layout: { visibility: "none" },
           });
       });
       [
@@ -214,6 +215,9 @@ export default function MapLibreMap() {
       try {
         addSources();
         addLayers();
+        // Ensure WebGL canvas matches container after style/sources mount.
+        map.resize();
+        requestAnimationFrame(() => map.resize());
         mapReadyRef.current = true;
         setMapReady(true);
         void loadExtent();
