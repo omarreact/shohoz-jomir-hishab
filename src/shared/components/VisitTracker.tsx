@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 const SESSION_KEY = "landbd_visit_recorded_v1";
@@ -41,7 +42,15 @@ function collectDevice() {
 
 /** Records one basic LandBD app visit per browser session. GPS is never collected here. */
 export default function VisitTracker() {
+  const pathname = usePathname();
+  const isMapRoute =
+    pathname?.startsWith("/dap-map") ||
+    pathname?.startsWith("/geospatial-map") ||
+    pathname?.startsWith("/mouza-map");
+
   useEffect(() => {
+    if (isMapRoute) return;
+
     try {
       if (sessionStorage.getItem(SESSION_KEY)) return;
       sessionStorage.setItem(SESSION_KEY, "1");
@@ -69,7 +78,7 @@ export default function VisitTracker() {
     }).catch(() => undefined);
 
     return () => controller.abort();
-  }, []);
+  }, [isMapRoute]);
 
   return null;
 }
