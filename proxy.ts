@@ -106,6 +106,7 @@ export async function proxy(request: NextRequest) {
     "/api/search",
     "/api/porcha",
     "/api/rajuk",
+    "/api/mouza-map",
     "/api/unified",
     "/api/tiles",
     "/api/pages",
