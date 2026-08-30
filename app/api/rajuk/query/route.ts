@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDistricts, getMouzas, getPlots, getPlotsByExtent, getUpazilas, identifyByPoint } from "@/src/services/rajuk/rajukQuery.service";
+import { getDistricts, getMouzas, getPlots, getPlotsByExtent, getUpazilas, identifyByPoint, searchMouzas } from "@/src/services/rajuk/rajukQuery.service";
 import { toCalculationSafeKhatiyanPlot, RajukParcelDomainError } from "@/src/services/rajuk/rajukKhatiyanAdapter";
 import type { RajukPlotFeature, RajukPlotKind } from "@/src/types/rajuk-runtime";
 
@@ -88,6 +88,12 @@ export async function GET(request: NextRequest) {
       const dGuid = p.get("d_guid");
       if (!dGuid) return NextResponse.json({ error: "d_guid is required" }, { status: 400 });
       return NextResponse.json({ features: await getUpazilas(dGuid, ms ? "ms" : "rs") });
+    }
+
+    if (action === "search-mouza") {
+      const q = p.get("q") || p.get("query") || "";
+      const limit = Number(p.get("limit") || 20);
+      return NextResponse.json({ features: await searchMouzas(q, limit) });
     }
 
     if (action === "mouzas") {
