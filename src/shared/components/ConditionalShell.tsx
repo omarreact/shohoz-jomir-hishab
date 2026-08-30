@@ -12,9 +12,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   const pathname = usePathname();
 
   useEffect(() => {
-    // Remove legacy PWA/offline state left by older deployments. This is a
-    // one-time browser cleanup; the application no longer registers a service
-    // worker or provides offline fallbacks.
+    // Remove legacy PWA/offline state left by older deployments.
     if (!("serviceWorker" in navigator)) return;
 
     void navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -34,8 +32,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
-  // Full-viewport GIS sandboxes only (no shared chrome). Main product map pages
-  // (/geospatial-map, /mouza-map) keep Navbar + Footer for site navigation.
+  // Full-viewport GIS sandboxes only (no shared chrome).
   const isIsolatedMapSandbox = pathname?.startsWith("/dap-map");
 
   if (isAdminRoute || isLoginRoute || isIsolatedMapSandbox) {
@@ -47,19 +44,24 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   return (
     <MaintenanceGate>
-      <Navbar />
-      <main
-        className={
-          isProductMapRoute
-            ? "flex min-h-0 flex-1 flex-col"
-            : "flex-grow-1"
-        }
-      >
-        {children}
-      </main>
-      <HistoryShortcut />
-      <Footer />
-      <MobileFloatingNav />
+      {/* Explicit flex column so Navbar + main + Footer fill the viewport.
+          Without this, ThemeProvider / fragment ancestors break body flex and
+          map containers collapse to 0px → blank white MapLibre canvas. */}
+      <div className="flex min-h-screen flex-1 flex-col">
+        <Navbar />
+        <main
+          className={
+            isProductMapRoute
+              ? "relative flex min-h-0 w-full flex-1 flex-col"
+              : "flex-grow-1"
+          }
+        >
+          {children}
+        </main>
+        <HistoryShortcut />
+        <Footer />
+        <MobileFloatingNav />
+      </div>
     </MaintenanceGate>
   );
 }
