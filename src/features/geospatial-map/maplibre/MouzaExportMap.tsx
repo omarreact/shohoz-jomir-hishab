@@ -21,6 +21,7 @@ import {
 } from "./types";
 import { BASEMAP_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";
 import { exportMapAsHighResolutionPng } from "./exportMap";
+import { bindMapViewport } from "./mapViewport";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
 const SATELLITE_LAYER = BASEMAP_RASTER_LAYERS.satellite;
@@ -147,6 +148,7 @@ export default function MouzaExportMap() {
       },
     });
     mapRef.current = map;
+    const unbindViewport = bindMapViewport(map, containerRef.current!);
 
     const onLoad = () => {
       if (!map.getSource("basemap-satellite")) {
@@ -172,8 +174,6 @@ export default function MouzaExportMap() {
       for (const layer of vectorLayers) {
         if (!map.getLayer(layer.id)) map.addLayer(layer);
       }
-      map.resize();
-      requestAnimationFrame(() => map.resize());
     };
 
     const onClick = async (event: maplibregl.MapMouseEvent) => {
@@ -202,6 +202,7 @@ export default function MouzaExportMap() {
     map.on("load", onLoad);
     map.on("click", onClick);
     return () => {
+      unbindViewport();
       map.off("load", onLoad);
       map.off("click", onClick);
       map.remove();
@@ -248,7 +249,7 @@ export default function MouzaExportMap() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--background)]">
-      <div ref={containerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} aria-label="মৌজা মানচিত্র" />
+      <div ref={containerRef} className="absolute inset-0 [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full" style={{ width: "100%", height: "100%" }} aria-label="মৌজা মানচিত্র" />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-4">
         <div className="pointer-events-auto rounded-2xl border border-white/60 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-slate-700/70 dark:bg-slate-950/90">
