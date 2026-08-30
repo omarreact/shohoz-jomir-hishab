@@ -109,11 +109,11 @@ export default function MapLibreMapView({
   activeDetails,
 }: Props) {
   if (initError) {
-    return <div className="grid h-full min-h-screen place-items-center bg-background p-6 text-center"><div><p className="font-bold text-destructive">মানচিত্র চালু করা যায়নি</p><p className="mt-2 text-sm text-muted-foreground">{initError}</p><button className="mt-4 rounded-lg border px-4 py-2" onClick={() => window.location.reload()}>পুনরায় চেষ্টা</button></div></div>;
+    return <div className="grid h-full min-h-[50vh] place-items-center bg-background p-6 text-center"><div><p className="font-bold text-destructive">মানচিত্র চালু করা যায়নি</p><p className="mt-2 text-sm text-muted-foreground">{initError}</p><button className="mt-4 rounded-lg border px-4 py-2" onClick={() => window.location.reload()}>পুনরায় চেষ্টা</button></div></div>;
   }
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-background">
+    <div className="relative h-full min-h-[min(70vh,720px)] w-full overflow-hidden bg-background md:min-h-[min(75vh,900px)]">
       <div ref={containerRef} className="absolute inset-0 [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full" style={{ width: "100%", height: "100%" }} aria-label="ভূমি তথ্য মানচিত্র" />
 
       <div className="absolute left-4 top-4 z-20 flex max-w-[calc(100%-2rem)] items-center gap-2">
@@ -130,13 +130,13 @@ export default function MapLibreMapView({
         <button onClick={() => setPanelOpen((value) => !value)} className="rounded-xl border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur hover:bg-muted" aria-label="প্যানেল">{panelOpen ? <X size={19} /> : <PanelRight size={19} />}</button>
       </div>
 
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur">
+      <div className="absolute bottom-20 left-4 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur md:bottom-4">
         <span className={`h-2 w-2 rounded-full ${mapReady ? "bg-green-500" : "bg-amber-500"}`} />
         {mapReady ? (vectorStatus || "MapLibre WebGL") : "মানচিত্র প্রস্তুত হচ্ছে…"}
       </div>
 
       {basemap === "satellite2003" && (
-        <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 z-20 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur hover:bg-muted">২০০৩ ঐতিহাসিক উৎস ↗</a>
+        <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noreferrer" className="absolute bottom-20 right-4 z-20 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur hover:bg-muted md:bottom-4">২০০৩ ঐতিহাসিক উৎস ↗</a>
       )}
 
       {panelOpen && (
@@ -219,7 +219,7 @@ export default function MapLibreMapView({
 
       {toast && <div className="absolute left-1/2 top-20 z-50 -translate-x-1/2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background shadow-xl" role="status">{toast}</div>}
       {isAdvanced && <div className="absolute left-1/2 top-4 z-10 hidden -translate-x-1/2 rounded-full border border-primary/20 bg-background/90 px-3 py-1.5 text-xs font-bold text-primary shadow backdrop-blur sm:block">Advanced GIS</div>}
-      {!isAdvanced && publicResultsOpen && results.length > 0 && !panelOpen && <button onClick={() => { setPanelOpen(true); setTab("results"); }} className="absolute bottom-16 right-4 z-20 rounded-xl border border-border bg-background/95 px-4 py-3 text-sm font-bold shadow-lg">ফলাফল দেখুন ({results.length})</button>}
+      {!isAdvanced && publicResultsOpen && results.length > 0 && !panelOpen && <button onClick={() => { setPanelOpen(true); setTab("results"); }} className="absolute bottom-24 right-4 z-20 rounded-xl border border-border bg-background/95 px-4 py-3 text-sm font-bold shadow-lg md:bottom-16">ফলাফল দেখুন ({results.length})</button>}
     </div>
   );
 }
