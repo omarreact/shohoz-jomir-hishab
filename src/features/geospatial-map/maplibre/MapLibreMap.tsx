@@ -6,6 +6,7 @@ import * as maplibregl from "maplibre-gl";
 
 /** Emergency restore: MapLibre map with working Carto Light basemap.
  *  OSM tiles are blocked by tile usage policy (x-blocked).
+ *  MapLibre does not expand Leaflet's {r} retina token — use plain {z}/{x}/{y}.
  *  Full GIS UI will be restored in a follow-up commit.
  */
 export default function MapLibreMap() {
@@ -26,9 +27,9 @@ export default function MapLibreMap() {
             "basemap-light": {
               type: "raster",
               tiles: [
-                "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-                "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-                "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
               ],
               tileSize: 256,
               attribution: "© OpenStreetMap © CARTO",
@@ -55,7 +56,7 @@ export default function MapLibreMap() {
       map.once("load", () => setReady(true));
       map.on("error", (e) => {
         console.error("MapLibre error:", e);
-        setError(e?.error?.message || "Map error");
+        setError((e as { error?: { message?: string } })?.error?.message || "Map error");
       });
 
       return () => {
@@ -82,7 +83,7 @@ export default function MapLibreMap() {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background">
+    <div className="relative h-screen w-full overflow-hidden" style={{ background: "#e5e7eb" }}>
       <div ref={containerRef} className="absolute inset-0" aria-label="ভূমি তথ্য মানচিত্র" />
       <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 px-3 py-2 text-xs shadow backdrop-blur">
         <span className={`h-2 w-2 rounded-full ${ready ? "bg-green-500" : "bg-amber-500"}`} />
