@@ -83,11 +83,11 @@ function activePath(pathname: string, href: string) {
 
 export default function Navbar() {
   const pathname = usePathname();
+  // Absolute overlay only for legacy/immersive map shells — product maps use sticky nav.
   const isMapRoute =
     pathname.startsWith(FEATURE_ROUTES.landMap) ||
     pathname.startsWith("/dap-map") ||
-    pathname.startsWith("/lios-map") ||
-    pathname.startsWith("/geospatial-map");
+    pathname.startsWith("/lios-map");
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, loading: authLoading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
