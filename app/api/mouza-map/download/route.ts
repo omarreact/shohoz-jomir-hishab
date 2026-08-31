@@ -21,7 +21,15 @@ async function runExport(input: unknown) {
     });
     return { result };
   }
-  const result = await exportMouzaRaster(parsed.data);
+
+  // The raster service intentionally accepts only its raster formats.
+  // Keep the schema's public union (including vector-pdf) at this boundary,
+  // then narrow it explicitly before crossing into the raster service.
+  const rasterRequest = {
+    ...parsed.data,
+    format: parsed.data.format === "raw" ? "raw" : "geotiff",
+  } as const;
+  const result = await exportMouzaRaster(rasterRequest);
   return { result };
 }
 
