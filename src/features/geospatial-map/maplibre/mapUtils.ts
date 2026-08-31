@@ -68,10 +68,15 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
 export function toGeoJson(feature: RajukPlotFeature) {
   const rings = feature.geometry?.rings;
   if (!Array.isArray(rings) || rings.length === 0) return null;
+  const a = (feature.attributes ?? {}) as Record<string, unknown>;
+  const plot = a.plot_no ?? a.PLOT_NO ?? a.dag_no ?? "";
+  const label = isMsFeature(feature)
+    ? String(a.ms_plot_no ?? a.MS_PLOT_NO ?? (plot !== "" ? `MS-${plot}` : "MS"))
+    : String(a.rs_plot_no ?? a.RS_PLOT_NO ?? (plot !== "" ? `RS-${plot}` : "RS"));
   return {
     type: "Feature" as const,
     geometry: { type: "Polygon" as const, coordinates: rings },
-    properties: feature.attributes ?? {},
+    properties: { ...a, label },
   };
 }
 
