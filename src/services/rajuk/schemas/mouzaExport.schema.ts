@@ -12,7 +12,7 @@ export const mouzaExportQuerySchema = z.object({
     .max(120)
     .refine((v) => !/[<>"']/.test(v), "Invalid mouza parameter"),
   jl: z.string().trim().max(32).optional(),
-  format: z.enum(["geotiff", "raw"]).default("geotiff"),
+  format: z.enum(["geotiff", "raw", "vector-pdf"]).default("geotiff"),
   layers: z.enum(["rs", "ms", "combined"]).default("rs"),
   maxDim: z.coerce.number().int().min(256).max(8192).default(6144),
 });
