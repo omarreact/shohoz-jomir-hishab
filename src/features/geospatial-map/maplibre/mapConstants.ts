@@ -21,10 +21,10 @@ export const LAYERS: LayerDef[] = [
 
 export const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
   dap: false,
-  // RAJUK raster proxy currently returns empty GIFs (x-proxy-source: landbd-rajuk-empty).
-  // Keep off by default so satellite basemap remains visible; vectors still load at zoom 14+.
-  rs: false,
-  ms: false,
+  // Public visitors should see both cadastral Mauza tile layers by default.
+  // Advanced layer management remains intended for authenticated users.
+  rs: true,
+  ms: true,
   flood: false,
   boundary: false,
   transport: false,
