@@ -32,35 +32,23 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
-  // Full-viewport GIS sandboxes only (no shared chrome).
-  const isIsolatedMapSandbox = pathname?.startsWith("/dap-map");
+  // Full-viewport GIS — no Navbar / Footer / MobileFloatingNav.
+  const isIsolatedMapSandbox =
+    pathname?.startsWith("/dap-map") ||
+    pathname?.startsWith("/geospatial-map") ||
+    pathname?.startsWith("/mouza-map");
 
   if (isAdminRoute || isLoginRoute || isIsolatedMapSandbox) {
     return <>{children}</>;
   }
 
-  const isProductMapRoute =
-    pathname?.startsWith("/geospatial-map") || pathname?.startsWith("/mouza-map");
-
   return (
     <MaintenanceGate>
-      {/* Explicit flex column so Navbar + main + Footer fill the viewport.
-          Without this, ThemeProvider / fragment ancestors break body flex and
-          map containers collapse to 0px → blank white MapLibre canvas. */}
       <div className="flex min-h-screen flex-1 flex-col">
         <Navbar />
-        <main
-          className={
-            isProductMapRoute
-              ? "relative flex min-h-0 w-full flex-1 flex-col"
-              : "flex-grow-1"
-          }
-        >
-          {children}
-        </main>
+        <main className="flex-grow-1">{children}</main>
         <HistoryShortcut />
-        {/* Product maps own the viewport — footer creates a large dead white band on mobile. */}
-        {!isProductMapRoute && <Footer />}
+        <Footer />
         <MobileFloatingNav />
       </div>
     </MaintenanceGate>
