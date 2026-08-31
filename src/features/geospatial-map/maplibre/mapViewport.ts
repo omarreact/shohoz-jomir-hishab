@@ -27,13 +27,19 @@ export function bindMapViewport(
     if (clientWidth <= 0 || clientHeight <= 0) return;
 
     // Keep CSS viewport information local to this browser instance. These
-    // properties are useful to overlays without persisting visitor data.
+    // properties are useful to the map shell/overlays without persisting data.
     const visualViewport = window.visualViewport;
     const width = visualViewport?.width ?? window.innerWidth;
     const height = visualViewport?.height ?? window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    const root = document.documentElement;
+
     container.style.setProperty("--landbd-vw", `${width}px`);
     container.style.setProperty("--landbd-vh", `${height}px`);
-    container.style.setProperty("--landbd-dpr", `${window.devicePixelRatio || 1}`);
+    container.style.setProperty("--landbd-dpr", `${dpr}`);
+    root.style.setProperty("--landbd-vw", `${width}px`);
+    root.style.setProperty("--landbd-vh", `${height}px`);
+    root.style.setProperty("--landbd-dpr", `${dpr}`);
 
     map.resize();
   };
