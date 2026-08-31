@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exportMouzaRaster } from "@/src/services/rajuk/mouzaRasterExport.service";
+import { exportMouzaVectorPdf } from "@/src/services/rajuk/mouzaVectorPdfExport.service";
 import { mouzaExportQuerySchema } from "@/src/services/rajuk/schemas/mouzaExport.schema";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-/** Allow longer GIS mosaic work on platforms that honor this. */
 export const maxDuration = 60;
 
 async function runExport(input: unknown) {
@@ -13,11 +13,19 @@ async function runExport(input: unknown) {
     const msg = parsed.error.issues[0]?.message || "Invalid request";
     return { error: msg as string, status: 400 as const };
   }
+  if (parsed.data.format === "vector-pdf") {
+    const result = await exportMouzaVectorPdf({
+      mouza: parsed.data.mouza,
+      jl: parsed.data.jl,
+      layers: parsed.data.layers,
+    });
+    return { result };
+  }
   const result = await exportMouzaRaster(parsed.data);
   return { result };
 }
 
-function attachmentResponse(result: Awaited<ReturnType<typeof exportMouzaRaster>>) {
+function attachmentResponse(result: Awaited<ReturnType<typeof exportMouzaRaster>> | Awaited<ReturnType<typeof exportMouzaVectorPdf>>) {
   return new NextResponse(new Uint8Array(result.body), {
     status: 200,
     headers: {
@@ -32,6 +40,7 @@ function attachmentResponse(result: Awaited<ReturnType<typeof exportMouzaRaster>
       "X-LandBD-Resolution": String(result.meta.resolution),
       "X-LandBD-CRS": result.meta.crs,
       "X-LandBD-Tiles": String(result.meta.tileCount),
+      "X-LandBD-Plot-Count": String(result.meta.plotCount),
     },
   });
 }
@@ -46,18 +55,11 @@ export async function GET(request: NextRequest) {
       layers: p.get("layers") ?? "rs",
       maxDim: p.get("maxDim") ?? 6144,
     });
-    if ("error" in out) {
-      return NextResponse.json({ error: out.error }, { status: out.status });
-    }
+    if ("error" in out) return NextResponse.json({ error: out.error }, { status: out.status });
     return attachmentResponse(out.result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Mouza download failed";
-    const status =
-      message.includes("No plots") || message.includes("Invalid")
-        ? 400
-        : message.toLowerCase().includes("token") || message.toLowerCase().includes("auth")
-          ? 503
-          : 502;
+    const status = message.includes("No plots") || message.includes("Invalid") ? 400 : message.toLowerCase().includes("token") || message.toLowerCase().includes("auth") ? 503 : 502;
     return NextResponse.json({ error: message }, { status });
   }
 }
@@ -72,9 +74,7 @@ export async function POST(request: NextRequest) {
       layers: body.layers ?? "rs",
       maxDim: body.maxDim ?? 6144,
     });
-    if ("error" in out) {
-      return NextResponse.json({ error: out.error }, { status: out.status });
-    }
+    if ("error" in out) return NextResponse.json({ error: out.error }, { status: out.status });
     return attachmentResponse(out.result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Mouza download failed";
