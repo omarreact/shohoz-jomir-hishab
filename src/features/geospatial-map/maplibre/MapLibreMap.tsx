@@ -162,14 +162,17 @@ export default function MapLibreMap() {
         VECTOR_LAYER_STYLES.rsBoundaryLine,
         VECTOR_LAYER_STYLES.msBoundaryFill,
         VECTOR_LAYER_STYLES.msBoundaryLine,
+        VECTOR_LAYER_STYLES.rsPlotLabels,
+        VECTOR_LAYER_STYLES.msPlotLabels,
         VECTOR_LAYER_STYLES.selectedPlotFill,
         VECTOR_LAYER_STYLES.selectedPlotLine,
         VECTOR_LAYER_STYLES.accuracyFill,
         VECTOR_LAYER_STYLES.accuracyLine,
         VECTOR_LAYER_STYLES.locationPoint,
       ].forEach((layer) => {
-        if (!map.getLayer(layer.id)) map.addLayer(layer);
+        if (!map.getLayer(layer.id)) map.addLayer(layer as maplibregl.LayerSpecification);
       });
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     };
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
@@ -197,7 +200,7 @@ export default function MapLibreMap() {
           setResults(found);
           setSelected(found[0] ?? null);
           setTab("results");
-          setPanelOpen(true);
+          setPanelOpen(false);
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
@@ -328,10 +331,14 @@ export default function MapLibreMap() {
       map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryFill, "visibility", showRsBoundary ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.rsBoundaryLine))
       map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryLine, "visibility", showRsBoundary ? "visible" : "none");
+    if (map.getLayer(VECTOR_LAYERS.rsPlotLabels))
+      map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", showRsBoundary ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryFill))
       map.setLayoutProperty(VECTOR_LAYERS.msBoundaryFill, "visibility", showMsBoundary ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryLine))
       map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", showMsBoundary ? "visible" : "none");
+    if (map.getLayer(VECTOR_LAYERS.msPlotLabels))
+      map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");
   }, [layers, opacity, showRsBoundary, showMsBoundary, mapReady]);
 
   const searchPlots = useCallback(async () => {
@@ -349,7 +356,7 @@ export default function MapLibreMap() {
       setResults(found);
       setSelected(found[0] ?? null);
       setTab("results");
-      setPanelOpen(true);
+      setPanelOpen(false);
       if (found[0]) {
         const rings = found[0].geometry?.rings ?? [];
         if (rings.length) {
@@ -440,9 +447,10 @@ export default function MapLibreMap() {
   }, []);
 
   const activeDetails = selected
-    ? isMsFeature(selected)
-      ? detailRows(selected, "ms")
-      : detailRows(selected, "rs")
+    ? (isMsFeature(selected) ? detailRows(selected, "ms") : detailRows(selected, "rs")).map(([label, value]) => ({
+        label,
+        value,
+      }))
     : [];
 
   return (
