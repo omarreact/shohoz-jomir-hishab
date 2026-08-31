@@ -13,9 +13,9 @@ export type AreaAllocation = {
   index: number;
   /** Exact canonical ownership share in Tils. */
   shareTil: bigint;
-  /** Exact scaled plot area numerator (area × 1,000,000). */
+  /** Exact scaled plot-area × share numerator. */
   exactAreaScaled: bigint;
-  /** Exact fractional remainder numerator over the Til denominator. */
+  /** Exact largest-remainder numerator over the Til denominator. */
   remainderNumerator: bigint;
   /** Exact allocated area in scaled units. */
   allocatedAreaScaled: bigint;
@@ -27,12 +27,11 @@ export type AreaAllocation = {
   remainder: number;
 };
 
-/** Convert an already-parsed JS number to a fixed 6-decimal integer without multiplying floats. */
+/** Convert a finite JS number's decimal representation to fixed 6-decimal units using bigint only. */
 function toScaledArea(area: number): bigint {
   if (!Number.isFinite(area) || area < 0) throw new Error("Area must be a finite non-negative number");
 
-  const text = String(area);
-  const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(text);
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(String(area));
   if (!match) throw new Error("Area must be a finite decimal number");
 
   const sign = match[1] === "-" ? -1n : 1n;
@@ -41,48 +40,24 @@ function toScaledArea(area: number): bigint {
   const exponent = Number(match[4] ?? "0");
   const digits = `${integerPart}${fractionPart}`.replace(/^0+(?=\d)/, "");
   const decimalPosition = integerPart.length + exponent;
+  const scalePower = decimalPosition - digits.length + 6;
+  const coefficient = BigInt(digits || "0");
 
-  let scaledDigits: string;
-  if (decimalPosition <= 0) {
-    scaledDigits = `0${"0".repeat(-decimalPosition)}${digits}`;
-  } else if (decimalPosition >= digits.length) {
-    scaledDigits = `${digits}${"0".repeat(decimalPosition - digits.length)}`;
-  } else {
-    scaledDigits = `${digits.slice(0, decimalPosition)}${digits.slice(decimalPosition)}`;
-  }
+  if (scalePower >= 0) return sign * coefficient * 10n ** BigInt(scalePower);
 
-  const normalized = scaledDigits.replace(/^0+(?=\d)/, "");
-  const fractionalDigits = decimalPosition < 0
-    ? "0".repeat(-decimalPosition) + digits
-    : decimalPosition >= digits.length
-      ? ""
-      : digits.slice(decimalPosition);
-
-  let integerScaled: bigint;
-  if (fractionalDigits.length <= 6) {
-    const integerPartScaled = normalized;
-    const fractionScaled = fractionalDigits.padEnd(6, "0");
-    integerScaled = BigInt(integerPartScaled) * INTERNAL_SCALE + BigInt(fractionScaled || "0");
-  } else {
-    const baseInteger = decimalPosition <= 0 ? 0n : BigInt(digits.slice(0, decimalPosition) || "0");
-    const fraction = decimalPosition <= 0
-      ? `${"0".repeat(-decimalPosition)}${digits}`
-      : digits.slice(decimalPosition);
-    const firstSix = fraction.slice(0, 6).padEnd(6, "0");
-    const seventh = fraction[6] ?? "0";
-    integerScaled = baseInteger * INTERNAL_SCALE + BigInt(firstSix || "0");
-    if (seventh >= "5") integerScaled += 1n;
-  }
-
-  return sign * integerScaled;
+  const divisor = 10n ** BigInt(-scalePower);
+  const quotient = coefficient / divisor;
+  const remainder = coefficient % divisor;
+  const rounded = remainder * 2n >= divisor ? quotient + 1n : quotient;
+  return sign * rounded;
 }
 
 function fromScaledArea(area: bigint): number {
   return Number(area) / INTERNAL_SCALE_NUMBER;
 }
 
-function exactAreaAsNumber(scaledTotal: bigint, shareTil: bigint): number {
-  return fromScaledArea((scaledTotal * shareTil) / TIL_PER_FULL_UNIT_BIGINT);
+function exactAreaAsNumber(scaledNumerator: bigint): number {
+  return fromScaledArea(scaledNumerator / TIL_PER_FULL_UNIT_BIGINT);
 }
 
 export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): AreaAllocation[] {
@@ -130,7 +105,7 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
       exactAreaScaled: row.numerator,
       remainderNumerator: row.remainderNumerator,
       allocatedAreaScaled: row.base,
-      exactArea: exactAreaAsNumber(scaledTotal, row.shareTil),
+      exactArea: exactAreaAsNumber(row.numerator),
       allocatedArea: fromScaledArea(row.base),
       remainder: Number(row.remainderNumerator) / Number(TIL_PER_FULL_UNIT_BIGINT),
     }));
