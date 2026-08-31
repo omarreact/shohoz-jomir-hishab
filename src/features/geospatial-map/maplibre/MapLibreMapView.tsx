@@ -162,11 +162,11 @@ export default function MapLibreMapView({
   const satActive = basemap === "satellite" || basemap === "satellite2003";
 
   return (
-    <div className="relative h-[100dvh] min-h-screen w-full overflow-hidden bg-slate-900 [&_.maplibregl-ctrl-bottom-right]:!bottom-16 [&_.maplibregl-ctrl-bottom-right]:!left-3 [&_.maplibregl-ctrl-bottom-right]:!right-auto [&_.maplibregl-ctrl-bottom-right]:!z-40">
+    <div className="relative h-full min-h-0 w-full overflow-hidden bg-slate-900 [&_.maplibregl-ctrl-bottom-right]:!bottom-auto [&_.maplibregl-ctrl-bottom-right]:!left-3 [&_.maplibregl-ctrl-bottom-right]:!right-auto [&_.maplibregl-ctrl-bottom-right]:!top-1/2 [&_.maplibregl-ctrl-bottom-right]:!-translate-y-1/2 [&_.maplibregl-ctrl-bottom-right]:!z-40">
       <div
         ref={containerRef}
-        className="absolute inset-0 h-[100dvh] w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
-        style={{ width: "100%", height: "100dvh", minHeight: "100vh" }}
+        className="absolute inset-0 h-full min-h-0 w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
+        style={{ width: "100%", height: "100%", minHeight: 0 }}
         aria-label="ভূমি তথ্য মানচিত্র"
       />
 
@@ -267,7 +267,7 @@ export default function MapLibreMapView({
       )}
 
       {showResults && (
-        <div className="absolute bottom-0 left-0 right-0 z-30 max-h-[48vh] overflow-hidden rounded-t-3xl border border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[70vh] sm:w-full sm:max-w-lg sm:rounded-3xl">
+        <div className="absolute bottom-0 left-0 right-0 z-30 max-h-[48vh] min-h-0 overflow-hidden rounded-t-3xl border border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[70vh] sm:w-full sm:max-w-lg sm:rounded-3xl">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div>
               <div className="text-sm font-bold text-white">ফলাফল</div>
@@ -321,27 +321,30 @@ export default function MapLibreMapView({
       )}
 
       {panelOpen && isAdvanced && (
-        <aside className="absolute bottom-0 right-0 top-0 z-40 flex w-full max-w-sm flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur md:bottom-4 md:right-4 md:top-16 md:rounded-2xl md:border">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <aside className="absolute bottom-0 right-0 top-0 z-40 flex min-h-0 w-full max-w-sm flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur md:bottom-4 md:right-4 md:top-16 md:rounded-2xl md:border">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="text-sm font-bold text-white">মানচিত্র নিয়ন্ত্রণ</div>
             <button onClick={() => setPanelOpen(false)} className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10" aria-label="বন্ধ">
               <X size={18} />
             </button>
           </div>
-          <div className="flex gap-1 border-b border-white/10 p-2">
-            {(["layers", "basemap", "results"] as Tab[]).map((item) => (
-              <button
-                key={item}
-                onClick={() => setTab(item)}
-                className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${
-                  tab === item ? "bg-emerald-600 text-white" : "text-slate-300 hover:bg-white/5"
-                }`}
-              >
-                {item === "layers" ? "লেয়ার" : item === "basemap" ? "বেসম্যাপ" : `ফলাফল (${results.length})`}
-              </button>
-            ))}
+          <div className="flex shrink-0 gap-1 border-b border-white/10 p-2">
+            {["layers", "basemap", "results"].map((item) => {
+              const tabItem = item as Tab;
+              return (
+                <button
+                  key={tabItem}
+                  onClick={() => setTab(tabItem)}
+                  className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${
+                    tab === tabItem ? "bg-emerald-600 text-white" : "text-slate-300 hover:bg-white/5"
+                  }`}
+                >
+                  {tabItem === "layers" ? "লেয়ার" : tabItem === "basemap" ? "বেসম্যাপ" : `ফলাফল (${results.length})`}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex-1 overflow-y-auto p-4 text-slate-100">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 text-slate-100">
             {tab === "layers" && (
               <div className="space-y-3">
                 <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-3 text-sm font-semibold">
