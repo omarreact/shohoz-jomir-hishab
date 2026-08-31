@@ -1,6 +1,11 @@
 name: Restore GeospatialMap
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/restore-geospatial-map.yml
   workflow_dispatch:
 
 permissions:
@@ -15,18 +20,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore full map UI from redesign (keep current mobile CSS)
+      - name: Restore complete geospatial-map folder from known commit
         run: |
-          git fetch origin redesign/landbd-ux-2026:redesign/landbd-ux-2026
-          # Full component: layers panel, basemap toggle, results (public + auth)
-          git show redesign/landbd-ux-2026:src/features/geospatial-map/components/GeospatialMap.tsx > src/features/geospatial-map/components/GeospatialMap.tsx
-          # Do NOT overwrite GeospatialMap.module.css — main already has iPhone/safe-area CSS
+          SOURCE_COMMIT=0b1af95a89fc1e9429d5bfac7c3e0c9d2c3b078f
+          git fetch origin "$SOURCE_COMMIT"
+          rm -rf src/features/geospatial-map
+          git archive "$SOURCE_COMMIT" src/features/geospatial-map | tar -x
 
-      - name: Commit and push to main
+      - name: Commit restored geospatial-map folder and remove temporary workflow trigger
         run: |
           git config user.name "LandBD CI"
           git config user.email "ci@landbd.local"
-          git add src/features/geospatial-map/components/GeospatialMap.tsx
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "fix(map): restore full geospatial UI (basemap, layers, results)"
+          git add src/features/geospatial-map
+          git rm --cached .github/workflows/restore-geospatial-map.yml || true
+          git add -u .github/workflows/restore-geospatial-map.yml
+          git commit -m "restore geospatial-map from 0b1af95"
           git push origin HEAD:main
