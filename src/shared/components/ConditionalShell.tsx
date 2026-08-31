@@ -59,7 +59,8 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
           {children}
         </main>
         <HistoryShortcut />
-        <Footer />
+        {/* Product maps own the viewport — footer creates a large dead white band on mobile. */}
+        {!isProductMapRoute && <Footer />}
         <MobileFloatingNav />
       </div>
     </MaintenanceGate>
