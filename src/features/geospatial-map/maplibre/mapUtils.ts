@@ -65,12 +65,53 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
   ] as const;
 }
 
-export function toGeoJson(feature: RajukPlotFeature) {
+/**
+ * Canonical MapLibre/GeoJSON coordinate contract: [longitude, latitude].
+ * Reject invalid geometry at the network boundary rather than allowing a bad
+ * coordinate to reach MapLibre's strict LngLat validation.
+ */
+export function isValidLngLat(coordinate: unknown): coordinate is [number, number] {
+  if (!Array.isArray(coordinate) || coordinate.length < 2) return false;
+  const longitude = Number(coordinate[0]);
+  const latitude = Number(coordinate[1]);
+  return Number.isFinite(longitude) && Number.isFinite(latitude) && longitude >= -180 && longitude <= 180 && latitude >= -90 && latitude <= 90;
+}
+
+export function sanitizeRajukFeature(feature: RajukPlotFeature): RajukPlotFeature | null {
   const rings = feature.geometry?.rings;
   if (!Array.isArray(rings) || rings.length === 0) return null;
-  const a = (feature.attributes ?? {}) as Record<string, unknown>;
+
+  const sanitizedRings: number[][][] = [];
+  for (const ring of rings) {
+    if (!Array.isArray(ring) || ring.length < 4) return null;
+    const sanitizedRing: number[][] = [];
+    for (const coordinate of ring) {
+      if (!isValidLngLat(coordinate)) return null;
+      sanitizedRing.push([coordinate[0], coordinate[1]]);
+    }
+    sanitizedRings.push(sanitizedRing);
+  }
+
+  return {
+    ...feature,
+    geometry: {
+      ...feature.geometry,
+      rings: sanitizedRings,
+    },
+  };
+}
+
+export function sanitizeRajukFeatures(features: RajukPlotFeature[]): RajukPlotFeature[] {
+  return features.map(sanitizeRajukFeature).filter((feature): feature is RajukPlotFeature => feature !== null);
+}
+
+export function toGeoJson(feature: RajukPlotFeature) {
+  const safeFeature = sanitizeRajukFeature(feature);
+  if (!safeFeature) return null;
+  const rings = safeFeature.geometry.rings;
+  const a = (safeFeature.attributes ?? {}) as Record<string, unknown>;
   const plot = a.plot_no ?? a.PLOT_NO ?? a.dag_no ?? "";
-  const label = isMsFeature(feature)
+  const label = isMsFeature(safeFeature)
     ? String(a.ms_plot_no ?? a.MS_PLOT_NO ?? (plot !== "" ? `MS-${plot}` : "MS"))
     : String(a.rs_plot_no ?? a.RS_PLOT_NO ?? (plot !== "" ? `RS-${plot}` : "RS"));
   return {
@@ -90,13 +131,15 @@ export function featuresToFc(features: RajukPlotFeature[]): FeatureCollection<Po
 export async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, externalSignal?: AbortSignal): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), GIS_REQUEST_TIMEOUT_MS);
+  const parentSignal = externalSignal ?? init.signal;
   const abortFromExternal = () => controller.abort();
-  externalSignal?.addEventListener("abort", abortFromExternal, { once: true });
+  parentSignal?.addEventListener("abort", abortFromExternal, { once: true });
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    const { signal: _ignoredSignal, ...requestInit } = init;
+    return await fetch(input, { ...requestInit, signal: controller.signal });
   } finally {
     window.clearTimeout(timeoutId);
-    externalSignal?.removeEventListener("abort", abortFromExternal);
+    parentSignal?.removeEventListener("abort", abortFromExternal);
   }
 }
 
@@ -118,6 +161,11 @@ export function updateSourceData(map: MapLibreInstance, sourceId: string, data: 
   if (!map.isStyleLoaded()) return false;
   const source = map.getSource(sourceId);
   if (!source || source.type !== "geojson") return false;
-  (source as GeoJSONSource).setData(data);
-  return true;
+  try {
+    (source as GeoJSONSource).setData(data);
+    return true;
+  } catch (error) {
+    console.error(`MapLibre GeoJSON source update failed (${sourceId}):`, error);
+    return false;
+  }
 }
