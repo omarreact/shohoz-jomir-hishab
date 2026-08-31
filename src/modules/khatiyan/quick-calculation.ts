@@ -92,7 +92,8 @@ export function calculateQuickKhatiyan(
 
   const land = fromScaled(scaledLand);
   const sqft = fromScaled((scaledLand * SQFT_PER_SHOTOK_SCALED) / AREA_SCALE);
-  const katha = fromScaled((scaledLand * AREA_SCALE) / KATHA_PER_SHOTOK_SCALED);
+  // Convert the exact rational land/1.65 to a Number only at the presentation boundary.
+  const katha = Number(scaledLand) / Number(KATHA_PER_SHOTOK_SCALED);
 
   return { land, sqft, katha };
 }
