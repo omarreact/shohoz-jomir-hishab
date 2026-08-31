@@ -17,7 +17,7 @@ const MouzaExportMap = dynamic(
 export default function MouzaMapClient() {
   return (
     <div
-      className="relative w-full flex-1 overflow-hidden"
+      className="relative w-full flex-1 overflow-hidden pb-[4.75rem] md:pb-0"
       style={{
         minHeight: "50vh",
         height: "calc(100dvh - 3.75rem)",

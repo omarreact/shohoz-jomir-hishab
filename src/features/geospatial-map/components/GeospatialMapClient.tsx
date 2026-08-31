@@ -16,16 +16,14 @@ const MapLibreMap = dynamic(
 );
 
 /**
- * Product GIS host.
- * Mobile: fill space under sticky nav + above floating bottom nav (no footer gap).
- * Desktop: nearly full remaining viewport.
+ * Full-viewport GIS host shared by visitors and logged-in users.
+ * Height fills under sticky nav; bottom padding clears the mobile floating nav.
  */
 export default function GeospatialMapClient() {
   return (
     <div
-      className="relative w-full flex-1 overflow-hidden"
+      className="relative w-full flex-1 overflow-hidden pb-[4.75rem] md:pb-0"
       style={{
-        // 3.75rem ≈ sticky nav; 5.25rem ≈ mobile floating nav + safe area
         minHeight: "50vh",
         height: "calc(100dvh - 3.75rem)",
         maxHeight: "calc(100dvh - 3.75rem)",
