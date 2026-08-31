@@ -32,6 +32,8 @@ export interface RajukArcGISGeometry {
   spatialReference?: { wkid?: number; latestWkid?: number };
 }
 export interface RajukPlotFeature {
+  /** Stable UI identity derived from the GIS feature when available. */
+  plotId?: string | number | null;
   attributes: RajukPlotAttributes;
   geometry: RajukArcGISGeometry;
 }
