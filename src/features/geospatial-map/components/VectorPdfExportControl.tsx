@@ -43,7 +43,7 @@ export default function VectorPdfExportControl() {
   }
 
   return (
-    <div className="pointer-events-auto absolute right-3 top-3 z-50 sm:right-4 sm:top-4">
+    <div className="pointer-events-auto absolute left-1/2 top-3 z-50 -translate-x-1/2 sm:top-4">
       {!open ? (
         <button
           type="button"
