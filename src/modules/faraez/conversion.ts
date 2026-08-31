@@ -1,30 +1,27 @@
-import { FULL_UNIT_TIL } from "@/src/shared/constants";
+import { rational, type Rational } from "./rational";
+import { TIL_PER_FULL_UNIT_BIGINT, tilToShareExact } from "@/src/modules/khatiyan/share-normalization";
 import { toBn } from "@/src/shared/utils";
 
-export function fractionToKhatiyan(fraction: number) {
-  let totalTil = Math.round(fraction * FULL_UNIT_TIL);
-  
-  const ana = Math.floor(totalTil / 4800);
-  totalTil %= 4800;
-  
-  const gonda = Math.floor(totalTil / 240);
-  totalTil %= 240;
-  
-  const kora = Math.floor(totalTil / 60);
-  totalTil %= 60;
-  
-  const kranti = Math.floor(totalTil / 20);
-  const til = totalTil % 20;
+/** Exact Rational → Khatiyan conversion. No floating-point arithmetic. */
+export function fractionToKhatiyan(fraction: Rational) {
+  const normalized = rational(fraction.numerator, fraction.denominator);
+  if (normalized.numerator < 0n || normalized.numerator > normalized.denominator) {
+    throw new RangeError("Inheritance fraction must be between 0/1 and 1/1");
+  }
 
-  return { ana, gonda, kora, kranti, til };
+  const scaled = normalized.numerator * TIL_PER_FULL_UNIT_BIGINT;
+  const floor = scaled / normalized.denominator;
+  const remainder = scaled % normalized.denominator;
+  const totalTil = remainder * 2n >= normalized.denominator ? floor + 1n : floor;
+  return tilToShareExact(totalTil);
 }
 
 export function formatKhatiyanString(share: ReturnType<typeof fractionToKhatiyan>) {
   const parts = [];
-  if (share.ana > 0) parts.push(`${toBn(share.ana)} আনা`);
-  if (share.gonda > 0) parts.push(`${toBn(share.gonda)} গন্ডা`);
-  if (share.kora > 0) parts.push(`${toBn(share.kora)} কড়া`);
-  if (share.kranti > 0) parts.push(`${toBn(share.kranti)} ক্রান্তি`);
-  if (share.til > 0) parts.push(`${toBn(share.til)} তিল`);
+  if (share.a > 0) parts.push(`${toBn(share.a)} আনা`);
+  if (share.g > 0) parts.push(`${toBn(share.g)} গন্ডা`);
+  if (share.k > 0) parts.push(`${toBn(share.k)} কড়া`);
+  if (share.kr > 0) parts.push(`${toBn(share.kr)} ক্রান্তি`);
+  if (share.ti > 0) parts.push(`${toBn(share.ti)} তিল`);
   return parts.length > 0 ? parts.join(", ") : "০";
 }
