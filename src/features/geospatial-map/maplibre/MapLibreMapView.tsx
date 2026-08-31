@@ -162,11 +162,11 @@ export default function MapLibreMapView({
   const satActive = basemap === "satellite" || basemap === "satellite2003";
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-slate-900">
+    <div className="relative h-[100dvh] min-h-screen w-full overflow-hidden bg-slate-900 [&_.maplibregl-ctrl-bottom-right]:!bottom-16 [&_.maplibregl-ctrl-bottom-right]:!left-3 [&_.maplibregl-ctrl-bottom-right]:!right-auto [&_.maplibregl-ctrl-bottom-right]:!z-40">
       <div
         ref={containerRef}
-        className="absolute inset-0 h-full w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
-        style={{ width: "100%", height: "100%", minHeight: 480 }}
+        className="absolute inset-0 h-[100dvh] w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
+        style={{ width: "100%", height: "100dvh", minHeight: "100vh" }}
         aria-label="ভূমি তথ্য মানচিত্র"
       />
 
@@ -216,35 +216,42 @@ export default function MapLibreMapView({
         </div>
       </div>
 
-      <div className="absolute right-3 top-3 z-40 flex gap-1.5 sm:right-4 sm:top-4 sm:gap-2">
+      <div className="absolute bottom-4 left-3 z-40 sm:left-4">
         <button
+          type="button"
           onClick={goToMyLocation}
           disabled={locating}
-          className="rounded-xl border border-white/15 bg-slate-950/90 p-2.5 text-white shadow-lg backdrop-blur hover:bg-white/10"
-          aria-label="আমার অবস্থান"
+          className="rounded-xl border border-white/15 bg-slate-950/90 p-2.5 text-white shadow-xl backdrop-blur hover:bg-white/10 disabled:opacity-60"
+          aria-label="বর্তমান অবস্থান"
+          title="বর্তমান অবস্থান"
         >
-          {locating ? <Loader2 className="animate-spin" size={19} /> : <LocateFixed size={19} />}
-        </button>
-        <button
-          onClick={() => setIdentifyMode((v) => !v)}
-          className={`rounded-xl border border-white/15 p-2.5 shadow-lg backdrop-blur ${
-            identifyMode ? "bg-emerald-600 text-white" : "bg-slate-950/90 text-white hover:bg-white/10"
-          }`}
-          aria-label="দাগ শনাক্ত করুন"
-        >
-          <MousePointer2 size={19} />
-        </button>
-        <button
-          onClick={() => setPanelOpen((v) => !v)}
-          className="rounded-xl border border-white/15 bg-slate-950/90 p-2.5 text-white shadow-lg backdrop-blur hover:bg-white/10"
-          aria-label="প্যানেল"
-        >
-          {panelOpen ? <X size={19} /> : <PanelRight size={19} />}
+          {locating ? <Loader2 className="animate-spin" size={20} /> : <LocateFixed size={20} />}
         </button>
       </div>
 
-      <div className="absolute bottom-4 left-3 z-20 flex max-w-[70%] items-center gap-2 rounded-full border border-white/10 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-200 shadow backdrop-blur sm:left-4">
-        <span className={`h-2 w-2 rounded-full ${mapReady ? "bg-emerald-400" : "bg-amber-400"}`} />
+      {isAdvanced && (
+        <div className="absolute right-3 top-3 z-40 flex gap-1.5 sm:right-4 sm:top-4 sm:gap-2">
+          <button
+            onClick={() => setIdentifyMode((v) => !v)}
+            className={`rounded-xl border border-white/15 p-2.5 shadow-lg backdrop-blur ${
+              identifyMode ? "bg-emerald-600 text-white" : "bg-slate-950/90 text-white hover:bg-white/10"
+            }`}
+            aria-label="দাগ শনাক্ত করুন"
+          >
+            <MousePointer2 size={19} />
+          </button>
+          <button
+            onClick={() => setPanelOpen((v) => !v)}
+            className="rounded-xl border border-white/15 bg-slate-950/90 p-2.5 text-white shadow-lg backdrop-blur hover:bg-white/10"
+            aria-label="প্যানেল"
+          >
+            {panelOpen ? <X size={19} /> : <PanelRight size={19} />}
+          </button>
+        </div>
+      )}
+
+      <div className="absolute bottom-4 left-20 z-20 flex max-w-[45%] items-center gap-2 rounded-full border border-white/10 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-200 shadow backdrop-blur sm:left-20">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${mapReady ? "bg-emerald-400" : "bg-amber-400"}`} />
         {mapReady ? vectorStatus || "MapLibre" : "মানচিত্র প্রস্তুত হচ্ছে…"}
       </div>
 
@@ -313,7 +320,7 @@ export default function MapLibreMapView({
         </div>
       )}
 
-      {panelOpen && (
+      {panelOpen && isAdvanced && (
         <aside className="absolute bottom-0 right-0 top-0 z-40 flex w-full max-w-sm flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur md:bottom-4 md:right-4 md:top-16 md:rounded-2xl md:border">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="text-sm font-bold text-white">মানচিত্র নিয়ন্ত্রণ</div>
