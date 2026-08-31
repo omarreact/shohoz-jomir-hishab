@@ -139,13 +139,15 @@ export function enrichPlotFeature(
   source: PlotLayerSource = "unknown",
 ): RajukPlotFeature {
   const rings = feature.geometry?.rings as number[][][] | undefined;
+  const attributes = enrichPlotAttributes(
+    feature.attributes as Record<string, unknown>,
+    extras,
+    source,
+    rings,
+  ) as RajukPlotFeature["attributes"];
   return {
     ...feature,
-    attributes: enrichPlotAttributes(
-      feature.attributes as Record<string, unknown>,
-      extras,
-      source,
-      rings,
-    ) as RajukPlotFeature["attributes"],
+    plotId: attributes.p_guid ?? attributes.objectid ?? null,
+    attributes,
   };
 }
