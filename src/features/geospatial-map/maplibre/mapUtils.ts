@@ -1,4 +1,4 @@
-import type { FeatureCollection, Geometry, Polygon } from "geojson";
+import type { FeatureCollection, Geometry } from "geojson";
 import type { GeoJSONSource, Map as MapLibreInstance } from "maplibre-gl";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { GIS_REQUEST_TIMEOUT_MS } from "./types";
@@ -65,11 +65,7 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
   ] as const;
 }
 
-/**
- * Canonical MapLibre/GeoJSON coordinate contract: [longitude, latitude].
- * Reject invalid geometry at the network boundary rather than allowing a bad
- * coordinate to reach MapLibre's strict LngLat validation.
- */
+/** Canonical MapLibre/GeoJSON coordinate contract: [longitude, latitude]. */
 export function isValidLngLat(coordinate: unknown): coordinate is [number, number] {
   if (!Array.isArray(coordinate) || coordinate.length < 2) return false;
   const longitude = Number(coordinate[0]);
@@ -121,11 +117,31 @@ export function toGeoJson(feature: RajukPlotFeature) {
   };
 }
 
-export function featuresToFc(features: RajukPlotFeature[]): FeatureCollection<Polygon> {
+export function featuresToFc(features: RajukPlotFeature[]): FeatureCollection<Geometry> {
   return {
     type: "FeatureCollection",
     features: features.map(toGeoJson).filter((feature): feature is NonNullable<typeof feature> => Boolean(feature)),
   };
+}
+
+/** Recursively validate every GeoJSON position before handing data to MapLibre. */
+function isValidCoordinateArray(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  if (typeof value[0] === "number") return isValidLngLat(value);
+  return value.every(isValidCoordinateArray);
+}
+
+export function isSafeGeoJson(data: FeatureCollection<Geometry>): boolean {
+  for (const feature of data.features) {
+    if (!feature || feature.type !== "Feature") return false;
+    if (feature.geometry === null) continue;
+    if (feature.geometry.type === "GeometryCollection") {
+      if (!feature.geometry.geometries.every((geometry) => geometry.type === "GeometryCollection" || isValidCoordinateArray(geometry.coordinates))) return false;
+      continue;
+    }
+    if (!isValidCoordinateArray(feature.geometry.coordinates)) return false;
+  }
+  return true;
 }
 
 export async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, externalSignal?: AbortSignal): Promise<Response> {
@@ -143,7 +159,7 @@ export async function fetchWithTimeout(input: RequestInfo | URL, init: RequestIn
   }
 }
 
-export function createAccuracyPolygon(latitude: number, longitude: number, radiusMeters: number): FeatureCollection<Polygon> {
+export function createAccuracyPolygon(latitude: number, longitude: number, radiusMeters: number): FeatureCollection<Geometry> {
   const points: number[][] = [];
   const earthRadius = 6378137;
   const radius = Math.max(1, radiusMeters);
@@ -159,6 +175,10 @@ export function createAccuracyPolygon(latitude: number, longitude: number, radiu
 
 export function updateSourceData(map: MapLibreInstance, sourceId: string, data: FeatureCollection<Geometry>): boolean {
   if (!map.isStyleLoaded()) return false;
+  if (!isSafeGeoJson(data)) {
+    console.error(`Rejected unsafe GeoJSON for MapLibre source (${sourceId})`);
+    return false;
+  }
   const source = map.getSource(sourceId);
   if (!source || source.type !== "geojson") return false;
   try {
