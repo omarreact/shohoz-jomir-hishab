@@ -44,13 +44,11 @@ export default function GeospatialMapClient() {
 
   return (
     <div
-      className="fixed inset-0 z-0 w-full overflow-hidden bg-slate-900"
+      className="fixed inset-0 z-0 h-[100svh] w-full overflow-hidden bg-slate-900"
       style={{
         height: "var(--landbd-vh, 100svh)",
         minHeight: "0",
-        maxHeight: "100svh",
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        maxHeight: "100dvh",
       }}
     >
       <MapLibreMap />
