@@ -90,13 +90,10 @@ export default function MapLibreMap() {
 
   useEffect(() => {
     if (authLoading) return;
-    // Rasters: public keeps broken empty-GIF layers off; staff may enable advanced overlays.
     setLayers(isAdvanced ? { ...ADVANCED_LAYER_VISIBILITY } : { ...PUBLIC_LAYER_VISIBILITY });
     setOpacity(isAdvanced ? { ...ADVANCED_LAYER_OPACITY } : { ...PUBLIC_LAYER_OPACITY });
-    // Vector plot boundaries are the core product value — available to every visitor.
     setShowRsBoundary(true);
     setShowMsBoundary(true);
-    // Panel stays closed by default so the map fills mobile/desktop cleanly.
     setPanelOpen(false);
     if (!isAdvanced) {
       setBasemap((current) => (PUBLIC_BASEMAP_KEYS.includes(current) ? current : "satellite"));
@@ -444,7 +441,7 @@ export default function MapLibreMap() {
 
   const activeDetails = selected
     ? isMsFeature(selected)
-      ? detailRows(selected, "rs")
+      ? detailRows(selected, "ms")
       : detailRows(selected, "rs")
     : [];
 
