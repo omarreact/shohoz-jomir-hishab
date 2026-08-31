@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import VectorPdfExportControl from "@/src/features/geospatial-map/components/VectorPdfExportControl";
 
 const MouzaExportMap = dynamic(
   () => import("@/src/features/geospatial-map/maplibre/MouzaExportMap"),
@@ -19,6 +20,7 @@ export default function MouzaMapClient() {
   return (
     <div className="fixed inset-0 z-0 h-dvh w-full overflow-hidden bg-slate-900">
       <MouzaExportMap />
+      <VectorPdfExportControl />
     </div>
   );
 }
