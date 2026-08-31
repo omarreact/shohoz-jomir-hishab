@@ -2,6 +2,7 @@ import type { FeatureCollection, Geometry } from "geojson";
 import type { GeoJSONSource, Map as MapLibreInstance } from "maplibre-gl";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { GIS_REQUEST_TIMEOUT_MS } from "./types";
+import { isValidPolygonRings } from "./geometryValidation";
 
 export function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
@@ -87,6 +88,8 @@ export function sanitizeRajukFeature(feature: RajukPlotFeature): RajukPlotFeatur
     }
     sanitizedRings.push(sanitizedRing);
   }
+
+  if (!isValidPolygonRings(sanitizedRings as [number, number][][])) return null;
 
   return {
     ...feature,
