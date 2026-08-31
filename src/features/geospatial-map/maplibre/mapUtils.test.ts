@@ -1,5 +1,6 @@
+import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
-import { isValidLngLat, sanitizeRajukFeature, sanitizeRajukFeatures } from "./mapUtils";
+import { isSafeGeoJson, isValidLngLat, sanitizeRajukFeature, sanitizeRajukFeatures } from "./mapUtils";
 
 function feature(rings: number[][][]): RajukPlotFeature {
   return {
@@ -51,5 +52,31 @@ describe("GIS coordinate boundary", () => {
     expect(sanitizeRajukFeature(safe)).not.toBeNull();
     expect(sanitizeRajukFeature(unsafe)).toBeNull();
     expect(sanitizeRajukFeatures([safe, unsafe])).toHaveLength(1);
+  });
+
+  it("rejects unsafe coordinates before any GeoJSON source can call setData", () => {
+    const safe: FeatureCollection<Geometry> = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [90.4, 23.8] },
+          properties: {},
+        },
+      ],
+    };
+    const unsafe: FeatureCollection<Geometry> = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [90.4, 90.8] },
+          properties: {},
+        },
+      ],
+    };
+
+    expect(isSafeGeoJson(safe)).toBe(true);
+    expect(isSafeGeoJson(unsafe)).toBe(false);
   });
 });
