@@ -15,6 +15,7 @@ export const mouzaExportQuerySchema = z.object({
   format: z.enum(["geotiff", "raw", "vector-pdf"]).default("geotiff"),
   layers: z.enum(["rs", "ms", "combined"]).default("rs"),
   maxDim: z.coerce.number().int().min(256).max(8192).default(6144),
+  satellite: z.coerce.boolean().default(false),
 });
 
 export type MouzaExportQuery = z.infer<typeof mouzaExportQuerySchema>;
