@@ -3,16 +3,17 @@ import "server-only";
 import { jsPDF } from "jspdf";
 import { getPlots } from "./rajukQuery.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import {
+  drawAdaptivePlotLabels,
+  drawCoordinateGrid,
+  drawNorthArrow,
+  drawScaleBar,
+  drawScaleText,
+  type GeoExtent,
+} from "./mouzaCartography";
 
 export type MouzaVectorPdfLayers = "rs" | "ms" | "combined";
-
-export type MouzaVectorPdfRequest = {
-  mouza: string;
-  jl?: string;
-  layers: MouzaVectorPdfLayers;
-  satellite?: boolean;
-};
-
+export type MouzaVectorPdfRequest = { mouza: string; jl?: string; layers: MouzaVectorPdfLayers; satellite?: boolean };
 export type MouzaVectorPdfResult = {
   filename: string;
   contentType: "application/pdf";
@@ -24,7 +25,7 @@ export type MouzaVectorPdfResult = {
     zoom: number;
     resolution: number;
     crs: string;
-    extent: { xmin: number; ymin: number; xmax: number; ymax: number };
+    extent: GeoExtent;
     tileCount: number;
     plotCount: number;
     satellite: boolean;
@@ -62,21 +63,14 @@ function safeFilePart(value: string): string {
   return value.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "mouza";
 }
 
-function collectExtent(features: RajukPlotFeature[]) {
-  let xmin = Infinity;
-  let ymin = Infinity;
-  let xmax = -Infinity;
-  let ymax = -Infinity;
+function collectExtent(features: RajukPlotFeature[]): GeoExtent | null {
+  let xmin = Infinity; let ymin = Infinity; let xmax = -Infinity; let ymax = -Infinity;
   for (const feature of features) {
     for (const ring of feature.geometry?.rings ?? []) {
       for (const coord of ring) {
-        const x = Number(coord[0]);
-        const y = Number(coord[1]);
+        const x = Number(coord[0]); const y = Number(coord[1]);
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-        xmin = Math.min(xmin, x);
-        ymin = Math.min(ymin, y);
-        xmax = Math.max(xmax, x);
-        ymax = Math.max(ymax, y);
+        xmin = Math.min(xmin, x); ymin = Math.min(ymin, y); xmax = Math.max(xmax, x); ymax = Math.max(ymax, y);
       }
     }
   }
@@ -84,181 +78,113 @@ function collectExtent(features: RajukPlotFeature[]) {
   return { xmin, ymin, xmax, ymax };
 }
 
-/** Expand the geographic extent to exactly match the PDF drawing aspect ratio. */
-function fitExtentToPage(extent: NonNullable<ReturnType<typeof collectExtent>>) {
+function fitExtentToPage(extent: GeoExtent): GeoExtent {
   const centerX = (extent.xmin + extent.xmax) / 2;
   const centerY = (extent.ymin + extent.ymax) / 2;
   const width = Math.max(extent.xmax - extent.xmin, 1e-12);
   const height = Math.max(extent.ymax - extent.ymin, 1e-12);
-  const extentAspect = width / height;
+  const aspect = width / height;
   let fittedWidth = width;
   let fittedHeight = height;
-
-  if (extentAspect < PAGE_ASPECT) fittedWidth = height * PAGE_ASPECT;
-  else if (extentAspect > PAGE_ASPECT) fittedHeight = width / PAGE_ASPECT;
-
-  // Add a small geographic safety margin so boundary strokes/labels never touch the page edge.
+  if (aspect < PAGE_ASPECT) fittedWidth = height * PAGE_ASPECT;
+  else if (aspect > PAGE_ASPECT) fittedHeight = width / PAGE_ASPECT;
   fittedWidth *= 1.04;
   fittedHeight *= 1.04;
-  return {
-    xmin: centerX - fittedWidth / 2,
-    ymin: centerY - fittedHeight / 2,
-    xmax: centerX + fittedWidth / 2,
-    ymax: centerY + fittedHeight / 2,
-  };
+  return { xmin: centerX - fittedWidth / 2, ymin: centerY - fittedHeight / 2, xmax: centerX + fittedWidth / 2, ymax: centerY + fittedHeight / 2 };
 }
 
-function project(lng: number, lat: number, extent: NonNullable<ReturnType<typeof collectExtent>>) {
+function project(lng: number, lat: number, extent: GeoExtent): readonly [number, number] {
   const dx = Math.max(extent.xmax - extent.xmin, 1e-12);
   const dy = Math.max(extent.ymax - extent.ymin, 1e-12);
-  const x = MARGIN + ((lng - extent.xmin) / dx) * DRAW_W;
-  const y = MARGIN + 10 + (1 - (lat - extent.ymin) / dy) * DRAW_H;
-  return [x, y] as const;
+  return [MARGIN + ((lng - extent.xmin) / dx) * DRAW_W, MARGIN + 10 + (1 - (lat - extent.ymin) / dy) * DRAW_H];
 }
 
-function drawRing(doc: jsPDF, ring: number[][], extent: NonNullable<ReturnType<typeof collectExtent>>) {
+function drawRing(doc: jsPDF, ring: number[][], extent: GeoExtent): void {
   const points = simplifyRing(ring);
   if (points.length < 3) return;
-  const projected = points
-    .map(([lng, lat]) => project(Number(lng), Number(lat), extent))
-    .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  const projected = points.map(([lng, lat]) => project(Number(lng), Number(lat), extent)).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
   if (projected.length < 3) return;
-
   const relative: Array<[number, number]> = [];
-  for (let i = 1; i < projected.length; i += 1) {
-    relative.push([projected[i][0] - projected[i - 1][0], projected[i][1] - projected[i - 1][1]]);
-  }
+  for (let i = 1; i < projected.length; i += 1) relative.push([projected[i][0] - projected[i - 1][0], projected[i][1] - projected[i - 1][1]]);
   doc.lines(relative, projected[0][0], projected[0][1], [1, 1], "S", true);
 }
 
-function drawFeature(doc: jsPDF, feature: RajukPlotFeature, extent: NonNullable<ReturnType<typeof collectExtent>>, ms: boolean) {
+function drawFeature(doc: jsPDF, feature: RajukPlotFeature, extent: GeoExtent, ms: boolean): void {
   doc.setDrawColor(ms ? 105 : 37, ms ? 55 : 99, ms ? 180 : 235);
   doc.setLineWidth(ms ? 0.18 : 0.22);
   for (const ring of feature.geometry?.rings ?? []) drawRing(doc, ring, extent);
 }
 
-function drawLabels(doc: jsPDF, features: RajukPlotFeature[], extent: NonNullable<ReturnType<typeof collectExtent>>) {
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.2);
-  doc.setTextColor(25, 25, 25);
-  for (const feature of features) {
-    const rings = feature.geometry?.rings ?? [];
-    const first = rings[0]?.[0];
-    if (!first) continue;
-    const label = String(feature.attributes.plot_no ?? feature.attributes.rs_plot_no ?? feature.attributes.ms_plot_no ?? "").trim();
-    if (!label) continue;
-    const [x, y] = project(Number(first[0]), Number(first[1]), extent);
-    if (x < MARGIN || x > PAGE_W - MARGIN || y < MARGIN || y > PAGE_H - MARGIN) continue;
-    doc.text(label, x, y, { align: "center", baseline: "middle" });
-  }
-}
-
-async function fetchSatelliteImage(extent: NonNullable<ReturnType<typeof collectExtent>>): Promise<Buffer> {
+async function fetchSatelliteImage(extent: GeoExtent): Promise<Buffer> {
   const params = new URLSearchParams({
     bbox: `${extent.xmin},${extent.ymin},${extent.xmax},${extent.ymax}`,
-    bboxSR: "4326",
-    imageSR: "4326",
-    size: `${SATELLITE_IMAGE_WIDTH},${SATELLITE_IMAGE_HEIGHT}`,
-    format: "jpg",
-    f: "image",
-    dpi: "150",
-    compressionQuality: "80",
-    transparent: "false",
+    bboxSR: "4326", imageSR: "4326", size: `${SATELLITE_IMAGE_WIDTH},${SATELLITE_IMAGE_HEIGHT}`,
+    format: "jpg", f: "image", dpi: "150", compressionQuality: "80", transparent: "false",
   });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SATELLITE_TIMEOUT_MS);
   try {
-    const response = await fetch(
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?${params.toString()}`,
-      { signal: controller.signal, headers: { accept: "image/jpeg" } },
-    );
+    const response = await fetch(`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?${params.toString()}`, { signal: controller.signal, headers: { accept: "image/jpeg" } });
     if (!response.ok) throw new Error(`Satellite imagery request failed (${response.status})`);
     const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
     if (!contentType.includes("image/")) throw new Error("Satellite imagery service returned a non-image response");
     return Buffer.from(await response.arrayBuffer());
-  } finally {
-    clearTimeout(timeout);
-  }
+  } finally { clearTimeout(timeout); }
 }
 
 async function getAllMouzaPlots(mouza: string, jl?: string): Promise<RajukPlotFeature[]> {
   const pageSize = 2000;
   const features: RajukPlotFeature[] = [];
   let offset = 0;
-
-  // ArcGIS services cap a single response. Continue until the service returns a short page,
-  // ensuring large Mouzas are not silently truncated at 2,000 plots.
   for (;;) {
-    const page = await getPlots({
-      mouza,
-      jl,
-      kind: "all",
-      resultRecordCount: pageSize,
-      resultOffset: offset,
-    });
+    const page = await getPlots({ mouza, jl, kind: "all", resultRecordCount: pageSize, resultOffset: offset });
     const rows = page.features ?? [];
     features.push(...rows);
     if (rows.length < pageSize) break;
     offset += pageSize;
   }
-
   const seen = new Set<string>();
-  return features.filter((feature) => {
+  return features.filter((feature, index) => {
     const a = feature.attributes as Record<string, unknown>;
-    const key = String(a.objectid ?? a.OBJECTID ?? a.plot_id ?? a.plot_no ?? `${isMs(feature) ? "ms" : "rs"}-${features.indexOf(feature)}`);
+    const key = String(a.objectid ?? a.OBJECTID ?? a.plot_id ?? `${isMs(feature) ? "ms" : "rs"}-${a.plot_no ?? index}`);
     if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+    seen.add(key); return true;
   });
 }
 
 export async function exportMouzaVectorPdf(input: MouzaVectorPdfRequest): Promise<MouzaVectorPdfResult> {
   const normalized = input.mouza.trim();
   if (!normalized) throw new Error("Mouza is required");
-
   const all = await getAllMouzaPlots(normalized, input.jl);
   const features = all.filter((f) => {
     const ms = isMs(f);
     return input.layers === "combined" || (input.layers === "ms" ? ms : !ms);
   });
   if (!features.length) throw new Error(`No plots found for ${normalized}`);
-
   const extent = collectExtent(features);
   if (!extent) throw new Error("No valid plot geometry found");
   const fitted = fitExtentToPage(extent);
 
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: [PAGE_W, PAGE_H],
-    compress: true,
-    putOnlyUsedFonts: true,
-  });
-  doc.setProperties({
-    title: `LandBD Vector Mouza Map - ${normalized}`,
-    subject: `${input.satellite ? "Satellite + " : ""}RS/MS cadastral vector map`,
-    creator: "LandBD",
-    author: "LandBD",
-  });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: [PAGE_W, PAGE_H], compress: true, putOnlyUsedFonts: true });
+  doc.setProperties({ title: `LandBD Vector Mouza Map - ${normalized}`, subject: `${input.satellite ? "Satellite + " : ""}RS/MS cadastral vector map`, creator: "LandBD", author: "LandBD" });
 
   doc.setFillColor(250, 250, 250);
-  doc.rect(MARGIN, MARGIN, DRAW_W, DRAW_H, "F");
-
+  doc.rect(MARGIN, MARGIN + 10, DRAW_W, DRAW_H, "F");
   let satellite = false;
   if (input.satellite) {
     try {
-      const satelliteImage = await fetchSatelliteImage(fitted);
-      doc.addImage(satelliteImage, "JPEG", MARGIN, MARGIN + 10, DRAW_W, DRAW_H, undefined, "FAST");
+      const image = await fetchSatelliteImage(fitted);
+      doc.addImage(image, "JPEG", MARGIN, MARGIN + 10, DRAW_W, DRAW_H, undefined, "FAST");
       satellite = true;
     } catch (error) {
       console.warn("LandBD satellite PDF backdrop unavailable; continuing with vector-only PDF:", error);
     }
   }
 
-  // Semi-transparent-looking white background is intentionally avoided here: jsPDF's
-  // vector paths remain crisp over the imagery and the cadastral lines stay dominant.
+  // Light coordinate grid gives the printed map geographic reference without changing the vector geometry.
+  drawCoordinateGrid(doc, fitted, project);
   for (const feature of features) drawFeature(doc, feature, fitted, isMs(feature));
-  drawLabels(doc, features, fitted);
+  drawAdaptivePlotLabels(doc, features, fitted, project, isMs);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -266,44 +192,23 @@ export async function exportMouzaVectorPdf(input: MouzaVectorPdfRequest): Promis
   doc.text(`LandBD — ${normalized}`, MARGIN, 8);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
-  doc.text(
-    `${satellite ? "Satellite + " : ""}Vector cadastral map · ${input.layers === "combined" ? "RS + MS" : input.layers.toUpperCase()} · ${features.length} plots`,
-    MARGIN,
-    12,
-  );
+  doc.text(`${satellite ? "Satellite + " : ""}Vector cadastral map · ${input.layers === "combined" ? "RS + MS" : input.layers.toUpperCase()} · ${features.length} plots`, MARGIN, 12);
+  drawScaleText(doc, fitted, 4);
+  drawNorthArrow(doc);
+  drawScaleBar(doc, fitted);
 
   const legendY = PAGE_H - 5;
   doc.setFontSize(6);
-  doc.setDrawColor(37, 99, 235);
-  doc.line(MARGIN, legendY, MARGIN + 7, legendY);
-  doc.setTextColor(35, 35, 35);
-  doc.text("RS", MARGIN + 9, legendY + 1.5);
-  doc.setDrawColor(105, 55, 180);
-  doc.line(MARGIN + 25, legendY, MARGIN + 32, legendY);
-  doc.text("MS", MARGIN + 34, legendY + 1.5);
-  doc.text(
-    satellite ? "Satellite backdrop + vector cadastral geometry" : "Editable/vector geometry — not a raster screenshot",
-    MARGIN + 55,
-    legendY + 1.5,
-  );
+  doc.setDrawColor(37, 99, 235); doc.line(MARGIN + 55, legendY, MARGIN + 62, legendY);
+  doc.setTextColor(35, 35, 35); doc.text("RS", MARGIN + 64, legendY + 1.5);
+  doc.setDrawColor(105, 55, 180); doc.line(MARGIN + 80, legendY, MARGIN + 87, legendY);
+  doc.text("MS", MARGIN + 89, legendY + 1.5);
+  doc.text(satellite ? "Satellite backdrop + vector cadastral geometry" : "Vector cadastral geometry", MARGIN + 110, legendY + 1.5);
 
-  const arrayBuffer = doc.output("arraybuffer");
-  const body = Buffer.from(arrayBuffer);
+  const body = Buffer.from(doc.output("arraybuffer"));
   return {
     filename: `landbd-${safeFilePart(normalized)}-${input.layers}${satellite ? "-satellite" : ""}-vector.pdf`,
-    contentType: "application/pdf",
-    body,
-    meta: {
-      mouza: normalized,
-      width: PAGE_W,
-      height: PAGE_H,
-      zoom: 0,
-      resolution: satellite ? 150 : 0,
-      crs: "EPSG:4326 vector geometry",
-      extent: fitted,
-      tileCount: satellite ? 1 : 0,
-      plotCount: features.length,
-      satellite,
-    },
+    contentType: "application/pdf", body,
+    meta: { mouza: normalized, width: PAGE_W, height: PAGE_H, zoom: 0, resolution: satellite ? 150 : 0, crs: "EPSG:4326 vector geometry", extent: fitted, tileCount: satellite ? 1 : 0, plotCount: features.length, satellite },
   };
 }
