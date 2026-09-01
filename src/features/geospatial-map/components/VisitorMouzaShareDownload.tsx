@@ -15,8 +15,6 @@ type Mouza = {
   m_district: string;
 };
 
-type ShareFormat = "png" | "jpeg";
-
 const CLIENT_TIMEOUT_MS = 240_000;
 
 export default function VisitorMouzaShareDownload() {
@@ -34,7 +32,6 @@ export default function VisitorMouzaShareDownload() {
   const [downloading, setDownloading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
-  const [format, setFormat] = useState<ShareFormat>("png");
 
   useEffect(() => {
     let cancelled = false;
@@ -129,10 +126,10 @@ export default function VisitorMouzaShareDownload() {
       const params = new URLSearchParams({
         mouza: selectedMouza.mauza,
         jl: String(selectedMouza.jl_no ?? ""),
-        format,
+        format: "png",
         layers: "combined",
         satellite: "true",
-        maxDim: "4096",
+        maxDim: "6144",
       });
       const res = await fetch(`/api/mouza-map/download?${params}`, {
         signal: controller.signal,
@@ -141,6 +138,7 @@ export default function VisitorMouzaShareDownload() {
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         if (res.status === 429) throw new Error("ডাউনলোড সীমা পূর্ণ। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+        if (res.status === 403) throw new Error(body.error || "এই ফরম্যাট শুধু অ্যাডমিনের জন্য।");
         if (res.status === 504) throw new Error("ম্যাপ তৈরি করতে বেশি সময় লেগেছে। আবার চেষ্টা করুন।");
         throw new Error(body.error || `ডাউনলোড ব্যর্থ (${res.status})`);
       }
@@ -164,7 +162,7 @@ export default function VisitorMouzaShareDownload() {
       window.clearTimeout(timeout);
       setDownloading(false);
     }
-  }, [selectedMouza, downloading, format]);
+  }, [selectedMouza, downloading]);
 
   return (
     <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950/90 p-5 shadow-2xl backdrop-blur">
@@ -175,7 +173,7 @@ export default function VisitorMouzaShareDownload() {
         <div>
           <h1 className="text-base font-bold text-white">মৌজা ম্যাপ ডাউনলোড</h1>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            জেলা → উপজেলা → মৌজা নির্বাচন করুন। স্যাটেলাইট + RS + MS সহ সম্পূর্ণ মৌজার শেয়ার ইমেজ (PNG) পাবেন।
+            জেলা → উপজেলা → মৌজা নির্বাচন করুন। উচ্চ রেজোলিউশন PNG (স্যাটেলাইট + RS + MS) ডাউনলোড করুন।
           </p>
         </div>
       </div>
@@ -226,27 +224,8 @@ export default function VisitorMouzaShareDownload() {
         ))}
       </select>
 
-      <label className="mb-1 block text-[11px] font-semibold text-slate-300">ফরম্যাট</label>
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        {(["png", "jpeg"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            disabled={downloading}
-            onClick={() => setFormat(key)}
-            className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
-              format === key
-                ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
-                : "border-white/10 text-slate-300 hover:bg-white/5"
-            }`}
-          >
-            {key.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
       <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-        আউটপুট: স্যাটেলাইট ব্যাকড্রপ + RS/MS দাগ সীমানা, শুধু নির্বাচিত মৌজা। এটি শেয়ার ইমেজ — GIS মাস্টার নয় (GeoTIFF/RAW আলাদা)।
+        আউটপুট: উচ্চ রেজোলিউশন PNG — স্যাটেলাইট + RS/MS, শুধু নির্বাচিত মৌজা। GeoTIFF / RAW / Vector PDF শুধু অ্যাডমিনের জন্য।
       </p>
 
       {downloading && (
@@ -266,7 +245,7 @@ export default function VisitorMouzaShareDownload() {
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
       >
         {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {downloading ? "ডাউনলোড হচ্ছে…" : "পূর্ণ মৌজা ম্যাপ ডাউনলোড"}
+        {downloading ? "ডাউনলোড হচ্ছে…" : "উচ্চ রেজোলিউশন PNG ডাউনলোড"}
       </button>
     </div>
   );
