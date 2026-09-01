@@ -18,13 +18,11 @@ async function runExport(input: unknown) {
       mouza: parsed.data.mouza,
       jl: parsed.data.jl,
       layers: parsed.data.layers,
+      satellite: parsed.data.satellite,
     });
     return { result };
   }
 
-  // The raster service intentionally accepts only its raster formats.
-  // Keep the schema's public union (including vector-pdf) at this boundary,
-  // then narrow it explicitly before crossing into the raster service.
   const rasterRequest = {
     ...parsed.data,
     format: parsed.data.format === "raw" ? "raw" : "geotiff",
@@ -62,6 +60,7 @@ export async function GET(request: NextRequest) {
       format: p.get("format") ?? "geotiff",
       layers: p.get("layers") ?? "rs",
       maxDim: p.get("maxDim") ?? 6144,
+      satellite: p.get("satellite") ?? false,
     });
     if ("error" in out) return NextResponse.json({ error: out.error }, { status: out.status });
     return attachmentResponse(out.result);
@@ -81,6 +80,7 @@ export async function POST(request: NextRequest) {
       format: body.format ?? "geotiff",
       layers: body.layers ?? "rs",
       maxDim: body.maxDim ?? 6144,
+      satellite: body.satellite ?? false,
     });
     if ("error" in out) return NextResponse.json({ error: out.error }, { status: out.status });
     return attachmentResponse(out.result);
