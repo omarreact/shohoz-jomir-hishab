@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { exportMouzaRaster } from "@/src/services/rajuk/mouzaRasterExport.service";
 import { exportMouzaPublicationPdf } from "@/src/services/rajuk/mouzaPublicationPdfV2.service";
@@ -18,13 +19,11 @@ function clientKey(request: NextRequest): string { const forwarded = request.hea
 function allowRequest(request: NextRequest): boolean { const now = Date.now(), key = clientKey(request), current = rateStore.get(key); if (!current || current.resetAt <= now) { rateStore.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS }); if (rateStore.size > 2000) for (const [k, v] of rateStore) if (v.resetAt <= now) rateStore.delete(k); return true; } if (current.count >= RATE_LIMIT) return false; current.count += 1; return true; }
 function pdfCacheKey(input: { mouza: string; jl?: string; layers: string; satellite?: boolean }): string { const canonical = JSON.stringify({ renderer: "v3-max-fidelity", mouza: input.mouza.trim().toUpperCase(), jl: input.jl?.trim() ?? "", layers: input.layers, satellite: Boolean(input.satellite) }); return createHash("sha256").update(canonical).digest("hex"); }
 
-const TIMEOUT_FOR_BLOB_UPLOAD = 120_000;
 async function uploadPdfToBlob(result: Awaited<ReturnType<typeof exportMouzaPublicationPdf>>, key: string): Promise<{ url: string; downloadUrl: string }> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN; if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not configured; large Vector PDF delivery requires Vercel Blob");
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error("BLOB_READ_WRITE_TOKEN is not configured; large Vector PDF delivery requires a Vercel Blob store");
   const pathname = `landbd/mouza-pdf/${key}/${result.filename}`;
-  const response = await fetch(`https://blob.vercel-storage.com/${encodeURIComponent(pathname).replace(/%2F/g, "/")}`, { method: "PUT", headers: { authorization: `Bearer ${token}`, "x-api-version": "11", "x-content-type": "application/pdf", access: "public", "x-add-random-suffix": "0", "x-cache-control-max-age": String(PDF_CACHE_AGE), "x-content-disposition": `attachment; filename=\"${result.filename.replace(/\"/g, "")}\"` }, body: result.body, signal: AbortSignal.timeout(TIMEOUT_FOR_BLOB_UPLOAD) });
-  if (!response.ok) throw new Error(`Vercel Blob upload failed (${response.status})`);
-  const payload = await response.json() as { url?: string; downloadUrl?: string }; if (!payload.url) throw new Error("Vercel Blob upload returned no URL"); return { url: payload.url, downloadUrl: payload.downloadUrl ?? payload.url };
+  const blob = await put(pathname, result.body, { access: "public", addRandomSuffix: false, contentType: "application/pdf", cacheControlMaxAge: PDF_CACHE_AGE, multipart: true });
+  return { url: blob.url, downloadUrl: blob.downloadUrl };
 }
 
 async function runExport(input: unknown) {
