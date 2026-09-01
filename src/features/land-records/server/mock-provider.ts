@@ -1,8 +1,14 @@
 import type { Division, District, Upazila, Survey, Mouza, KhatianPage, LandRecordProvider, MouzaMapProvider, MouzaMapEntry } from "../types";
 
 const divisions: Division[] = [
+  { ID: 1, NAME: "বরিশাল", NAME_EN: "Barishal", BBS_CODE: "10", ROW_STATUS: 1 },
+  { ID: 2, NAME: "চট্টগ্রাম", NAME_EN: "Chattogram", BBS_CODE: "20", ROW_STATUS: 1 },
   { ID: 3, NAME: "ঢাকা", NAME_EN: "Dhaka", BBS_CODE: "30", ROW_STATUS: 1 },
-  { ID: 1, NAME: "চট্টগ্রাম", NAME_EN: "Chattogram", BBS_CODE: "20", ROW_STATUS: 1 },
+  { ID: 4, NAME: "খুলনা", NAME_EN: "Khulna", BBS_CODE: "40", ROW_STATUS: 1 },
+  { ID: 5, NAME: "ময়মনসিংহ", NAME_EN: "Mymensingh", BBS_CODE: "45", ROW_STATUS: 1 },
+  { ID: 6, NAME: "রাজশাহী", NAME_EN: "Rajshahi", BBS_CODE: "50", ROW_STATUS: 1 },
+  { ID: 7, NAME: "রংপুর", NAME_EN: "Rangpur", BBS_CODE: "55", ROW_STATUS: 1 },
+  { ID: 8, NAME: "সিলেট", NAME_EN: "Sylhet", BBS_CODE: "60", ROW_STATUS: 1 },
 ];
 const districts: District[] = [
   { ID: 1, NAME: "ঢাকা", NAME_EN: "Dhaka", BBS_CODE: "26", DIVISION_BBS_CODE: "30", ROW_STATUS: 1 },
