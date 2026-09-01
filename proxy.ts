@@ -112,6 +112,7 @@ export async function proxy(request: NextRequest) {
     "/api/pages",
     "/api/blogs",
     "/api/comments",
+    "/api/land-records",
   ];
   const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 
