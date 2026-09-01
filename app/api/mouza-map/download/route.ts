@@ -54,7 +54,20 @@ async function runExport(input: unknown) {
     const result = await exportMouzaPublicationPdf({ mouza: parsed.data.mouza, jl: parsed.data.jl, layers: parsed.data.layers, satellite: parsed.data.satellite });
     return { result, key: pdfCacheKey(parsed.data) };
   }
-  const rasterRequest = { ...parsed.data, format: parsed.data.format === "raw" ? "raw" : "geotiff" } as const;
+  const format = parsed.data.format;
+  const rasterFormat =
+    format === "raw" ? "raw" :
+    format === "png" ? "png" :
+    format === "jpeg" ? "jpeg" :
+    "geotiff";
+  const rasterRequest = {
+    mouza: parsed.data.mouza,
+    jl: parsed.data.jl,
+    format: rasterFormat,
+    layers: parsed.data.layers,
+    maxDim: parsed.data.maxDim,
+    satellite: parsed.data.satellite,
+  } as const;
   return { result: await exportMouzaRaster(rasterRequest) };
 }
 
