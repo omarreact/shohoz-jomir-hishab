@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 
 const CLIENT_TIMEOUT_MS = 65_000;
 
+type GenerateResponse = {
+  ok?: boolean;
+  downloadUrl?: string;
+  filename?: string;
+  size?: number;
+  error?: string;
+};
+
 export default function VectorPdfExportControl() {
   const [open, setOpen] = useState(false);
   const [mouza, setMouza] = useState("");
@@ -24,37 +32,48 @@ export default function VectorPdfExportControl() {
   async function downloadVectorPdf() {
     const value = mouza.trim();
     if (value.length < 2 || loading) return;
+
     setLoading(true);
     setElapsed(0);
     setError("");
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
     try {
-      const params = new URLSearchParams({ mouza: value, format: "vector-pdf", layers, satellite: String(satellite) });
-      const response = await fetch(`/api/mouza-map/download?${params.toString()}`, { signal: controller.signal, cache: "no-store" });
+      const params = new URLSearchParams({
+        mouza: value,
+        format: "vector-pdf",
+        layers,
+        satellite: String(satellite),
+      });
+
+      const response = await fetch(`/api/mouza-map/download?${params.toString()}`, {
+        signal: controller.signal,
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      const body = (await response.json().catch(() => ({}))) as GenerateResponse;
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (response.status === 429) throw new Error("Export limit reached. Please wait a few minutes before trying again.");
-        if (response.status === 504) throw new Error("The map export took too long. Please try again, or export without satellite imagery.");
+        if (response.status === 504) throw new Error("The map export took too long. Please try again later.");
         throw new Error(body.error || `Vector PDF তৈরি করা যায়নি (${response.status})`);
       }
-      const blob = await response.blob();
-      if (!blob.size) throw new Error("The server returned an empty PDF.");
-      const disposition = response.headers.get("Content-Disposition") || "";
-      const match = /filename="?([^";]+)"?/i.exec(disposition);
-      const filename = match?.[1] || `landbd-${value.replace(/[^\p{L}\p{N}]+/gu, "-")}-${layers}${satellite ? "-satellite" : ""}-vector.pdf`;
-      const url = URL.createObjectURL(blob);
+
+      if (!body.downloadUrl) throw new Error("The server generated the PDF but did not return a secure download link.");
+
+      // The PDF may be 30–100+ MB. Do not fetch it into browser memory.
+      // Navigating to the authenticated proxy lets the browser stream the attachment.
       const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = filename;
+      anchor.href = body.downloadUrl;
+      anchor.rel = "noopener";
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       setOpen(false);
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") {
-        setError("PDF generation timed out. Please try again, or turn off satellite imagery for a faster export.");
+        setError("PDF generation timed out. Please try again.");
       } else {
         setError(cause instanceof Error ? cause.message : "Vector PDF তৈরি করা যায়নি");
       }
@@ -85,8 +104,8 @@ export default function VectorPdfExportControl() {
             </select>
           </label>
           <label className="mt-3 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"><span className="flex items-center gap-2"><Satellite className="h-4 w-4" />Satellite backdrop</span><input type="checkbox" disabled={loading} checked={satellite} onChange={(event) => setSatellite(event.target.checked)} /></label>
-          <p className="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">Satellite is a compressed raster backdrop; RS/MS boundaries and plot geometry remain vector paths.</p>
-          {loading ? <div role="status" aria-live="polite" className="mt-3 rounded-xl bg-slate-100 px-3 py-2.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200"><div className="flex items-center gap-2 font-semibold"><Loader2 className="h-4 w-4 animate-spin" />PDF তৈরি হচ্ছে… {elapsed}s</div><p className="mt-1 text-[10px] opacity-75">বড় মৌজায় 15–60 সেকেন্ড লাগতে পারে। এই উইন্ডো বন্ধ করবেন না।</p></div> : null}
+          <p className="mt-2 text-[10px] leading-4 text-slate-500 dark:text-slate-400">Satellite is retained at the highest configured source resolution; RS/MS boundaries and plot geometry remain vector paths.</p>
+          {loading ? <div role="status" aria-live="polite" className="mt-3 rounded-xl bg-slate-100 px-3 py-2.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200"><div className="flex items-center gap-2 font-semibold"><Loader2 className="h-4 w-4 animate-spin" />PDF তৈরি হচ্ছে… {elapsed}s</div><p className="mt-1 text-[10px] opacity-75">বড় মৌজায় কয়েক মিনিট লাগতে পারে। এই উইন্ডো বন্ধ করবেন না।</p></div> : null}
           {error ? <div role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</div> : null}
           <button type="button" disabled={loading || mouza.trim().length < 2} onClick={() => void downloadVectorPdf()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}{loading ? "Vector PDF তৈরি হচ্ছে…" : "Download Vector PDF"}
