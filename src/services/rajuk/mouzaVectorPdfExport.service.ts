@@ -39,8 +39,8 @@ const DRAW_W = PAGE_W - MARGIN * 2;
 const DRAW_H = PAGE_H - MARGIN * 2 - 16;
 const MAX_POINTS_PER_RING = 900;
 const PAGE_ASPECT = DRAW_W / DRAW_H;
-const SATELLITE_TIMEOUT_MS = 15_000;
-const SATELLITE_IMAGE_WIDTH = 3000;
+const SATELLITE_TIMEOUT_MS = 25_000;
+const SATELLITE_IMAGE_WIDTH = 2048;
 const SATELLITE_IMAGE_HEIGHT = Math.round(SATELLITE_IMAGE_WIDTH / PAGE_ASPECT);
 
 function isMs(feature: RajukPlotFeature): boolean {
