@@ -1,6 +1,6 @@
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
-import { isSafeGeoJson, isValidLngLat, sanitizeRajukFeature, sanitizeRajukFeatures } from "./mapUtils";
+import { featuresToFc, isSafeGeoJson, isValidLngLat, sanitizeRajukFeature, sanitizeRajukFeatures } from "./mapUtils";
 
 function feature(rings: number[][][]): RajukPlotFeature {
   return {
@@ -78,5 +78,35 @@ describe("GIS coordinate boundary", () => {
 
     expect(isSafeGeoJson(safe)).toBe(true);
     expect(isSafeGeoJson(unsafe)).toBe(false);
+  });
+});
+
+describe("sanitizeRajukFeatures pipeline", () => {
+  it("keeps multiple safe RS/MS features for a single atomic setData payload", () => {
+    const safeRs = feature([[
+      [90.1, 23.1],
+      [90.2, 23.1],
+      [90.2, 23.2],
+      [90.1, 23.1],
+    ]]);
+    const safeMs = feature([[
+      [90.15, 23.15],
+      [90.18, 23.15],
+      [90.18, 23.18],
+      [90.15, 23.15],
+    ]]);
+    safeMs.attributes = { ...safeMs.attributes, _layer_source: "ms", ms_plot_no: "MS-1", plot_no: 1 };
+    const unsafe = feature([[
+      [90.1, 23.1],
+      [90.2, 23.1],
+      [90.2, 91.2],
+      [90.1, 23.1],
+    ]]);
+
+    const cleaned = sanitizeRajukFeatures([safeRs, unsafe, safeMs]);
+    expect(cleaned).toHaveLength(2);
+    const fc = featuresToFc(cleaned);
+    expect(isSafeGeoJson(fc)).toBe(true);
+    expect(fc.features).toHaveLength(2);
   });
 });
