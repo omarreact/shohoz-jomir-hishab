@@ -3,6 +3,7 @@ import { getValidToken, RAJUK_SERVER } from "./rajukAuth.service";
 import { getLayer } from "./rajukLayers.service";
 import { getPlots } from "./rajukQuery.service";
 import { decodePng } from "@/src/lib/gis/pngDecode";
+import { encodeRgbaPng } from "@/src/lib/gis/pngEncode";
 import { writeRgbaGeoTiff } from "@/src/lib/gis/geoTiffWriter";
 import { createZipStore } from "@/src/lib/gis/zipStore";
 import { rasterizePolygonMask } from "@/src/lib/gis/polygonMask";
@@ -15,7 +16,7 @@ import {
 } from "@/src/lib/gis/webMercatorTiles";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 
-export type MouzaExportFormat = "geotiff" | "raw";
+export type MouzaExportFormat = "geotiff" | "raw" | "png" | "jpeg";
 export type MouzaExportLayers = "rs" | "ms" | "combined";
 
 export type MouzaExportRequest = {
@@ -24,6 +25,7 @@ export type MouzaExportRequest = {
   format: MouzaExportFormat;
   layers: MouzaExportLayers;
   maxDim?: number;
+  satellite?: boolean;
 };
 
 export type MouzaExportResult = {
@@ -49,10 +51,6 @@ const MIN_ZOOM = 14;
 const MAX_DIM_DEFAULT = 6144;
 const MAX_TILES = 400;
 const CONCURRENCY = 6;
-
-function present(v: unknown): boolean {
-  return v !== null && v !== undefined && String(v).trim() !== "";
-}
 
 function featureBelongsToMouza(feature: RajukPlotFeature, mauzaName: string): boolean {
   const target = mauzaName.trim().toLowerCase();
@@ -117,7 +115,6 @@ async function fetchTilePng(layerKey: "rs" | "ms", z: number, x: number, y: numb
     if (ct.includes("json") || buf[0] === 0x7b) return null;
     if (buf[0] === 0x47 && buf[1] === 0x49) return null;
     try {
-      const { decodePng } = await import("@/src/lib/gis/pngDecode");
       const decoded = decodePng(buf);
       return decoded.rgba;
     } catch {
@@ -127,6 +124,60 @@ async function fetchTilePng(layerKey: "rs" | "ms", z: number, x: number, y: numb
     return null;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function fetchSatelliteBackdrop(
+  extent: { xmin: number; ymin: number; xmax: number; ymax: number },
+  width: number,
+  height: number,
+): Promise<Uint8Array | null> {
+  const params = new URLSearchParams({
+    bbox: `${extent.xmin},${extent.ymin},${extent.xmax},${extent.ymax}`,
+    bboxSR: "3857",
+    imageSR: "3857",
+    size: `${width},${height}`,
+    format: "png32",
+    f: "image",
+    transparent: "false",
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45_000);
+  try {
+    const res = await fetch(
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?${params}`,
+      { signal: controller.signal, headers: { Accept: "image/png,image/*" }, cache: "no-store" },
+    );
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 100 || buf[0] !== 0x89) return null;
+    const decoded = decodePng(buf);
+    if (decoded.rgba.length !== width * height * 4) return null;
+    return decoded.rgba;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function underlaySatellite(base: Uint8Array, satellite: Uint8Array, width: number, height: number): void {
+  const n = width * height * 4;
+  for (let i = 0; i < n; i += 4) {
+    const a = base[i + 3];
+    if (a === 0) {
+      base[i] = satellite[i];
+      base[i + 1] = satellite[i + 1];
+      base[i + 2] = satellite[i + 2];
+      base[i + 3] = 255;
+    } else if (a < 255) {
+      const aa = a / 255;
+      const ia = 1 - aa;
+      base[i] = Math.round(base[i] * aa + satellite[i] * ia);
+      base[i + 1] = Math.round(base[i + 1] * aa + satellite[i + 1] * ia);
+      base[i + 2] = Math.round(base[i + 2] * aa + satellite[i + 2] * ia);
+      base[i + 3] = 255;
+    }
   }
 }
 
@@ -152,8 +203,7 @@ function compositeTiles(opts: {
       const dx = (tx - minX) * TILE_SIZE;
       const dy = (ty - minY) * TILE_SIZE;
       for (const layerKey of layerKeys) {
-        const key = `${layerKey}:${z}:${tx}:${ty}`;
-        const src = tileRgba.get(key);
+        const src = tileRgba.get(`${layerKey}:${z}:${tx}:${ty}`);
         if (!src) continue;
         for (let row = 0; row < TILE_SIZE; row++) {
           for (let col = 0; col < TILE_SIZE; col++) {
@@ -342,6 +392,20 @@ export async function exportMouzaRaster(req: MouzaExportRequest): Promise<MouzaE
     tileRgba,
   });
 
+  if (req.satellite) {
+    const sat = await fetchSatelliteBackdrop(
+      {
+        xmin: mosaic.originX,
+        ymin: mosaic.originY - mosaic.height * mosaic.resolution,
+        xmax: mosaic.originX + mosaic.width * mosaic.resolution,
+        ymax: mosaic.originY,
+      },
+      mosaic.width,
+      mosaic.height,
+    );
+    if (sat) underlaySatellite(mosaic.rgba, sat, mosaic.width, mosaic.height);
+  }
+
   const mask = rasterizePolygonMask({
     rings,
     width: mosaic.width,
@@ -379,6 +443,30 @@ export async function exportMouzaRaster(req: MouzaExportRequest): Promise<MouzaE
     tileCount,
     plotCount: features.length,
   };
+
+  if (req.format === "png" || req.format === "jpeg") {
+    let rgba = cropped.rgba;
+    if (req.format === "jpeg") {
+      rgba = new Uint8Array(cropped.rgba);
+      for (let i = 0; i < rgba.length; i += 4) {
+        if (rgba[i + 3] < 255) {
+          const a = rgba[i + 3] / 255;
+          rgba[i] = Math.round(rgba[i] * a + 255 * (1 - a));
+          rgba[i + 1] = Math.round(rgba[i + 1] * a + 255 * (1 - a));
+          rgba[i + 2] = Math.round(rgba[i + 2] * a + 255 * (1 - a));
+          rgba[i + 3] = 255;
+        }
+      }
+    }
+    const body = encodeRgbaPng(cropped.width, cropped.height, rgba);
+    const satTag = req.satellite ? "_SAT" : "";
+    return {
+      filename: `${base}${satTag}_share.png`,
+      contentType: "image/png",
+      body,
+      meta,
+    };
+  }
 
   if (req.format === "geotiff") {
     const body = writeRgbaGeoTiff({
