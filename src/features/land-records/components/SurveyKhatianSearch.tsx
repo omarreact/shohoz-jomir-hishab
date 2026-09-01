@@ -45,10 +45,8 @@ export default function SurveyKhatianSearch() {
   const selectedMouza = mouzas.find((m) => String(m.ID) === mouzaId);
   const surveyKey = surveyId ? SURVEY_KEY_BY_ID[Number(surveyId)] : undefined;
 
-  // Step 1: load the first dropdown once, exactly like the RAJUK cascade.
-  useEffect(() => {
-    void loadDistricts("");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Step 1 (Divisions) is loaded once inside useSurveyKhatian, matching the
+  // initial-load effect used by the RAJUK cascade.
 
   // Step 2: Division -> Districts.
   // Downstream values are cleared in handleDivisionChange before this effect runs.
