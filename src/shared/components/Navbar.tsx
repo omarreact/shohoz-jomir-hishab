@@ -40,6 +40,7 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   landMeasurement: Ruler,
   inheritance: Users,
   landMap: Map,
+  mouzaDownload: Map,
   mapQa: Map,
   documents: FileText,
   blog: BookOpen,
@@ -320,7 +321,7 @@ export default function Navbar() {
                 মানচিত্র ও জ্ঞান
               </p>
               {PRIMARY_NAV.filter((i) =>
-                ["/geospatial-map", "/rajuk-test", "/blog"].includes(i.href),
+                ["/geospatial-map", "/mouza-map", "/rajuk-test", "/blog"].includes(i.href),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
