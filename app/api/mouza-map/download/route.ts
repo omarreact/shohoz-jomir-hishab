@@ -5,6 +5,8 @@ import { exportMouzaRaster } from "@/src/services/rajuk/mouzaRasterExport.servic
 import { exportMouzaPublicationPdf } from "@/src/services/rajuk/mouzaPublicationPdfV2.service";
 import { mouzaExportQuerySchema } from "@/src/services/rajuk/schemas/mouzaExport.schema";
 import { createPrivateDownloadToken } from "@/src/services/rajuk/privateMouzaPdfToken";
+import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,26 +49,62 @@ async function uploadPdfToBlob(result: Awaited<ReturnType<typeof exportMouzaPubl
   return { pathname, downloadToken: createPrivateDownloadToken(pathname) };
 }
 
-async function runExport(input: unknown) {
+async function resolveIsAdmin(request: NextRequest): Promise<boolean> {
+  try {
+    const user = await verifyServerAuth(request);
+    return isAdminRole(user.role);
+  } catch {
+    return false;
+  }
+}
+
+/** Visitors: PNG share only. Admins: full format matrix. */
+function enforceVisitorExportPolicy(
+  data: import("@/src/services/rajuk/schemas/mouzaExport.schema").MouzaExportQuery,
+  isAdmin: boolean,
+): { data: import("@/src/services/rajuk/schemas/mouzaExport.schema").MouzaExportQuery; error?: string; status?: number } {
+  if (isAdmin) return { data };
+  if (data.format !== "png") {
+    return {
+      data,
+      error: "Visitors may only download high-resolution PNG mouza maps. Sign in as admin for GeoTIFF, RAW, or Vector PDF.",
+      status: 403,
+    };
+  }
+  return {
+    data: {
+      ...data,
+      format: "png",
+      layers: "combined",
+      satellite: true,
+      maxDim: Math.min(Math.max(data.maxDim ?? 6144, 2048), 6144),
+    },
+  };
+}
+
+async function runExport(input: unknown, isAdmin: boolean) {
   const parsed = mouzaExportQuerySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message || "Invalid request", status: 400 as const };
-  if (parsed.data.format === "vector-pdf") {
-    const result = await exportMouzaPublicationPdf({ mouza: parsed.data.mouza, jl: parsed.data.jl, layers: parsed.data.layers, satellite: parsed.data.satellite });
-    return { result, key: pdfCacheKey(parsed.data) };
+  const enforced = enforceVisitorExportPolicy(parsed.data, isAdmin);
+  if (enforced.error) return { error: enforced.error, status: (enforced.status ?? 403) as 403 };
+  const data = enforced.data;
+  if (data.format === "vector-pdf") {
+    const result = await exportMouzaPublicationPdf({ mouza: data.mouza, jl: data.jl, layers: data.layers, satellite: data.satellite });
+    return { result, key: pdfCacheKey(data) };
   }
-  const format = parsed.data.format;
+  const format = data.format;
   const rasterFormat =
     format === "raw" ? "raw" :
     format === "png" ? "png" :
     format === "jpeg" ? "jpeg" :
     "geotiff";
   const rasterRequest = {
-    mouza: parsed.data.mouza,
-    jl: parsed.data.jl,
+    mouza: data.mouza,
+    jl: data.jl,
     format: rasterFormat,
-    layers: parsed.data.layers,
-    maxDim: parsed.data.maxDim,
-    satellite: parsed.data.satellite,
+    layers: data.layers,
+    maxDim: data.maxDim,
+    satellite: data.satellite,
   } as const;
   return { result: await exportMouzaRaster(rasterRequest) };
 }
@@ -78,7 +116,8 @@ function attachmentResponse(result: Awaited<ReturnType<typeof exportMouzaRaster>
 async function handle(request: NextRequest, input: unknown) {
   if (!allowRequest(request)) return NextResponse.json({ error: "Too many export requests. Please wait a few minutes and try again." }, { status: 429, headers: { "Retry-After": "600", "Cache-Control": "no-store" } });
   try {
-    const out = await runExport(input);
+    const isAdmin = await resolveIsAdmin(request);
+    const out = await runExport(input, isAdmin);
     if ("error" in out) return NextResponse.json({ error: out.error }, { status: out.status });
     if ("key" in out) {
       const blob = await uploadPdfToBlob(out.result, out.key);
