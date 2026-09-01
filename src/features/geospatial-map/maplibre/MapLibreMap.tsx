@@ -31,6 +31,7 @@ import {
   featuresToFc,
   fetchWithTimeout,
   isMsFeature,
+  sanitizeRajukFeatures,
   updateSourceData,
 } from "./mapUtils";
 import {
@@ -196,15 +197,16 @@ export default function MapLibreMap() {
           if (!response.ok) throw new Error(data?.error || "দাগ শনাক্ত করা যায়নি");
           if (controller.signal.aborted || requestId !== identifyRequestIdRef.current || !mapReadyRef.current) return;
 
-          const found = Array.isArray(data?.features) ? data.features : [];
+          const found = sanitizeRajukFeatures(Array.isArray(data?.features) ? data.features : []);
           setResults(found);
           setSelected(found[0] ?? null);
           setTab("results");
           setPanelOpen(false);
+          // Atomic multi-feature highlight: RS+MS from one identify share one setData call.
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
-            found[0] ? (featuresToFc([found[0]]) as FeatureCollection<Geometry>) : EMPTY_GEOJSON,
+            found.length ? (featuresToFc(found) as FeatureCollection<Geometry>) : EMPTY_GEOJSON,
           );
 
           if (!found.length) notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");
@@ -239,18 +241,30 @@ export default function MapLibreMap() {
     map.on("zoomend", handleMove);
 
     return () => {
-      unbindViewport();
+      // Invariant: freeze request generation before tearing down WebGL.
+      mapReadyRef.current = false;
       if (extentTimerRef.current) window.clearTimeout(extentTimerRef.current);
+      extentTimerRef.current = null;
       extentControllerRef.current?.abort();
       identifyControllerRef.current?.abort();
       extentRequestIdRef.current += 1;
       identifyRequestIdRef.current += 1;
+      unbindViewport();
       map.off("click", handleClick);
       map.off("moveend", handleMove);
       map.off("zoomend", handleMove);
+      // Empty vector sources before remove() so no late setData targets a live GL buffer.
+      try {
+        updateSourceData(map, VECTOR_SOURCES.rsBoundary, EMPTY_GEOJSON);
+        updateSourceData(map, VECTOR_SOURCES.msBoundary, EMPTY_GEOJSON);
+        updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
+        updateSourceData(map, VECTOR_SOURCES.location, EMPTY_GEOJSON);
+        updateSourceData(map, VECTOR_SOURCES.accuracy, EMPTY_GEOJSON);
+      } catch {
+        /* map may already be partially torn down */
+      }
       map.remove();
       mapRef.current = null;
-      mapReadyRef.current = false;
     };
 
     async function loadExtent() {
@@ -289,8 +303,9 @@ export default function MapLibreMap() {
       try {
         const [rs, ms] = await Promise.all([query("rs"), query("ms")]);
         if (controller.signal.aborted || requestId !== extentRequestIdRef.current || !mapReadyRef.current) return;
-        const rsFeatures = Array.isArray(rs.features) ? rs.features : [];
-        const msFeatures = Array.isArray(ms.features) ? ms.features : [];
+        const rsFeatures = sanitizeRajukFeatures(Array.isArray(rs.features) ? rs.features : []);
+        const msFeatures = sanitizeRajukFeatures(Array.isArray(ms.features) ? ms.features : []);
+        // Two atomic setData calls — one per source; never mutate in place.
         updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);
         updateSourceData(map, VECTOR_SOURCES.msBoundary, featuresToFc(msFeatures) as FeatureCollection<Geometry>);
         setVectorStatus(`${rsFeatures.length + msFeatures.length}টি দাগ লোড হয়েছে`);
@@ -352,17 +367,27 @@ export default function MapLibreMap() {
       const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`);
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "দাগ খোঁজা যায়নি");
       const data = (await response.json()) as { features?: RajukPlotFeature[] };
-      const found = Array.isArray(data.features) ? data.features : [];
+      const found = sanitizeRajukFeatures(Array.isArray(data.features) ? data.features : []);
       setResults(found);
       setSelected(found[0] ?? null);
       setTab("results");
       setPanelOpen(false);
-      if (found[0]) {
-        const rings = found[0].geometry?.rings ?? [];
-        if (rings.length) {
-          const bounds = new maplibregl.LngLatBounds();
-          rings.flat().forEach(([lng, lat]) => bounds.extend([lng, lat]));
-          mapRef.current?.fitBounds(bounds, { padding: 60, maxZoom: 18, duration: 700 });
+      if (mapRef.current) {
+        updateSourceData(
+          mapRef.current,
+          VECTOR_SOURCES.selectedPlot,
+          found.length ? (featuresToFc(found) as FeatureCollection<Geometry>) : EMPTY_GEOJSON,
+        );
+      }
+      if (found.length && mapRef.current) {
+        const bounds = new maplibregl.LngLatBounds();
+        for (const feature of found) {
+          for (const ring of feature.geometry?.rings ?? []) {
+            for (const [lng, lat] of ring) bounds.extend([lng, lat]);
+          }
+        }
+        if (!bounds.isEmpty()) {
+          mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 18, duration: 700 });
         }
       }
     } catch (error) {
