@@ -14,6 +14,11 @@ describe("mouzaExportQuerySchema", () => {
     }
   });
 
+  it("accepts share formats png and jpeg", () => {
+    expect(mouzaExportQuerySchema.safeParse({ mouza: "Patira", format: "png", satellite: true }).success).toBe(true);
+    expect(mouzaExportQuerySchema.safeParse({ mouza: "Patira", format: "jpeg", layers: "combined" }).success).toBe(true);
+  });
+
   it("rejects short mouza names", () => {
     const r = mouzaExportQuerySchema.safeParse({ mouza: "a" });
     expect(r.success).toBe(false);
@@ -25,7 +30,7 @@ describe("mouzaExportQuerySchema", () => {
   });
 
   it("rejects arbitrary format values", () => {
-    const r = mouzaExportQuerySchema.safeParse({ mouza: "Test", format: "jpeg" });
+    const r = mouzaExportQuerySchema.safeParse({ mouza: "Test", format: "bmp" });
     expect(r.success).toBe(false);
   });
 });

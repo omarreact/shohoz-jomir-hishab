@@ -1,26 +1,31 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import VectorPdfExportControl from "@/src/features/geospatial-map/components/VectorPdfExportControl";
+import VisitorMouzaShareDownload from "./VisitorMouzaShareDownload";
 
-const MouzaExportMap = dynamic(
-  () => import("@/src/features/geospatial-map/maplibre/MouzaExportMap"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid h-dvh w-full place-items-center bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
-        মৌজা মানচিত্র প্রস্তুত হচ্ছে…
-      </div>
-    ),
-  },
-);
+const MouzaExportMap = dynamic(() => import("../maplibre/MouzaExportMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full min-h-[40vh] items-center justify-center bg-slate-950 text-sm text-slate-400">
+      মানচিত্র লোড হচ্ছে…
+    </div>
+  ),
+});
 
-/** Full-viewport মৌজা map — no app chrome (navbar/footer). */
+/**
+ * Visitor-first মৌজা download: cascade form on top of the map canvas.
+ */
 export default function MouzaMapClient() {
   return (
-    <div className="fixed inset-0 z-0 h-dvh w-full overflow-hidden bg-slate-900">
-      <MouzaExportMap />
-      <VectorPdfExportControl />
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-slate-950">
+      <div className="absolute inset-0 opacity-80">
+        <MouzaExportMap />
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center overflow-y-auto p-3 pt-4 sm:p-6 sm:pt-8">
+        <div className="pointer-events-auto w-full max-w-lg">
+          <VisitorMouzaShareDownload />
+        </div>
+      </div>
     </div>
   );
 }
