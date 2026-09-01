@@ -40,8 +40,7 @@ function pointInRing(point: readonly [number, number], ring: number[][]): boolea
 }
 
 function labelPoint(feature: RajukPlotFeature): [number, number] | null {
-  const rings = feature.geometry?.rings ?? [];
-  const outer = rings[0];
+  const outer = feature.geometry?.rings?.[0];
   if (!outer || outer.length < 3) return null;
   const centroid = ringCentroid(outer);
   if (centroid && pointInRing(centroid, outer)) return centroid;
@@ -52,21 +51,34 @@ function labelPoint(feature: RajukPlotFeature): [number, number] | null {
   return first ? [Number(first[0]), Number(first[1])] : null;
 }
 
-function textSizeForFeature(feature: RajukPlotFeature, extent: GeoExtent): number {
+function projectedArea(feature: RajukPlotFeature, extent: GeoExtent): number {
   const ring = feature.geometry?.rings?.[0] ?? [];
-  if (ring.length < 3) return 5;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+  if (ring.length < 3) return 0;
+  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
   for (const [x, y] of ring) {
     minX = Math.min(minX, Number(x)); maxX = Math.max(maxX, Number(x));
     minY = Math.min(minY, Number(y)); maxY = Math.max(maxY, Number(y));
   }
   const width = ((maxX - minX) / Math.max(extent.xmax - extent.xmin, 1e-12)) * DRAW_W;
   const height = ((maxY - minY) / Math.max(extent.ymax - extent.ymin, 1e-12)) * DRAW_H;
-  const diagonal = Math.sqrt(Math.max(width, 0) * Math.max(height, 0));
-  return Math.max(4.2, Math.min(8.5, diagonal * 0.34));
+  return Math.max(0, width * height);
+}
+
+function textSizeForFeature(feature: RajukPlotFeature, extent: GeoExtent): number {
+  const area = projectedArea(feature, extent);
+  return Math.max(4.2, Math.min(8.5, Math.sqrt(area) * 0.34));
+}
+
+function drawTextHalo(doc: jsPDF, value: string, x: number, y: number, size: number): void {
+  doc.setFontSize(size);
+  doc.setTextColor(255, 255, 255);
+  doc.setLineWidth(1.5);
+  doc.setDrawColor(255, 255, 255);
+  doc.text(value, x, y, { align: "center", baseline: "middle", renderingMode: "fillThenStroke" });
+  doc.setTextColor(20, 20, 20);
+  doc.setLineWidth(0.2);
+  doc.setDrawColor(20, 20, 20);
+  doc.text(value, x, y, { align: "center", baseline: "middle" });
 }
 
 export function drawAdaptivePlotLabels(
@@ -77,26 +89,25 @@ export function drawAdaptivePlotLabels(
   isMs: (feature: RajukPlotFeature) => boolean,
 ): void {
   const occupied: Array<{ x: number; y: number; r: number }> = [];
-  const ranked = [...features].sort((a, b) => {
-    const ar = a.geometry?.rings?.[0]?.length ?? 0;
-    const br = b.geometry?.rings?.[0]?.length ?? 0;
-    return br - ar;
-  });
+  const density = features.length / Math.max(DRAW_W * DRAW_H, 1);
+  const areaThreshold = density > 0.035 ? 22 : density > 0.02 ? 15 : 9;
+  const ranked = [...features].sort((a, b) => projectedArea(b, extent) - projectedArea(a, extent));
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(20, 20, 20);
   for (const feature of ranked) {
+    if (projectedArea(feature, extent) < areaThreshold) continue;
     const a = feature.attributes as Record<string, unknown>;
     const label = String(a.plot_no ?? a.rs_plot_no ?? a.ms_plot_no ?? "").trim();
     const point = labelPoint(feature);
     if (!label || !point) continue;
     const [x, y] = project(point[0], point[1], extent);
     const size = textSizeForFeature(feature, extent);
-    const radius = Math.max(2.4, doc.getTextWidth(label) * (size / 5.2) * 0.6);
-    const collision = occupied.some((p) => Math.hypot(p.x - x, p.y - y) < p.r + radius + 0.8);
-    if (collision && size <= 5) continue;
+    const display = isMs(feature) ? `MS ${label}` : label;
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(size);
-    doc.text(isMs(feature) ? `MS ${label}` : label, x, y, { align: "center", baseline: "middle" });
+    const radius = Math.max(2.4, doc.getTextWidth(display) * 0.55);
+    const collision = occupied.some((p) => Math.hypot(p.x - x, p.y - y) < p.r + radius + 0.8);
+    if (collision) continue;
+    drawTextHalo(doc, display, x, y, size);
     occupied.push({ x, y, r: radius });
   }
 }
@@ -113,10 +124,6 @@ export function drawNorthArrow(doc: jsPDF, x = PAGE_W - 24, y = MARGIN + 8): voi
   doc.text("N", x, y - 1.5, { align: "center" });
 }
 
-function metersPerDegreeLat(latitude: number): number {
-  const phi = (latitude * Math.PI) / 180;
-  return 111132.92 - 559.82 * Math.cos(2 * phi) + 1.175 * Math.cos(4 * phi);
-}
 function metersPerDegreeLon(latitude: number): number {
   const phi = (latitude * Math.PI) / 180;
   return 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
@@ -124,26 +131,29 @@ function metersPerDegreeLon(latitude: number): number {
 
 export function drawScaleBar(doc: jsPDF, extent: GeoExtent, x = MARGIN, y = PAGE_H - 5): void {
   const lat = (extent.ymin + extent.ymax) / 2;
-  const mPerDegX = metersPerDegreeLon(lat);
-  const groundWidthM = Math.max(1, (extent.xmax - extent.xmin) * mPerDegX);
+  const groundWidthM = Math.max(1, (extent.xmax - extent.xmin) * metersPerDegreeLon(lat));
   const candidates = [25, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
   const target = groundWidthM * 0.16;
   const meters = candidates.reduce((best, value) => Math.abs(value - target) < Math.abs(best - target) ? value : best, candidates[0]);
   const paperWidth = (meters / groundWidthM) * DRAW_W;
-
-  doc.setDrawColor(20, 30, 40);
-  doc.setFillColor(20, 30, 40);
-  doc.setLineWidth(0.35);
+  doc.setDrawColor(20, 30, 40); doc.setFillColor(20, 30, 40); doc.setLineWidth(0.35);
   doc.rect(x, y - 3.5, paperWidth, 2, "F");
-  doc.setFillColor(255, 255, 255);
-  doc.rect(x + paperWidth / 2, y - 3.5, paperWidth / 2, 2, "F");
-  doc.setDrawColor(20, 30, 40);
-  doc.rect(x, y - 3.5, paperWidth, 2, "S");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.5);
-  doc.setTextColor(20, 30, 40);
+  doc.setFillColor(255, 255, 255); doc.rect(x + paperWidth / 2, y - 3.5, paperWidth / 2, 2, "F");
+  doc.setDrawColor(20, 30, 40); doc.rect(x, y - 3.5, paperWidth, 2, "S");
+  doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(20, 30, 40);
   doc.text("0", x, y + 1.5);
   doc.text(`${meters >= 1000 ? `${meters / 1000} km` : `${meters} m`}`, x + paperWidth, y + 1.5, { align: "right" });
+}
+
+function formatCoordinate(value: number, positive: string, negative: string): string {
+  const abs = Math.abs(value);
+  const degrees = Math.floor(abs);
+  const minutesFloat = (abs - degrees) * 60;
+  const minutes = Math.floor(minutesFloat);
+  const seconds = Math.round((minutesFloat - minutes) * 60);
+  const normalizedSeconds = seconds === 60 ? 0 : seconds;
+  const normalizedMinutes = seconds === 60 ? minutes + 1 : minutes;
+  return `${degrees}°${normalizedMinutes.toString().padStart(2, "0")}'${normalizedSeconds.toString().padStart(2, "0")}\"${value >= 0 ? positive : negative}`;
 }
 
 export function drawCoordinateGrid(doc: jsPDF, extent: GeoExtent, project: PdfProject): void {
@@ -151,18 +161,18 @@ export function drawCoordinateGrid(doc: jsPDF, extent: GeoExtent, project: PdfPr
   const lonSpan = extent.xmax - extent.xmin;
   const stepLat = latSpan > 0.05 ? 0.01 : latSpan > 0.01 ? 0.002 : 0.001;
   const stepLon = lonSpan > 0.05 ? 0.01 : lonSpan > 0.01 ? 0.002 : 0.001;
-  doc.setDrawColor(90, 100, 110);
-  doc.setLineWidth(0.08);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(4.5);
-  doc.setTextColor(80, 90, 100);
+  doc.setDrawColor(90, 100, 110); doc.setLineWidth(0.08); doc.setFont("helvetica", "normal"); doc.setFontSize(4.5); doc.setTextColor(80, 90, 100);
   for (let lon = Math.ceil(extent.xmin / stepLon) * stepLon; lon < extent.xmax; lon += stepLon) {
-    const [x] = project(lon, extent.ymin, extent);
-    doc.line(x, MARGIN + 10, x, MARGIN + 10 + DRAW_H);
+    const [x] = project(lon, extent.ymin, extent); doc.line(x, MARGIN + 10, x, MARGIN + 10 + DRAW_H);
+    const label = formatCoordinate(lon, "E", "W");
+    doc.text(label, x, MARGIN + 8, { align: "center" });
+    doc.text(label, x, MARGIN + 10 + DRAW_H + 4, { align: "center" });
   }
   for (let lat = Math.ceil(extent.ymin / stepLat) * stepLat; lat < extent.ymax; lat += stepLat) {
-    const [, y] = project(extent.xmin, lat, extent);
-    doc.line(MARGIN, y, MARGIN + DRAW_W, y);
+    const [, y] = project(extent.xmin, lat, extent); doc.line(MARGIN, y, MARGIN + DRAW_W, y);
+    const label = formatCoordinate(lat, "N", "S");
+    doc.text(label, MARGIN - 1, y + 1, { align: "right" });
+    doc.text(label, MARGIN + DRAW_W + 1, y + 1, { align: "left" });
   }
 }
 
@@ -170,8 +180,24 @@ export function drawScaleText(doc: jsPDF, extent: GeoExtent, y = 8): void {
   const lat = (extent.ymin + extent.ymax) / 2;
   const groundWidthM = Math.max(1, (extent.xmax - extent.xmin) * metersPerDegreeLon(lat));
   const scaleDenominator = Math.round((groundWidthM / (DRAW_W / 1000)) / 100) * 100;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.8);
-  doc.setTextColor(50, 60, 70);
-  doc.text(`Approx. scale 1:${Math.max(100, scaleDenominator).toLocaleString("en-US")}`, PAGE_W - MARGIN, y + 4, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(5.8); doc.setTextColor(50, 60, 70);
+  doc.text(`Approx. Scale: 1:${Math.max(100, scaleDenominator).toLocaleString("en-US")}`, PAGE_W - MARGIN, y + 4, { align: "right" });
+}
+
+export function drawPublicationFooter(
+  doc: jsPDF,
+  meta: { mouza: string; jl: string; upazila: string; district: string; plots: number; layers: string; satellite: boolean },
+): void {
+  const top = PAGE_H - 25;
+  const col1 = MARGIN;
+  const col2 = 154;
+  const col3 = 285;
+  doc.setFillColor(248, 249, 250); doc.setDrawColor(185, 190, 195); doc.setLineWidth(0.2); doc.rect(MARGIN, top, DRAW_W, 16, "FD");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(6); doc.setTextColor(30, 35, 40);
+  doc.text("Mouza Details", col1 + 2, top + 4); doc.text("Map / Print", col2 + 2, top + 4); doc.text("Legend", col3 + 2, top + 4);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(5.3);
+  doc.text(`Name: ${meta.mouza || "N/A"}`, col1 + 2, top + 8); doc.text(`JL No: ${meta.jl || "N/A"}`, col1 + 2, top + 11); doc.text(`Upazila: ${meta.upazila || "N/A"}`, col1 + 2, top + 14); doc.text(`District: ${meta.district || "N/A"}  |  Plots: ${meta.plots}`, col1 + 52, top + 8);
+  doc.text(`Scale: 1:${""}  |  CRS: EPSG:4326`, col2 + 2, top + 8); doc.text(`Layers: ${meta.layers}  |  ${meta.satellite ? "Satellite + Vector" : "Vector"}`, col2 + 2, top + 11); doc.text("Print-ready cadastral publication", col2 + 2, top + 14);
+  const swatch = (x: number, y: number, r: number, g: number, b: number, label: string, dashed = false) => { doc.setDrawColor(r, g, b); doc.setLineWidth(0.7); if (dashed) doc.setLineDashPattern([1.2, 0.8], 0); doc.line(x, y, x + 9, y); if (dashed) doc.setLineDashPattern([], 0); doc.setFontSize(5); doc.setTextColor(35, 40, 45); doc.text(label, x + 12, y + 1.5); };
+  swatch(col3 + 2, top + 8, 255, 230, 0, "RS Plot"); swatch(col3 + 2, top + 12, 0, 240, 255, "MS Plot", true); swatch(col3 + 70, top + 8, 230, 0, 120, "Mouza Boundary"); swatch(col3 + 70, top + 12, 110, 120, 130, "Neighboring Mouza", true);
 }
