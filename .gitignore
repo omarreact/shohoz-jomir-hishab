@@ -48,3 +48,8 @@ prisma/*.db-wal
 
 # Scratch/debug text files
 *.txt
+
+# Network investigation captures may contain headers, request data, and response payloads.
+# Keep raw/sanitized HAR evidence local unless explicitly reviewed for publication.
+/scripts/investigation/captures/*.har
+/scripts/investigation/captures/*.har.zip
