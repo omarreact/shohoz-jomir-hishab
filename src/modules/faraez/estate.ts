@@ -1,62 +1,3 @@
-/** Exact fixed-point estate preparation for the Faraez domain. */
-import type { AssetsInput } from "./types";
-
-/** Internal fixed-point scale (6 decimal places). */
-const SCALE = 1_000_000n;
-const SCALE_DIGITS = 6;
-const TEN = 10n;
-
-export interface PreparedFaraezEstate {
-  /** Gross estate before funeral expenses, debts and wasiyat. */
-  gross: number;
-  /** Estate remaining after all permitted deductions. */
-  net: number;
-  /** Asset values after deductions, allocated proportionally across asset classes. */
-  assets: AssetsInput;
-  deductions: {
-    funeralCost: number;
-    debt: number;
-    wasiyat: number;
-  };
-}
-
-/**
- * Convert a finite non-negative JS number to our decimal fixed-point integer
- * without multiplying the binary floating-point value by SCALE.
- *
- * `String(value)` is used only as the input boundary representation; all
- * subsequent arithmetic is bigint. This prevents IEEE-754 multiplication,
- * addition, subtraction and division from entering the estate calculation.
- */
-function toScaled(value: number): bigint {
-  if (!Number.isFinite(value) || value < 0) {
-    throw new RangeError("Estate values must be finite non-negative numbers");
-  }
-
-  const text = String(value).toLowerCase();
-  const [coefficient, exponentText] = text.split("e");
-  const exponent = exponentText ? Number.parseInt(exponentText, 10) : 0;
-  if (!Number.isInteger(exponent)) throw new RangeError("Invalid estate value");
-
-  const [whole, fraction = ""] = coefficient.split(".");
-  const digitsText = `${whole}${fraction}`.replace(/^0+(?=\d)/, "");
-  const digits = BigInt(digitsText || "0");
-  const decimalPlaces = fraction.length - exponent;
-  const shift = SCALE_DIGITS - decimalPlaces;
-
-  if (shift >= 0) return digits * TEN ** BigInt(shift);
-
-  const divisor = TEN ** BigInt(-shift);
-  const quotient = digits / divisor;
-  const remainder = digits % divisor;
-  return remainder * 2n >= divisor ? quotient + 1n : quotient;
-}
-
-/** Convert an exact scaled integer to a presentation number. */
-function fromScaled(value: bigint): number {
-  return Number(value) / Number(SCALE);
-}
-
 /** Largest-remainder proportional split of `totalScaled` across positive weights. */
 function allocateProportional(weights: readonly bigint[], totalScaled: bigint): bigint[] {
   const weightSum = weights.reduce((sum, weight) => sum + weight, 0n);
@@ -69,7 +10,7 @@ function allocateProportional(weights: readonly bigint[], totalScaled: bigint): 
     return { index, base, remainder };
   });
 
-  let assigned = rows.reduce((sum, row) => sum + row.base, 0n);
+  const assigned = rows.reduce((sum, row) => sum + row.base, 0n);
   let leftover = totalScaled - assigned;
 
   [...rows]
@@ -84,58 +25,4 @@ function allocateProportional(weights: readonly bigint[], totalScaled: bigint): 
     });
 
   return rows.sort((a, b) => a.index - b.index).map((row) => row.base);
-}
-
-/**
- * Prepare the estate before Faraez shares are calculated.
- *
- * Funeral + enforceable debt are deducted from the whole mixed estate.
- * Wasiyat is capped at one third of the post-funeral/debt remainder.
- * Residual land/gold/cash are allocated proportionally with exact
- * largest-remainder conservation at the fixed-point boundary.
- */
-export function prepareFaraezEstate(input: AssetsInput): PreparedFaraezEstate {
-  const landS = toScaled(input.land);
-  const goldS = toScaled(input.gold);
-  const cashS = toScaled(input.cash);
-  const funeralS = toScaled(input.funeralCost);
-  const debtS = toScaled(input.debt);
-  const requestedWasiyatS = toScaled(input.wasiyat);
-
-  const grossS = landS + goldS + cashS;
-  const deductionsS = funeralS + debtS;
-  const afterFuneralAndDebtS = grossS > deductionsS ? grossS - deductionsS : 0n;
-  const maxWasiyatS = afterFuneralAndDebtS / 3n;
-  const allowedWasiyatS = requestedWasiyatS < maxWasiyatS ? requestedWasiyatS : maxWasiyatS;
-  const netS = afterFuneralAndDebtS > allowedWasiyatS ? afterFuneralAndDebtS - allowedWasiyatS : 0n;
-
-  const [landNet, goldNet, cashNet] = allocateProportional([landS, goldS, cashS], netS);
-
-  return {
-    gross: fromScaled(grossS),
-    net: fromScaled(netS),
-    assets: {
-      land: fromScaled(landNet),
-      gold: fromScaled(goldNet),
-      cash: fromScaled(cashNet),
-      funeralCost: 0,
-      debt: 0,
-      wasiyat: 0,
-    },
-    deductions: {
-      funeralCost: fromScaled(funeralS < grossS ? funeralS : grossS),
-      debt: fromScaled(debtS),
-      wasiyat: fromScaled(allowedWasiyatS),
-    },
-  };
-}
-
-/** Exact fixed-point conservation check; no floating-point comparison. */
-export function estateAssetsConserved(prepared: PreparedFaraezEstate): boolean {
-  return (
-    toScaled(prepared.assets.land) +
-      toScaled(prepared.assets.gold) +
-      toScaled(prepared.assets.cash) ===
-    toScaled(prepared.net)
-  );
 }
