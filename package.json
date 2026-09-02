@@ -20,7 +20,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@upstash/redis": "^1.35.0",
+    "@upstash/redis": "^1.35.3",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.1.0",
     "@vercel/speed-insights": "^2.0.0",
@@ -85,7 +85,6 @@
     "eslint-config-next": "16.1.6",
     "firebase-tools": "^15.24.0",
     "jest": "^30.4.2",
-    "playwright": "1.62.1",
     "ts-jest": "^29.4.11",
     "tsx": "4.19.2",
     "typescript": "^5"
