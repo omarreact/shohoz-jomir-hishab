@@ -1,16 +1,13 @@
 import type { LandRecordProvider, MouzaMapProvider } from "../types";
-import { mockLandRecordProvider, mockMouzaMapProvider } from "./mock-provider";
+import { mockMouzaMapProvider } from "./mock-provider";
+import { eporchaLandRecordProvider } from "./eporcha-provider";
 
-/**
- * Single composition point for authorized providers.
- * Replace these adapters later without changing route handlers or client code.
- */
 export interface LandDataProviders {
   landRecords: LandRecordProvider;
   mouzaMaps: MouzaMapProvider;
 }
 
 export const providers: LandDataProviders = {
-  landRecords: mockLandRecordProvider,
+  landRecords: eporchaLandRecordProvider,
   mouzaMaps: mockMouzaMapProvider,
 };
