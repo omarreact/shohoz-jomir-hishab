@@ -212,7 +212,7 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
       );
     }
 
-    if ("key" in out && "result" in out) {
+    if ("key" in out && "result" in out && typeof out.key === "string") {
       const result = out.result as Awaited<ReturnType<typeof exportMouzaPublicationPdf>>;
       const blob = await uploadPdfToBlob(result, out.key);
       const retrieveUrl = new URL("/api/mouza-map/retrieve", request.url);
