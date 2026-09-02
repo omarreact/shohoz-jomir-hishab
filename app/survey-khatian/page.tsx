@@ -1,5 +1,5 @@
-import SurveyKhatianSearch from "@/src/features/land-records/components/SurveyKhatianSearch";
+import { redirect } from "next/navigation";
 
 export default function SurveyKhatianPage() {
-  return <SurveyKhatianSearch />;
+  redirect("/dlrms-khatian");
 }
