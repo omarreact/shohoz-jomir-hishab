@@ -12,14 +12,13 @@ import {
   TIL_PER_FULL_UNIT_BIGINT,
   type KhatiyanShare,
 } from "./share-normalization";
-import { allocatePlotArea } from "./area-allocation";
+import { allocatePlotArea, allocationsConserved } from "./area-allocation";
 
 type NumberFormatter = (value: number | string) => string;
 type NumberParser = (value: string | number) => number;
 
 export { ANA_PER_FULL_UNIT, GONDA_PER_ANA, KORA_PER_GONDA, KRANTI_PER_KORA, TIL_PER_ANA, TIL_PER_KRANTI };
 export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
-const CONSERVATION_EPSILON = 1e-10;
 
 /** Parse owner share fields into the canonical mixed-radix integer form. */
 function ownerToShare(owner: KhatiyanOwner): KhatiyanShare {
@@ -72,7 +71,6 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
     }
   });
 
-  // Strict 76,800 Til conservation boundary for the full 16-আনা unit (no float epsilon).
   if (Number.isFinite(fullUnitTil) && fullUnitTil === TIL_PER_FULL_UNIT && totalOwnerTil > TIL_PER_FULL_UNIT_BIGINT) {
     errors.push("Total owner shares exceed the full Khatiyan unit");
   } else if (Number.isFinite(fullUnitTil) && fullUnitTil !== TIL_PER_FULL_UNIT && totalOwnerTil > BigInt(Math.trunc(fullUnitTil))) {
@@ -97,9 +95,16 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
   const shareInputs: KhatiyanShare[] = owners.map((owner) => ownerToShare(owner));
   const allocationsByPlot = plots.map((plot) => allocatePlotArea(toEn(plot.a), shareInputs));
 
+  // Exact area conservation is checked from the bigint-scaled allocation ledger.
+  // The numeric values below are presentation adapters only.
+  for (let plotIndex = 0; plotIndex < plots.length; plotIndex += 1) {
+    if (!allocationsConserved(toEn(plots[plotIndex].a), allocationsByPlot[plotIndex])) {
+      throw new Error("Exact Khatiyan allocations do not conserve the recorded plot area");
+    }
+  }
+
   owners.forEach((o, ownerIndex) => {
     const shareTilExact = shareToTilExactFromOwner(o);
-    // Zero-share owners are skipped; plot splits use bigint-scaled allocatePlotArea only.
     if (shareTilExact <= 0n) return;
     hasData = true;
     let totalLand = 0;
@@ -128,14 +133,11 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
     }
   });
 
+  // Keep this guard as a presentation-boundary sanity check only; the authoritative
+  // conservation invariant above is bigint-based and exact.
   const allocatedLand = computedResults.reduce((sum, result) => sum + result.totalLand, 0);
-  const tolerance = Math.max(1, totalPlotArea) * CONSERVATION_EPSILON;
-  if (allocatedLand > totalPlotArea + tolerance) throw new Error("Calculated ownership allocation exceeds the recorded plot area");
-
-  const allocatedByPlot = allocationsByPlot.reduce((sum, allocations) => sum + allocations.reduce((plotSum, allocation) => plotSum + allocation.allocatedArea, 0), 0);
-  const roundedTotalPlotArea = plots.reduce((sum, plot) => sum + Math.round(toEn(plot.a) * 1_000_000) / 1_000_000, 0);
-  if (Math.abs(allocatedByPlot - roundedTotalPlotArea) > CONSERVATION_EPSILON * Math.max(1, totalPlotArea)) {
-    throw new Error("Rounded Khatiyan allocations do not conserve recorded plot area");
+  if (allocatedLand > totalPlotArea + Number.EPSILON * Math.max(1, totalPlotArea)) {
+    throw new Error("Calculated ownership allocation exceeds the recorded plot area");
   }
 
   return { hasData, computedResults };
