@@ -68,7 +68,10 @@ export const eporchaLandRecordProvider: LandRecordProvider = {
     return divisionBbsCode ? rows.filter((row) => row.DIVISION_BBS_CODE === divisionBbsCode) : rows;
   },
   async listUpazilas(districtBbsCode, signal) {
-    const rows = unwrapArray(ArrayOrDataSchema(UpazilaRawSchema).parse(await getJson("upazilas", { ROW_STATUS: 1 }))).map(toUpazila);
+    const rows = unwrapArray(ArrayOrDataSchema(UpazilaRawSchema).parse(await getJson("upazilas", {
+      ...(districtBbsCode ? { DISTRICT_BBS_CODE: districtBbsCode } : {}),
+      ROW_STATUS: 1,
+    }))).map(toUpazila);
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     return districtBbsCode ? rows.filter((row) => row.DISTRICT_BBS_CODE === districtBbsCode) : rows;
   },
