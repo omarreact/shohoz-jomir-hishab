@@ -41,3 +41,39 @@ export async function allowRateLimit(
   existing.count += 1;
   return true;
 }
+
+export type DistributedLock = Readonly<{
+  key: string;
+  token: string;
+}>;
+
+/**
+ * Best-effort distributed mutex for expensive serverless work.
+ *
+ * Redis is mandatory for cross-instance coordination. The lock expires so a
+ * crashed Vercel invocation cannot permanently block the same export.
+ */
+export async function tryAcquireDistributedLock(
+  key: string,
+  ttlSeconds: number,
+): Promise<DistributedLock | null> {
+  const client = getRedis();
+  if (!client) return null;
+
+  const token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const acquired = await client.set(`lock:${key}`, token, { nx: true, ex: ttlSeconds });
+  return acquired === "OK" ? { key: `lock:${key}`, token } : null;
+}
+
+/** Release only the lock owned by this invocation. */
+export async function releaseDistributedLock(lock: DistributedLock): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  // The compare/delete operation must be atomic; never GET then DEL separately.
+  await client.eval(
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    [lock.key],
+    [lock.token],
+  );
+}
