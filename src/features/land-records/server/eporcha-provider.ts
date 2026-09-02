@@ -99,8 +99,20 @@ export const eporchaLandRecordProvider: LandRecordProvider = {
       ROW_STATUS: 1,
     }));
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-    const rows = Array.isArray(parsed) ? parsed : parsed.data ?? parsed.items;
+
+    const rows = Array.isArray(parsed)
+      ? parsed
+      : "data" in parsed
+        ? parsed.data
+        : parsed.items;
     const total = Array.isArray(parsed) ? undefined : parsed.total;
-    return { items: rows.map(toKhatian), page: input.page, pageSize: input.pageSize, ...(total === undefined ? {} : { total }), hasNextPage: total === undefined ? rows.length === input.pageSize : input.page * input.pageSize < total } satisfies KhatianPage;
+
+    return {
+      items: rows.map(toKhatian),
+      page: input.page,
+      pageSize: input.pageSize,
+      ...(total === undefined ? {} : { total }),
+      hasNextPage: total === undefined ? rows.length === input.pageSize : input.page * input.pageSize < total,
+    } satisfies KhatianPage;
   },
 };
