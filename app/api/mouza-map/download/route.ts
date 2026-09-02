@@ -11,7 +11,6 @@ import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-/** Heavy PDF generation can involve paginated geometry + satellite tiles. */
 export const maxDuration = 300;
 
 const RATE_WINDOW_SECONDS = 10 * 60;
@@ -221,6 +220,10 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
         { ok: true, downloadUrl: retrieveUrl.toString(), filename: result.filename, size: result.body.length, cache: "MISS" },
         { status: 201, headers: { "Cache-Control": "private, no-store", "X-LandBD-Blob": "vercel-blob-private" } },
       );
+    }
+
+    if (!out.result) {
+      return NextResponse.json({ error: "Mouza export produced no result" }, { status: 502, headers: { "Cache-Control": "no-store" } });
     }
 
     return attachmentResponse(out.result);
