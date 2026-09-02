@@ -7,7 +7,12 @@ import { mouzaExportQuerySchema, type MouzaExportQuery } from "@/src/services/ra
 import { createPrivateDownloadToken } from "@/src/services/rajuk/privateMouzaPdfToken";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
-import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import {
+  allowRateLimit,
+  releaseDistributedLock,
+  tryAcquireDistributedLock,
+  type DistributedLock,
+} from "@/src/modules/security/redisRateLimit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,8 +22,16 @@ const RATE_WINDOW_SECONDS = 10 * 60;
 const RATE_LIMIT = 5;
 const PDF_RATE_LIMIT = 3;
 const PDF_CACHE_AGE = 31_536_000;
+const PDF_LOCK_TTL_SECONDS = 240;
+const PDF_LOCK_RETRY_AFTER_SECONDS = 10;
 
 type PdfCacheHit = { pathname: string; downloadToken: string; filename: string; size?: number };
+
+type PdfGeneration = {
+  result: Awaited<ReturnType<typeof exportMouzaPublicationPdf>>;
+  key: string;
+  lock: DistributedLock;
+};
 
 function clientKey(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -106,30 +119,52 @@ function enforceVisitorExportPolicy(data: MouzaExportQuery, isAdmin: boolean): {
   };
 }
 
-async function runExport(input: unknown, isAdmin: boolean) {
+async function runExport(input: unknown, isAdmin: boolean): Promise<
+  | { error: string; status: number }
+  | { cached: PdfCacheHit; key: string }
+  | PdfGeneration
+  | { result: Awaited<ReturnType<typeof exportMouzaRaster>> }
+> {
   const parsed = mouzaExportQuerySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message || "Invalid request", status: 400 as const };
+    return { error: parsed.error.issues[0]?.message || "Invalid request", status: 400 };
   }
 
   const enforced = enforceVisitorExportPolicy(parsed.data, isAdmin);
-  if (enforced.error) return { error: enforced.error, status: (enforced.status ?? 403) as 403 };
+  if (enforced.error) return { error: enforced.error, status: enforced.status ?? 403 };
 
   const data = enforced.data;
   if (data.format === "vector-pdf") {
-    if (!isAdmin) return { error: "Vector PDF export requires admin access.", status: 403 as const };
+    if (!isAdmin) return { error: "Vector PDF export requires admin access.", status: 403 };
 
     const key = pdfCacheKey(data);
     const cached = await tryCachedPdf(key);
     if (cached) return { cached, key };
 
-    const result = await exportMouzaPublicationPdf({
-      mouza: data.mouza,
-      jl: data.jl,
-      layers: data.layers,
-      satellite: data.satellite,
-    });
-    return { result, key };
+    // Prevent a serverless cache stampede when several admins request the same
+    // expensive Mouza export concurrently on different Vercel instances.
+    const lock = await tryAcquireDistributedLock(`mouza-pdf:${key}`, PDF_LOCK_TTL_SECONDS);
+    if (!lock) {
+      // A previous invocation may have completed between the cache check and lock attempt.
+      const completed = await tryCachedPdf(key);
+      if (completed) return { cached: completed, key };
+      return { error: "এই মৌজার PDF ইতিমধ্যে তৈরি হচ্ছে। কয়েক সেকেন্ড পরে আবার চেষ্টা করুন।", status: 409 };
+    }
+
+    try {
+      const result = await exportMouzaPublicationPdf({
+        mouza: data.mouza,
+        jl: data.jl,
+        layers: data.layers,
+        satellite: data.satellite,
+      });
+      return { result, key, lock };
+    } catch (error) {
+      await releaseDistributedLock(lock).catch((releaseError) => {
+        console.error("[LandBD][mouza-export] failed to release PDF lock after generation error", { releaseError });
+      });
+      throw error;
+    }
   }
 
   const rasterFormat = data.format === "raw" ? "raw" : data.format === "png" ? "png" : data.format === "jpeg" ? "jpeg" : "geotiff";
@@ -199,7 +234,9 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
 
     const out = await runExport(input, isAdmin);
     if ("error" in out) {
-      return NextResponse.json({ error: out.error }, { status: out.status, headers: { "Cache-Control": "no-store" } });
+      const headers: Record<string, string> = { "Cache-Control": "no-store" };
+      if (out.status === 409) headers["Retry-After"] = String(PDF_LOCK_RETRY_AFTER_SECONDS);
+      return NextResponse.json({ error: out.error }, { status: out.status, headers });
     }
 
     if ("cached" in out && out.cached) {
@@ -211,15 +248,21 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
       );
     }
 
-    if ("key" in out && "result" in out && typeof out.key === "string") {
-      const result = out.result as Awaited<ReturnType<typeof exportMouzaPublicationPdf>>;
-      const blob = await uploadPdfToBlob(result, out.key);
-      const retrieveUrl = new URL("/api/mouza-map/retrieve", request.url);
-      retrieveUrl.searchParams.set("token", blob.downloadToken);
-      return NextResponse.json(
-        { ok: true, downloadUrl: retrieveUrl.toString(), filename: result.filename, size: result.body.length, cache: "MISS" },
-        { status: 201, headers: { "Cache-Control": "private, no-store", "X-LandBD-Blob": "vercel-blob-private" } },
-      );
+    if ("lock" in out && "key" in out && "result" in out) {
+      const generation = out as PdfGeneration;
+      try {
+        const blob = await uploadPdfToBlob(generation.result, generation.key);
+        const retrieveUrl = new URL("/api/mouza-map/retrieve", request.url);
+        retrieveUrl.searchParams.set("token", blob.downloadToken);
+        return NextResponse.json(
+          { ok: true, downloadUrl: retrieveUrl.toString(), filename: generation.result.filename, size: generation.result.body.length, cache: "MISS" },
+          { status: 201, headers: { "Cache-Control": "private, no-store", "X-LandBD-Blob": "vercel-blob-private" } },
+        );
+      } finally {
+        await releaseDistributedLock(generation.lock).catch((releaseError) => {
+          console.error("[LandBD][mouza-export] failed to release PDF lock", { releaseError, key: generation.key });
+        });
+      }
     }
 
     if (!out.result) {
