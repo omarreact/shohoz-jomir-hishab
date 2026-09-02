@@ -100,11 +100,17 @@ export const eporchaLandRecordProvider: LandRecordProvider = {
     }));
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-    const rows = Array.isArray(parsed)
-      ? parsed
-      : "data" in parsed
-        ? parsed.data
-        : parsed.items;
+    let rows: any[] = [];
+    if (Array.isArray(parsed)) {
+      rows = parsed;
+    } else if (parsed !== null && typeof parsed === "object") {
+      const obj = parsed as Record<string, any>;
+      if (Array.isArray(obj.data)) {
+        rows = obj.data;
+      } else if (Array.isArray(obj.items)) {
+        rows = obj.items;
+      }
+    }
     const total = Array.isArray(parsed) ? undefined : parsed.total;
 
     return {
