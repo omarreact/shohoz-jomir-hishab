@@ -20,15 +20,8 @@ type NumberParser = (value: string | number) => number;
 export { ANA_PER_FULL_UNIT, GONDA_PER_ANA, KORA_PER_GONDA, KRANTI_PER_KORA, TIL_PER_ANA, TIL_PER_KRANTI };
 export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
 
-/** Parse owner share fields into the canonical mixed-radix integer form. */
 function ownerToShare(owner: KhatiyanOwner): KhatiyanShare {
-  return {
-    a: Number(owner.a),
-    g: Number(owner.g),
-    k: Number(owner.k),
-    kr: Number(owner.kr),
-    ti: Number(owner.ti),
-  };
+  return { a: Number(owner.a), g: Number(owner.g), k: Number(owner.k), kr: Number(owner.kr), ti: Number(owner.ti) };
 }
 
 /** Authoritative Til count for ledger math — bigint only, never floating-point. */
@@ -91,12 +84,11 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
 
   let hasData = false;
   const computedResults: KhatiyanOwnerResult[] = [];
-  const totalPlotArea = plots.reduce((sum, plot) => sum + toEn(plot.a), 0);
   const shareInputs: KhatiyanShare[] = owners.map((owner) => ownerToShare(owner));
   const allocationsByPlot = plots.map((plot) => allocatePlotArea(toEn(plot.a), shareInputs));
 
-  // Exact area conservation is checked from the bigint-scaled allocation ledger.
-  // The numeric values below are presentation adapters only.
+  // Authoritative conservation invariant: every plot's scaled bigint ledger must
+  // conserve exactly. No floating-point epsilon or tolerance participates here.
   for (let plotIndex = 0; plotIndex < plots.length; plotIndex += 1) {
     if (!allocationsConserved(toEn(plots[plotIndex].a), allocationsByPlot[plotIndex])) {
       throw new Error("Exact Khatiyan allocations do not conserve the recorded plot area");
@@ -133,17 +125,9 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
     }
   });
 
-  // Keep this guard as a presentation-boundary sanity check only; the authoritative
-  // conservation invariant above is bigint-based and exact.
-  const allocatedLand = computedResults.reduce((sum, result) => sum + result.totalLand, 0);
-  if (allocatedLand > totalPlotArea + Number.EPSILON * Math.max(1, totalPlotArea)) {
-    throw new Error("Calculated ownership allocation exceeds the recorded plot area");
-  }
-
   return { hasData, computedResults };
 }
 
-/** Export Khatiyan results using the Ministry's Khatiyan-record reference standard. */
 export function generateCSVFromResults(detailedResults: KhatiyanOwnerResult[], toBn: NumberFormatter) {
   const ws_data: (string | number)[][] = [];
   ws_data.push(["জমির পরিমাপ ও বন্টন বিবরণী"]);
