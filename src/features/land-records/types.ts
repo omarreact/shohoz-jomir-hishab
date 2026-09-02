@@ -50,6 +50,7 @@ export interface KhatianIndex {
   GUARDIANS: string;
   JL_NUMBER_ID: number;
   MOUZA_ID: number;
+  TOTAL_LAND?: string;
 }
 
 export interface KhatianPage {
