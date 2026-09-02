@@ -211,7 +211,7 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
       );
     }
 
-    if ("key" in out && "result" in out) {
+    if ("key" in out && "result" in out && typeof out.key === "string") {
       const result = out.result as Awaited<ReturnType<typeof exportMouzaPublicationPdf>>;
       const blob = await uploadPdfToBlob(result, out.key);
       const retrieveUrl = new URL("/api/mouza-map/retrieve", request.url);
@@ -228,46 +228,25 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
 
     return attachmentResponse(out.result);
   } catch (error) {
-    console.error("[LandBD][mouza-export] failed", {
-      error,
-      method: request.method,
-      path: request.nextUrl.pathname,
-      input,
-    });
-
     if (isTimeoutError(error)) {
-      return NextResponse.json(
-        { error: "Mouza export timed out while contacting the spatial or satellite service. Please retry without satellite imagery or try again later." },
-        { status: 504, headers: { "Cache-Control": "no-store", "Retry-After": "15" } },
-      );
+      return NextResponse.json({ error: "Mouza export timed out. Please try again with a smaller output." }, { status: 504, headers: { "Cache-Control": "no-store" } });
     }
-
-    const message = error instanceof Error ? error.message : "Mouza download failed";
-    const status = message.includes("No plots") || message.includes("Invalid") ? 400 : message.toLowerCase().includes("token") || message.toLowerCase().includes("auth") ? 503 : 502;
-    return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
+    console.error("[LandBD][mouza-export] unexpected error", { error });
+    return NextResponse.json({ error: "Mouza export failed unexpectedly." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
 
-export async function GET(request: NextRequest): Promise<Response> {
-  const p = request.nextUrl.searchParams;
-  return handle(request, {
-    mouza: p.get("mouza") ?? "",
-    jl: p.get("jl") ?? undefined,
-    format: p.get("format") ?? "geotiff",
-    layers: p.get("layers") ?? "rs",
-    maxDim: p.get("maxDim") ?? 6144,
-    satellite: p.get("satellite") ?? false,
-  });
+export async function GET(request: NextRequest) {
+  const input = Object.fromEntries(request.nextUrl.searchParams.entries());
+  return handle(request, input);
 }
 
-export async function POST(request: NextRequest): Promise<Response> {
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  return handle(request, {
-    mouza: body.mouza ?? "",
-    jl: body.jl,
-    format: body.format ?? "geotiff",
-    layers: body.layers ?? "rs",
-    maxDim: body.maxDim ?? 6144,
-    satellite: body.satellite ?? false,
-  });
+export async function POST(request: NextRequest) {
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+  }
+  return handle(request, input);
 }
