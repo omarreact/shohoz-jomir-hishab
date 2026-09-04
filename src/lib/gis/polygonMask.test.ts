@@ -14,13 +14,15 @@ describe("polygon raster mask (exact Mouza clip invariant)", () => {
       [cx - d, cy - d],
     ];
 
-    const [x0, y0] = lngLatTo3857(cx - d * 2, cy + d * 2);
+    // EPSG:3857 Y grows northward while raster row Y grows downward. The
+    // rasterizer therefore expects originY to be the northern/top-left edge,
+    // matching tileOrigin3857() used by the production Mouza exporter.
+    const [x0, originY] = lngLatTo3857(cx - d * 2, cy + d * 2);
     const [x1] = lngLatTo3857(cx + d * 2, cy - d * 2);
     const resolution = (x1 - x0) / 64;
     const width = 64;
     const height = 64;
     const originX = x0;
-    const originY = y0 + resolution * height;
 
     const mask = rasterizePolygonMask({
       rings: [ring],
