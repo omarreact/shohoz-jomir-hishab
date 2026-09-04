@@ -24,11 +24,28 @@ describe("bigint-safe calculation storage", () => {
     expect(parseStorage<typeof input>(stringifyStorage(input))).toEqual(input);
   });
 
-  it("fails safely when localStorage is unavailable or rejects writes", () => {
-    const setItem = window.localStorage.setItem;
-    window.localStorage.setItem = jest.fn(() => {
-      throw new DOMException("Quota exceeded", "QuotaExceededError");
+  it("fails safely during SSR when localStorage is unavailable", () => {
+    expect(writeCalculationStorage({
+      version: 1,
+      activeDraftId: "khatiyan-test",
+      drafts: {},
+      history: [],
+    })).toBe(false);
+  });
+
+  it("fails safely when localStorage rejects writes", () => {
+    const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          setItem: () => {
+            throw new Error("Quota exceeded");
+          },
+        },
+      },
     });
+
     try {
       expect(writeCalculationStorage({
         version: 1,
@@ -37,7 +54,11 @@ describe("bigint-safe calculation storage", () => {
         history: [],
       })).toBe(false);
     } finally {
-      window.localStorage.setItem = setItem;
+      if (originalWindow) {
+        Object.defineProperty(globalThis, "window", originalWindow);
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
     }
   });
 });
