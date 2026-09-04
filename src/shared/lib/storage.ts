@@ -18,14 +18,28 @@ export function bigintReplacer(_key: string, value: unknown): unknown {
   return typeof value === "bigint" ? { [BIGINT_MARKER]: value.toString() } : value;
 }
 
-/** JSON reviver that restores current and legacy bigint values. */
-export function bigintReviver(_key: string, value: unknown): unknown {
+function taggedBigintReviver(_key: string, value: unknown): unknown {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const candidate = value as Record<string, unknown>;
-    if (Object.keys(candidate).length === 1 && typeof candidate[BIGINT_MARKER] === "string" && /^-?\d+$/.test(candidate[BIGINT_MARKER])) {
+    if (
+      Object.keys(candidate).length === 1 &&
+      typeof candidate[BIGINT_MARKER] === "string" &&
+      /^-?\d+$/.test(candidate[BIGINT_MARKER])
+    ) {
       return BigInt(candidate[BIGINT_MARKER]);
     }
   }
+  return value;
+}
+
+/**
+ * Compatibility reviver for explicitly migrating legacy payloads that stored
+ * bigint values as strings ending in `n`. Do not use this for current writes:
+ * an ordinary user string such as "123n" must remain a string.
+ */
+export function bigintReviver(key: string, value: unknown): unknown {
+  const tagged = taggedBigintReviver(key, value);
+  if (tagged !== value) return tagged;
   if (typeof value === "string" && LEGACY_BIGINT_PATTERN.test(value)) {
     return BigInt(value.slice(0, -1));
   }
@@ -36,8 +50,9 @@ export function stringifyStorage<T>(value: T): string {
   return JSON.stringify(value, bigintReplacer);
 }
 
+/** Parse the collision-safe current storage format only. */
 export function parseStorage<T>(value: string): T {
-  return JSON.parse(value, bigintReviver) as T;
+  return JSON.parse(value, taggedBigintReviver) as T;
 }
 
 export function createEmptyCalculationStorage(): CalculationStorageEnvelope {
