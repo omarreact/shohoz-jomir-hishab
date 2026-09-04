@@ -1,16 +1,114 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import { Input } from "@/src/shared/ui/Input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/shared/ui/dialog";
-import { Loader2, Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ClipboardCopy, Database, Eye, Loader2, Search } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID } from "../types";
 
 const empty = "-- নির্বাচন করুন --";
+
+const PUBLIC_FIELD_LABELS: Record<string, string> = {
+  ID: "রেকর্ড আইডি",
+  KHATIAN_ENTRY_ID: "খতিয়ান এন্ট্রি আইডি",
+  KHATIAN_NO: "খতিয়ান নম্বর",
+  OWNERS: "মালিক / দখলদার",
+  OWNER: "মালিক",
+  OWNER_NAME: "মালিকের নাম",
+  DAGS: "দাগ নম্বর",
+  DAG_NUMBER: "দাগ নম্বর",
+  GUARDIANS: "অভিভাবক / পিতা / স্বামী",
+  GUARDIAN: "অভিভাবক",
+  JL_NUMBER_ID: "JL রেকর্ড আইডি",
+  JL_NUMBER: "JL নম্বর",
+  MOUZA_ID: "মৌজা আইডি",
+  MOUZA_NAME: "মৌজা",
+  DIVISION_NAME: "বিভাগ",
+  DISTRICT_NAME: "জেলা",
+  UPAZILA_NAME: "উপজেলা / থানা",
+  SURVEY_ID: "সার্ভে আইডি",
+  SURVEY_NAME: "সার্ভে",
+  TOTAL_LAND: "মোট জমি",
+  LAND_AMOUNT: "জমির পরিমাণ",
+  LAND_CLASS: "জমির শ্রেণি",
+  LAND_TYPE: "জমির ধরন",
+  SHARE: "হিস্যা / অংশ",
+  IS_LOCKED: "লক অবস্থা",
+  ROW_STATUS: "রেকর্ড অবস্থা",
+  CREATED_AT: "তৈরির সময়",
+  UPDATED_AT: "হালনাগাদের সময়",
+};
+
+const PRIMARY_RECORD_KEYS = new Set([
+  "ID",
+  "KHATIAN_ENTRY_ID",
+  "KHATIAN_NO",
+  "OWNERS",
+  "DAGS",
+  "GUARDIANS",
+  "JL_NUMBER_ID",
+  "JL_NUMBER",
+  "MOUZA_ID",
+  "MOUZA_NAME",
+  "DIVISION_NAME",
+  "DISTRICT_NAME",
+  "UPAZILA_NAME",
+  "SURVEY_ID",
+  "SURVEY_NAME",
+  "TOTAL_LAND",
+  "IS_LOCKED",
+]);
+
+function publicFieldLabel(key: string): string {
+  return PUBLIC_FIELD_LABELS[key] || key.replaceAll("_", " ");
+}
+
+function hasDisplayValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+  return true;
+}
+
+function PublicValue({ value, depth = 0 }: { value: unknown; depth?: number }): ReactNode {
+  if (!hasDisplayValue(value)) return <span className="text-slate-400">—</span>;
+  if (typeof value === "boolean") return <span>{value ? "হ্যাঁ" : "না"}</span>;
+  if (typeof value === "string" || typeof value === "number") {
+    return <span className="whitespace-pre-wrap break-words">{String(value)}</span>;
+  }
+
+  if (Array.isArray(value)) {
+    return (
+      <div className="space-y-2">
+        {value.map((item, index) => (
+          <div key={index} className="rounded-md border border-[var(--border-color)] bg-slate-50/60 p-2.5 dark:bg-slate-900/40">
+            <PublicValue value={item} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof value === "object" && depth < 6) {
+    const entries = Object.entries(value as Record<string, unknown>).filter(([, item]) => hasDisplayValue(item));
+    return (
+      <div className="grid gap-2 sm:grid-cols-2">
+        {entries.map(([key, item]) => (
+          <div key={key} className="rounded-md border border-[var(--border-color)] bg-white p-2.5 dark:bg-slate-950/40">
+            <p className="mb-1 text-[11px] font-medium text-[var(--muted-foreground)]">{publicFieldLabel(key)}</p>
+            <div className="text-sm font-medium"><PublicValue value={item} depth={depth + 1} /></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span className="whitespace-pre-wrap break-all">{JSON.stringify(value)}</span>;
+}
 
 export default function SurveyKhatianSearch() {
   const {
@@ -47,6 +145,7 @@ export default function SurveyKhatianSearch() {
   const [owner, setOwner] = useState("");
   const [dagNumber, setDagNumber] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const selectedDistrict = districts.find((d) => d.BBS_CODE === district);
   const selectedUpazila = upazilas.find((u) => u.BBS_CODE === upazila);
@@ -54,6 +153,13 @@ export default function SurveyKhatianSearch() {
   const selectedMouza = mouzas.find((m) => String(m.ID) === mouzaId);
   const surveyKey = surveyId ? SURVEY_KEY_BY_ID[Number(surveyId)] : undefined;
   const searchFilters = { khatianNo: khatianNo.trim() || undefined, owner: owner.trim() || undefined, dagNumber: dagNumber.trim() || undefined };
+
+  const additionalRecordEntries = useMemo(
+    () => Object.entries(selectedKhatian?.PUBLIC_RECORD ?? {})
+      .filter(([key, value]) => !PRIMARY_RECORD_KEYS.has(key) && hasDisplayValue(value))
+      .sort(([a], [b]) => a.localeCompare(b)),
+    [selectedKhatian],
+  );
 
   // Step 1: divisions are loaded once by useSurveyKhatian on mount.
 
@@ -76,7 +182,6 @@ export default function SurveyKhatianSearch() {
   }, [district, upazila, loadSurveys]);
 
   // Step 5: Survey -> Mouza/JL.
-  // LOCAL_NAME is display-only; the provider resolves SURVEY_ID to SURVEY_KEY.
   useEffect(() => {
     if (!selectedSurvey || !selectedDistrict || !selectedUpazila) return;
     void loadMouzas({
@@ -157,9 +262,22 @@ export default function SurveyKhatianSearch() {
 
   const showDetails = (id: number) => {
     if (!surveyKey) return;
+    setCopied(false);
     setSelectedKhatian(null);
     setDetailsOpen(true);
     void loadKhatian(surveyKey, id);
+  };
+
+  const copyCompleteRecord = async () => {
+    if (!selectedKhatian) return;
+    const record = selectedKhatian.PUBLIC_RECORD ?? selectedKhatian;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(record, null, 2));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
   };
 
   const surveyOptions = useMemo(
@@ -172,7 +290,7 @@ export default function SurveyKhatianSearch() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="সার্ভে খতিয়ান অনুসন্ধান"
-        description="ধাপে ধাপে এলাকা, সার্ভে ও মৌজা নির্বাচন করে খতিয়ানের সূচি দেখুন।"
+        description="বিভাগ, জেলা, উপজেলা, সার্ভে ও মৌজা নির্বাচন করে সরকারি DLRMS-এর প্রকাশিত খতিয়ান তথ্য দেখুন।"
         pattern="grid"
       />
 
@@ -181,7 +299,7 @@ export default function SurveyKhatianSearch() {
           <CardHeader>
             <CardTitle>অনুসন্ধানের তথ্য</CardTitle>
             <CardDescription>
-              প্রতিটি তালিকা সম্পূর্ণ লোড হলে তার পূর্ণ ডেটা দেখানো হবে।
+              খতিয়ান নম্বরের পাশাপাশি মালিকের নাম বা দাগ নম্বর দিয়েও অধিকতর অনুসন্ধান করতে পারবেন।
             </CardDescription>
           </CardHeader>
           <CardBody>
@@ -241,7 +359,7 @@ export default function SurveyKhatianSearch() {
             </div>
 
             {error && (
-              <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
                 {error}
               </div>
             )}
@@ -294,7 +412,7 @@ export default function SurveyKhatianSearch() {
                           <td className="px-5 py-3">{k.GUARDIANS || "—"}</td>
                           <td className="px-5 py-3 text-right">
                             <button type="button" onClick={() => showDetails(k.ID)} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 font-medium text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
-                              <Eye size={15} /> দেখুন
+                              <Eye size={15} /> সম্পূর্ণ তথ্য
                             </button>
                           </td>
                         </tr>
@@ -320,33 +438,105 @@ export default function SurveyKhatianSearch() {
       </main>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>খতিয়ানের বিস্তারিত তথ্য</DialogTitle>
-            <DialogDescription>DLRMS-এর প্রকাশিত রেকর্ড সারাংশ</DialogDescription>
+            <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
+              <div>
+                <DialogTitle>খতিয়ানের সম্পূর্ণ প্রকাশিত তথ্য</DialogTitle>
+                <DialogDescription>সরকারি DLRMS public record থেকে সরাসরি প্রাপ্ত তথ্য</DialogDescription>
+              </div>
+              {selectedKhatian && (
+                <button
+                  type="button"
+                  onClick={() => void copyCompleteRecord()}
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] px-3 text-xs font-semibold transition hover:bg-slate-50 dark:hover:bg-slate-900"
+                >
+                  {copied ? <Check size={15} /> : <ClipboardCopy size={15} />}
+                  {copied ? "কপি হয়েছে" : "রেকর্ড কপি"}
+                </button>
+              )}
+            </div>
           </DialogHeader>
+
           {loading.khatian ? (
             <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />তথ্য লোড হচ্ছে…</div>
           ) : selectedKhatian ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO], ["বিভাগ", selectedKhatian.DIVISION_NAME],
-                ["জেলা", selectedKhatian.DISTRICT_NAME], ["উপজেলা/থানা", selectedKhatian.UPAZILA_NAME],
-                ["সার্ভে", selectedKhatian.SURVEY_NAME || surveyKey || "—"], ["মৌজা", selectedKhatian.MOUZA_NAME],
-                ["JL নম্বর", selectedKhatian.JL_NUMBER], ["জমির পরিমাণ (একর)", selectedKhatian.TOTAL_LAND],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-[var(--border-color)] p-3">
-                  <p className="text-xs text-[var(--muted-foreground)]">{label}</p><p className="mt-1 font-medium">{value || "—"}</p>
+            <div className="space-y-5">
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <Database size={17} className="text-[#006a4e]" />
+                  <h3 className="text-sm font-bold">রেকর্ড পরিচিতি ও অবস্থান</h3>
                 </div>
-              ))}
-              <div className="rounded-lg border border-[var(--border-color)] p-3 sm:col-span-2"><p className="text-xs text-[var(--muted-foreground)]">মালিকের নাম</p><p className="mt-1 whitespace-pre-wrap font-medium">{selectedKhatian.OWNERS || "—"}</p></div>
-              <div className="rounded-lg border border-[var(--border-color)] p-3 sm:col-span-2"><p className="text-xs text-[var(--muted-foreground)]">দাগ নম্বর</p><p className="mt-1 whitespace-pre-wrap font-medium">{selectedKhatian.DAGS || "—"}</p></div>
-              {selectedKhatian.GUARDIANS && <div className="rounded-lg border border-[var(--border-color)] p-3 sm:col-span-2"><p className="text-xs text-[var(--muted-foreground)]">অভিভাবক</p><p className="mt-1 whitespace-pre-wrap font-medium">{selectedKhatian.GUARDIANS}</p></div>}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {[
+                    ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO],
+                    ["রেকর্ড আইডি", selectedKhatian.ID],
+                    ["খতিয়ান এন্ট্রি আইডি", selectedKhatian.KHATIAN_ENTRY_ID],
+                    ["বিভাগ", selectedKhatian.DIVISION_NAME],
+                    ["জেলা", selectedKhatian.DISTRICT_NAME],
+                    ["উপজেলা/থানা", selectedKhatian.UPAZILA_NAME],
+                    ["সার্ভে", selectedKhatian.SURVEY_NAME || surveyKey || "—"],
+                    ["সার্ভে আইডি", selectedKhatian.SURVEY_ID],
+                    ["মৌজা", selectedKhatian.MOUZA_NAME],
+                    ["মৌজা আইডি", selectedKhatian.MOUZA_ID],
+                    ["JL নম্বর", selectedKhatian.JL_NUMBER],
+                    ["JL রেকর্ড আইডি", selectedKhatian.JL_NUMBER_ID],
+                    ["মোট জমি (একর)", selectedKhatian.TOTAL_LAND],
+                    ["লক অবস্থা", selectedKhatian.IS_LOCKED ? "লক করা" : "উন্মুক্ত"],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="rounded-lg border border-[var(--border-color)] p-3">
+                      <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
+                      <p className="mt-1 break-words font-medium">{value === 0 ? "0" : value || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="grid gap-3">
+                <div className="rounded-lg border border-[var(--border-color)] p-4">
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">মালিক / দলিলধারী</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.OWNERS || "—"}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--border-color)] p-4">
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">অভিভাবক / পিতা / স্বামী</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.GUARDIANS || "—"}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--border-color)] p-4">
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.DAGS || "—"}</p>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                <div className="mb-3">
+                  <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">DLRMS-এর অন্যান্য প্রকাশিত তথ্য</h3>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800/80 dark:text-emerald-300/80">
+                    DLRMS detail API এই রেকর্ডের জন্য অতিরিক্ত যে field বা nested data পাঠায়, সেগুলো নিচে স্বয়ংক্রিয়ভাবে দেখানো হয়।
+                  </p>
+                </div>
+                {additionalRecordEntries.length ? (
+                  <div className="grid gap-3">
+                    {additionalRecordEntries.map(([key, value]) => (
+                      <div key={key} className="rounded-lg border border-emerald-200/80 bg-white p-3 dark:border-emerald-900/60 dark:bg-slate-950/50">
+                        <p className="mb-1.5 text-xs font-semibold text-[var(--muted-foreground)]">{publicFieldLabel(key)}</p>
+                        <div className="text-sm"><PublicValue value={value} /></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg bg-white/80 px-3 py-3 text-sm text-slate-600 dark:bg-slate-950/40 dark:text-slate-300">
+                    এই রেকর্ডের public DLRMS response-এ উপরের সারাংশের বাইরে অতিরিক্ত তথ্য নেই।
+                  </p>
+                )}
+              </section>
             </div>
           ) : (
             <div className="min-h-32 py-8 text-center text-sm text-slate-500">বিস্তারিত তথ্য পাওয়া যায়নি।</div>
           )}
-          <p className="text-xs leading-5 text-[var(--muted-foreground)]">এটি সরকারি DLRMS-এর প্রকাশিত অনলাইন সারাংশ। দাপ্তরিক কাজে সার্টিফাইড কপি যাচাই করুন।</p>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
+            LandBD এখানে DLRMS-এর public endpoint থেকে পাওয়া সম্পূর্ণ প্রকাশিত record দেখায়। এটি সার্টিফাইড/আইনগত পর্চার বিকল্প নয়; দাপ্তরিক কাজে DLRMS থেকে সার্টিফাইড কপি সংগ্রহ ও যাচাই করুন।
+          </div>
         </DialogContent>
       </Dialog>
     </>
