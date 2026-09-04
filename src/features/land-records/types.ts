@@ -50,6 +50,8 @@ export interface KhatianIndex {
   GUARDIANS: string;
   JL_NUMBER_ID: number;
   MOUZA_ID: number;
+  /** Present when DLRMS publishes the aggregate land amount in list results. */
+  TOTAL_LAND?: string;
 }
 
 export interface KhatianPage {
