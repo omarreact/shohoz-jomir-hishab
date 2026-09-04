@@ -40,6 +40,9 @@ async function verifyFirebaseToken(token: string) {
   }
 }
 
+// Best-effort per-instance burst protection only. Public endpoints that need
+// cross-instance enforcement use the shared Upstash-aware rate limiter in
+// their route handlers. Do not treat this map as a global security boundary.
 const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
 export async function proxy(request: NextRequest) {
@@ -71,6 +74,15 @@ export async function proxy(request: NextRequest) {
     });
   } else {
     windowData.count++;
+  }
+
+  // Avoid retaining an unbounded number of expired IP buckets on a long-lived
+  // Node.js instance. This is maintenance only; route-level distributed limits
+  // remain authoritative where configured.
+  if (rateLimitMap.size > 10_000) {
+    for (const [key, value] of rateLimitMap) {
+      if (value.expiresAt <= now) rateLimitMap.delete(key);
+    }
   }
 
   const cookieToken = request.cookies.get("access_token")?.value ?? null;
@@ -108,7 +120,6 @@ export async function proxy(request: NextRequest) {
     "/api/rajuk",
     "/api/mouza-map",
     "/api/unified",
-    "/api/tiles",
     "/api/pages",
     "/api/blogs",
     "/api/comments",
