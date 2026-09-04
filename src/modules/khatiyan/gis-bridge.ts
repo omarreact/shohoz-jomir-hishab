@@ -20,7 +20,13 @@ interface KhatiyanGisBridgeState {
 }
 
 function createSelectionId(plot: KhatiyanPlot): string {
-  return `${plot.source}:${plot.plotId}:${Date.now()}`;
+  // plotId/source are optional on the shared calculation type because manual
+  // entries do not have GIS provenance. Everything crossing this bridge is a
+  // RAJUK selection, so fall back to the stable local plot id instead of ever
+  // producing `undefined:undefined:*` correlation ids.
+  const source = plot.source?.trim() || "rajuk";
+  const plotId = plot.plotId ?? plot.id;
+  return `${source}:${plotId}:${Date.now()}`;
 }
 
 export const useKhatiyanGisBridge = create<KhatiyanGisBridgeState>((set, get) => ({
