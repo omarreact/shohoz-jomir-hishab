@@ -23,10 +23,19 @@ jobs:
           node-version: 22
           cache: npm
 
-      # package-lock.json is currently behind package.json. Keep CI executable
-      # while the lockfile is regenerated in the repository in the next step.
-      - name: Install dependencies
+      # Temporary bootstrap: npm install repairs the stale lockfile on the
+      # runner. The generated lockfile is uploaded so it can be committed back
+      # to the repository, after which this step will be switched to npm ci.
+      - name: Install dependencies and regenerate lockfile
         run: npm install --no-audit --no-fund
+
+      - name: Upload regenerated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock-regenerated
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Lint
         run: npm run lint
