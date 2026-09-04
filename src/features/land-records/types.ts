@@ -60,13 +60,37 @@ export interface KhatianPage {
   hasNextPage: boolean;
 }
 
+export interface KhatianDetails extends KhatianIndex {
+  KHATIAN_ENTRY_ID?: number;
+  IS_LOCKED: number;
+  DIVISION_NAME: string;
+  DISTRICT_NAME: string;
+  UPAZILA_NAME: string;
+  JL_NUMBER: string;
+  MOUZA_NAME: string;
+  SURVEY_ID?: number;
+  SURVEY_NAME: string;
+  TOTAL_LAND: string;
+}
+
+export interface KhatianSearchInput {
+  surveyKey: string;
+  jlNumberId: number;
+  page: number;
+  pageSize: number;
+  khatianNo?: string;
+  owner?: string;
+  dagNumber?: string;
+}
+
 export interface LandRecordProvider {
   listDivisions(signal?: AbortSignal): Promise<Division[]>;
   listDistricts(divisionBbsCode?: string, signal?: AbortSignal): Promise<District[]>;
   listUpazilas(districtBbsCode?: string, signal?: AbortSignal): Promise<Upazila[]>;
   listSurveys(input: { districtBbsCode: string; upazilaBbsCode: string }, signal?: AbortSignal): Promise<Survey[]>;
   listMouzas(input: { districtBbsCode: string; upazilaBbsCode: string; surveyId: number; surveyKey: string; districtName: string; upazilaName: string }, signal?: AbortSignal): Promise<Mouza[]>;
-  listKhatians(input: { surveyKey: string; jlNumberId: number; page: number; pageSize: number }, signal?: AbortSignal): Promise<KhatianPage>;
+  listKhatians(input: KhatianSearchInput, signal?: AbortSignal): Promise<KhatianPage>;
+  getKhatian(surveyKey: string, id: number, signal?: AbortSignal): Promise<KhatianDetails>;
 }
 
 export interface MouzaMapEntry {

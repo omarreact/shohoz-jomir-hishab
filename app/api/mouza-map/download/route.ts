@@ -265,7 +265,7 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
       }
     }
 
-    if (!out.result) {
+    if (!("result" in out) || !out.result) {
       return NextResponse.json({ error: "Mouza export produced no result" }, { status: 502, headers: { "Cache-Control": "no-store" } });
     }
 

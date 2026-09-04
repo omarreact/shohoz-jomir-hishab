@@ -1,6 +1,6 @@
 import axios from "axios";
-import { DivisionSchema, DistrictSchema, UpazilaSchema, SurveySchema, MouzaSchema, KhatianPageSchema } from "./schemas";
-import type { Division, District, Upazila, Survey, Mouza, KhatianPage } from "./types";
+import { DivisionSchema, DistrictSchema, UpazilaSchema, SurveySchema, MouzaSchema, KhatianDetailsSchema, KhatianPageSchema } from "./schemas";
+import type { Division, District, Upazila, Survey, Mouza, KhatianDetails, KhatianPage, KhatianSearchInput } from "./types";
 
 const client = axios.create({ baseURL: "/api/land-records", timeout: 10000, headers: { Accept: "application/json" } });
 
@@ -15,5 +15,6 @@ export const landRecordsApi = {
   upazilas: (districtBbsCode: string) => get<Upazila[]>("/upazilas", UpazilaSchema.array(), { districtBbsCode }),
   surveys: (districtBbsCode: string, upazilaBbsCode: string) => get<Survey[]>("/surveys", SurveySchema.array(), { districtBbsCode, upazilaBbsCode }),
   mouzas: (input: { districtBbsCode: string; upazilaBbsCode: string; surveyId: number; districtName: string; upazilaName: string }) => get<Mouza[]>("/mouzas", MouzaSchema.array(), input),
-  khatians: (input: { surveyKey: string; jlNumberId: number; page: number; pageSize: number }) => get<KhatianPage>("/khatians", KhatianPageSchema, input),
+  khatians: (input: KhatianSearchInput) => get<KhatianPage>("/khatians", KhatianPageSchema, { ...input }),
+  khatian: (surveyKey: string, id: number) => get<KhatianDetails>(`/khatians/${surveyKey}/${id}`, KhatianDetailsSchema),
 };

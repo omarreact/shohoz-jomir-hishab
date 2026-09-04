@@ -113,6 +113,16 @@ export const mockLandRecordProvider: LandRecordProvider = {
     });
     return { items, page: input.page, pageSize: input.pageSize, total: 240, hasNextPage: start + input.pageSize < 240 };
   },
+  async getKhatian(surveyKey, id, signal) {
+    await delay(signal);
+    return {
+      ID: id, KHATIAN_NO: String(id - 900000), OWNERS: "নমুনা মালিক", DAGS: "৪০১, ৪০২",
+      GUARDIANS: "পিতা: নমুনা অভিভাবক", JL_NUMBER_ID: 1001, MOUZA_ID: 501, IS_LOCKED: 0,
+      DIVISION_NAME: "ঢাকা", DISTRICT_NAME: "ঢাকা", UPAZILA_NAME: "সাভার", JL_NUMBER: "১২",
+      MOUZA_NAME: "মডেল মৌজা", SURVEY_ID: Number(Object.entries({ CS: 1, RS: 2, SA: 3, BS: 4 }).find(([key]) => key === surveyKey)?.[1] ?? 1),
+      SURVEY_NAME: surveyKey, TOTAL_LAND: "1.2500",
+    };
+  },
 };
 
 const mockFiles: MouzaMapEntry[] = [

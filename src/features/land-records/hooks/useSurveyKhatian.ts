@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { landRecordsApi } from "../api";
-import type { Division, District, Upazila, Survey, Mouza, KhatianPage } from "../types";
+import type { Division, District, Upazila, Survey, Mouza, KhatianDetails, KhatianPage } from "../types";
 
 export function useSurveyKhatian() {
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -11,6 +11,7 @@ export function useSurveyKhatian() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [mouzas, setMouzas] = useState<Mouza[]>([]);
   const [khatians, setKhatians] = useState<KhatianPage | null>(null);
+  const [selectedKhatian, setSelectedKhatian] = useState<KhatianDetails | null>(null);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const requestIds = useRef<Record<string, number>>({});
@@ -29,5 +30,6 @@ export function useSurveyKhatian() {
   const loadSurveys = useCallback((district: string, upazila: string) => run("surveys", () => landRecordsApi.surveys(district, upazila), setSurveys), [run]);
   const loadMouzas = useCallback((input: Parameters<typeof landRecordsApi.mouzas>[0]) => run("mouzas", () => landRecordsApi.mouzas(input), setMouzas), [run]);
   const loadKhatians = useCallback((input: Parameters<typeof landRecordsApi.khatians>[0]) => run("khatians", () => landRecordsApi.khatians(input), setKhatians), [run]);
-  return { divisions, districts, upazilas, surveys, mouzas, khatians, loading, error, loadDistricts, loadUpazilas, loadSurveys, loadMouzas, loadKhatians, setDistricts, setUpazilas, setSurveys, setMouzas, setKhatians, clearError: () => setError(null) };
+  const loadKhatian = useCallback((surveyKey: string, id: number) => run("khatian", () => landRecordsApi.khatian(surveyKey, id), setSelectedKhatian), [run]);
+  return { divisions, districts, upazilas, surveys, mouzas, khatians, selectedKhatian, loading, error, loadDistricts, loadUpazilas, loadSurveys, loadMouzas, loadKhatians, loadKhatian, setDistricts, setUpazilas, setSurveys, setMouzas, setKhatians, setSelectedKhatian, clearError: () => setError(null) };
 }
