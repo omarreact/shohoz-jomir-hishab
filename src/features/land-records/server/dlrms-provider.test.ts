@@ -20,7 +20,28 @@ describe("DLRMS public land-record provider", () => {
         return Response.json({ data: [{ ID: 127902, MOUZA_ID: 1130, MOUZA_NAME: "সাভার", JL_NUMBER: "662", DISTRICT_NAME: "ঢাকা", UPAZILA_NAME: "সাভার", SURVEY_ID: 1, SURVEY_NAME: "সি এস", SURVEY_NAME_EN: "CS" }] });
       }
       if (url.endsWith("/index-khatian/CS/786385")) {
-        return Response.json({ data: { ID: 786385, KHATIAN_NO: "1", OWNERS: "নমুনা মালিক", DAGS: "117", GUARDIANS: null, JL_NUMBER_ID: 127902, MOUZA_ID: 1130, IS_LOCKED: 0, DIVISION_NAME: "ঢাকা", DISTRICT_NAME: "ঢাকা", UPAZILA_NAME: "সাভার", JL_NUMBER: "662", MOUZA_NAME: "সাভার", SURVEY_ID: 1, TOTAL_LAND: "1.25" } });
+        return Response.json({
+          data: {
+            ID: 786385,
+            KHATIAN_NO: "1",
+            OWNERS: "নমুনা মালিক",
+            DAGS: "117",
+            GUARDIANS: null,
+            JL_NUMBER_ID: 127902,
+            MOUZA_ID: 1130,
+            IS_LOCKED: 0,
+            DIVISION_NAME: "ঢাকা",
+            DISTRICT_NAME: "ঢাকা",
+            UPAZILA_NAME: "সাভার",
+            JL_NUMBER: "662",
+            MOUZA_NAME: "সাভার",
+            SURVEY_ID: 1,
+            TOTAL_LAND: "1.25",
+            LAND_CLASS: "বসত",
+            OWNER_DETAILS: [{ NAME: "নমুনা মালিক", SHARE: "৮ আনা" }],
+            access_token: "must-never-reach-client",
+          },
+        });
       }
       if (url.includes("/index-khatian/CS?")) {
         return Response.json({ data: { items: [{ ID: 786385, KHATIAN_NO: "1", OWNERS: null }], meta: { totalItems: 1, totalPages: 1 } } });
@@ -34,7 +55,7 @@ describe("DLRMS public land-record provider", () => {
     process.env = originalEnv;
   });
 
-  it("uses the public app session for Mouza, Khatian search, and detail requests", async () => {
+  it("uses the public app session for Mouza, Khatian search, and complete safe detail requests", async () => {
     const { dlrmsLandRecordProvider: provider } = await import("./dlrms-provider");
     const mouzas = await provider.listMouzas({ districtBbsCode: "26", upazilaBbsCode: "72", surveyId: 1, surveyKey: "CS", districtName: "ঢাকা", upazilaName: "সাভার" });
     const page = await provider.listKhatians({ surveyKey: "CS", jlNumberId: mouzas[0].ID, page: 1, pageSize: 20, owner: "নমুনা" });
@@ -44,6 +65,11 @@ describe("DLRMS public land-record provider", () => {
     expect(page).toMatchObject({ total: 1, hasNextPage: false });
     expect(page.items[0]).toMatchObject({ ID: 786385, OWNERS: "", JL_NUMBER_ID: 127902 });
     expect(details).toMatchObject({ KHATIAN_NO: "1", OWNERS: "নমুনা মালিক", DAGS: "117", MOUZA_NAME: "সাভার" });
+    expect(details.PUBLIC_RECORD).toMatchObject({
+      LAND_CLASS: "বসত",
+      OWNER_DETAILS: [{ NAME: "নমুনা মালিক", SHARE: "৮ আনা" }],
+    });
+    expect(details.PUBLIC_RECORD).not.toHaveProperty("access_token");
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(String(fetchMock.mock.calls[2][0])).toContain("OWNER=%E0%A6%A8%E0%A6%AE%E0%A7%81%E0%A6%A8%E0%A6%BE");
   });
