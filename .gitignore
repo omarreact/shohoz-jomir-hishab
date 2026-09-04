@@ -24,6 +24,12 @@
 .DS_Store
 *.pem
 
+# Security-sensitive network/debug captures — never commit request cookies/tokens.
+*.har
+**/har/
+*.pcap
+*.pcapng
+
 # debug
 npm-debug.log*
 yarn-debug.log*
