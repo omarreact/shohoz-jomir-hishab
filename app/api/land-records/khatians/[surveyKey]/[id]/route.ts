@@ -51,11 +51,25 @@ export async function GET(request: Request, context: { params: Promise<{ surveyK
     }, request.signal);
 
     const ownerLookup = owner
-      ? safeSearch({ surveyKey, jlNumberId, page: 1, pageSize: 100, owner }, request.signal)
+      ? safeSearch({
+          surveyKey,
+          jlNumberId,
+          page: 1,
+          pageSize: 100,
+          khatianNo: base.KHATIAN_NO,
+          owner,
+        }, request.signal)
       : Promise.resolve(null);
 
     const dagLookup = dagNumber
-      ? safeSearch({ surveyKey, jlNumberId, page: 1, pageSize: 100, dagNumber }, request.signal)
+      ? safeSearch({
+          surveyKey,
+          jlNumberId,
+          page: 1,
+          pageSize: 100,
+          khatianNo: base.KHATIAN_NO,
+          dagNumber,
+        }, request.signal)
       : Promise.resolve(null);
 
     const [exactPage, ownerPage, dagPage] = await Promise.all([exactLookup, ownerLookup, dagLookup]);
