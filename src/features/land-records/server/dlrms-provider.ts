@@ -5,6 +5,7 @@ const DLRMS_GATEWAY_URL = "https://gateway.dlrms.land.gov.bd";
 const DLRMS_API_URL = `${DLRMS_GATEWAY_URL}/core-api/api/public`;
 const REQUEST_TIMEOUT_MS = 25_000;
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
+const SENSITIVE_PUBLIC_FIELD = /(authorization|cookie|password|passwd|secret|token|refresh[_-]?token|access[_-]?token)/i;
 
 type Stage = "auth" | "divisions" | "districts" | "upazilas" | "surveys" | "mouzas" | "khatians" | "khatian-details";
 type JsonRecord = Record<string, unknown>;
@@ -175,6 +176,30 @@ function optionalString(row: JsonRecord, ...keys: string[]): string {
   return String(v);
 }
 
+function sanitizePublicValue(input: unknown, depth = 0): unknown {
+  if (depth > 8) return "[nested data omitted]";
+  if (input === null || typeof input === "string" || typeof input === "number" || typeof input === "boolean") return input;
+  if (Array.isArray(input)) return input.map((item) => sanitizePublicValue(item, depth + 1));
+  if (!input || typeof input !== "object") return String(input ?? "");
+
+  const output: JsonRecord = {};
+  for (const [key, item] of Object.entries(input as JsonRecord)) {
+    if (SENSITIVE_PUBLIC_FIELD.test(key)) continue;
+    output[key] = sanitizePublicValue(item, depth + 1);
+  }
+  return output;
+}
+
+/**
+ * Preserve every field of the public DLRMS khatian record instead of silently
+ * discarding fields LandBD does not know about yet. Authentication/session
+ * material is never part of this object and sensitive-looking keys are filtered
+ * defensively before the payload reaches a browser.
+ */
+function sanitizePublicRecord(row: JsonRecord): Record<string, unknown> {
+  return sanitizePublicValue(row) as Record<string, unknown>;
+}
+
 function query(path: string, params: Record<string, string | number | undefined>): string {
   const url = new URL(`${DLRMS_API_URL}${path}`);
   for (const [key, item] of Object.entries(params)) {
@@ -310,7 +335,7 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
       DISTRICT_NAME: optionalString(row, "DISTRICT_NAME"), UPAZILA_NAME: optionalString(row, "UPAZILA_NAME"),
       JL_NUMBER: optionalString(row, "JL_NUMBER"), MOUZA_NAME: optionalString(row, "MOUZA_NAME"),
       SURVEY_ID: optionalNumber(row, "SURVEY_ID"), SURVEY_NAME: optionalString(row, "SURVEY_NAME"),
-      TOTAL_LAND: optionalString(row, "TOTAL_LAND"),
+      TOTAL_LAND: optionalString(row, "TOTAL_LAND"), PUBLIC_RECORD: sanitizePublicRecord(row),
     };
   },
 };
