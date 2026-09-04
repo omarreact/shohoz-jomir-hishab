@@ -88,9 +88,19 @@ export const landRecordsApi = {
   }) => get<Mouza[]>("/mouzas", MouzaSchema.array(), input),
   khatians: (input: KhatianSearchInput) =>
     get<KhatianPage>("/khatians", KhatianPageSchema, { ...input }),
-  khatian: (surveyKey: string, id: number) =>
-    get<KhatianDetails>(
+  khatian: (
+    surveyKey: string,
+    id: number,
+    context?: { owner?: string; dagNumber?: string; jlNumberId?: number },
+  ) => {
+    const params: Record<string, string | number> = {};
+    if (context?.owner) params.owner = context.owner;
+    if (context?.dagNumber) params.dagNumber = context.dagNumber;
+    if (context?.jlNumberId) params.jlNumberId = context.jlNumberId;
+    return get<KhatianDetails>(
       `/khatians/${surveyKey}/${id}`,
       KhatianDetailsSchema,
-    ),
+      params,
+    );
+  },
 };
