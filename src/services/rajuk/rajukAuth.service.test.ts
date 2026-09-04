@@ -30,7 +30,7 @@ describe("RAJUK token concurrency", () => {
     json: async () => body,
   });
 
-  it("shares one upstream refresh for concurrent requests to the same server", async () => {
+  it("shares one upstream refresh flow for concurrent requests to the same server", async () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
 
@@ -49,8 +49,12 @@ describe("RAJUK token concurrency", () => {
     release();
 
     await expect(Promise.all([first, second])).resolves.toEqual(["server-token-a", "server-token-a"]);
+
+    // One authentication flow is: public config probe, Portal user token,
+    // then Portal→Server token exchange. Concurrent callers must share that
+    // same flow rather than running it twice.
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/generateToken")).length).toBe(1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/generateToken")).length).toBe(2);
   });
 
   it("keeps concurrent refreshes for different servers independent", async () => {
@@ -74,7 +78,9 @@ describe("RAJUK token concurrency", () => {
 
     expect(a).toBe("token-a");
     expect(b).toBe("token-b");
-    expect(calls.filter((url) => url.endsWith("/generateToken")).length).toBe(2);
+    // Each server independently performs Portal user-token generation plus
+    // server-token exchange. Two servers therefore make four generateToken calls.
+    expect(calls.filter((url) => url.endsWith("/generateToken")).length).toBe(4);
   });
 
   it("reports configured credentials accurately", async () => {
