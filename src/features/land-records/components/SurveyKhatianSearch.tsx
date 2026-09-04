@@ -6,7 +6,7 @@ import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/sh
 import { Select } from "@/src/shared/ui/Select";
 import { Input } from "@/src/shared/ui/Input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/src/shared/ui/dialog";
-import { Check, ChevronLeft, ChevronRight, ClipboardCopy, Database, Eye, Loader2, Search } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ClipboardCopy, Database, ExternalLink, Eye, Loader2, Search } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID } from "../types";
 
@@ -161,27 +161,21 @@ export default function SurveyKhatianSearch() {
     [selectedKhatian],
   );
 
-  // Step 1: divisions are loaded once by useSurveyKhatian on mount.
-
-  // Step 2: Division -> Districts.
   useEffect(() => {
     if (!division) return;
     void loadDistricts(division);
   }, [division, loadDistricts]);
 
-  // Step 3: District -> Upazilas.
   useEffect(() => {
     if (!district) return;
     void loadUpazilas(district);
   }, [district, loadUpazilas]);
 
-  // Step 4: District + Upazila -> Surveys.
   useEffect(() => {
     if (!district || !upazila) return;
     void loadSurveys(district, upazila);
   }, [district, upazila, loadSurveys]);
 
-  // Step 5: Survey -> Mouza/JL.
   useEffect(() => {
     if (!selectedSurvey || !selectedDistrict || !selectedUpazila) return;
     void loadMouzas({
@@ -304,49 +298,11 @@ export default function SurveyKhatianSearch() {
           </CardHeader>
           <CardBody>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Select
-                label="১. বিভাগ"
-                value={division}
-                onChange={(e) => handleDivisionChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...divisions.map((d) => ({ value: d.BBS_CODE, label: d.NAME }))]}
-                loading={loading.divisions}
-              />
-
-              <Select
-                label="২. জেলা"
-                value={district}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...districts.map((d) => ({ value: d.BBS_CODE, label: d.NAME }))]}
-                loading={loading.districts}
-                disabled={!division}
-              />
-
-              <Select
-                label="৩. উপজেলা"
-                value={upazila}
-                onChange={(e) => handleUpazilaChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...upazilas.map((u) => ({ value: u.BBS_CODE, label: u.NAME }))]}
-                loading={loading.upazilas}
-                disabled={!district}
-              />
-
-              <Select
-                label="৪. সার্ভে"
-                value={surveyId}
-                onChange={(e) => handleSurveyChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...surveyOptions]}
-                loading={loading.surveys}
-                disabled={!upazila}
-              />
-
-              <Select
-                label="৫. মৌজা / JL"
-                value={mouzaId}
-                onChange={(e) => handleMouzaChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...mouzas.map((m) => ({ value: m.ID, label: `${m.MOUZA_NAME} — JL ${m.JL_NUMBER}` }))]}
-                loading={loading.mouzas}
-                disabled={!surveyId}
-              />
+              <Select label="১. বিভাগ" value={division} onChange={(e) => handleDivisionChange(e.target.value)} options={[{ value: "", label: empty }, ...divisions.map((d) => ({ value: d.BBS_CODE, label: d.NAME }))]} loading={loading.divisions} />
+              <Select label="২. জেলা" value={district} onChange={(e) => handleDistrictChange(e.target.value)} options={[{ value: "", label: empty }, ...districts.map((d) => ({ value: d.BBS_CODE, label: d.NAME }))]} loading={loading.districts} disabled={!division} />
+              <Select label="৩. উপজেলা" value={upazila} onChange={(e) => handleUpazilaChange(e.target.value)} options={[{ value: "", label: empty }, ...upazilas.map((u) => ({ value: u.BBS_CODE, label: u.NAME }))]} loading={loading.upazilas} disabled={!district} />
+              <Select label="৪. সার্ভে" value={surveyId} onChange={(e) => handleSurveyChange(e.target.value)} options={[{ value: "", label: empty }, ...surveyOptions]} loading={loading.surveys} disabled={!upazila} />
+              <Select label="৫. মৌজা / JL" value={mouzaId} onChange={(e) => handleMouzaChange(e.target.value)} options={[{ value: "", label: empty }, ...mouzas.map((m) => ({ value: m.ID, label: `${m.MOUZA_NAME} — JL ${m.JL_NUMBER}` }))]} loading={loading.mouzas} disabled={!surveyId} />
             </div>
 
             <div className="mt-5 border-t border-[var(--border-color)] pt-5">
@@ -364,12 +320,7 @@ export default function SurveyKhatianSearch() {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={search}
-              disabled={!selectedMouza || !surveyKey || loading.khatians}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-[#006a4e] px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <button type="button" onClick={search} disabled={!selectedMouza || !surveyKey || loading.khatians} className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-[#006a4e] px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
               {loading.khatians ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
               {loading.khatians ? "খোঁজা হচ্ছে…" : "খতিয়ান খুঁজুন"}
             </button>
@@ -379,26 +330,21 @@ export default function SurveyKhatianSearch() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>খতিয়ান সূচি</CardTitle>
-            <CardDescription>
-              {khatians
-                ? `পৃষ্ঠা ${khatians.page}${khatians.total ? ` · মোট ${khatians.total}` : ""}`
-                : "অনুসন্ধানের ফলাফল এখানে দেখা যাবে।"}
-            </CardDescription>
+            <CardDescription>{khatians ? `পৃষ্ঠা ${khatians.page}${khatians.total ? ` · মোট ${khatians.total}` : ""}` : "অনুসন্ধানের ফলাফল এখানে দেখা যাবে।"}</CardDescription>
           </CardHeader>
           <CardBody className="p-0">
             {loading.khatians ? (
-              <div className="flex min-h-40 items-center justify-center gap-2 text-sm text-slate-500">
-                <Loader2 className="animate-spin" size={18} />লোড হচ্ছে…
-              </div>
+              <div className="flex min-h-40 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />লোড হচ্ছে…</div>
             ) : khatians ? (
               <>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-sm">
+                  <table className="w-full min-w-[900px] text-left text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-900/70">
                       <tr>
                         <th className="px-5 py-3">খতিয়ান</th>
                         <th className="px-5 py-3">মালিক</th>
                         <th className="px-5 py-3">দাগ</th>
+                        <th className="px-5 py-3">মোট জমি (একর)</th>
                         <th className="px-5 py-3">অভিভাবক</th>
                         <th className="px-5 py-3 text-right">বিস্তারিত</th>
                       </tr>
@@ -409,11 +355,10 @@ export default function SurveyKhatianSearch() {
                           <td className="px-5 py-3 font-medium">{k.KHATIAN_NO}</td>
                           <td className="px-5 py-3">{k.OWNERS || "—"}</td>
                           <td className="px-5 py-3">{k.DAGS || "—"}</td>
+                          <td className="px-5 py-3">{k.TOTAL_LAND || "—"}</td>
                           <td className="px-5 py-3">{k.GUARDIANS || "—"}</td>
                           <td className="px-5 py-3 text-right">
-                            <button type="button" onClick={() => showDetails(k.ID)} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 font-medium text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
-                              <Eye size={15} /> সম্পূর্ণ তথ্য
-                            </button>
+                            <button type="button" onClick={() => showDetails(k.ID)} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 font-medium text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/30"><Eye size={15} /> সম্পূর্ণ তথ্য</button>
                           </td>
                         </tr>
                       ))}
@@ -421,13 +366,9 @@ export default function SurveyKhatianSearch() {
                   </table>
                 </div>
                 <div className="flex items-center justify-between border-t border-[var(--border-color)] px-5 py-4">
-                  <button type="button" onClick={() => goPage(page - 1)} disabled={page === 1 || loading.khatians} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm disabled:opacity-40">
-                    <ChevronLeft size={16} />আগের
-                  </button>
+                  <button type="button" onClick={() => goPage(page - 1)} disabled={page === 1 || loading.khatians} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm disabled:opacity-40"><ChevronLeft size={16} />আগের</button>
                   <span className="text-sm text-slate-500">পৃষ্ঠা {page}</span>
-                  <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm disabled:opacity-40">
-                    পরের<ChevronRight size={16} />
-                  </button>
+                  <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm disabled:opacity-40">পরের<ChevronRight size={16} /></button>
                 </div>
               </>
             ) : (
@@ -446,13 +387,8 @@ export default function SurveyKhatianSearch() {
                 <DialogDescription>সরকারি DLRMS public record থেকে সরাসরি প্রাপ্ত তথ্য</DialogDescription>
               </div>
               {selectedKhatian && (
-                <button
-                  type="button"
-                  onClick={() => void copyCompleteRecord()}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] px-3 text-xs font-semibold transition hover:bg-slate-50 dark:hover:bg-slate-900"
-                >
-                  {copied ? <Check size={15} /> : <ClipboardCopy size={15} />}
-                  {copied ? "কপি হয়েছে" : "রেকর্ড কপি"}
+                <button type="button" onClick={() => void copyCompleteRecord()} className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] px-3 text-xs font-semibold transition hover:bg-slate-50 dark:hover:bg-slate-900">
+                  {copied ? <Check size={15} /> : <ClipboardCopy size={15} />}{copied ? "কপি হয়েছে" : "রেকর্ড কপি"}
                 </button>
               )}
             </div>
@@ -463,80 +399,52 @@ export default function SurveyKhatianSearch() {
           ) : selectedKhatian ? (
             <div className="space-y-5">
               <section>
-                <div className="mb-3 flex items-center gap-2">
-                  <Database size={17} className="text-[#006a4e]" />
-                  <h3 className="text-sm font-bold">রেকর্ড পরিচিতি ও অবস্থান</h3>
-                </div>
+                <div className="mb-3 flex items-center gap-2"><Database size={17} className="text-[#006a4e]" /><h3 className="text-sm font-bold">রেকর্ড পরিচিতি ও অবস্থান</h3></div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {[
-                    ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO],
-                    ["রেকর্ড আইডি", selectedKhatian.ID],
-                    ["খতিয়ান এন্ট্রি আইডি", selectedKhatian.KHATIAN_ENTRY_ID],
-                    ["বিভাগ", selectedKhatian.DIVISION_NAME],
-                    ["জেলা", selectedKhatian.DISTRICT_NAME],
-                    ["উপজেলা/থানা", selectedKhatian.UPAZILA_NAME],
-                    ["সার্ভে", selectedKhatian.SURVEY_NAME || surveyKey || "—"],
-                    ["সার্ভে আইডি", selectedKhatian.SURVEY_ID],
-                    ["মৌজা", selectedKhatian.MOUZA_NAME],
-                    ["মৌজা আইডি", selectedKhatian.MOUZA_ID],
-                    ["JL নম্বর", selectedKhatian.JL_NUMBER],
-                    ["JL রেকর্ড আইডি", selectedKhatian.JL_NUMBER_ID],
-                    ["মোট জমি (একর)", selectedKhatian.TOTAL_LAND],
-                    ["লক অবস্থা", selectedKhatian.IS_LOCKED ? "লক করা" : "উন্মুক্ত"],
+                    ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO], ["রেকর্ড আইডি", selectedKhatian.ID], ["খতিয়ান এন্ট্রি আইডি", selectedKhatian.KHATIAN_ENTRY_ID],
+                    ["বিভাগ", selectedKhatian.DIVISION_NAME], ["জেলা", selectedKhatian.DISTRICT_NAME], ["উপজেলা/থানা", selectedKhatian.UPAZILA_NAME],
+                    ["সার্ভে", selectedKhatian.SURVEY_NAME || surveyKey || "—"], ["সার্ভে আইডি", selectedKhatian.SURVEY_ID], ["মৌজা", selectedKhatian.MOUZA_NAME],
+                    ["মৌজা আইডি", selectedKhatian.MOUZA_ID], ["JL নম্বর", selectedKhatian.JL_NUMBER], ["JL রেকর্ড আইডি", selectedKhatian.JL_NUMBER_ID],
+                    ["মোট জমি (একর)", selectedKhatian.TOTAL_LAND], ["লক অবস্থা", selectedKhatian.IS_LOCKED ? "লক করা" : "উন্মুক্ত"],
                   ].map(([label, value]) => (
-                    <div key={String(label)} className="rounded-lg border border-[var(--border-color)] p-3">
-                      <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
-                      <p className="mt-1 break-words font-medium">{value === 0 ? "0" : value || "—"}</p>
-                    </div>
+                    <div key={String(label)} className="rounded-lg border border-[var(--border-color)] p-3"><p className="text-xs text-[var(--muted-foreground)]">{label}</p><p className="mt-1 break-words font-medium">{value === 0 ? "0" : value || "—"}</p></div>
                   ))}
                 </div>
               </section>
 
               <section className="grid gap-3">
-                <div className="rounded-lg border border-[var(--border-color)] p-4">
-                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">মালিক / দলিলধারী</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.OWNERS || "—"}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--border-color)] p-4">
-                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">অভিভাবক / পিতা / স্বামী</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.GUARDIANS || "—"}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--border-color)] p-4">
-                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.DAGS || "—"}</p>
-                </div>
+                <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">মালিক / দলিলধারী</p><p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.OWNERS || "—"}</p></div>
+                <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">অভিভাবক / পিতা / স্বামী</p><p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.GUARDIANS || "—"}</p></div>
+                <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</p><p className="mt-2 whitespace-pre-wrap break-words font-medium leading-7">{selectedKhatian.DAGS || "—"}</p></div>
               </section>
 
               <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-                <div className="mb-3">
-                  <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">DLRMS-এর অন্যান্য প্রকাশিত তথ্য</h3>
-                  <p className="mt-1 text-xs leading-5 text-emerald-800/80 dark:text-emerald-300/80">
-                    DLRMS detail API এই রেকর্ডের জন্য অতিরিক্ত যে field বা nested data পাঠায়, সেগুলো নিচে স্বয়ংক্রিয়ভাবে দেখানো হয়।
-                  </p>
-                </div>
+                <div className="mb-3"><h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">DLRMS-এর অন্যান্য প্রকাশিত তথ্য</h3><p className="mt-1 text-xs leading-5 text-emerald-800/80 dark:text-emerald-300/80">DLRMS detail API এই রেকর্ডের জন্য অতিরিক্ত যে field বা nested data পাঠায়, সেগুলো নিচে স্বয়ংক্রিয়ভাবে দেখানো হয়।</p></div>
                 {additionalRecordEntries.length ? (
                   <div className="grid gap-3">
                     {additionalRecordEntries.map(([key, value]) => (
-                      <div key={key} className="rounded-lg border border-emerald-200/80 bg-white p-3 dark:border-emerald-900/60 dark:bg-slate-950/50">
-                        <p className="mb-1.5 text-xs font-semibold text-[var(--muted-foreground)]">{publicFieldLabel(key)}</p>
-                        <div className="text-sm"><PublicValue value={value} /></div>
-                      </div>
+                      <div key={key} className="rounded-lg border border-emerald-200/80 bg-white p-3 dark:border-emerald-900/60 dark:bg-slate-950/50"><p className="mb-1.5 text-xs font-semibold text-[var(--muted-foreground)]">{publicFieldLabel(key)}</p><div className="text-sm"><PublicValue value={value} /></div></div>
                     ))}
                   </div>
                 ) : (
-                  <p className="rounded-lg bg-white/80 px-3 py-3 text-sm text-slate-600 dark:bg-slate-950/40 dark:text-slate-300">
-                    এই রেকর্ডের public DLRMS response-এ উপরের সারাংশের বাইরে অতিরিক্ত তথ্য নেই।
-                  </p>
+                  <p className="rounded-lg bg-white/80 px-3 py-3 text-sm text-slate-600 dark:bg-slate-950/40 dark:text-slate-300">এই রেকর্ডের public DLRMS response-এ উপরের সারাংশের বাইরে অতিরিক্ত তথ্য নেই।</p>
                 )}
+              </section>
+
+              <section className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+                <h3 className="text-sm font-bold text-blue-950 dark:text-blue-200">পূর্ণ/সার্টিফাইড খতিয়ান কপি প্রয়োজন?</h3>
+                <p className="mt-1 text-xs leading-5 text-blue-900/80 dark:text-blue-300/80">DLRMS public API কোনো field প্রকাশ না করলে LandBD সেটি অনুমান করে দেখায় না। আইনগত বা পূর্ণ অফিসিয়াল কপির জন্য সরকারি DLRMS-এ আবেদন করুন।</p>
+                <a href="https://dlrms.land.gov.bd/" target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 items-center gap-2 rounded-md bg-blue-700 px-3 text-xs font-semibold text-white transition hover:bg-blue-800">
+                  সরকারি DLRMS-এ খুলুন <ExternalLink size={14} />
+                </a>
               </section>
             </div>
           ) : (
             <div className="min-h-32 py-8 text-center text-sm text-slate-500">বিস্তারিত তথ্য পাওয়া যায়নি।</div>
           )}
 
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-            LandBD এখানে DLRMS-এর public endpoint থেকে পাওয়া সম্পূর্ণ প্রকাশিত record দেখায়। এটি সার্টিফাইড/আইনগত পর্চার বিকল্প নয়; দাপ্তরিক কাজে DLRMS থেকে সার্টিফাইড কপি সংগ্রহ ও যাচাই করুন।
-          </div>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">LandBD এখানে DLRMS-এর public endpoint থেকে পাওয়া সম্পূর্ণ প্রকাশিত record দেখায়। এটি সার্টিফাইড/আইনগত পর্চার বিকল্প নয়; দাপ্তরিক কাজে DLRMS থেকে সার্টিফাইড কপি সংগ্রহ ও যাচাই করুন।</div>
         </DialogContent>
       </Dialog>
     </>
