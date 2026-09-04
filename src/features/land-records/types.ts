@@ -71,6 +71,13 @@ export interface KhatianDetails extends KhatianIndex {
   SURVEY_ID?: number;
   SURVEY_NAME: string;
   TOTAL_LAND: string;
+  /**
+   * Complete public record object returned by the DLRMS khatian detail API.
+   * Authentication/session fields are filtered server-side before this is
+   * exposed to the browser. Keeping the public payload prevents LandBD from
+   * silently dropping newly added DLRMS fields.
+   */
+  PUBLIC_RECORD?: Record<string, unknown>;
 }
 
 export interface KhatianSearchInput {
