@@ -11,6 +11,7 @@ export const KhatianDetailsSchema = KhatianIndexSchema.extend({
   KHATIAN_ENTRY_ID: z.number().optional(), IS_LOCKED: z.number(), DIVISION_NAME: z.string(),
   DISTRICT_NAME: z.string(), UPAZILA_NAME: z.string(), JL_NUMBER: z.string(), MOUZA_NAME: z.string(),
   SURVEY_ID: z.number().optional(), SURVEY_NAME: z.string(), TOTAL_LAND: z.string(),
+  PUBLIC_RECORD: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const MouzaMapEntrySchema = z.object({ id: z.string(), name: z.string(), mimeType: z.string(), size: z.number().nonnegative().optional(), isFolder: z.boolean(), thumbnailUrl: z.string().url().optional(), downloadUrl: z.string().url().optional(), webViewLink: z.string().url().optional() });
