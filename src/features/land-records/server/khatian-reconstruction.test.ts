@@ -55,10 +55,12 @@ describe("khatian reconstruction", () => {
 
     expect(result.OWNERS).toContain("প্রকাশিত মালিক");
     expect(result.OWNERS).toContain("দ্বিতীয় মালিক");
-    expect(result.DAGS).toBe("117, 118");
+    expect(result.DAGS).toBe("117, 118, 119");
     expect(result.GUARDIANS).toBe("পিতা: রহিম");
     expect(result.TOTAL_LAND).toBe("1.25");
     expect(result.OWNERS).not.toContain("অন্য খতিয়ানের মালিক");
+    expect(result.PUBLIC_RECORD?.["সার্চে_মিল_পাওয়া_মালিক_নাম_বা_অংশ"]).toBe("গোপন মালিক");
+    expect(result.PUBLIC_RECORD?.["সার্চে_মিল_পাওয়া_দাগ"]).toBe("119");
 
     const reconstruction = result.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as Record<string, unknown>;
     expect(reconstruction.SEARCH_VERIFIED).toEqual({
@@ -75,6 +77,7 @@ describe("khatian reconstruction", () => {
     });
 
     expect(result.OWNERS).toBe("প্রকাশিত মালিক");
+    expect(result.PUBLIC_RECORD?.["সার্চে_মিল_পাওয়া_মালিক_নাম_বা_অংশ"]).toBeUndefined();
     const reconstruction = result.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as Record<string, unknown>;
     expect(reconstruction.SEARCH_VERIFIED).toEqual({});
   });
