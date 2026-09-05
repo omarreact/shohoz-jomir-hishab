@@ -129,3 +129,141 @@ function pickString(row: Record<string, unknown>, keys: string[]): string | unde
   }
   return undefined;
 }
+
+/** Structured dag rows when public record exposes per-dag detail objects. */
+export function buildDagRows(
+  dagNumbers: string[],
+  publicRecord: Record<string, unknown>,
+): ParsedDagRow[] {
+  const structured =
+    publicRecord.DAG_DETAILS ??
+    publicRecord.DAGS_DETAIL ??
+    publicRecord.PLOTS ??
+    publicRecord.LAND_PLOTS ??
+    publicRecord.dagDetails ??
+    publicRecord.plots;
+
+  const byDag = new Map<string, ParsedDagRow>();
+
+  if (Array.isArray(structured)) {
+    for (const item of structured) {
+      const row = asRecord(item);
+      if (!row) continue;
+      const dagNo = pickString(row, [
+        "DAG_NO",
+        "DAG_NUMBER",
+        "DAG",
+        "dagNo",
+        "dag_number",
+        "PLOT_NO",
+        "plotNo",
+      ]);
+      if (!dagNo) continue;
+      byDag.set(dagNo, {
+        dagNo,
+        landClass: pickString(row, ["LAND_CLASS", "CLASS", "জমির_শ্রেণী", "landClass", "TYPE"]),
+        area: pickString(row, [
+          "SHARE_AREA",
+          "KHATIAN_AREA",
+          "AREA",
+          "LAND_AMOUNT",
+          "অংশানুযায়ী_জমির_পরিমাণ",
+          "shareArea",
+        ]),
+        totalArea: pickString(row, ["TOTAL_AREA", "DAG_TOTAL", "দাগের_মোট_পরিমাণ", "totalArea"]),
+        khatianShare: pickString(row, ["KHATIAN_SHARE", "SHARE", "অংশ", "hissa"]),
+        shareArea: pickString(row, ["SHARE_AREA", "অংশানুযায়ী_জমির_পরিমাণ"]),
+      });
+    }
+  }
+
+  return dagNumbers.map((dagNo) => {
+    const hit = byDag.get(dagNo);
+    if (hit) return hit;
+    return { dagNo };
+  });
+}
+
+/** Optional owner shares array from public record (same order as OWNERS when provided). */
+export function extractOwnerShares(publicRecord: Record<string, unknown>, ownerCount: number): Array<string | undefined> {
+  const raw =
+    publicRecord.OWNER_SHARES ??
+    publicRecord.SHARES ??
+    publicRecord.OWNER_SHARE_LIST ??
+    publicRecord.ownerShares;
+
+  if (Array.isArray(raw)) {
+    return Array.from({ length: ownerCount }, (_, i) => {
+      const v = raw[i];
+      if (typeof v === "string" && v.trim()) return v.trim();
+      if (typeof v === "number" && Number.isFinite(v)) return String(v);
+      const rec = asRecord(v);
+      if (rec) return pickString(rec, ["SHARE", "অংশ", "share", "HISS"]);
+      return undefined;
+    });
+  }
+
+  if (typeof raw === "string" && raw.trim()) {
+    const parts = splitPublicList(raw);
+    return Array.from({ length: ownerCount }, (_, i) => parts[i]);
+  }
+
+  return Array.from({ length: ownerCount }, () => undefined);
+}
+
+export function isPartialPublicRecord(khatian: KhatianDetails | null | undefined): boolean {
+  const reconstruction = khatian?.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
+  if (
+    reconstruction &&
+    typeof reconstruction === "object" &&
+    (reconstruction as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true
+  ) {
+    return true;
+  }
+  const fields = [khatian?.OWNERS, khatian?.DAGS, khatian?.GUARDIANS];
+  return fields.some((v) => Boolean(v && TRAILING_PARTIAL.test(v)));
+}
+
+export function buildKhatianDisplayModel(
+  khatian: KhatianDetails,
+  surveyKey?: string,
+): KhatianDisplayModel {
+  const kind = detectSurveyKind(khatian.SURVEY_NAME, surveyKey);
+  const ownerNames = splitPublicList(khatian.OWNERS);
+  const dagNumbers = splitPublicList(khatian.DAGS);
+  const guardians = splitPublicList(khatian.GUARDIANS);
+  const publicRecord = (khatian.PUBLIC_RECORD ?? {}) as Record<string, unknown>;
+  const reconstruction =
+    publicRecord.LANDBD_RECONSTRUCTION && typeof publicRecord.LANDBD_RECONSTRUCTION === "object"
+      ? (publicRecord.LANDBD_RECONSTRUCTION as Record<string, unknown>)
+      : null;
+
+  const shares = extractOwnerShares(publicRecord, ownerNames.length);
+  const owners = buildOwnerRows(ownerNames, shares);
+  const dags = buildDagRows(dagNumbers, publicRecord);
+
+  return {
+    kind,
+    badgeBn: surveyBadgeBn(kind),
+    surveyLabel: khatian.SURVEY_NAME || surveyKey || "—",
+    owners,
+    dags,
+    guardians,
+    totalLand: (khatian.TOTAL_LAND || "").trim(),
+    isPartial: isPartialPublicRecord(khatian),
+    ownerCount: ownerNames.length,
+    dagCount: dagNumbers.length,
+    publicRecord,
+    reconstruction,
+    hasOwnerShares: owners.some((o) => Boolean(o.share)),
+    hasDagAreas: dags.some((d) => Boolean(d.area || d.shareArea || d.totalArea)),
+    hasLandClass: dags.some((d) => Boolean(d.landClass)),
+  };
+}
+
+export const PUBLIC_FIELD_LABELS_BN: Record<string, string> = {
+  KHATIAN_ENTRY_ID: "খতিয়ান এন্ট্রি আইডি",
+  JL_NUMBER_ID: "জে.এল. নম্বর আইডি",
+  SURVEY_ID: "সার্ভে আইডি",
+  IS_LOCKED: "লক অবস্থা",
+};
