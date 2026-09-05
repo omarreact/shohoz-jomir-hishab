@@ -1,10 +1,17 @@
 import MouzaMapClient from "@/src/features/geospatial-map/components/MouzaMapClient";
 import MouzaMapViewer from "@/src/features/mouza-map/MouzaMapViewer";
+import RequireLogin from "@/src/modules/auth/components/RequireLogin";
 
 /**
- * Browser/provider layer is intentionally separate from the existing
- * authenticated export pipeline. The existing export APIs remain untouched.
+ * Mouza map browser / download. Members and admins only.
  */
 export default function MouzaMapPage() {
-  return <><MouzaMapViewer /><MouzaMapClient /></>;
+  return (
+    <RequireLogin featureName="ডাউনলোড মৌজা ম্যাপ">
+      <>
+        <MouzaMapViewer />
+        <MouzaMapClient />
+      </>
+    </RequireLogin>
+  );
 }
