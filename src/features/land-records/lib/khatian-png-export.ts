@@ -1,39 +1,54 @@
 /**
- * Robust high-resolution PNG export for Khatian details.
- * Avoids common html2canvas failures: CSS variables, color-mix, huge canvases,
- * and dark-mode text on white backgrounds.
+ * High-resolution Khatian image export.
+ *
+ * Mobile (esp. Android Chrome) often fails on large PNG canvases. Strategy:
+ * 1. Off-screen fixed-width clone (not phone viewport)
+ * 2. Adaptive scale: 2 → 1.5 → 1.25
+ * 3. Prefer JPEG (quality 0.95) for reliability & smaller memory
+ * 4. Fall back to PNG only if JPEG encoding fails
  */
 
-export type KhatianPngExportOptions = {
-  /** Root node that contains the Khatian content (captureRef target). */
+export type KhatianImageExportOptions = {
   source: HTMLElement;
-  /** Suggested CSS width for the export clone (desktop print style). */
   exportWidthPx?: number;
-  /** Preferred scale factors to try, highest first. */
   scales?: number[];
-  /** Filename without path. */
+  /** Base filename without extension. */
   fileName: string;
+  /** JPEG quality 0–1. Default 0.95. */
+  jpegQuality?: number;
 };
 
-export type KhatianPngExportResult =
-  | { ok: true; scale: number; width: number; height: number }
+export type KhatianImageExportResult =
+  | {
+      ok: true;
+      format: "jpeg" | "png";
+      scale: number;
+      width: number;
+      height: number;
+    }
   | { ok: false; error: string };
 
-const DEFAULT_SCALES = [2.5, 2, 1.5];
-const DEFAULT_EXPORT_WIDTH = 1280;
+/** @deprecated Use KhatianImageExportOptions */
+export type KhatianPngExportOptions = KhatianImageExportOptions;
+/** @deprecated Use KhatianImageExportResult */
+export type KhatianPngExportResult = KhatianImageExportResult;
+
+const DEFAULT_SCALES = [2, 1.5, 1.25];
+const DEFAULT_EXPORT_WIDTH = 1200;
+const DEFAULT_JPEG_QUALITY = 0.95;
+/** Reject canvases larger than ~40MP to avoid OOM on mid-range Android. */
+const MAX_PIXELS = 40_000_000;
 
 function sanitizeFileName(name: string): string {
-  return name
-    .replace(/[^\w\u0980-\u09FF.\-]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 120) || "LandBD-Khatian";
+  return (
+    name
+      .replace(/[^\w\u0980-\u09FF.\-]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "")
+      .slice(0, 120) || "LandBD-Khatian"
+  );
 }
 
-/**
- * Flatten CSS custom properties on the clone tree so html2canvas does not
- * paint transparent / black boxes where `var(--*)` or color-mix failed.
- */
 function flattenThemeForExport(root: HTMLElement): void {
   root.style.backgroundColor = "#ffffff";
   root.style.color = "#0f172a";
@@ -86,19 +101,54 @@ async function renderAtScale(
   });
 }
 
+function triggerDownload(dataUrl: string, fileNameWithExt: string): void {
+  const link = document.createElement("a");
+  link.download = fileNameWithExt;
+  link.href = dataUrl;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function encodeCanvas(
+  canvas: HTMLCanvasElement,
+  preferJpeg: boolean,
+  jpegQuality: number,
+): { dataUrl: string; format: "jpeg" | "png" } | null {
+  if (preferJpeg) {
+    try {
+      const jpeg = canvas.toDataURL("image/jpeg", jpegQuality);
+      if (jpeg.startsWith("data:image/jpeg")) {
+        return { dataUrl: jpeg, format: "jpeg" };
+      }
+    } catch {
+      /* fall through to PNG */
+    }
+  }
+  try {
+    const png = canvas.toDataURL("image/png");
+    if (png.startsWith("data:image/png")) {
+      return { dataUrl: png, format: "png" };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 /**
- * Export Khatian content to a high-resolution PNG download.
- * Uses a temporary off-screen clone at a stable print width so mobile
- * viewports do not produce a narrow / broken export.
+ * Export Khatian content as a high-resolution image (JPEG preferred).
  */
-export async function exportKhatianPng(
-  options: KhatianPngExportOptions,
-): Promise<KhatianPngExportResult> {
+export async function exportKhatianImage(
+  options: KhatianImageExportOptions,
+): Promise<KhatianImageExportResult> {
   const {
     source,
     exportWidthPx = DEFAULT_EXPORT_WIDTH,
     scales = DEFAULT_SCALES,
     fileName,
+    jpegQuality = DEFAULT_JPEG_QUALITY,
   } = options;
 
   if (typeof window === "undefined") {
@@ -109,7 +159,7 @@ export async function exportKhatianPng(
   try {
     html2canvas = (await import("html2canvas")).default;
   } catch {
-    return { ok: false, error: "PNG লাইব্রেরি লোড করা যায়নি।" };
+    return { ok: false, error: "ছবি তৈরির লাইব্রেরি লোড করা যায়নি।" };
   }
 
   const host = document.createElement("div");
@@ -155,27 +205,25 @@ export async function exportKhatianPng(
           lastError = new Error(`Empty canvas at scale ${scale}`);
           continue;
         }
-        if (canvas.width * canvas.height > 80_000_000) {
+        if (canvas.width * canvas.height > MAX_PIXELS) {
           lastError = new Error(`Canvas too large at scale ${scale}`);
           continue;
         }
 
-        const dataUrl = canvas.toDataURL("image/png");
-        if (!dataUrl.startsWith("data:image/png")) {
-          lastError = new Error("toDataURL did not return PNG");
+        // JPEG first — smaller memory / more reliable on Android
+        const encoded = encodeCanvas(canvas, true, jpegQuality);
+        if (!encoded) {
+          lastError = new Error(`Encode failed at scale ${scale}`);
           continue;
         }
 
-        const link = document.createElement("a");
-        link.download = `${sanitizeFileName(fileName)}.png`;
-        link.href = dataUrl;
-        link.rel = "noopener";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        const base = sanitizeFileName(fileName);
+        const ext = encoded.format === "jpeg" ? "jpg" : "png";
+        triggerDownload(encoded.dataUrl, `${base}.${ext}`);
 
         return {
           ok: true,
+          format: encoded.format,
           scale,
           width: canvas.width,
           height: canvas.height,
@@ -187,12 +235,19 @@ export async function exportKhatianPng(
 
     const message =
       lastError instanceof Error ? lastError.message : "unknown render error";
-    console.error("Khatian PNG export failed after scale fallbacks", lastError);
+    console.error("Khatian image export failed after scale fallbacks", lastError);
     return {
       ok: false,
-      error: `PNG তৈরি করা যায়নি (${message}). অন্য ডিভাইসে চেষ্টা করুন অথবা পৃষ্ঠা রিফ্রেশ করুন।`,
+      error: `খতিয়ানের ছবি তৈরি করা যায়নি। আবার চেষ্টা করুন। (${message})`,
     };
   } finally {
     host.remove();
   }
+}
+
+/** @deprecated Prefer exportKhatianImage */
+export async function exportKhatianPng(
+  options: KhatianImageExportOptions,
+): Promise<KhatianImageExportResult> {
+  return exportKhatianImage(options);
 }
