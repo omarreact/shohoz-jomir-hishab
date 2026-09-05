@@ -40,6 +40,20 @@ async function verifyFirebaseToken(token: string) {
   }
 }
 
+/** Page routes that require a verified logged-in user (any role). */
+const MEMBER_ONLY_PAGE_PREFIXES = [
+  "/geospatial-map",
+  "/mouza-map",
+  "/porcha",
+  "/admin",
+] as const;
+
+function isMemberOnlyPage(pathname: string): boolean {
+  return MEMBER_ONLY_PAGE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 // Best-effort per-instance burst protection only. Public endpoints that need
 // cross-instance enforcement use the shared Upstash-aware rate limiter in
 // their route handlers. Do not treat this map as a global security boundary.
@@ -90,24 +104,29 @@ export async function proxy(request: NextRequest) {
   const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const rawToken = cookieToken ?? bearerToken;
 
-  let userPayload: any = null;
+  let userPayload: Record<string, unknown> | null = null;
   if (rawToken) {
     userPayload = await verifyFirebaseToken(rawToken);
     if (userPayload) {
-      requestHeaders.set("x-user-id", userPayload.user_id || userPayload.sub || "");
-      requestHeaders.set("x-user-role", userPayload.role || (userPayload.admin === true ? "Admin" : "User"));
+      requestHeaders.set(
+        "x-user-id",
+        String(userPayload.user_id || userPayload.sub || ""),
+      );
+      requestHeaders.set(
+        "x-user-role",
+        String(
+          userPayload.role || (userPayload.admin === true ? "Admin" : "User"),
+        ),
+      );
     }
   }
 
-  // The proxy is responsible for token validity, not application roles.
-  // Application roles are verified server-side by verifyAdminAuth(), which
-  // can read the authoritative Firestore users/{uid}.role value.
-  if (pathname.startsWith("/admin")) {
-    if (!userPayload) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("from", pathname + request.nextUrl.search);
-      return NextResponse.redirect(loginUrl);
-    }
+  // Members-only product pages (GIS, mouza download, porcha) + admin shell.
+  // Token validity is checked here; app roles for /admin UI are enforced in the admin layout.
+  if (isMemberOnlyPage(pathname) && !userPayload) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("from", pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   const publicApiPrefixes = [
