@@ -1,6 +1,7 @@
 import type { KhatianDetails, KhatianPage, LandRecordProvider } from "../types";
 
 const DLRMS_HOME_URL = "https://dlrms.land.gov.bd/";
+const DLRMS_ORIGIN = "https://dlrms.land.gov.bd";
 const DLRMS_GATEWAY_URL = "https://gateway.dlrms.land.gov.bd";
 const DLRMS_API_URL = `${DLRMS_GATEWAY_URL}/core-api/api/public`;
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -212,7 +213,12 @@ async function requestJson(url: string, stage: Stage, signal?: AbortSignal, retr
   const activeSession = await publicSession();
   const response = await fetch(url, {
     cache: "no-store",
-    headers: { Accept: "application/json", Authorization: `Bearer ${activeSession.accessToken}` },
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${activeSession.accessToken}`,
+      Origin: DLRMS_ORIGIN,
+      Referer: DLRMS_HOME_URL,
+    },
     signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
