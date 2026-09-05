@@ -6,7 +6,25 @@ const DLRMS_GATEWAY_URL = "https://gateway.dlrms.land.gov.bd";
 const DLRMS_API_URL = `${DLRMS_GATEWAY_URL}/core-api/api/public`;
 const REQUEST_TIMEOUT_MS = 25_000;
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
+const ENRICH_TIMEOUT_MS = 12_000;
 const SENSITIVE_PUBLIC_FIELD = /(authorization|cookie|password|passwd|secret|token|refresh[_-]?token|access[_-]?token)/i;
+const TRAILING_ELLIPSIS = /(?:,\s*)?(?:\.{3,}|…)+\s*$/u;
+
+/**
+ * Optional public list enricher. Official gateway often truncates OWNERS/DAGS
+ * with "...". A same-shape public mirror (e.g. eporcha.tech/api/dlrms) may
+ * return complete list fields (source api+database). Disabled when
+ * DLRMS_ENRICH_ENABLED=0. Override base with DLRMS_ENRICH_BASE_URL.
+ */
+function enrichEnabled(): boolean {
+  return process.env.DLRMS_ENRICH_ENABLED?.trim() !== "0";
+}
+
+function enrichBaseUrl(): string {
+  const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  return "https://eporcha.tech/api/dlrms";
+}
 
 type Stage = "auth" | "divisions" | "districts" | "upazilas" | "surveys" | "mouzas" | "khatians" | "khatian-details";
 type JsonRecord = Record<string, unknown>;
@@ -246,6 +264,90 @@ function normalizeRows<T>(rows: JsonRecord[], mapper: (row: JsonRecord) => T, st
   }
 }
 
+function isTruncatedPublicField(value: string | undefined): boolean {
+  const v = (value ?? "").trim();
+  if (!v) return false;
+  return TRAILING_ELLIPSIS.test(v);
+}
+
+function khatianRowNeedsEnrichment(row: { OWNERS?: string; DAGS?: string; GUARDIANS?: string }): boolean {
+  return isTruncatedPublicField(row.OWNERS) || isTruncatedPublicField(row.DAGS) || isTruncatedPublicField(row.GUARDIANS);
+}
+
+function preferFullerField(primary: string, secondary: string): string {
+  const a = primary.trim();
+  const b = secondary.trim();
+  if (!b) return a;
+  if (!a) return b;
+  const aTrunc = isTruncatedPublicField(a);
+  const bTrunc = isTruncatedPublicField(b);
+  if (aTrunc && !bTrunc) return b;
+  if (!aTrunc && bTrunc) return a;
+  return b.length > a.length ? b : a;
+}
+
+function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAGS: string; GUARDIANS: string; TOTAL_LAND?: string }>(
+  primary: T,
+  secondary: T | undefined,
+): T {
+  if (!secondary || secondary.ID !== primary.ID) return primary;
+  return {
+    ...primary,
+    OWNERS: preferFullerField(primary.OWNERS, secondary.OWNERS),
+    DAGS: preferFullerField(primary.DAGS, secondary.DAGS),
+    GUARDIANS: preferFullerField(primary.GUARDIANS, secondary.GUARDIANS),
+    TOTAL_LAND: preferFullerField(primary.TOTAL_LAND ?? "", secondary.TOTAL_LAND ?? "") || primary.TOTAL_LAND,
+  };
+}
+
+async function fetchEnrichedKhatianList(
+  input: {
+    surveyKey: string;
+    jlNumberId: number;
+    page: number;
+    pageSize: number;
+    khatianNo?: string;
+    owner?: string;
+    dagNumber?: string;
+  },
+  signal?: AbortSignal,
+): Promise<JsonRecord[] | null> {
+  if (!enrichEnabled()) return null;
+  const base = enrichBaseUrl();
+  if (!base) return null;
+
+  const url = new URL(`${base}/index-khatian/${encodeURIComponent(input.surveyKey)}`);
+  url.searchParams.set("SURVEY", input.surveyKey);
+  url.searchParams.set("JL_NUMBER_ID", String(input.jlNumberId));
+  url.searchParams.set("PAGE_NO", String(input.page));
+  url.searchParams.set("PAGE_SIZE", String(input.pageSize));
+  if (input.khatianNo) url.searchParams.set("KHATIAN_NO", input.khatianNo);
+  if (input.owner) url.searchParams.set("OWNER", input.owner);
+  if (input.dagNumber) url.searchParams.set("DAG_NUMBER", input.dagNumber);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ENRICH_TIMEOUT_MS);
+  const onAbort = () => controller.abort();
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    const response = await fetch(url.toString(), {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const container = dataRecord(payload);
+    return records(container);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", onAbort);
+  }
+}
+
 function normalizeKhatian(row: JsonRecord, fallback: { jlNumberId?: number; mouzaId?: number } = {}) {
   return {
     ID: numberValue(row, "ID", "id"),
@@ -326,8 +428,31 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     const total = optionalNumber(meta, "totalItems", "TOTAL", "total", "itemCount")
       ?? optionalNumber(container, "totalItems", "TOTAL", "total");
     const totalPages = optionalNumber(meta, "totalPages", "TOTAL_PAGES", "lastPage");
+    let items = normalizeRows(rows, (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }), "khatians");
+
+    // Official gateway frequently truncates OWNERS/DAGS/GUARDIANS with "...".
+    // When any row is truncated, merge fuller public list fields from the
+    // optional enricher (same query shape). Failures are ignored — official
+    // rows remain the baseline.
+    if (items.some(khatianRowNeedsEnrichment)) {
+      const enrichedRows = await fetchEnrichedKhatianList(input, signal);
+      if (enrichedRows?.length) {
+        try {
+          const enrichedItems = normalizeRows(
+            enrichedRows,
+            (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }),
+            "khatians",
+          );
+          const byId = new Map(enrichedItems.map((row) => [row.ID, row]));
+          items = items.map((row) => mergeKhatianRowPreferFuller(row, byId.get(row.ID)));
+        } catch {
+          // keep official items
+        }
+      }
+    }
+
     return {
-      items: normalizeRows(rows, (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }), "khatians"),
+      items,
       page: input.page, pageSize: input.pageSize, total,
       hasNextPage: totalPages ? input.page < totalPages : rows.length === input.pageSize,
     };
