@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode, type RefObject } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -21,7 +21,7 @@ type Props = {
   khatian: KhatianDetails;
   surveyKey?: string;
   /** Ref target for JPG capture wraps the printable body */
-  captureRef?: React.RefObject<HTMLDivElement | null>;
+  captureRef?: RefObject<HTMLDivElement | null>;
 };
 
 function Section({
@@ -32,8 +32,8 @@ function Section({
 }: {
   id?: string;
   title: string;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
+  children: ReactNode;
+  icon?: ReactNode;
 }) {
   return (
     <section id={id} className="scroll-mt-4 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] print:break-inside-avoid">
@@ -64,7 +64,7 @@ function SurveyArchitectureNote({ kind }: { kind: SurveyKind }) {
     BRS: "বি আর এস আধুনিক সেটেলমেন্ট ফরম্যাট—মালিক+অংশ, দাগ, জমির শ্রেণী ও পরিমাণ কাঠামোবদ্ধভাবে উপস্থাপন করা হয়।",
     BS: "বি এস খতিয়ানের উপলব্ধ পাবলিক ক্ষেত্র অনুসারে মালিক ও দাগ দেখানো হয়েছে।",
     MUTATION:
-      "নামজারি রেকর্ডে আবেদন, মামলা, দলিল, আগত খতিয়ান ও অনুমোদন ধাপ থাকে। কেবল যাচাইকৃত পাবলিক উৎস থেকে পাওয়া ক্ষেত্র দেখানো হয়।",
+      "নামজারি রেকর্ডে আবেদন, মামলা, দলিল, আগে খতিয়ান ও অনুমোদন ধাপ থাকে। কেবল যাচাইকৃত পাবলিক উৎস থেকে পাওয়া ক্ষেত্র দেখানো হয়।",
     OTHER: "এই সার্ভের উপলব্ধ পাবলিক তথ্য অনুসারে খতিয়ান সাজানো হয়েছে।",
   };
   return (
@@ -93,10 +93,9 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
 
   return (
     <div
-      ref={captureRef as React.RefObject<HTMLDivElement>}
+      ref={captureRef ?? undefined}
       className="space-y-4 print:space-y-3 print:bg-white print:text-black"
     >
-      {/* A. Identity header */}
       <div className="overflow-hidden rounded-xl border border-[#006a4e]/25 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-[var(--card-bg)] print:border-slate-300 print:bg-white print:from-white">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-color)] px-4 py-3">
           <div>
@@ -137,7 +136,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         </div>
       </div>
 
-      {/* B. Data completeness */}
       {model.isPartial ? (
         <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 print:border-amber-400">
           <AlertTriangle className="mt-0.5 shrink-0" size={18} />
@@ -164,7 +162,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
 
       <SurveyArchitectureNote kind={model.kind} />
 
-      {/* E. Summary */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "মোট মালিক", value: model.ownerCount ? String(model.ownerCount) : "—" },
@@ -182,7 +179,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         ))}
       </div>
 
-      {/* F. Lineage when present */}
       {(model.kind === "SA" || model.kind === "MUTATION" || lineageFrom) && (
         <Section id="lineage" title="রেকর্ডের ধারাবাহিকতা" icon={<FileText size={16} className="text-[#006a4e]" />}>
           <ol className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -212,7 +208,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         </Section>
       )}
 
-      {/* C. Owners */}
       <Section
         id="owners"
         title={model.kind === "CS" ? "স্বত্ব · দখল · মালিকানা ও অংশ" : "মালিকানা ও অংশ"}
@@ -222,7 +217,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
           <p className="text-sm text-[var(--muted-foreground)]">মালিকের নাম পাবলিক তথ্যে নেই।</p>
         ) : (
           <>
-            {/* Desktop table */}
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[28rem] border-collapse text-sm">
                 <thead>
@@ -248,7 +242,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
                 </tbody>
               </table>
             </div>
-            {/* Mobile cards */}
             <ul className="grid gap-2 md:hidden">
               {model.owners.map((row, index) => (
                 <li
@@ -285,7 +278,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         ) : null}
       </Section>
 
-      {/* D. Dags */}
       <Section
         id="dags"
         title={model.kind === "CS" ? "দাগ · সীমানা · জমির রকম" : "দাগ ও জমির বিবরণ"}
@@ -347,7 +339,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         ) : null}
       </Section>
 
-      {/* G. Revenue — only if present in public record */}
       {(() => {
         const revenueKeys = [
           ["রাজস্ব", model.publicRecord.RAJASWA ?? model.publicRecord.REVENUE],
@@ -368,7 +359,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         );
       })()}
 
-      {/* H. Mutation-only — show shell when kind is MUTATION */}
       {model.kind === "MUTATION" ? (
         <Section id="mutation" title="নামজারি তথ্য">
           <div className="grid gap-2 sm:grid-cols-2">
@@ -396,7 +386,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         </Section>
       ) : null}
 
-      {/* I. Verification */}
       <Section id="verify" title="যাচাই ও সরকারি কপি" icon={<Info size={16} className="text-[#006a4e]" />}>
         <ul className="space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
           <li>• LandBD এই পৃষ্ঠায় শুধু সরকারি পাবলিক তথ্যের পাঠযোগ্য সংস্করণ দেখায়।</li>
@@ -423,7 +412,6 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         </div>
       </Section>
 
-      {/* J. Technical */}
       <div className="rounded-xl border border-dashed border-[var(--border-color)] print:hidden">
         <button
           type="button"
