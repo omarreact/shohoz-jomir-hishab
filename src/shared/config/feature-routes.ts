@@ -4,6 +4,7 @@
 export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
+  dlrmsKhatian: "/dlrms-khatian",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
   landMap: "/geospatial-map",
@@ -24,6 +25,7 @@ export type FeatureRouteKey = keyof typeof FEATURE_ROUTES;
 export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }> = {
   home: { en: "Home", bn: "হোম" },
   records: { en: "Land records", bn: "খতিয়ান" },
+  dlrmsKhatian: { en: "DLRMS khatian", bn: "DLRMS খতিয়ান" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
   inheritance: { en: "Inheritance", bn: "ফারায়েজ" },
   landMap: { en: "GIS map", bn: "GIS মানচিত্র" },
@@ -41,6 +43,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
 
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
+  "dlrmsKhatian",
   "landMeasurement",
   "inheritance",
   "landMap",
@@ -52,6 +55,7 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
 
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
+  "dlrmsKhatian",
   "inheritance",
   "landMeasurement",
   "landMap",
