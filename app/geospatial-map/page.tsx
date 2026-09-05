@@ -1,10 +1,15 @@
 import GeospatialMapClient from "@/src/features/geospatial-map/components/GeospatialMapClient";
+import RequireLogin from "@/src/modules/auth/components/RequireLogin";
 
 /**
  * Canonical urban planning map page.
  * MapLibre is the production WebGL rendering engine.
- * This route intentionally has no offline fallback or application shell UI.
+ * Visitors must log in; members and admins can use the map.
  */
 export default function UrbanPlanningMapPage() {
-  return <GeospatialMapClient />;
+  return (
+    <RequireLogin featureName="GIS মানচিত্র">
+      <GeospatialMapClient />
+    </RequireLogin>
+  );
 }
