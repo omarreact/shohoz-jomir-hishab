@@ -213,6 +213,12 @@ export default function SurveyKhatianSearch() {
   };
 
   const displayedError = localError || error;
+  const reconstruction = selectedKhatian?.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
+  const isPartialRecord = Boolean(
+    reconstruction
+      && typeof reconstruction === "object"
+      && (reconstruction as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true,
+  );
 
   return (
     <>
@@ -341,7 +347,7 @@ export default function SurveyKhatianSearch() {
                             <td className="px-5 py-3">{item.DAGS || "—"}</td>
                             <td className="px-5 py-3">{item.TOTAL_LAND || "—"}</td>
                             <td className="px-5 py-3 text-right">
-                              <button type="button" onClick={() => showDetails(item.ID)} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 font-medium text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/30"><Eye size={15} /> সম্পূর্ণ তথ্য</button>
+                              <button type="button" onClick={() => showDetails(item.ID)} className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 font-medium text-[#006a4e] hover:bg-emerald-50 dark:hover:bg-emerald-950/30"><Eye size={15} /> উপলব্ধ তথ্য</button>
                             </td>
                           </tr>
                         ))}
@@ -374,7 +380,7 @@ export default function SurveyKhatianSearch() {
             <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
               <div>
                 <DialogTitle>খতিয়ানের প্রকাশিত বিস্তারিত তথ্য</DialogTitle>
-                <DialogDescription>নির্দিষ্ট matching record-এর জন্য উপলব্ধ তথ্য</DialogDescription>
+                <DialogDescription>নির্দিষ্ট matching record-এর জন্য উপলব্ধ সরকারি public তথ্য</DialogDescription>
               </div>
               {selectedKhatian && (
                 <button type="button" onClick={() => void copyRecord()} className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] px-3 text-xs font-semibold transition hover:bg-slate-50 dark:hover:bg-slate-900">
@@ -388,6 +394,15 @@ export default function SurveyKhatianSearch() {
             <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />তথ্য লোড হচ্ছে…</div>
           ) : selectedKhatian ? (
             <div className="space-y-4">
+              {isPartialRecord && (
+                <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                  <p className="font-bold">পাবলিক API-তে আংশিক তথ্য</p>
+                  <p className="mt-1">
+                    সরকারি public API এই খতিয়ানের কিছু মালিক, দাগ বা অভিভাবকের তথ্য সংক্ষিপ্ত করে দিয়েছে। LandBD কোনো অনুপস্থিত নাম বা দাগ অনুমান করে যোগ করে না। সম্পূর্ণ ও আইনগত কপির জন্য সরকারি DLRMS / ePorcha certified copy ব্যবহার করুন।
+                  </p>
+                </div>
+              )}
+
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO],
@@ -410,9 +425,14 @@ export default function SurveyKhatianSearch() {
               <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</p><p className="mt-2 whitespace-pre-wrap break-words leading-7">{selectedKhatian.DAGS || "—"}</p></div>
               <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">অভিভাবক / পিতা / স্বামী</p><p className="mt-2 whitespace-pre-wrap break-words leading-7">{selectedKhatian.GUARDIANS || "—"}</p></div>
 
-              <a href="https://dlrms.land.gov.bd/" target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-700 px-3 text-xs font-semibold text-white transition hover:bg-blue-800">
-                Certified / QR কপির জন্য সরকারি DLRMS <ExternalLink size={14} />
-              </a>
+              <div className="flex flex-wrap gap-2">
+                <a href="https://dlrms.land.gov.bd/" target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-700 px-3 text-xs font-semibold text-white transition hover:bg-blue-800">
+                  সরকারি DLRMS <ExternalLink size={14} />
+                </a>
+                <a href="https://eporcha.gov.bd/" target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md border border-blue-300 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-50 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-950/30">
+                  সরকারি ePorcha <ExternalLink size={14} />
+                </a>
+              </div>
             </div>
           ) : (
             <div className="min-h-32 py-8 text-center text-sm text-slate-500">বিস্তারিত তথ্য পাওয়া যায়নি।</div>
