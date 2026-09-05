@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID } from "../types";
+import KhatianDetailsView from "./KhatianDetailsView";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
@@ -227,12 +228,6 @@ export default function SurveyKhatianSearch() {
   };
 
   const displayedError = localError || error;
-  const reconstruction = selectedKhatian?.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
-  const isPartialRecord = Boolean(
-    reconstruction
-      && typeof reconstruction === "object"
-      && (reconstruction as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true,
-  );
 
   return (
     <>
@@ -378,73 +373,50 @@ export default function SurveyKhatianSearch() {
                 <div className="flex min-h-40 items-center justify-center px-4 text-center text-sm text-slate-500">এই targeted search-এ কোনো matching খতিয়ান পাওয়া যায়নি।</div>
               )
             ) : (
-              <div className="flex min-h-40 items-center justify-center px-4 text-center text-sm text-slate-500">এখনো কোনো অনুসন্ধান করা হয়নি।</div>
+              <div className="flex min-h-40 items-center justify-center px-4 text-center text-sm text-slate-500">অনুসন্ধান শুরু করলে matching খতিয়ান এখানে দেখাবে।</div>
             )}
           </CardBody>
         </Card>
 
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
+        <p className="mt-6 text-center text-xs leading-6 text-slate-500">
           <strong>গুরুত্বপূর্ণ:</strong> একটি মৌজার সব দাগ + সব মালিক একবারে export করার public DLRMS API নেই। আইনগত, QR বা certified কপির জন্য সরকারি DLRMS-এর নির্ধারিত আবেদন/পেইড সেবা ব্যবহার করুন।
-        </div>
+        </p>
       </main>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
-          <DialogHeader>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl print:max-w-none">
+          <DialogHeader className="print:hidden">
             <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
               <div>
-                <DialogTitle>খতিয়ানের প্রকাশিত বিস্তারিত তথ্য</DialogTitle>
-                <DialogDescription>নির্দিষ্ট matching record-এর জন্য উপলব্ধ সরকারি public তথ্য</DialogDescription>
+                <DialogTitle>খতিয়ানের বিস্তারিত তথ্য</DialogTitle>
+                <DialogDescription>
+                  সার্ভে অনুযায়ী সাজানো পাবলিক রেকর্ডের আধুনিক পাঠযোগ্য সংস্করণ
+                </DialogDescription>
               </div>
-              {selectedKhatian && (
+              {selectedKhatian ? (
                 <button
                   type="button"
                   onClick={() => void downloadKhatianJpg()}
-                  disabled={downloadingImage}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--border-color)] bg-[#006a4e] px-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={downloadingImage || loading.khatian}
+                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] px-3 text-xs font-semibold hover:bg-[var(--secondary)] disabled:opacity-50"
                 >
-                  {downloadingImage ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-                  {downloadingImage ? "তৈরি হচ্ছে…" : "JPG ডাউনলোড"}
+                  {downloadingImage ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  {downloadingImage ? "প্রস্তুত হচ্ছে…" : "জেপিজি ডাউনলোড"}
                 </button>
-              )}
+              ) : null}
             </div>
           </DialogHeader>
 
           {loading.khatian ? (
-            <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={18} />তথ্য লোড হচ্ছে…</div>
-          ) : selectedKhatian ? (
-            <div ref={khatianCaptureRef} className="space-y-4 bg-[var(--background)] p-1">
-              {isPartialRecord && (
-                <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-                  <p className="font-bold">পাবলিক API-তে আংশিক তথ্য</p>
-                  <p className="mt-1">
-                    সরকারি public API এই খতিয়ানের কিছু মালিক, দাগ বা অভিভাবকের তথ্য সংক্ষিপ্ত করে দিয়েছে। LandBD কোনো অনুপস্থিত নাম বা দাগ অনুমান করে যোগ করে না। সম্পূর্ণ ও আইনগত কপির জন্য সরকারি DLRMS / ePorcha certified copy ব্যবহার করুন।
-                  </p>
-                </div>
-              )}
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {[
-                  ["খতিয়ান নম্বর", selectedKhatian.KHATIAN_NO],
-                  ["বিভাগ", selectedKhatian.DIVISION_NAME],
-                  ["জেলা", selectedKhatian.DISTRICT_NAME],
-                  ["উপজেলা / থানা", selectedKhatian.UPAZILA_NAME],
-                  ["সার্ভে", selectedKhatian.SURVEY_NAME || surveyKey || "—"],
-                  ["মৌজা", selectedKhatian.MOUZA_NAME],
-                  ["JL নম্বর", selectedKhatian.JL_NUMBER],
-                  ["মোট জমি", selectedKhatian.TOTAL_LAND],
-                ].map(([label, value]) => (
-                  <div key={String(label)} className="rounded-lg border border-[var(--border-color)] p-3">
-                    <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
-                    <p className="mt-1 break-words font-medium">{value ? String(value) : "—"}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">মালিক / দখলদার</p><p className="mt-2 whitespace-pre-wrap break-words leading-7">{selectedKhatian.OWNERS || "—"}</p></div>
-              <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</p><p className="mt-2 whitespace-pre-wrap break-words leading-7">{selectedKhatian.DAGS || "—"}</p></div>
-              <div className="rounded-lg border border-[var(--border-color)] p-4"><p className="text-xs font-semibold text-[var(--muted-foreground)]">অভিভাবক / পিতা / স্বামী</p><p className="mt-2 whitespace-pre-wrap break-words leading-7">{selectedKhatian.GUARDIANS || "—"}</p></div>
+            <div className="flex min-h-40 items-center justify-center gap-2 py-10 text-sm text-slate-500">
+              <Loader2 className="animate-spin" size={18} /> বিস্তারিত লোড হচ্ছে…
             </div>
+          ) : selectedKhatian ? (
+            <KhatianDetailsView
+              khatian={selectedKhatian}
+              surveyKey={surveyKey}
+              captureRef={khatianCaptureRef}
+            />
           ) : (
             <div className="min-h-32 py-8 text-center text-sm text-slate-500">বিস্তারিত তথ্য পাওয়া যায়নি।</div>
           )}
