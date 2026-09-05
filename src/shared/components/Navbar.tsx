@@ -37,6 +37,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   home: Home,
   records: Calculator,
+  dlrmsKhatian: Search,
   landMeasurement: Ruler,
   inheritance: Users,
   landMap: Map,
@@ -302,7 +303,7 @@ export default function Navbar() {
                 হিসাব টুলস
               </p>
               {PRIMARY_NAV.filter((i) =>
-                ["/khatiyan", "/land-measurement", "/faraez", "/porcha"].includes(i.href),
+                ["/khatiyan", "/dlrms-khatian", "/land-measurement", "/faraez", "/porcha"].includes(i.href),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
