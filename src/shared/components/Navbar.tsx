@@ -63,6 +63,14 @@ function buildPrimaryNav(): NavItem[] {
 }
 
 const PRIMARY_NAV = buildPrimaryNav();
+
+/** Visitors cannot open these pages — hide from nav when logged out. */
+const AUTH_REQUIRED_HREFS = new Set<string>([
+  FEATURE_ROUTES.landMap,
+  FEATURE_ROUTES.mouzaDownload,
+  FEATURE_ROUTES.documents,
+]);
+
 const SEARCH_NAV: NavItem[] = [
   { href: FEATURE_ROUTES.home, label: FEATURE_LABELS.home.bn, icon: Home },
   ...PRIMARY_NAV,
@@ -92,6 +100,13 @@ export default function Navbar() {
     pathname.startsWith("/lios-map");
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, loading: authLoading, logout } = useAuth();
+  const visiblePrimaryNav = useMemo(
+    () =>
+      PRIMARY_NAV.filter(
+        (item) => isLoggedIn || !AUTH_REQUIRED_HREFS.has(item.href),
+      ),
+    [isLoggedIn],
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -117,11 +132,12 @@ export default function Navbar() {
     const q = query.trim().toLowerCase();
     return SEARCH_NAV.filter(
       (item) =>
-        !q ||
-        item.label.toLowerCase().includes(q) ||
-        item.href.includes(q),
+        (isLoggedIn || !AUTH_REQUIRED_HREFS.has(item.href)) &&
+        (!q ||
+          item.label.toLowerCase().includes(q) ||
+          item.href.includes(q)),
     );
-  }, [query]);
+  }, [query, isLoggedIn]);
 
   const handleLogout = async () => {
     await logout();
@@ -154,7 +170,7 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
-            {PRIMARY_NAV.map(({ href, label }) => {
+            {visiblePrimaryNav.map(({ href, label }) => {
               const active = activePath(pathname, href);
               return (
                 <Link
@@ -303,7 +319,8 @@ export default function Navbar() {
                 হিসাব টুলস
               </p>
               {PRIMARY_NAV.filter((i) =>
-                ["/khatiyan", "/dlrms-khatian", "/land-measurement", "/faraez", "/porcha"].includes(i.href),
+                ["/khatiyan", "/dlrms-khatian", "/land-measurement", "/faraez", "/porcha"].includes(i.href) &&
+                (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
@@ -322,7 +339,8 @@ export default function Navbar() {
                 মানচিত্র ও জ্ঞান
               </p>
               {PRIMARY_NAV.filter((i) =>
-                ["/geospatial-map", "/mouza-map", "/rajuk-test", "/blog"].includes(i.href),
+                ["/geospatial-map", "/mouza-map", "/rajuk-test", "/blog"].includes(i.href) &&
+                (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
