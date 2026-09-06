@@ -83,7 +83,7 @@ function numberValue(record: JsonRecord, key: string): number | undefined {
 
 export async function fetchPublicKhatianTracking(
   uuid: string,
-  base: { KHATIAN_NO: string; SURVEY_ID?: number },
+  base?: { KHATIAN_NO: string; SURVEY_ID?: number },
   signal?: AbortSignal,
 ): Promise<KhatianTracking> {
   if (!UUID_RE.test(uuid)) throw new Error("Invalid DLRMS verification UUID");
@@ -97,10 +97,12 @@ export async function fetchPublicKhatianTracking(
 
   const khatianNo = stringValue(record, "KHATIAN_NO");
   const surveyId = numberValue(record, "SURVEY_ID");
-  const matchesBaseRecord = Boolean(
-    khatianNo && khatianNo.trim() === base.KHATIAN_NO.trim() &&
-    (!base.SURVEY_ID || !surveyId || base.SURVEY_ID === surveyId),
-  );
+  const matchesBaseRecord = base
+    ? Boolean(
+        khatianNo && khatianNo.trim() === base.KHATIAN_NO.trim() &&
+        (!base.SURVEY_ID || !surveyId || base.SURVEY_ID === surveyId),
+      )
+    : true;
 
   return {
     displayCode: stringValue(record, "APPLICATION_DISPLAY_CODE") ?? uuid,
