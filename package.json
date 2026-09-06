@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node -e \"import('./scripts/dlrms-paper-probe.mjs').then(m=>m.runDlrmsPaperProbe())\" && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
