@@ -12,6 +12,8 @@ export interface FullKhatianInput {
   dagNumber?: string;
   jlNumberId?: number;
   verificationUuid?: string;
+  /** Internal, already-resolved public tracking record. Never accepted from the browser. */
+  tracking?: KhatianTracking;
   divisionBbsCode?: string;
   districtBbsCode?: string;
   upazilaBbsCode?: string;
@@ -47,6 +49,13 @@ function normalizePlace(value: string | undefined): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLocaleLowerCase("bn-BD");
+}
+
+function trackingMatchesBase(base: KhatianDetails, tracking: KhatianTracking): boolean {
+  if (!tracking.khatianNo || tracking.khatianNo.trim() !== base.KHATIAN_NO.trim()) return false;
+  if (base.SURVEY_ID && tracking.surveyId && base.SURVEY_ID !== tracking.surveyId) return false;
+  if (base.JL_NUMBER_ID && tracking.jlNumberId && base.JL_NUMBER_ID !== tracking.jlNumberId) return false;
+  return true;
 }
 
 async function resolveBbsCodesFromPublicLocation(
@@ -212,15 +221,19 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     });
   }
 
-  let tracking: KhatianTracking | undefined;
-  if (input.verificationUuid) {
+  let tracking: KhatianTracking | undefined = input.tracking;
+  if (!tracking && input.verificationUuid) {
     try {
       tracking = await fetchPublicKhatianTracking(input.verificationUuid, rebuilt, signal);
-      if (!tracking.matchesBaseRecord) {
-        warnings.push("The supplied DLRMS verification UUID resolved to a different khatian; tracking data was not merged into the base record.");
-      }
     } catch (error) {
       warnings.push(`DLRMS verification lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
+  }
+
+  if (tracking) {
+    tracking = { ...tracking, matchesBaseRecord: trackingMatchesBase(rebuilt, tracking) };
+    if (!tracking.matchesBaseRecord) {
+      warnings.push("The supplied DLRMS verification UUID resolved to a different khatian; tracking data was not merged into the base record.");
     }
   }
 
