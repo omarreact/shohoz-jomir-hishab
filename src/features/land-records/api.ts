@@ -73,6 +73,7 @@ export interface FullKhatianRequestContext {
   owner?: string;
   dagNumber?: string;
   jlNumberId?: number;
+  mouzaId?: number;
   verificationUuid?: string;
   divisionBbsCode?: string;
   districtBbsCode?: string;
@@ -84,6 +85,7 @@ function fullKhatianParams(context?: FullKhatianRequestContext): Record<string, 
   if (context?.owner) params.owner = context.owner;
   if (context?.dagNumber) params.dagNumber = context.dagNumber;
   if (context?.jlNumberId) params.jlNumberId = context.jlNumberId;
+  if (context?.mouzaId) params.mouzaId = context.mouzaId;
   if (context?.verificationUuid) params.verificationUuid = context.verificationUuid;
   if (context?.divisionBbsCode) params.divisionBbsCode = context.divisionBbsCode;
   if (context?.districtBbsCode) params.districtBbsCode = context.districtBbsCode;
