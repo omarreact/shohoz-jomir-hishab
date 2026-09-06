@@ -53,8 +53,14 @@ async function publicGet(url: string, referer: string, signal?: AbortSignal): Pr
     signal: signal ?? AbortSignal.timeout(25_000),
   });
   if (!response.ok) {
-    const body = (await response.text()).slice(0, 240);
-    throw new Error(`DLRMS public request failed (${response.status})${body ? `: ${body}` : ""}`);
+    // Keep upstream bodies server-side. FullKhatian warnings are returned to the
+    // browser, so only the public HTTP status is allowed into the error text.
+    console.warn("DLRMS public enrichment request failed", {
+      status: response.status,
+      contentType: response.headers.get("content-type") ?? "",
+      endpoint: new URL(url).pathname,
+    });
+    throw new Error(`DLRMS public request failed (${response.status})`);
   }
   return response.json();
 }
