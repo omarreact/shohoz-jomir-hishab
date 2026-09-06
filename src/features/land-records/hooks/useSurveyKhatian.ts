@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { landRecordsApi } from "../api";
+import { landRecordsApi, type FullKhatianRequestContext } from "../api";
+import type { FullKhatian } from "../full-khatian";
 import type { Division, District, Upazila, Survey, Mouza, KhatianDetails, KhatianPage, KhatianSearchInput } from "../types";
 
 export function useSurveyKhatian() {
@@ -12,6 +13,7 @@ export function useSurveyKhatian() {
   const [mouzas, setMouzas] = useState<Mouza[]>([]);
   const [khatians, setKhatians] = useState<KhatianPage | null>(null);
   const [selectedKhatian, setSelectedKhatian] = useState<KhatianDetails | null>(null);
+  const [selectedFullKhatian, setSelectedFullKhatian] = useState<FullKhatian | null>(null);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const requestIds = useRef<Record<string, number>>({});
@@ -34,12 +36,44 @@ export function useSurveyKhatian() {
     lastKhatianSearch.current = input;
     return run("khatians", () => landRecordsApi.khatians(input), setKhatians);
   }, [run]);
-  const loadKhatian = useCallback((surveyKey: string, id: number, context?: Parameters<typeof landRecordsApi.khatian>[2]) => {
+  const loadKhatian = useCallback((surveyKey: string, id: number, context?: FullKhatianRequestContext) => {
     const search = lastKhatianSearch.current;
-    const rememberedContext = search && search.surveyKey === surveyKey
+    const rememberedContext: FullKhatianRequestContext | undefined = search && search.surveyKey === surveyKey
       ? { owner: search.owner, dagNumber: search.dagNumber, jlNumberId: search.jlNumberId }
       : undefined;
-    return run("khatian", () => landRecordsApi.khatian(surveyKey, id, context ?? rememberedContext), setSelectedKhatian);
+    return run(
+      "khatian",
+      () => landRecordsApi.fullKhatian(surveyKey, id, context ?? rememberedContext),
+      (full) => {
+        setSelectedFullKhatian(full);
+        setSelectedKhatian(full.base);
+      },
+    );
   }, [run]);
-  return { divisions, districts, upazilas, surveys, mouzas, khatians, selectedKhatian, loading, error, loadDistricts, loadUpazilas, loadSurveys, loadMouzas, loadKhatians, loadKhatian, setDistricts, setUpazilas, setSurveys, setMouzas, setKhatians, setSelectedKhatian, clearError: () => setError(null) };
+  return {
+    divisions,
+    districts,
+    upazilas,
+    surveys,
+    mouzas,
+    khatians,
+    selectedKhatian,
+    selectedFullKhatian,
+    loading,
+    error,
+    loadDistricts,
+    loadUpazilas,
+    loadSurveys,
+    loadMouzas,
+    loadKhatians,
+    loadKhatian,
+    setDistricts,
+    setUpazilas,
+    setSurveys,
+    setMouzas,
+    setKhatians,
+    setSelectedKhatian,
+    setSelectedFullKhatian,
+    clearError: () => setError(null),
+  };
 }
