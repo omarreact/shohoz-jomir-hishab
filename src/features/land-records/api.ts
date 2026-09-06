@@ -132,4 +132,9 @@ export const landRecordsApi = {
       FullKhatianSchema,
       fullKhatianParams(context),
     ),
+  fullKhatianByVerificationUuid: (uuid: string) =>
+    get<FullKhatian>(
+      `/full-khatian/verify/${encodeURIComponent(uuid)}`,
+      FullKhatianSchema,
+    ),
 };
