@@ -6,6 +6,16 @@ import { z } from "zod";
 
 const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
 const bbsCodeSchema = z.string().regex(/^\d{1,3}$/);
+const verificationUuidSchema = z.string().regex(
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+);
+
+function badRequest(message: string) {
+  return Response.json(
+    { error: message },
+    { status: 400, headers: { "Cache-Control": "no-store" } },
+  );
+}
 
 export async function GET(
   request: Request,
@@ -13,40 +23,52 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    const surveyKey = surveyKeySchema.parse(params.surveyKey);
-    const id = Number(idParam.parse(params.id));
-    if (!Number.isSafeInteger(id)) {
-      return Response.json({ error: "Invalid Khatian ID" }, { status: 400 });
-    }
+    const parsedSurvey = surveyKeySchema.safeParse(params.surveyKey);
+    if (!parsedSurvey.success) return badRequest("Invalid survey key");
+    const surveyKey = parsedSurvey.data;
+
+    const parsedId = idParam.safeParse(params.id);
+    if (!parsedId.success) return badRequest("Invalid Khatian ID");
+    const id = Number(parsedId.data);
+    if (!Number.isSafeInteger(id)) return badRequest("Invalid Khatian ID");
 
     const sp = new URL(request.url).searchParams;
-    const owner = khatianSearchText.parse(sp.get("owner") || undefined);
-    const dagNumber = khatianSearchText.parse(sp.get("dagNumber") || undefined);
-    const verificationUuid = sp.get("verificationUuid")?.trim() || undefined;
+    const ownerParsed = khatianSearchText.safeParse(sp.get("owner") || undefined);
+    if (!ownerParsed.success) return badRequest("Invalid owner search text");
+    const dagParsed = khatianSearchText.safeParse(sp.get("dagNumber") || undefined);
+    if (!dagParsed.success) return badRequest("Invalid dag number search text");
 
-    const jlRaw = sp.get("jlNumberId");
-    const jlNumberId = jlRaw ? Number(idParam.parse(jlRaw)) : undefined;
-    if (jlNumberId !== undefined && !Number.isSafeInteger(jlNumberId)) {
-      return Response.json({ error: "Invalid JL number" }, { status: 400 });
-    }
+    const verificationRaw = sp.get("verificationUuid")?.trim() || undefined;
+    const verificationParsed = verificationRaw ? verificationUuidSchema.safeParse(verificationRaw) : null;
+    if (verificationParsed && !verificationParsed.success) return badRequest("Invalid verification UUID");
+
+    const jlRaw = sp.get("jlNumberId")?.trim() || undefined;
+    const jlParsed = jlRaw ? idParam.safeParse(jlRaw) : null;
+    if (jlParsed && !jlParsed.success) return badRequest("Invalid JL number");
+    const jlNumberId = jlParsed ? Number(jlParsed.data) : undefined;
+    if (jlNumberId !== undefined && !Number.isSafeInteger(jlNumberId)) return badRequest("Invalid JL number");
 
     const divisionRaw = sp.get("divisionBbsCode")?.trim() || undefined;
     const districtRaw = sp.get("districtBbsCode")?.trim() || undefined;
     const upazilaRaw = sp.get("upazilaBbsCode")?.trim() || undefined;
-    const divisionBbsCode = divisionRaw ? bbsCodeSchema.parse(divisionRaw) : undefined;
-    const districtBbsCode = districtRaw ? bbsCodeSchema.parse(districtRaw) : undefined;
-    const upazilaBbsCode = upazilaRaw ? bbsCodeSchema.parse(upazilaRaw) : undefined;
+
+    const divisionParsed = divisionRaw ? bbsCodeSchema.safeParse(divisionRaw) : null;
+    const districtParsed = districtRaw ? bbsCodeSchema.safeParse(districtRaw) : null;
+    const upazilaParsed = upazilaRaw ? bbsCodeSchema.safeParse(upazilaRaw) : null;
+    if (divisionParsed && !divisionParsed.success) return badRequest("Invalid division BBS code");
+    if (districtParsed && !districtParsed.success) return badRequest("Invalid district BBS code");
+    if (upazilaParsed && !upazilaParsed.success) return badRequest("Invalid upazila BBS code");
 
     const result = await getFullKhatian({
       surveyKey,
       id,
-      owner,
-      dagNumber,
+      owner: ownerParsed.data,
+      dagNumber: dagParsed.data,
       jlNumberId,
-      verificationUuid,
-      divisionBbsCode,
-      districtBbsCode,
-      upazilaBbsCode,
+      verificationUuid: verificationParsed?.success ? verificationParsed.data : undefined,
+      divisionBbsCode: divisionParsed?.success ? divisionParsed.data : undefined,
+      districtBbsCode: districtParsed?.success ? districtParsed.data : undefined,
+      upazilaBbsCode: upazilaParsed?.success ? upazilaParsed.data : undefined,
     }, request.signal);
 
     return ok(FullKhatianSchema.parse(result));
