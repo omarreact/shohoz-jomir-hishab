@@ -11,6 +11,7 @@ export interface FullKhatianInput {
   owner?: string;
   dagNumber?: string;
   jlNumberId?: number;
+  mouzaId?: number;
   verificationUuid?: string;
   /** Internal, already-resolved public tracking record. Never accepted from the browser. */
   tracking?: KhatianTracking;
@@ -174,7 +175,11 @@ function enrichBaseFromTracking(base: KhatianDetails, tracking: KhatianTracking 
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
   const warnings: string[] = [];
   const fetchedAt = new Date().toISOString();
-  const baseDetail = await providers.landRecords.getKhatian(input.surveyKey, input.id, signal);
+  const upstreamBase = await providers.landRecords.getKhatian(input.surveyKey, input.id, signal);
+  const baseDetail: KhatianDetails = {
+    ...upstreamBase,
+    MOUZA_ID: upstreamBase.MOUZA_ID || input.mouzaId || 0,
+  };
   const jlNumberId = baseDetail.JL_NUMBER_ID || input.jlNumberId;
 
   let rebuilt = baseDetail;
