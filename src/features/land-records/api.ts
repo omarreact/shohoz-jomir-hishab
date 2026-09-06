@@ -8,6 +8,7 @@ import {
   KhatianDetailsSchema,
   KhatianPageSchema,
 } from "./schemas";
+import { FullKhatianSchema, type FullKhatian } from "./full-khatian";
 import type {
   Division,
   District,
@@ -68,6 +69,28 @@ async function get<T>(
   }
 }
 
+export interface FullKhatianRequestContext {
+  owner?: string;
+  dagNumber?: string;
+  jlNumberId?: number;
+  verificationUuid?: string;
+  divisionBbsCode?: string;
+  districtBbsCode?: string;
+  upazilaBbsCode?: string;
+}
+
+function fullKhatianParams(context?: FullKhatianRequestContext): Record<string, string | number> {
+  const params: Record<string, string | number> = {};
+  if (context?.owner) params.owner = context.owner;
+  if (context?.dagNumber) params.dagNumber = context.dagNumber;
+  if (context?.jlNumberId) params.jlNumberId = context.jlNumberId;
+  if (context?.verificationUuid) params.verificationUuid = context.verificationUuid;
+  if (context?.divisionBbsCode) params.divisionBbsCode = context.divisionBbsCode;
+  if (context?.districtBbsCode) params.districtBbsCode = context.districtBbsCode;
+  if (context?.upazilaBbsCode) params.upazilaBbsCode = context.upazilaBbsCode;
+  return params;
+}
+
 export const landRecordsApi = {
   divisions: () => get<Division[]>("/divisions", DivisionSchema.array()),
   districts: (divisionBbsCode: string) =>
@@ -103,4 +126,10 @@ export const landRecordsApi = {
       params,
     );
   },
+  fullKhatian: (surveyKey: string, id: number, context?: FullKhatianRequestContext) =>
+    get<FullKhatian>(
+      `/full-khatian/${surveyKey}/${id}`,
+      FullKhatianSchema,
+      fullKhatianParams(context),
+    ),
 };
