@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { Download, Loader2 } from "lucide-react";
-import type { FullKhatian } from "../full-khatian";
+import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { exportKhatianPdf } from "../lib/khatian-pdf-export";
 import CompactKhatianDetailsView from "./CompactKhatianDetailsView";
@@ -24,6 +24,8 @@ function safePart(value: unknown, fallback: string): string {
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
+  const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
 
   useEffect(() => {
     const panel = document.getElementById("khatian-details-panel");
@@ -152,7 +154,7 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
       ) : null}
 
       <CompactKhatianDetailsView khatian={khatian} surveyKey={surveyKey} captureRef={captureRef} />
-      {fullKhatian ? <FullKhatianSupplement fullKhatian={fullKhatian} /> : null}
+      {resolvedFullKhatian ? <FullKhatianSupplement fullKhatian={resolvedFullKhatian} /> : null}
     </>
   );
 }
