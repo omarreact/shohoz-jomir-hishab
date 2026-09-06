@@ -46,7 +46,13 @@ export function useSurveyKhatian() {
       () => landRecordsApi.fullKhatian(surveyKey, id, context ?? rememberedContext),
       (full) => {
         setSelectedFullKhatian(full);
-        setSelectedKhatian(full.base);
+        setSelectedKhatian({
+          ...full.base,
+          PUBLIC_RECORD: {
+            ...(full.base.PUBLIC_RECORD ?? {}),
+            LANDBD_FULL_KHATIAN: full,
+          },
+        });
       },
     );
   }, [run]);
