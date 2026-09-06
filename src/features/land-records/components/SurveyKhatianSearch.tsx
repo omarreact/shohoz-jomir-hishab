@@ -476,33 +476,35 @@ export default function SurveyKhatianSearch() {
                           <th className="px-3 py-2.5 font-semibold">মালিক</th>
                           <th className="px-3 py-2.5 font-semibold">দাগ</th>
                           <th className="px-3 py-2.5 font-semibold">মোট জমি</th>
-                          <th className="px-3 py-2.5 font-semibold">বিস্তারিত</th>
+                          <th className="px-3 py-2.5 font-semibold text-right">অ্যাকশন</th>
                         </tr>
                       </thead>
                       <tbody>
                         {khatians.items.map((item) => (
                           <tr
-                            key={item.KHATIAN_ENTRY_ID ?? item.KHATIAN_NO}
+                            key={item.ID}
                             className="border-b border-[var(--border-color)]/70 last:border-0"
                           >
                             <td className="px-3 py-2.5 font-semibold tabular-nums">
                               {item.KHATIAN_NO || "—"}
                             </td>
-                            <td className="max-w-[14rem] truncate px-3 py-2.5" title={item.OWNERS || ""}>
+                            <td className="max-w-[14rem] break-words px-3 py-2.5 text-sm">
                               {item.OWNERS || "—"}
                             </td>
-                            <td className="max-w-[10rem] truncate px-3 py-2.5" title={item.DAGS || ""}>
+                            <td className="max-w-[10rem] break-words px-3 py-2.5 text-sm tabular-nums">
                               {item.DAGS || "—"}
                             </td>
-                            <td className="px-3 py-2.5 tabular-nums">{item.TOTAL_LAND || "—"}</td>
-                            <td className="px-3 py-2.5">
+                            <td className="px-3 py-2.5 text-sm tabular-nums">
+                              {item.TOTAL_LAND || "—"}
+                            </td>
+                            <td className="px-3 py-2.5 text-right">
                               <button
                                 type="button"
-                                onClick={() => showDetails(Number(item.KHATIAN_ENTRY_ID))}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#006a4e]/10 px-2.5 py-1.5 text-xs font-semibold text-[#006a4e] hover:bg-[#006a4e]/20"
+                                onClick={() => showDetails(item.ID)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-2.5 py-1.5 text-xs font-semibold text-[#006a4e] transition hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                               >
                                 <Eye size={14} />
-                                দেখুন
+                                বিস্তারিত
                               </button>
                             </td>
                           </tr>
@@ -514,25 +516,30 @@ export default function SurveyKhatianSearch() {
               </section>
             ) : null}
           </>
-        ) : null}
-
-        {viewMode === "details" ? (
+        ) : (
           <section id="khatian-details-panel" className="space-y-4">
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 print:hidden">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 print:hidden">
               <button
                 type="button"
                 onClick={backToSearch}
-                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[var(--secondary)] dark:text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold transition hover:bg-[var(--secondary)]"
               >
                 <ArrowLeft size={16} />
-                ফলাফলে ফিরে যান
+                ফিরে যান
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold transition hover:bg-[var(--secondary)]"
+              >
+                প্রিন্ট
               </button>
               {selectedKhatian ? (
                 <button
                   type="button"
                   onClick={() => void downloadKhatianImage()}
                   disabled={downloadingImage}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#005a42] disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#006a4e] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {downloadingImage ? (
                     <Loader2 className="animate-spin" size={16} />
@@ -564,7 +571,7 @@ export default function SurveyKhatianSearch() {
               </div>
             )}
           </section>
-        ) : null}
+        )}
       </main>
     </>
   );
