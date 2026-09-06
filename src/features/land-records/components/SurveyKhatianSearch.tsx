@@ -253,8 +253,6 @@ export default function SurveyKhatianSearch() {
 
   const displayedError = localError || error;
 
-  // EMERGENCY partial restore - search form works; results/details need full file from artifacts
-  // Full file is at artifacts/SurveyKhatianSearch-FULL.tsx and bed67fa commit
   return (
     <>
       <HeroBanner
@@ -263,73 +261,310 @@ export default function SurveyKhatianSearch() {
         description="বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করে নির্দিষ্ট খতিয়ান, দাগ বা মালিকের তথ্য অনুসন্ধান করুন।"
         pattern="grid"
       />
+
       <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>এলাকা ও সার্ভে নির্বাচন</CardTitle>
-            <CardDescription>সঠিক ক্রমে বিভাগ, জেলা, উপজেলা, সার্ভে এবং মৌজা নির্বাচন করুন।</CardDescription>
-          </CardHeader>
-          <CardBody>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Select
-                label="বিভাগ"
-                value={division}
-                onChange={(e) => handleDivisionChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...divisions.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]}
-                loading={loading.divisions}
-              />
-              <Select
-                label="জেলা"
-                value={district}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...districts.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]}
-                loading={loading.districts}
-                disabled={!division}
-              />
-              <Select
-                label="উপজেলা"
-                value={upazila}
-                onChange={(e) => handleUpazilaChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...upazilas.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]}
-                loading={loading.upazilas}
-                disabled={!district}
-              />
-              <Select
-                label="সার্ভে"
-                value={surveyId}
-                onChange={(e) => handleSurveyChange(e.target.value)}
-                options={[{ value: "", label: empty }, ...surveyOptions]}
-                loading={loading.surveys}
-                disabled={!upazila}
-              />
-              <Select
-                label="মৌজা / JL"
-                value={mouzaId}
-                onChange={(e) => {
-                  setMouzaId(e.target.value);
-                  resetResults();
-                }}
-                options={[
-                  { value: "", label: empty },
-                  ...mouzas.map((item) => ({
-                    value: item.ID,
-                    label: `${item.MOUZA_NAME} — JL ${item.JL_NUMBER}`,
-                  })),
-                ]}
-                loading={loading.mouzas}
-                disabled={!surveyId}
-              />
+        {viewMode === "search" ? (
+          <>
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 shrink-0 text-[#006a4e]" size={20} />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                      নির্দিষ্ট খতিয়ান / দাগ / মালিক অনুসন্ধান
+                    </p>
+                    <p className="mt-1 text-xs leading-6 text-emerald-800/90 dark:text-emerald-200/90">
+                      পুরো মৌজার সব খতিয়ান একসাথে bulk দেখানো হয় না। বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা
+                      নির্বাচন করে নির্দিষ্ট খতিয়ান নম্বর, দাগ বা মালিকের নাম দিয়ে খুঁজুন।
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
+                <p className="text-xs font-semibold text-[var(--muted-foreground)]">অনুসন্ধান মোড</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange("khatian")}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      mode === "khatian"
+                        ? "bg-[#006a4e] text-white"
+                        : "bg-[var(--secondary)] text-slate-700 dark:text-slate-200"
+                    }`}
+                  >
+                    খতিয়ান নম্বর
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange("advanced")}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      mode === "advanced"
+                        ? "bg-[#006a4e] text-white"
+                        : "bg-[var(--secondary)] text-slate-700 dark:text-slate-200"
+                    }`}
+                  >
+                    দাগ / মালিক
+                  </button>
+                </div>
+              </div>
             </div>
-            {displayedError && (
-              <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {displayedError}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>এলাকা ও সার্ভে নির্বাচন</CardTitle>
+                <CardDescription>
+                  সঠিক ক্রমে বিভাগ, জেলা, উপজেলা, সার্ভে এবং মৌজা নির্বাচন করুন।
+                </CardDescription>
+              </CardHeader>
+              <CardBody>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Select
+                    label="বিভাগ"
+                    value={division}
+                    onChange={(e) => handleDivisionChange(e.target.value)}
+                    options={[
+                      { value: "", label: empty },
+                      ...divisions.map((item) => ({ value: item.BBS_CODE, label: item.NAME })),
+                    ]}
+                    loading={loading.divisions}
+                  />
+                  <Select
+                    label="জেলা"
+                    value={district}
+                    onChange={(e) => handleDistrictChange(e.target.value)}
+                    options={[
+                      { value: "", label: empty },
+                      ...districts.map((item) => ({ value: item.BBS_CODE, label: item.NAME })),
+                    ]}
+                    loading={loading.districts}
+                    disabled={!division}
+                  />
+                  <Select
+                    label="উপজেলা"
+                    value={upazila}
+                    onChange={(e) => handleUpazilaChange(e.target.value)}
+                    options={[
+                      { value: "", label: empty },
+                      ...upazilas.map((item) => ({ value: item.BBS_CODE, label: item.NAME })),
+                    ]}
+                    loading={loading.upazilas}
+                    disabled={!district}
+                  />
+                  <Select
+                    label="সার্ভে"
+                    value={surveyId}
+                    onChange={(e) => handleSurveyChange(e.target.value)}
+                    options={[{ value: "", label: empty }, ...surveyOptions]}
+                    loading={loading.surveys}
+                    disabled={!upazila}
+                  />
+                  <Select
+                    label="মৌজা / JL"
+                    value={mouzaId}
+                    onChange={(e) => {
+                      setMouzaId(e.target.value);
+                      resetResults();
+                    }}
+                    options={[
+                      { value: "", label: empty },
+                      ...mouzas.map((item) => ({
+                        value: item.ID,
+                        label: `${item.MOUZA_NAME} — JL ${item.JL_NUMBER}`,
+                      })),
+                    ]}
+                    loading={loading.mouzas}
+                    disabled={!surveyId}
+                  />
+                </div>
+
+                <div className="mt-6 grid gap-4 border-t border-[var(--border-color)] pt-6 md:grid-cols-2 lg:grid-cols-3">
+                  {mode === "khatian" ? (
+                    <Input
+                      label="খতিয়ান নম্বর"
+                      value={khatianNo}
+                      onChange={(e) => setKhatianNo(e.target.value)}
+                      placeholder="যেমন: ১২৩"
+                      disabled={!mouzaId}
+                    />
+                  ) : (
+                    <>
+                      <Input
+                        label="দাগ নম্বর"
+                        value={dagNumber}
+                        onChange={(e) => setDagNumber(e.target.value)}
+                        placeholder="যেমন: ৪৫৬"
+                        disabled={!mouzaId}
+                      />
+                      <Input
+                        label="মালিকের নাম"
+                        value={owner}
+                        onChange={(e) => setOwner(e.target.value)}
+                        placeholder="আংশিক নামও চলবে"
+                        disabled={!mouzaId}
+                      />
+                    </>
+                  )}
+                </div>
+
+                {displayedError ? (
+                  <div
+                    role="alert"
+                    className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+                  >
+                    {displayedError}
+                  </div>
+                ) : null}
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => runSearch(1)}
+                    disabled={loading.khatians || !mouzaId}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading.khatians ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <Search size={16} />
+                    )}
+                    অনুসন্ধান
+                  </button>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    ফলাফল পেজ অনুসারে দেখানো হয় (প্রতি পেজ ২০টি)।
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
+
+            {khatians ? (
+              <section className="mt-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">অনুসন্ধান ফলাফল</h2>
+                  <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+                    <button
+                      type="button"
+                      onClick={() => goPage(page - 1)}
+                      disabled={page <= 1 || loading.khatians}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-40"
+                      aria-label="আগের পেজ"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="tabular-nums">পেজ {page}</span>
+                    <button
+                      type="button"
+                      onClick={() => goPage(page + 1)}
+                      disabled={!khatians.hasNextPage || loading.khatians}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-40"
+                      aria-label="পরের পেজ"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {khatians.items.length === 0 ? (
+                  <div className="rounded-xl border border-[var(--border-color)] py-10 text-center text-sm text-slate-500">
+                    কোনো খতিয়ান পাওয়া যায়নি।
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
+                    <table className="w-full min-w-[36rem] border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--border-color)] bg-[var(--secondary)]/40 text-left text-xs text-[var(--muted-foreground)]">
+                          <th className="px-3 py-2.5 font-semibold">খতিয়ান নং</th>
+                          <th className="px-3 py-2.5 font-semibold">মালিক</th>
+                          <th className="px-3 py-2.5 font-semibold">দাগ</th>
+                          <th className="px-3 py-2.5 font-semibold">মোট জমি</th>
+                          <th className="px-3 py-2.5 font-semibold">বিস্তারিত</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {khatians.items.map((item) => (
+                          <tr
+                            key={item.KHATIAN_ENTRY_ID ?? item.KHATIAN_NO}
+                            className="border-b border-[var(--border-color)]/70 last:border-0"
+                          >
+                            <td className="px-3 py-2.5 font-semibold tabular-nums">
+                              {item.KHATIAN_NO || "—"}
+                            </td>
+                            <td className="max-w-[14rem] truncate px-3 py-2.5" title={item.OWNERS || ""}>
+                              {item.OWNERS || "—"}
+                            </td>
+                            <td className="max-w-[10rem] truncate px-3 py-2.5" title={item.DAGS || ""}>
+                              {item.DAGS || "—"}
+                            </td>
+                            <td className="px-3 py-2.5 tabular-nums">{item.TOTAL_LAND || "—"}</td>
+                            <td className="px-3 py-2.5">
+                              <button
+                                type="button"
+                                onClick={() => showDetails(Number(item.KHATIAN_ENTRY_ID))}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#006a4e]/10 px-2.5 py-1.5 text-xs font-semibold text-[#006a4e] hover:bg-[#006a4e]/20"
+                              >
+                                <Eye size={14} />
+                                দেখুন
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            ) : null}
+          </>
+        ) : null}
+
+        {viewMode === "details" ? (
+          <section id="khatian-details-panel" className="space-y-4">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 print:hidden">
+              <button
+                type="button"
+                onClick={backToSearch}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[var(--secondary)] dark:text-slate-200"
+              >
+                <ArrowLeft size={16} />
+                ফলাফলে ফিরে যান
+              </button>
+              {selectedKhatian ? (
+                <button
+                  type="button"
+                  onClick={() => void downloadKhatianImage()}
+                  disabled={downloadingImage}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#005a42] disabled:opacity-60"
+                >
+                  {downloadingImage ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                  {downloadingImage ? "ছবি তৈরি হচ্ছে…" : "উচ্চ রেজোলিউশন ছবি ডাউনলোড"}
+                </button>
+              ) : null}
+            </div>
+
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white print:hidden">
+              খতিয়ানের বিস্তারিত তথ্য
+            </h2>
+
+            {loading.khatian ? (
+              <div className="flex min-h-40 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] py-12 text-sm text-slate-500">
+                <Loader2 className="animate-spin" size={18} /> বিস্তারিত লোড হচ্ছে…
+              </div>
+            ) : selectedKhatian ? (
+              <KhatianDetailsView
+                khatian={selectedKhatian}
+                surveyKey={surveyKey}
+                captureRef={khatianCaptureRef}
+              />
+            ) : (
+              <div className="rounded-xl border border-[var(--border-color)] py-10 text-center text-sm text-slate-500">
+                বিস্তারিত তথ্য পাওয়া যায়নি।
               </div>
             )}
-            <p className="mt-4 text-sm text-amber-700">
-              সম্পূর্ণ ফাইল রিস্টোর চলছে। পূর্ণ ফাইল শীঘরি bed67fa কমিট বা artifacts/SurveyKhatianSearch-FULL.tsx থেকে পুশ করুন।
-            </p>
-          </CardBody>
-        </Card>
+          </section>
+        ) : null}
       </main>
     </>
   );
