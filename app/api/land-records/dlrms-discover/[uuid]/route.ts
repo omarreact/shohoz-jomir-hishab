@@ -18,6 +18,12 @@ function absoluteScriptUrl(src: string): string | null {
   }
 }
 
+function redact(input: string): string {
+  return input
+    .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
+    .replace(/(access[_-]?token|refresh[_-]?token|authorization|cookie)(["'=:\s]+)[^,;\s"']+/gi, "$1$2[redacted]");
+}
+
 function extractInterestingStrings(source: string): string[] {
   const hits: string[] = [];
 
@@ -38,10 +44,41 @@ function extractInterestingStrings(source: string): string[] {
   const quoted = source.match(/["'`]([^"'`]{0,220}(?:khatian|porcha|verify|verification|qr|uuid|print|download|entry)[^"'`]{0,220})["'`]/gi) ?? [];
   for (const raw of quoted) hits.push(raw.slice(1, -1));
 
-  return unique(hits)
-    .map((item) => item.replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]"))
-    .filter((item) => !/(access[_-]?token|refresh[_-]?token|authorization|cookie)=/i.test(item))
-    .slice(0, 150);
+  return unique(hits).map(redact).slice(0, 150);
+}
+
+function keywordContexts(source: string): Array<{ keyword: string; snippets: string[] }> {
+  const keywords = [
+    "displayCode",
+    "khatian.view",
+    "api/public",
+    "gateway.dlrms",
+    "api-core.dlrms",
+    "verification",
+    "verify",
+    "uuid",
+    "KHATIAN_ENTRY_ID",
+    "KHATIAN_ID",
+    "khatian",
+  ];
+
+  return keywords.flatMap((keyword) => {
+    const snippets: string[] = [];
+    const haystack = source.toLowerCase();
+    const needle = keyword.toLowerCase();
+    let cursor = 0;
+
+    while (snippets.length < 8) {
+      const index = haystack.indexOf(needle, cursor);
+      if (index < 0) break;
+      const start = Math.max(0, index - 700);
+      const end = Math.min(source.length, index + keyword.length + 700);
+      snippets.push(redact(source.slice(start, end)));
+      cursor = index + needle.length;
+    }
+
+    return snippets.length ? [{ keyword, snippets: unique(snippets) }] : [];
+  });
 }
 
 export async function GET(
@@ -75,7 +112,9 @@ export async function GET(
     src: string;
     status: number;
     contentType: string;
+    bytes: number;
     interesting: string[];
+    contexts?: Array<{ keyword: string; snippets: string[] }>;
   }> = [];
 
   for (const src of scriptSources.slice(0, 24)) {
@@ -94,12 +133,15 @@ export async function GET(
       });
       const body = (await response.text()).slice(0, 3_000_000);
       const interesting = extractInterestingStrings(body);
-      if (interesting.length) {
+      const isVerificationPageChunk = /\/pages\/v\//i.test(src);
+      if (interesting.length || isVerificationPageChunk) {
         scriptResults.push({
           src,
           status: response.status,
           contentType: response.headers.get("content-type") ?? "",
+          bytes: Buffer.byteLength(body),
           interesting,
+          ...(isVerificationPageChunk ? { contexts: keywordContexts(body) } : {}),
         });
       }
     } catch {
@@ -123,7 +165,7 @@ export async function GET(
         signals: pageSignals,
       },
       scripts: scriptResults,
-      note: "Only public client-side implementation strings are returned. Cookies, authorization values and token-like material are not exposed.",
+      note: "Only public client-side implementation strings are returned. Authorization values, cookies and token-like material are redacted.",
     },
     {
       headers: {
