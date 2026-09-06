@@ -110,8 +110,10 @@
 
 /* Khatian print mode: print the record, not the application shell. */
 @media print {
+  /* Keep the paper size/orientation controlled by the browser print dialog.
+     This lets the same Khatian render correctly on A4 Portrait or A4 Landscape. */
   @page {
-    size: A4 portrait;
+    size: auto;
     margin: 10mm 11mm;
   }
 
@@ -155,6 +157,7 @@
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
+    margin: 0 !important;
     overflow: visible !important;
     background: #fff !important;
     color: #111827 !important;
@@ -170,7 +173,7 @@
   }
 
   #khatian-details-panel section {
-    margin: 0 0 7mm !important;
+    margin: 0 0 6mm !important;
     border-color: #d7ded9 !important;
     border-radius: 7px !important;
   }
@@ -199,6 +202,7 @@
   #khatian-details-panel table {
     width: 100% !important;
     min-width: 0 !important;
+    max-width: none !important;
     border-collapse: collapse !important;
     table-layout: auto !important;
     font-size: 9.2pt !important;
@@ -256,5 +260,47 @@
 
   #khatian-details-panel a {
     text-decoration: none !important;
+  }
+}
+
+/* Portrait keeps the compact report flow. */
+@media print and (orientation: portrait) {
+  #khatian-details-panel table {
+    font-size: 9.2pt !important;
+  }
+
+  #khatian-details-panel section {
+    margin-bottom: 6mm !important;
+  }
+}
+
+/* Landscape must use the full A4 width, not a portrait-width column on the left. */
+@media print and (orientation: landscape) {
+  #khatian-details-panel,
+  #khatian-details-panel > div {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #khatian-details-panel table {
+    width: 100% !important;
+    font-size: 8.8pt !important;
+  }
+
+  #khatian-details-panel section {
+    margin-bottom: 4.5mm !important;
+  }
+
+  #khatian-details-panel section > header {
+    padding: 4px 7px !important;
+  }
+
+  #khatian-details-panel section > div {
+    padding: 6px 7px !important;
+  }
+
+  #khatian-details-panel th,
+  #khatian-details-panel td {
+    padding: 3px 5px !important;
   }
 }
