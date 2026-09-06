@@ -41,6 +41,7 @@ export async function getFullKhatianByVerificationUuid(
     id: exact.ID,
     jlNumberId: tracking.jlNumberId,
     verificationUuid: uuid,
+    tracking,
     divisionBbsCode: tracking.divisionBbsCode,
     districtBbsCode: tracking.districtBbsCode,
     upazilaBbsCode: tracking.upazilaBbsCode,
