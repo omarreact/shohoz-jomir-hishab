@@ -5,6 +5,14 @@ import { landRecordsApi, type FullKhatianRequestContext } from "../api";
 import type { FullKhatian } from "../full-khatian";
 import type { Division, District, Upazila, Survey, Mouza, KhatianDetails, KhatianPage, KhatianSearchInput } from "../types";
 
+function normalizePlace(value: string | undefined): string {
+  return (value ?? "")
+    .replace(/[–—-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("bn-BD");
+}
+
 export function useSurveyKhatian() {
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -18,6 +26,7 @@ export function useSurveyKhatian() {
   const [error, setError] = useState<string | null>(null);
   const requestIds = useRef<Record<string, number>>({});
   const lastKhatianSearch = useRef<KhatianSearchInput | null>(null);
+  const lastKhatianContext = useRef<FullKhatianRequestContext | null>(null);
   const nextId = (key: string) => (requestIds.current[key] = (requestIds.current[key] ?? 0) + 1);
   const isLatest = (key: string, id: number) => requestIds.current[key] === id;
   const run = useCallback(async <T,>(key: string, task: () => Promise<T>, onData: (value: T) => void) => {
@@ -34,13 +43,34 @@ export function useSurveyKhatian() {
   const loadMouzas = useCallback((input: Parameters<typeof landRecordsApi.mouzas>[0]) => run("mouzas", () => landRecordsApi.mouzas(input), setMouzas), [run]);
   const loadKhatians = useCallback((input: KhatianSearchInput) => {
     lastKhatianSearch.current = input;
+
+    const selectedMouza = mouzas.find((item) => item.ID === input.jlNumberId);
+    const selectedDistrict = selectedMouza
+      ? districts.find((item) => normalizePlace(item.NAME) === normalizePlace(selectedMouza.DISTRICT_NAME))
+      : undefined;
+    const selectedUpazila = selectedMouza
+      ? upazilas.find((item) => normalizePlace(item.NAME) === normalizePlace(selectedMouza.UPAZILA_NAME))
+      : undefined;
+
+    lastKhatianContext.current = {
+      owner: input.owner,
+      dagNumber: input.dagNumber,
+      jlNumberId: input.jlNumberId,
+      mouzaId: selectedMouza?.MOUZA_ID,
+      divisionBbsCode: selectedDistrict?.DIVISION_BBS_CODE,
+      districtBbsCode: selectedDistrict?.BBS_CODE,
+      upazilaBbsCode: selectedUpazila?.BBS_CODE,
+    };
+
     return run("khatians", () => landRecordsApi.khatians(input), setKhatians);
-  }, [run]);
+  }, [run, mouzas, districts, upazilas]);
   const loadKhatian = useCallback((surveyKey: string, id: number, context?: FullKhatianRequestContext) => {
     const search = lastKhatianSearch.current;
-    const rememberedContext: FullKhatianRequestContext | undefined = search && search.surveyKey === surveyKey
-      ? { owner: search.owner, dagNumber: search.dagNumber, jlNumberId: search.jlNumberId }
+    const rememberedContext = search && search.surveyKey === surveyKey
+      ? lastKhatianContext.current ?? { owner: search.owner, dagNumber: search.dagNumber, jlNumberId: search.jlNumberId }
       : undefined;
+
+    setSelectedFullKhatian(null);
     return run(
       "khatian",
       () => landRecordsApi.fullKhatian(surveyKey, id, context ?? rememberedContext),
