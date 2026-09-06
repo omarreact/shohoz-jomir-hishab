@@ -17,6 +17,12 @@ export interface FullKhatianInput {
   upazilaBbsCode?: string;
 }
 
+interface BbsLocationCodes {
+  divisionBbsCode?: string;
+  districtBbsCode?: string;
+  upazilaBbsCode?: string;
+}
+
 function splitList(value: string | undefined): string[] {
   return (value ?? "")
     .replace(/(?:,\s*)?(?:\.{3,}|…)+\s*$/u, "")
@@ -33,6 +39,57 @@ function unique(values: string[]): string[] {
     seen.add(key);
     return true;
   });
+}
+
+function normalizePlace(value: string | undefined): string {
+  return (value ?? "")
+    .replace(/[–—-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("bn-BD");
+}
+
+async function resolveBbsCodesFromPublicLocation(
+  base: KhatianDetails,
+  preset: BbsLocationCodes,
+  warnings: string[],
+  signal?: AbortSignal,
+): Promise<BbsLocationCodes> {
+  if (preset.divisionBbsCode && preset.districtBbsCode && preset.upazilaBbsCode) return preset;
+  if (!base.DIVISION_NAME || !base.DISTRICT_NAME || !base.UPAZILA_NAME) return preset;
+
+  try {
+    let divisionBbsCode = preset.divisionBbsCode;
+    if (!divisionBbsCode) {
+      const divisions = await providers.landRecords.listDivisions(signal);
+      divisionBbsCode = divisions.find(
+        (item) => normalizePlace(item.NAME) === normalizePlace(base.DIVISION_NAME),
+      )?.BBS_CODE;
+    }
+    if (!divisionBbsCode) return preset;
+
+    let districtBbsCode = preset.districtBbsCode;
+    if (!districtBbsCode) {
+      const districts = await providers.landRecords.listDistricts(divisionBbsCode, signal);
+      districtBbsCode = districts.find(
+        (item) => normalizePlace(item.NAME) === normalizePlace(base.DISTRICT_NAME),
+      )?.BBS_CODE;
+    }
+    if (!districtBbsCode) return { ...preset, divisionBbsCode };
+
+    let upazilaBbsCode = preset.upazilaBbsCode;
+    if (!upazilaBbsCode) {
+      const upazilas = await providers.landRecords.listUpazilas(districtBbsCode, signal);
+      upazilaBbsCode = upazilas.find(
+        (item) => normalizePlace(item.NAME) === normalizePlace(base.UPAZILA_NAME),
+      )?.BBS_CODE;
+    }
+
+    return { divisionBbsCode, districtBbsCode, upazilaBbsCode };
+  } catch (error) {
+    warnings.push(`DLRMS location-code lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
+    return preset;
+  }
 }
 
 function publicOwners(base: KhatianDetails, tracking?: KhatianTracking): FullKhatianOwner[] {
@@ -169,17 +226,25 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
 
-  const divisionBbsCode = input.divisionBbsCode || (tracking?.matchesBaseRecord ? tracking.divisionBbsCode : undefined);
-  const districtBbsCode = input.districtBbsCode || (tracking?.matchesBaseRecord ? tracking.districtBbsCode : undefined);
-  const upazilaBbsCode = input.upazilaBbsCode || (tracking?.matchesBaseRecord ? tracking.upazilaBbsCode : undefined);
+  const locationCodes = await resolveBbsCodesFromPublicLocation(rebuilt, {
+    divisionBbsCode: input.divisionBbsCode || (tracking?.matchesBaseRecord ? tracking.divisionBbsCode : undefined),
+    districtBbsCode: input.districtBbsCode || (tracking?.matchesBaseRecord ? tracking.districtBbsCode : undefined),
+    upazilaBbsCode: input.upazilaBbsCode || (tracking?.matchesBaseRecord ? tracking.upazilaBbsCode : undefined),
+  }, warnings, signal);
+
   let halSabek: FullKhatian["halSabek"] = [];
-  if (divisionBbsCode && districtBbsCode && upazilaBbsCode && rebuilt.JL_NUMBER_ID) {
+  if (
+    locationCodes.divisionBbsCode &&
+    locationCodes.districtBbsCode &&
+    locationCodes.upazilaBbsCode &&
+    rebuilt.JL_NUMBER_ID
+  ) {
     try {
       halSabek = await fetchPublicHalSabek({
         surveyKey: input.surveyKey,
-        divisionBbsCode,
-        districtBbsCode,
-        upazilaBbsCode,
+        divisionBbsCode: locationCodes.divisionBbsCode,
+        districtBbsCode: locationCodes.districtBbsCode,
+        upazilaBbsCode: locationCodes.upazilaBbsCode,
         jlNumberId: rebuilt.JL_NUMBER_ID,
         khatianNo: rebuilt.KHATIAN_NO,
       }, signal);
