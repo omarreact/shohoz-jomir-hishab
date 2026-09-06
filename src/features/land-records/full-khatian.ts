@@ -120,6 +120,7 @@ export const FullKhatianSchema = z.object({
   halSabek: z.array(HalSabekEntrySchema),
   lisf: LisfEnrichmentSchema,
   evidence: z.array(SourceEvidenceSchema),
+  warnings: z.array(z.string()),
   generatedAt: z.string(),
 });
 export type FullKhatian = z.infer<typeof FullKhatianSchema>;
