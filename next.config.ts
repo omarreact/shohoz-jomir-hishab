@@ -56,4 +56,12 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+export default async function config(): Promise<NextConfig> {
+  if (
+    process.env.VERCEL_ENV === "preview" &&
+    process.env.VERCEL_GIT_COMMIT_REF === "research/full-khatian-discovery"
+  ) {
+    await import("./scripts/dlrms-discover-build.mjs");
+  }
+  return nextConfig;
+}
