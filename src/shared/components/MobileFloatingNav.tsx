@@ -60,7 +60,7 @@ function isActive(pathname: string, tab: Tab) {
 
 /**
  * Mobile-only bottom floating nav — large targets for all ages.
- * Hidden on md+ and on admin/login routes.
+ * Hidden on md+, admin/login routes, and print/PDF output.
  */
 export default function MobileFloatingNav() {
   const pathname = usePathname() || "/";
@@ -73,13 +73,13 @@ export default function MobileFloatingNav() {
     <>
       {/* Mobile spacer so page content / footer clear the fixed bottom nav */}
       <div
-        className="h-[4.75rem] md:hidden"
+        className="h-[4.75rem] md:hidden print:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-hidden
       />
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-[1100] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-[1100] md:hidden print:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="মোবাইল মেনু"
       >
