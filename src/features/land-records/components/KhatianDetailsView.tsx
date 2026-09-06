@@ -2,12 +2,15 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { Download, Loader2 } from "lucide-react";
+import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { exportKhatianPdf } from "../lib/khatian-pdf-export";
 import CompactKhatianDetailsView from "./CompactKhatianDetailsView";
+import FullKhatianSupplement from "./FullKhatianSupplement";
 
 type Props = {
   khatian: KhatianDetails;
+  fullKhatian?: FullKhatian;
   surveyKey?: string;
   captureRef?: RefObject<HTMLDivElement | null>;
 };
@@ -18,7 +21,7 @@ function safePart(value: unknown, fallback: string): string {
   return text.replace(/[^\w\u0980-\u09FF-]+/g, "_").replace(/_+/g, "_").slice(0, 48);
 }
 
-export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: Props) {
+export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
@@ -149,6 +152,7 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
       ) : null}
 
       <CompactKhatianDetailsView khatian={khatian} surveyKey={surveyKey} captureRef={captureRef} />
+      {fullKhatian ? <FullKhatianSupplement fullKhatian={fullKhatian} /> : null}
     </>
   );
 }
