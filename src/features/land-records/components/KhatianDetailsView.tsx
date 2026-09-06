@@ -68,7 +68,7 @@ function SurveyArchitectureNote({ kind }: { kind: SurveyKind }) {
     CS: "সি এস খতিয়ানে সাধারণত স্বত্ব, দখল, অংশ, খাজনা/সেস, দাগ, উত্তর সীমানা ও জমির রকম গুরুত্ব পায়। নিচে কেবল পাবলিক API-তে উপলব্ধ ক্ষেত্র দেখানো হয়েছে।",
     SA: "এস এ খতিয়ানে সাবেক→হাল রেকর্ড ধারাবাহিকতা, মালিক, হিস্যা, দাগ ও জমির শ্রেণী একসাথে থাকে। উপলব্ধ পাবলিক তথ্য অনুসারে সাজানো।",
     RS: "আর এস খতিয়ানে মালিকানা ও হিস্যা আলাদা, এবং দাগ ও জমির বিবরণ আলাদা অংশে থাকে।",
-    BRS: "বি আর এস আধুনিক সেটেলমেন্ট ফরম্যাট—মালিক+অংশ, দাগ, জমির শ্রেণী ও পরিমাণ কাঠামোবদ্ধভাবে উপস্থাপন করা হয়।",
+    BRS: "বি আর এস আধুনিক সেটেলমেন্ট ফরম্যাট—মালিক, দাগ, জমির শ্রেণী ও পরিমাণের যে তথ্য পাবলিক উৎসে পাওয়া যায় তা কাঠামোবদ্ধভাবে উপস্থাপন করা হয়।",
     BS: "বি এস খতিয়ানের উপলব্ধ পাবলিক ক্ষেত্র অনুসারে মালিক ও দাগ দেখানো হয়েছে।",
     MUTATION:
       "নামজারি রেকর্ডে আবেদন, মামলা, দলিল, আগে খতিয়ান ও অনুমোদন ধাপ থাকে। কেবল যাচাইকৃত পাবলিক উৎস থেকে পাওয়া ক্ষেত্র দেখানো হয়।",
@@ -140,6 +140,8 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
 
   const showRsCol = mapAreas.some((r) => Boolean(r.rsAreaLabel));
   const showMsCol = mapAreas.some((r) => Boolean(r.msAreaLabel));
+  const showDlrmsAreaCol = model.hasDagAreas;
+  const hasAnyMapArea = showRsCol || showMsCol;
 
   const lineageFrom =
     typeof model.publicRecord["আগে_খতিয়ান"] === "string"
@@ -153,6 +155,13 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
       ? model.totalLand
       : `${model.totalLand} একর`
     : "";
+
+  const summaryItems = [
+    model.ownerCount ? { label: "মোট মালিক", value: String(model.ownerCount) } : null,
+    model.dagCount ? { label: "মোট দাগ", value: String(model.dagCount) } : null,
+    totalLandDisplay ? { label: "মোট জমি", value: totalLandDisplay } : null,
+    khatian.KHATIAN_NO ? { label: "খতিয়ান নং", value: khatian.KHATIAN_NO } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
 
   return (
     <div
@@ -225,22 +234,19 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
 
       <SurveyArchitectureNote kind={model.kind} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "মোট মালিক", value: model.ownerCount ? String(model.ownerCount) : "—" },
-          { label: "মোট দাগ", value: model.dagCount ? String(model.dagCount) : "—" },
-          { label: "মোট জমি", value: totalLandDisplay || "—" },
-          { label: "খতিয়ান নং", value: khatian.KHATIAN_NO || "—" },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-3 text-center print:break-inside-avoid"
-          >
-            <p className="text-[11px] text-[var(--muted-foreground)]">{item.label}</p>
-            <p className="mt-1 text-lg font-bold tabular-nums text-slate-900 dark:text-white">{item.value}</p>
-          </div>
-        ))}
-      </div>
+      {summaryItems.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {summaryItems.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-3 text-center print:break-inside-avoid"
+            >
+              <p className="text-[11px] text-[var(--muted-foreground)]">{item.label}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-slate-900 dark:text-white">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {(model.kind === "SA" || model.kind === "MUTATION" || lineageFrom) && (
         <Section id="lineage" title="রেকর্ডের ধারাবাহিকতা" icon={<FileText size={16} className="text-[#006a4e]" />}>
@@ -266,14 +272,12 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
         </Section>
       )}
 
-      <Section
-        id="owners"
-        title={model.kind === "CS" ? "স্বত্ব · দখল · মালিকানা" : "মালিকানা"}
-        icon={<Users size={16} className="text-[#006a4e]" />}
-      >
-        {model.owners.length === 0 ? (
-          <p className="text-sm text-[var(--muted-foreground)]">মালিকের নাম পাবলিক তথ্যে নেই।</p>
-        ) : (
+      {model.owners.length ? (
+        <Section
+          id="owners"
+          title={model.kind === "CS" ? "স্বত্ব · দখল · মালিকানা" : "মালিকানা"}
+          icon={<Users size={16} className="text-[#006a4e]" />}
+        >
           <>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[18rem] border-collapse text-sm">
@@ -281,7 +285,7 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
                   <tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]">
                     <th className="px-2 py-2 font-semibold">ক্রম</th>
                     <th className="px-2 py-2 font-semibold">মালিকের নাম</th>
-                    <th className="px-2 py-2 font-semibold">অংশ</th>
+                    {model.hasOwnerShares ? <th className="px-2 py-2 font-semibold">অংশ</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -290,15 +294,13 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
                       key={`${row.name}-${index}`}
                       className="border-b border-[var(--border-color)]/70 print:break-inside-avoid"
                     >
-                      <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">
-                        {index + 1}
-                      </td>
-                      <td className="max-w-[16rem] break-words px-2 py-2.5 font-medium [overflow-wrap:anywhere]">
+                      <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">{index + 1}</td>
+                      <td className="max-w-[20rem] break-words px-2 py-2.5 font-medium [overflow-wrap:anywhere]">
                         {row.name}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">
-                        {row.share || "—"}
-                      </td>
+                      {model.hasOwnerShares ? (
+                        <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">{row.share || "—"}</td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -312,200 +314,159 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
                 >
                   <p className="text-[11px] text-[var(--muted-foreground)]">মালিক {index + 1}</p>
                   <p className="mt-0.5 text-[11px] font-medium text-[var(--muted-foreground)]">নাম</p>
-                  <p className="break-words font-semibold leading-snug [overflow-wrap:anywhere]">
-                    {row.name}
-                  </p>
-                  <p className="mt-2 text-[11px] font-medium text-[var(--muted-foreground)]">অংশ</p>
-                  <p className="text-sm tabular-nums">{row.share || "—"}</p>
+                  <p className="break-words font-semibold leading-snug [overflow-wrap:anywhere]">{row.name}</p>
+                  {model.hasOwnerShares ? (
+                    <>
+                      <p className="mt-2 text-[11px] font-medium text-[var(--muted-foreground)]">অংশ</p>
+                      <p className="text-sm tabular-nums">{row.share || "—"}</p>
+                    </>
+                  ) : null}
                 </li>
               ))}
             </ul>
           </>
-        )}
-      </Section>
+        </Section>
+      ) : null}
 
-      <Section
-        id="guardians"
-        title="পিতা / স্বামী / অভিভাবক তথ্য"
-        icon={<Users size={16} className="text-[#006a4e]" />}
-      >
-        {model.guardians.length === 0 ? (
-          <p className="text-sm text-[var(--muted-foreground)]">
-            অভিভাবক / সম্পর্কিত নাম পাবলিক তথ্যে নেই।
-          </p>
-        ) : (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[16rem] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]">
-                    <th className="px-2 py-2 font-semibold">ক্রম</th>
-                    <th className="px-2 py-2 font-semibold">অভিভাবক / সম্পর্কিত নাম</th>
+      {model.guardians.length ? (
+        <Section
+          id="guardians"
+          title="পিতা / স্বামী / অভিভাবক তথ্য"
+          icon={<Users size={16} className="text-[#006a4e]" />}
+        >
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[16rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]">
+                  <th className="px-2 py-2 font-semibold">ক্রম</th>
+                  <th className="px-2 py-2 font-semibold">অভিভাবক / সম্পর্কিত নাম</th>
+                </tr>
+              </thead>
+              <tbody>
+                {model.guardians.map((name, index) => (
+                  <tr
+                    key={`g-${name}-${index}`}
+                    className="border-b border-[var(--border-color)]/70 print:break-inside-avoid"
+                  >
+                    <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">{index + 1}</td>
+                    <td className="max-w-[20rem] break-words px-2 py-2.5 font-medium [overflow-wrap:anywhere]">
+                      {name}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {model.guardians.map((name, index) => (
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ol className="grid gap-2 md:hidden">
+            {model.guardians.map((name, index) => (
+              <li
+                key={`gm-${name}-${index}`}
+                className="min-w-0 rounded-lg border border-[var(--border-color)] px-3 py-2.5 print:break-inside-avoid"
+              >
+                <p className="text-[11px] text-[var(--muted-foreground)]">{index + 1}.</p>
+                <p className="break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">{name}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px] leading-5 text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+            পাবলিক GUARDIANS তালিকা উৎসে যেভাবে পাওয়া গেছে, সেই ক্রমানুসারে দেখানো হয়েছে। এটি স্বয়ংক্রিয়
+            প্রদর্শন; প্রতিটি মালিক–অভিভাবক জোড়ার আইনগত সম্পর্ক LandBD নিশ্চিত করে না।
+          </div>
+        </Section>
+      ) : null}
+
+      {model.dags.length ? (
+        <Section
+          id="dags"
+          title={model.kind === "CS" ? "দাগ · সীমানা · জমির রকম" : "দাগ ও জমির বিবরণ"}
+          icon={<MapPin size={16} className="text-[#006a4e]" />}
+        >
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[18rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]">
+                  <th className="px-2 py-2 font-semibold">ক্রম</th>
+                  <th className="px-2 py-2 font-semibold">
+                    {model.kind === "MUTATION" ? "দাগ / প্লট নং" : "দাগ নং"}
+                  </th>
+                  {model.hasLandClass ? <th className="px-2 py-2 font-semibold">জমির শ্রেণী</th> : null}
+                  {showDlrmsAreaCol ? <th className="px-2 py-2 font-semibold">খতিয়ানের জমির পরিমাণ</th> : null}
+                  {showRsCol ? <th className="px-2 py-2 font-semibold">আর এস জমির পরিমাণ</th> : null}
+                  {showMsCol ? <th className="px-2 py-2 font-semibold">এম এস জমির পরিমাণ</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {model.dags.map((dag, index) => {
+                  const map = mapByDag.get(dag.dagNo);
+                  const rs = map?.rsAreaLabel;
+                  const ms = map?.msAreaLabel;
+                  const dlrms = dlrmsAreaLabel(dag);
+                  return (
                     <tr
-                      key={`g-${name}-${index}`}
+                      key={`${dag.dagNo}-${index}`}
                       className="border-b border-[var(--border-color)]/70 print:break-inside-avoid"
                     >
-                      <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">
-                        {index + 1}
-                      </td>
-                      <td className="max-w-[20rem] break-words px-2 py-2.5 font-medium [overflow-wrap:anywhere]">
-                        {name}
-                      </td>
+                      <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">{index + 1}</td>
+                      <td className="px-2 py-2.5 font-semibold tabular-nums">{dag.dagNo}</td>
+                      {model.hasLandClass ? <td className="px-2 py-2.5">{dag.landClass || "—"}</td> : null}
+                      {showDlrmsAreaCol ? (
+                        <td className="px-2 py-2.5 text-sm font-medium">{dlrms || "—"}</td>
+                      ) : null}
+                      {showRsCol ? (
+                        <td className={`px-2 py-2.5 text-sm ${rs ? "font-medium" : "text-[var(--muted-foreground)]"}`}>
+                          {rs || "—"}
+                        </td>
+                      ) : null}
+                      {showMsCol ? (
+                        <td className={`px-2 py-2.5 text-sm ${ms ? "font-medium" : "text-[var(--muted-foreground)]"}`}>
+                          {ms || "—"}
+                        </td>
+                      ) : null}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <ol className="grid gap-2 md:hidden">
-              {model.guardians.map((name, index) => (
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <ul className="grid gap-2 md:hidden">
+            {model.dags.map((dag, index) => {
+              const map = mapByDag.get(dag.dagNo);
+              const dlrms = dlrmsAreaLabel(dag);
+              return (
                 <li
-                  key={`gm-${name}-${index}`}
-                  className="min-w-0 rounded-lg border border-[var(--border-color)] px-3 py-2.5 print:break-inside-avoid"
+                  key={`dag-m-${dag.dagNo}-${index}`}
+                  className="rounded-lg border border-[var(--border-color)] px-3 py-2.5"
                 >
-                  <p className="text-[11px] text-[var(--muted-foreground)]">{index + 1}.</p>
-                  <p className="break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
-                    {name}
-                  </p>
+                  <p className="text-[11px] text-[var(--muted-foreground)]">দাগ {index + 1}</p>
+                  <p className="font-semibold tabular-nums">{dag.dagNo}</p>
+                  {dag.landClass ? <p className="mt-1 text-xs">জমির শ্রেণী: {dag.landClass}</p> : null}
+                  {dlrms ? <p className="mt-1 text-xs">খতিয়ানের জমির পরিমাণ: {dlrms}</p> : null}
+                  {map?.rsAreaLabel ? <p className="mt-1 text-xs">আর এস জমির পরিমাণ: {map.rsAreaLabel}</p> : null}
+                  {map?.msAreaLabel ? <p className="mt-1 text-xs">এম এস জমির পরিমাণ: {map.msAreaLabel}</p> : null}
                 </li>
-              ))}
-            </ol>
-          </>
-        )}
+              );
+            })}
+          </ul>
 
-        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px] leading-5 text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
-          পাবলিক GUARDIANS তালিকা উৎসে যেভাবে পাওয়া গেছে, সেই ক্রমানুসারে দেখানো হয়েছে। এটি স্বয়ংক্রিয়
-          প্রদর্শন; প্রতিটি মালিক–অভিভাবক জোড়ার আইনগত সম্পর্ক LandBD নিশ্চিত করে না।
-        </div>
-      </Section>
+          {hasAnyMapArea ? (
+            <p className="mt-3 text-xs leading-6 text-[var(--muted-foreground)]">
+              মানচিত্রভিত্তিক জমির পরিমাণ LandBD-এর যাচাইকৃত আর এস / এম এস প্লট ডেটা থেকে প্রদর্শিত হয়েছে (মৌজা,
+              জে.এল. ও দাগ মিলিয়ে)। এটি সরকারি খতিয়ান TOTAL_LAND-এর বিকল্প নয়।
+            </p>
+          ) : null}
 
-      <Section
-        id="dags"
-        title={model.kind === "CS" ? "দাগ · সীমানা · জমির রকম" : "দাগ ও জমির বিবরণ"}
-        icon={<MapPin size={16} className="text-[#006a4e]" />}
-      >
-        {model.dags.length === 0 ? (
-          <p className="text-sm text-[var(--muted-foreground)]">দাগ নম্বর পাবলিক তথ্যে নেই।</p>
-        ) : (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[22rem] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]">
-                    <th className="px-2 py-2 font-semibold">ক্রম</th>
-                    <th className="px-2 py-2 font-semibold">
-                      {model.kind === "MUTATION" ? "দাগ / প্লট নং" : "দাগ নং"}
-                    </th>
-                    {model.hasLandClass ? (
-                      <th className="px-2 py-2 font-semibold">জমির শ্রেণী</th>
-                    ) : null}
-                    {showRsCol ? (
-                      <th className="px-2 py-2 font-semibold">আর এস জমির পরিমাণ</th>
-                    ) : null}
-                    {showMsCol ? (
-                      <th className="px-2 py-2 font-semibold">এম এস জমির পরিমাণ</th>
-                    ) : null}
-                    {!showRsCol && !showMsCol ? (
-                      <th className="px-2 py-2 font-semibold">জমির পরিমাণ (মানচিত্র)</th>
-                    ) : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {model.dags.map((dag, index) => {
-                    const map = mapByDag.get(dag.dagNo);
-                    const rs = map?.rsAreaLabel;
-                    const ms = map?.msAreaLabel;
-                    const dlrms = dlrmsAreaLabel(dag);
-                    const fallback =
-                      rs ||
-                      ms ||
-                      dlrms ||
-                      (mapLoading ? "মানচিত্র লোড হচ্ছে…" : "ম্যাপ থেকে জমির পরিমাণ পাওয়া যায়নি");
-                    return (
-                      <tr
-                        key={`${dag.dagNo}-${index}`}
-                        className="border-b border-[var(--border-color)]/70 print:break-inside-avoid"
-                      >
-                        <td className="px-2 py-2.5 tabular-nums text-[var(--muted-foreground)]">{index + 1}</td>
-                        <td className="px-2 py-2.5 font-semibold tabular-nums">{dag.dagNo}</td>
-                        {model.hasLandClass ? (
-                          <td className="px-2 py-2.5">{dag.landClass || "—"}</td>
-                        ) : null}
-                        {showRsCol ? (
-                          <td className={`px-2 py-2.5 text-sm ${rs ? "font-medium" : "text-[var(--muted-foreground)]"}`}>
-                            {rs || "ম্যাপ থেকে জমির পরিমাণ পাওয়া যায়নি"}
-                          </td>
-                        ) : null}
-                        {showMsCol ? (
-                          <td className={`px-2 py-2.5 text-sm ${ms ? "font-medium" : "text-[var(--muted-foreground)]"}`}>
-                            {ms || "ম্যাপ থেকে জমির পরিমাণ পাওয়া যায়নি"}
-                          </td>
-                        ) : null}
-                        {!showRsCol && !showMsCol ? (
-                          <td
-                            className={`px-2 py-2.5 text-sm ${
-                              rs || ms || dlrms ? "font-medium" : "text-[var(--muted-foreground)]"
-                            }`}
-                          >
-                            {fallback}
-                          </td>
-                        ) : null}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <ul className="grid gap-2 md:hidden">
-              {model.dags.map((dag, index) => {
-                const map = mapByDag.get(dag.dagNo);
-                return (
-                  <li
-                    key={`dag-m-${dag.dagNo}-${index}`}
-                    className="rounded-lg border border-[var(--border-color)] px-3 py-2.5"
-                  >
-                    <p className="text-[11px] text-[var(--muted-foreground)]">দাগ {index + 1}</p>
-                    <p className="font-semibold tabular-nums">{dag.dagNo}</p>
-                    {dag.landClass ? (
-                      <p className="mt-1 text-xs">জমির শ্রেণী: {dag.landClass}</p>
-                    ) : null}
-                    {map?.rsAreaLabel ? (
-                      <p className="mt-1 text-xs">আর এস জমির পরিমাণ: {map.rsAreaLabel}</p>
-                    ) : null}
-                    {map?.msAreaLabel ? (
-                      <p className="mt-1 text-xs">এম এস জমির পরিমাণ: {map.msAreaLabel}</p>
-                    ) : null}
-                    {!map?.rsAreaLabel && !map?.msAreaLabel ? (
-                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                        {mapLoading
-                          ? "মানচিত্র লোড হচ্ছে…"
-                          : dlrmsAreaLabel(dag) || "ম্যাপ থেকে জমির পরিমাণ পাওয়া যায়নি"}
-                      </p>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+          {mapLoading && !hasAnyMapArea ? (
+            <p className="sr-only" aria-live="polite">মানচিত্রের জমির পরিমাণ যাচাই করা হচ্ছে।</p>
+          ) : null}
 
-        {model.dags.length > 0 ? (
-          <p className="mt-3 text-xs leading-6 text-[var(--muted-foreground)]">
-            জমির পরিমাণ LandBD মানচিত্রের যাচাইকৃত আর এস / এম এস প্লট ডেটা থেকে প্রদর্শিত হয়েছে (মৌজা, জে.এল. ও দাগ
-            মিলিয়ে)। এটি সরকারি খতিয়ান TOTAL_LAND-এর বিকল্প নয়।
-          </p>
-        ) : null}
-
-        {totalLandDisplay ? (
-          <p className="mt-3 text-sm">
-            <span className="text-[var(--muted-foreground)]">মোট জমি (পাবলিক): </span>
-            <strong>{totalLandDisplay}</strong>
-          </p>
-        ) : null}
-      </Section>
+          {totalLandDisplay ? (
+            <p className="mt-3 text-sm">
+              <span className="text-[var(--muted-foreground)]">মোট জমি (পাবলিক): </span>
+              <strong>{totalLandDisplay}</strong>
+            </p>
+          ) : null}
+        </Section>
+      ) : null}
 
       {(() => {
         const revenueKeys = [
@@ -543,9 +504,7 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
               ] as const
             )
               .filter(([, v]) => v != null && String(v).trim())
-              .map(([label, value]) => (
-                <MetaChip key={label} label={label} value={String(value)} />
-              ))}
+              .map(([label, value]) => <MetaChip key={label} label={label} value={String(value)} />)}
           </div>
         </Section>
       ) : null}
@@ -566,7 +525,7 @@ export default function KhatianDetailsView({ khatian, surveyKey, captureRef }: P
             সরকারি DLRMS-এ যাচাই করুন
           </a>
           <a
-            href="https://eporcha.tech/"
+            href="https://eporcha.gov.bd/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex h-9 items-center rounded-lg border border-[var(--border-color)] px-3 text-xs font-semibold no-underline hover:bg-[var(--secondary)]"
