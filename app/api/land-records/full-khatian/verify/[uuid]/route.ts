@@ -11,8 +11,15 @@ export async function GET(
 ) {
   try {
     const { uuid: rawUuid } = await context.params;
-    const uuid = uuidSchema.parse(rawUuid);
-    const result = await getFullKhatianByVerificationUuid(uuid, request.signal);
+    const parsed = uuidSchema.safeParse(rawUuid);
+    if (!parsed.success) {
+      return Response.json(
+        { error: "Invalid DLRMS verification UUID" },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const result = await getFullKhatianByVerificationUuid(parsed.data, request.signal);
     return ok(FullKhatianSchema.parse(result));
   } catch (error) {
     return providerError(error);
