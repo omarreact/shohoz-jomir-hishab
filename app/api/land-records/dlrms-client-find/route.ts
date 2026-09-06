@@ -3,27 +3,24 @@ import { NextResponse } from "next/server";
 const ORIGIN = "https://dlrms.land.gov.bd";
 const TARGET = `${ORIGIN}/v/d416e64b-4015-4ad9-9d82-d0cb2f781eec`;
 const TERMS = [
-  "hal-sabeks/khatian",
-  "W1Z",
-  "NEW_KHATIAN_ID",
-  "OLD_KHATIAN_ID",
-  "CURRENT_KHATIAN_APPLICATION",
-  "SENT_KHATIAN_APPLICATION",
-  "hal-sabek",
-  "sabek",
-  "reference-khatian",
-  "khatian-owner",
-  "khatian-dag",
+  "8802:function",
+  "useFetchApplicationSurveyKhatian",
+  "useFetchApplicationMutationKhatian",
+  "useFetchApplicationBrsKhatian",
+  "uyF",
+  "API_APPLIED_KHATIAN_PRINT",
+  "print-khatian",
+  "serviceAccessUserType",
 ];
 
 function unique<T>(items: T[]): T[] { return [...new Set(items)]; }
 function contexts(source: string, term: string): string[] {
   const out: string[] = [];
   let from = 0;
-  while (out.length < 12) {
+  while (out.length < 10) {
     const i = source.indexOf(term, from);
     if (i < 0) break;
-    out.push(source.slice(Math.max(0, i - 900), Math.min(source.length, i + term.length + 1400)));
+    out.push(source.slice(Math.max(0, i - 1800), Math.min(source.length, i + term.length + 3200)));
     from = i + term.length;
   }
   return out;
