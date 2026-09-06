@@ -17,6 +17,14 @@ function badRequest(message: string) {
   );
 }
 
+function parsePositiveId(raw: string | undefined, label: string): number | Response | undefined {
+  if (!raw) return undefined;
+  const parsed = idParam.safeParse(raw);
+  if (!parsed.success) return badRequest(`Invalid ${label}`);
+  const value = Number(parsed.data);
+  return Number.isSafeInteger(value) && value > 0 ? value : badRequest(`Invalid ${label}`);
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ surveyKey: string; id: string }> },
@@ -27,10 +35,10 @@ export async function GET(
     if (!parsedSurvey.success) return badRequest("Invalid survey key");
     const surveyKey = parsedSurvey.data;
 
-    const parsedId = idParam.safeParse(params.id);
-    if (!parsedId.success) return badRequest("Invalid Khatian ID");
-    const id = Number(parsedId.data);
-    if (!Number.isSafeInteger(id)) return badRequest("Invalid Khatian ID");
+    const parsedId = parsePositiveId(params.id, "Khatian ID");
+    if (parsedId instanceof Response) return parsedId;
+    if (parsedId === undefined) return badRequest("Invalid Khatian ID");
+    const id = parsedId;
 
     const sp = new URL(request.url).searchParams;
     const ownerParsed = khatianSearchText.safeParse(sp.get("owner") || undefined);
@@ -42,11 +50,10 @@ export async function GET(
     const verificationParsed = verificationRaw ? verificationUuidSchema.safeParse(verificationRaw) : null;
     if (verificationParsed && !verificationParsed.success) return badRequest("Invalid verification UUID");
 
-    const jlRaw = sp.get("jlNumberId")?.trim() || undefined;
-    const jlParsed = jlRaw ? idParam.safeParse(jlRaw) : null;
-    if (jlParsed && !jlParsed.success) return badRequest("Invalid JL number");
-    const jlNumberId = jlParsed ? Number(jlParsed.data) : undefined;
-    if (jlNumberId !== undefined && !Number.isSafeInteger(jlNumberId)) return badRequest("Invalid JL number");
+    const jlParsed = parsePositiveId(sp.get("jlNumberId")?.trim() || undefined, "JL number");
+    if (jlParsed instanceof Response) return jlParsed;
+    const mouzaParsed = parsePositiveId(sp.get("mouzaId")?.trim() || undefined, "Mouza ID");
+    if (mouzaParsed instanceof Response) return mouzaParsed;
 
     const divisionRaw = sp.get("divisionBbsCode")?.trim() || undefined;
     const districtRaw = sp.get("districtBbsCode")?.trim() || undefined;
@@ -64,7 +71,8 @@ export async function GET(
       id,
       owner: ownerParsed.data,
       dagNumber: dagParsed.data,
-      jlNumberId,
+      jlNumberId: jlParsed,
+      mouzaId: mouzaParsed,
       verificationUuid: verificationParsed?.success ? verificationParsed.data : undefined,
       divisionBbsCode: divisionParsed?.success ? divisionParsed.data : undefined,
       districtBbsCode: districtParsed?.success ? districtParsed.data : undefined,
