@@ -35,73 +35,76 @@ async function get(url, accept) {
   return { response, text: await response.text() };
 }
 
-try {
-  const { response: pageResponse, text: html } = await get(target, "text/html,application/xhtml+xml");
-  console.log(`[DLRMS-DISCOVERY] page=${pageResponse.status} bytes=${Buffer.byteLength(html)}`);
+export async function runDlrmsDiscovery() {
+  try {
+    const { response: pageResponse, text: html } = await get(target, "text/html,application/xhtml+xml");
+    console.log(`[DLRMS-DISCOVERY] page=${pageResponse.status} bytes=${Buffer.byteLength(html)}`);
 
-  const scripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
-    .map((m) => m[1])
-    .filter(Boolean);
-  console.log(`[DLRMS-DISCOVERY] scripts=${scripts.length}`);
-  console.log(`[DLRMS-DISCOVERY] scriptSources=${JSON.stringify(scripts)}`);
+    const scripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
+      .map((m) => m[1])
+      .filter(Boolean);
+    console.log(`[DLRMS-DISCOVERY] scripts=${scripts.length}`);
+    console.log(`[DLRMS-DISCOVERY] scriptSources=${JSON.stringify(scripts)}`);
 
-  const loaded = [];
-  for (const src of scripts) {
-    const url = new URL(src, ORIGIN);
-    if (url.origin !== ORIGIN) continue;
-    try {
-      const { response, text } = await get(url.toString(), "application/javascript,text/javascript,*/*;q=0.8");
-      loaded.push({ src, status: response.status, text });
-    } catch (error) {
-      console.log(`[DLRMS-DISCOVERY] script-failed src=${src} error=${error instanceof Error ? error.name : "unknown"}`);
-    }
-  }
-
-  const pageChunk = loaded.find((item) => /\/pages\/v\//i.test(item.src));
-  if (pageChunk) {
-    console.log(`[DLRMS-DISCOVERY] verificationPageChunk=${pageChunk.src} bytes=${Buffer.byteLength(pageChunk.text)}`);
-    for (const key of ["displayCode", ".e(3871)", "63871", "khatian.view"]) {
-      for (const snippet of contexts(pageChunk.text, key)) {
-        console.log(`[DLRMS-DISCOVERY] page-context key=${key} :: ${sanitize(snippet)}`);
+    const loaded = [];
+    for (const src of scripts) {
+      const url = new URL(src, ORIGIN);
+      if (url.origin !== ORIGIN) continue;
+      try {
+        const { response, text } = await get(url.toString(), "application/javascript,text/javascript,*/*;q=0.8");
+        loaded.push({ src, status: response.status, text });
+      } catch (error) {
+        console.log(`[DLRMS-DISCOVERY] script-failed src=${src} error=${error instanceof Error ? error.name : "unknown"}`);
       }
     }
-  }
 
-  const runtimeCandidates = loaded.filter((item) => /webpack/i.test(item.src) || item.text.includes(".u=") || item.text.includes("3871"));
-  for (const item of runtimeCandidates) {
-    if (!item.text.includes("3871")) continue;
-    console.log(`[DLRMS-DISCOVERY] runtime-hit src=${item.src} bytes=${Buffer.byteLength(item.text)}`);
-    for (const snippet of contexts(item.text, "3871", 4000)) {
-      console.log(`[DLRMS-DISCOVERY] runtime-3871 :: ${sanitize(snippet)}`);
+    const pageChunk = loaded.find((item) => /\/pages\/v\//i.test(item.src));
+    if (pageChunk) {
+      console.log(`[DLRMS-DISCOVERY] verificationPageChunk=${pageChunk.src} bytes=${Buffer.byteLength(pageChunk.text)}`);
+      for (const key of ["displayCode", ".e(3871)", "63871", "khatian.view"]) {
+        for (const snippet of contexts(pageChunk.text, key)) {
+          console.log(`[DLRMS-DISCOVERY] page-context key=${key} :: ${sanitize(snippet)}`);
+        }
+      }
     }
-  }
 
-  // Try to resolve any literal static/chunks path containing the target chunk hash.
-  const allRuntimeText = runtimeCandidates.map((x) => x.text).join("\n");
-  const hashCandidates = new Set();
-  for (const match of allRuntimeText.matchAll(/3871[^A-Za-z0-9]{1,20}["']([A-Za-z0-9_-]{6,64})["']/g)) {
-    hashCandidates.add(match[1]);
-  }
-  for (const hash of hashCandidates) {
-    const guesses = [
-      `/_next/static/chunks/3871-${hash}.js`,
-      `/_next/static/chunks/3871.${hash}.js`,
-      `/_next/static/chunks/${hash}.js`,
-    ];
-    for (const guess of guesses) {
-      try {
-        const { response, text } = await get(`${ORIGIN}${guess}`, "application/javascript,text/javascript,*/*;q=0.8");
-        if (response.ok && (text.includes("63871") || /displayCode|khatian|verify|verification/i.test(text))) {
-          console.log(`[DLRMS-DISCOVERY] dynamicChunk=${guess} status=${response.status} bytes=${Buffer.byteLength(text)}`);
-          for (const key of ["displayCode", "router.query", "api/public", "gateway", "api-core", "khatian", "verify", "verification", "KHATIAN", "OWNER", "DAG", "AREA", "SHARE"]) {
-            for (const snippet of contexts(text, key, 1600)) {
-              console.log(`[DLRMS-DISCOVERY] dynamic-context key=${key} :: ${sanitize(snippet)}`);
+    const runtimeCandidates = loaded.filter((item) => /webpack/i.test(item.src) || item.text.includes(".u=") || item.text.includes("3871"));
+    for (const item of runtimeCandidates) {
+      if (!item.text.includes("3871")) continue;
+      console.log(`[DLRMS-DISCOVERY] runtime-hit src=${item.src} bytes=${Buffer.byteLength(item.text)}`);
+      for (const snippet of contexts(item.text, "3871", 4000)) {
+        console.log(`[DLRMS-DISCOVERY] runtime-3871 :: ${sanitize(snippet)}`);
+      }
+    }
+
+    const allRuntimeText = runtimeCandidates.map((x) => x.text).join("\n");
+    const hashCandidates = new Set();
+    for (const match of allRuntimeText.matchAll(/3871[^A-Za-z0-9]{1,20}["']([A-Za-z0-9_-]{6,64})["']/g)) {
+      hashCandidates.add(match[1]);
+    }
+    console.log(`[DLRMS-DISCOVERY] hashCandidates=${JSON.stringify([...hashCandidates])}`);
+
+    for (const hash of hashCandidates) {
+      const guesses = [
+        `/_next/static/chunks/3871-${hash}.js`,
+        `/_next/static/chunks/3871.${hash}.js`,
+        `/_next/static/chunks/${hash}.js`,
+      ];
+      for (const guess of guesses) {
+        try {
+          const { response, text } = await get(`${ORIGIN}${guess}`, "application/javascript,text/javascript,*/*;q=0.8");
+          if (response.ok && (text.includes("63871") || /displayCode|khatian|verify|verification/i.test(text))) {
+            console.log(`[DLRMS-DISCOVERY] dynamicChunk=${guess} status=${response.status} bytes=${Buffer.byteLength(text)}`);
+            for (const key of ["displayCode", "router.query", "api/public", "gateway", "api-core", "khatian", "verify", "verification", "KHATIAN", "OWNER", "DAG", "AREA", "SHARE"]) {
+              for (const snippet of contexts(text, key, 1600)) {
+                console.log(`[DLRMS-DISCOVERY] dynamic-context key=${key} :: ${sanitize(snippet)}`);
+              }
             }
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
+  } catch (error) {
+    console.log(`[DLRMS-DISCOVERY] fatal=${error instanceof Error ? `${error.name}:${error.message}` : String(error)}`);
   }
-} catch (error) {
-  console.log(`[DLRMS-DISCOVERY] fatal=${error instanceof Error ? `${error.name}:${error.message}` : String(error)}`);
 }
