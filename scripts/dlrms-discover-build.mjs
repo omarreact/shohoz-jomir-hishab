@@ -2,20 +2,6 @@ const ORIGIN = "https://dlrms.land.gov.bd";
 const VERIFY_PATH = "/v/d416e64b-4015-4ad9-9d82-d0cb2f781eec";
 const target = `${ORIGIN}${VERIFY_PATH}`;
 
-function contexts(source, needle, radius = 1800) {
-  const out = [];
-  let cursor = 0;
-  const lower = source.toLowerCase();
-  const n = needle.toLowerCase();
-  while (out.length < 8) {
-    const i = lower.indexOf(n, cursor);
-    if (i < 0) break;
-    out.push(source.slice(Math.max(0, i - radius), Math.min(source.length, i + n.length + radius)));
-    cursor = i + n.length;
-  }
-  return out;
-}
-
 function sanitize(value) {
   return value
     .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
@@ -35,6 +21,41 @@ async function get(url, accept) {
   return { response, text: await response.text() };
 }
 
+function extractWebpackModule(source, moduleId) {
+  const markers = [`${moduleId}:function(`, `${moduleId}:function (`];
+  let start = -1;
+  for (const marker of markers) {
+    start = source.indexOf(marker);
+    if (start >= 0) break;
+  }
+  if (start < 0) return null;
+
+  const rest = source.slice(start + 1);
+  const next = rest.match(/,\d+:function\(/);
+  const end = next?.index != null ? start + 1 + next.index : Math.min(source.length, start + 40000);
+  return source.slice(start, end);
+}
+
+function logMatches(label, source, patterns) {
+  for (const pattern of patterns) {
+    const regex = new RegExp(pattern, "gi");
+    const matches = [];
+    let match;
+    while ((match = regex.exec(source)) && matches.length < 20) {
+      const start = Math.max(0, match.index - 700);
+      const end = Math.min(source.length, match.index + match[0].length + 1200);
+      matches.push(sanitize(source.slice(start, end)));
+      if (regex.lastIndex === match.index) regex.lastIndex++;
+    }
+    if (matches.length) {
+      console.log(`[DLRMS-DISCOVERY] ${label} pattern=${pattern} count=${matches.length}`);
+      for (const snippet of [...new Set(matches)]) {
+        console.log(`[DLRMS-DISCOVERY] ${label}-snippet :: ${snippet}`);
+      }
+    }
+  }
+}
+
 export async function runDlrmsDiscovery() {
   try {
     const { response: pageResponse, text: html } = await get(target, "text/html,application/xhtml+xml");
@@ -43,8 +64,6 @@ export async function runDlrmsDiscovery() {
     const scripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
       .map((m) => m[1])
       .filter(Boolean);
-    console.log(`[DLRMS-DISCOVERY] scripts=${scripts.length}`);
-    console.log(`[DLRMS-DISCOVERY] scriptSources=${JSON.stringify(scripts)}`);
 
     const loaded = [];
     for (const src of scripts) {
@@ -53,68 +72,61 @@ export async function runDlrmsDiscovery() {
       try {
         const { response, text } = await get(url.toString(), "application/javascript,text/javascript,*/*;q=0.8");
         loaded.push({ src, status: response.status, text });
-      } catch (error) {
-        console.log(`[DLRMS-DISCOVERY] script-failed src=${src} error=${error instanceof Error ? error.name : "unknown"}`);
-      }
+      } catch {}
     }
 
-    const pageChunk = loaded.find((item) => /\/pages\/v\//i.test(item.src));
-    if (pageChunk) {
-      console.log(`[DLRMS-DISCOVERY] verificationPageChunk=${pageChunk.src} bytes=${Buffer.byteLength(pageChunk.text)}`);
-      for (const key of ["displayCode", ".e(3871)", "63871", "khatian.view"]) {
-        for (const snippet of contexts(pageChunk.text, key)) {
-          console.log(`[DLRMS-DISCOVERY] page-context key=${key} :: ${sanitize(snippet)}`);
-        }
-      }
+    const hookChunk = loaded.find((item) => item.src.includes("9499-") && item.text.includes("8802:function"));
+    if (!hookChunk) {
+      console.log("[DLRMS-DISCOVERY] module8802=not-found");
+      return;
     }
 
-    // Module 8802 exports the public verification data hook used as p.sJ(displayCode).
-    for (const item of loaded) {
-      const needles = ["8802:function", "8802:", "sJ:function", "sJ:"];
-      const matched = needles.some((needle) => item.text.includes(needle));
-      if (!matched) continue;
-      console.log(`[DLRMS-DISCOVERY] data-hook-module-hit src=${item.src} bytes=${Buffer.byteLength(item.text)}`);
-      for (const key of ["8802:function", "8802:", "sJ", "displayCode", "khatian", "api/public", "gateway", "api-core", "axios", "fetch("]) {
-        for (const snippet of contexts(item.text, key, 4500)) {
-          console.log(`[DLRMS-DISCOVERY] data-hook-context key=${key} :: ${sanitize(snippet)}`);
-        }
-      }
+    const module8802 = extractWebpackModule(hookChunk.text, "8802");
+    if (!module8802) {
+      console.log("[DLRMS-DISCOVERY] module8802=parse-failed");
+      return;
     }
 
-    const runtimeCandidates = loaded.filter((item) => /webpack/i.test(item.src) || item.text.includes(".u=") || item.text.includes("3871"));
-    for (const item of runtimeCandidates) {
-      if (!item.text.includes("3871")) continue;
-      console.log(`[DLRMS-DISCOVERY] runtime-hit src=${item.src} bytes=${Buffer.byteLength(item.text)}`);
-      for (const snippet of contexts(item.text, "3871", 4000)) {
-        console.log(`[DLRMS-DISCOVERY] runtime-3871 :: ${sanitize(snippet)}`);
-      }
-    }
+    console.log(`[DLRMS-DISCOVERY] module8802-src=${hookChunk.src} bytes=${Buffer.byteLength(module8802)}`);
+    console.log(`[DLRMS-DISCOVERY] module8802-head :: ${sanitize(module8802.slice(0, 12000))}`);
+    logMatches("module8802", module8802, [
+      "sJ:function",
+      "sJ:",
+      "displayCode",
+      "DISPLAY_CODE",
+      "verification",
+      "verify",
+      "khatian",
+      "public",
+      "api-core",
+      "gateway",
+      "axios",
+      "useSWR",
+      "fetch\\(",
+      "CREATED_AT",
+    ]);
 
-    const allRuntimeText = runtimeCandidates.map((x) => x.text).join("\n");
-    const hashCandidates = new Set();
-    for (const match of allRuntimeText.matchAll(/3871[^A-Za-z0-9]{1,20}["']([A-Za-z0-9_-]{6,64})["']/g)) {
-      hashCandidates.add(match[1]);
-    }
-    console.log(`[DLRMS-DISCOVERY] hashCandidates=${JSON.stringify([...hashCandidates])}`);
-
-    for (const hash of hashCandidates) {
-      const guesses = [
-        `/_next/static/chunks/3871-${hash}.js`,
-        `/_next/static/chunks/3871.${hash}.js`,
-        `/_next/static/chunks/${hash}.js`,
-      ];
-      for (const guess of guesses) {
-        try {
-          const { response, text } = await get(`${ORIGIN}${guess}`, "application/javascript,text/javascript,*/*;q=0.8");
-          if (response.ok && (text.includes("63871") || /displayCode|khatian|verify|verification/i.test(text))) {
-            console.log(`[DLRMS-DISCOVERY] dynamicChunk=${guess} status=${response.status} bytes=${Buffer.byteLength(text)}`);
-            for (const key of ["displayCode", "router.query", "api/public", "gateway", "api-core", "khatian", "verify", "verification", "KHATIAN", "OWNER", "DAG", "AREA", "SHARE"]) {
-              for (const snippet of contexts(text, key, 1600)) {
-                console.log(`[DLRMS-DISCOVERY] dynamic-context key=${key} :: ${sanitize(snippet)}`);
-              }
-            }
-          }
-        } catch {}
+    // Extract module IDs referenced by module 8802 and inspect likely endpoint/constants helpers.
+    const referencedIds = [...new Set([...module8802.matchAll(/n\((\d+)\)/g)].map((m) => m[1]))];
+    console.log(`[DLRMS-DISCOVERY] module8802-references=${JSON.stringify(referencedIds)}`);
+    for (const id of referencedIds) {
+      for (const item of loaded) {
+        const moduleText = extractWebpackModule(item.text, id);
+        if (!moduleText) continue;
+        if (!/(khatian|display|verification|verify|api|gateway|public|axios|fetch|swr)/i.test(moduleText)) continue;
+        console.log(`[DLRMS-DISCOVERY] helper-module=${id} src=${item.src} bytes=${Buffer.byteLength(moduleText)}`);
+        logMatches(`helper-${id}`, moduleText, [
+          "khatian",
+          "display",
+          "verification",
+          "verify",
+          "api/public",
+          "api-core",
+          "gateway",
+          "axios",
+          "baseURL",
+          "fetch\\(",
+        ]);
       }
     }
   } catch (error) {
