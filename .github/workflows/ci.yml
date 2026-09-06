@@ -36,6 +36,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Land-record regression tests
+        run: >-
+          npm test -- --ci
+          src/features/land-records/server/dlrms-provider.test.ts
+          src/features/land-records/server/khatian-reconstruction.test.ts
+          src/features/land-records/server/dlrms-public-extras.test.ts
+          src/features/land-records/server/full-khatian-service.test.ts
+
       - name: Tests
         run: npm test -- --ci
 
