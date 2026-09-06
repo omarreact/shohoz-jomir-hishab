@@ -68,6 +68,19 @@ export async function runDlrmsDiscovery() {
       }
     }
 
+    // Module 8802 exports the public verification data hook used as p.sJ(displayCode).
+    for (const item of loaded) {
+      const needles = ["8802:function", "8802:", "sJ:function", "sJ:"];
+      const matched = needles.some((needle) => item.text.includes(needle));
+      if (!matched) continue;
+      console.log(`[DLRMS-DISCOVERY] data-hook-module-hit src=${item.src} bytes=${Buffer.byteLength(item.text)}`);
+      for (const key of ["8802:function", "8802:", "sJ", "displayCode", "khatian", "api/public", "gateway", "api-core", "axios", "fetch("]) {
+        for (const snippet of contexts(item.text, key, 4500)) {
+          console.log(`[DLRMS-DISCOVERY] data-hook-context key=${key} :: ${sanitize(snippet)}`);
+        }
+      }
+    }
+
     const runtimeCandidates = loaded.filter((item) => /webpack/i.test(item.src) || item.text.includes(".u=") || item.text.includes("3871"));
     for (const item of runtimeCandidates) {
       if (!item.text.includes("3871")) continue;
