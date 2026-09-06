@@ -21,14 +21,14 @@ function absoluteScriptUrl(src: string): string | null {
 function extractInterestingStrings(source: string): string[] {
   const hits: string[] = [];
 
-  const absoluteUrls = source.match(/https?:\\/\\/[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+/g) ?? [];
+  const absoluteUrls = source.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
   for (const raw of absoluteUrls) {
     if (/dlrms|khatian|porcha|verify|verification|qr|print|download|gateway/i.test(raw)) {
       hits.push(raw.slice(0, 500));
     }
   }
 
-  const pathLike = source.match(/\/(?:core-api\/)?api\/(?:public\/)?[A-Za-z0-9_./{}:[\\]-]{2,180}/g) ?? [];
+  const pathLike = source.match(/\/(?:core-api\/)?api\/(?:public\/)?[A-Za-z0-9_./{}:[\]-]{2,180}/g) ?? [];
   for (const raw of pathLike) {
     if (/khatian|porcha|verify|verification|qr|print|download|entry|record|public/i.test(raw)) {
       hits.push(raw);
@@ -39,7 +39,7 @@ function extractInterestingStrings(source: string): string[] {
   for (const raw of quoted) hits.push(raw.slice(1, -1));
 
   return unique(hits)
-    .map((item) => item.replace(/Bearer\\s+[A-Za-z0-9._~+\\/-]+/gi, "Bearer [redacted]"))
+    .map((item) => item.replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]"))
     .filter((item) => !/(access[_-]?token|refresh[_-]?token|authorization|cookie)=/i.test(item))
     .slice(0, 150);
 }
