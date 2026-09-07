@@ -1,5 +1,12 @@
 import type { Map as MapLibreInstance } from "maplibre-gl";
 
+const BOUND_MAPS = new WeakMap<HTMLElement, MapLibreInstance>();
+
+/** Return the live MapLibre instance already bound to this viewport container. */
+export function getBoundMap(container: HTMLElement | null | undefined): MapLibreInstance | undefined {
+  return container ? BOUND_MAPS.get(container) : undefined;
+}
+
 /**
  * Bind MapLibre's WebGL canvas to the browser's live visual viewport and the
  * container's actual layout box.
@@ -18,6 +25,7 @@ export function bindMapViewport(
   container: HTMLElement,
 ): () => void {
   let resizeRaf: number | null = null;
+  BOUND_MAPS.set(container, map);
 
   const resize = () => {
     resizeRaf = null;
@@ -69,6 +77,7 @@ export function bindMapViewport(
   window.addEventListener("orientationchange", onOrientationChange, { passive: true });
 
   return () => {
+    BOUND_MAPS.delete(container);
     if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
     observer?.disconnect();
     window.removeEventListener("resize", onWindowResize);
