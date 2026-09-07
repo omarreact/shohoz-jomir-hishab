@@ -10,6 +10,7 @@ import {
   Download,
   Loader2,
   MapPin,
+  Printer,
   Search,
 } from "lucide-react";
 import type {
@@ -248,6 +249,7 @@ export default function RajukTestPage() {
   const [lastRequestUrl, setLastRequestUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [printingPdf, setPrintingPdf] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -432,6 +434,62 @@ export default function RajukTestPage() {
       setSearchError("ছবি ডাউনলোডে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handlePdfPrint = async () => {
+    if (!exportRef.current || !selected) return;
+    const element = exportRef.current;
+    const originalWidth = element.style.width;
+    const originalOverflow = element.style.overflow;
+    setPrintingPdf(true);
+    setSearchError("");
+
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      element.style.width = "800px";
+      element.style.overflow = "visible";
+
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: Math.max(800, element.scrollWidth),
+      });
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+      const margin = 10;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pageWidth - margin * 2;
+      const innerPageHeight = pageHeight - margin * 2;
+      const imageHeight = (canvas.height * pdfWidth) / canvas.width;
+      const imageData = canvas.toDataURL("image/jpeg", 0.97);
+
+      let heightLeft = imageHeight;
+      let position = margin;
+      pdf.addImage(imageData, "JPEG", margin, position, pdfWidth, imageHeight);
+      heightLeft -= innerPageHeight;
+
+      while (heightLeft > 0) {
+        position = margin - (imageHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(imageData, "JPEG", margin, position, pdfWidth, imageHeight);
+        heightLeft -= innerPageHeight;
+      }
+
+      const number = normalizePlotInput(plotNo(selected, mode), mode) || "plot";
+      pdf.save(`${mode.toUpperCase()}-${number}-LandBD.pdf`);
+    } catch (reason) {
+      console.error("Plot PDF export failed", reason);
+      setSearchError("পিডিএফ তৈরিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      element.style.width = originalWidth;
+      element.style.overflow = originalOverflow;
+      setPrintingPdf(false);
     }
   };
 
@@ -642,11 +700,21 @@ export default function RajukTestPage() {
                 <button
                   type="button"
                   onClick={() => void handleDownload()}
-                  disabled={downloading}
+                  disabled={downloading || printingPdf}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[#17663A] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
                 >
                   {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                   {downloading ? "তৈরি হচ্ছে…" : "পিএনজি ডাউনলোড"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handlePdfPrint()}
+                  disabled={printingPdf || downloading}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+                  title="A4 পিডিএফ তৈরি করুন"
+                >
+                  {printingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+                  {printingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "পিডিএফ প্রিন্ট"}
                 </button>
               </div>
             </div>
