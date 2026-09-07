@@ -21,6 +21,13 @@ function safePart(value: unknown, fallback: string): string {
   return text.replace(/[^\w\u0980-\u09FF-]+/g, "_").replace(/_+/g, "_").slice(0, 48);
 }
 
+function markExcluded(node: Element | null): HTMLElement | null {
+  if (!(node instanceof HTMLElement)) return null;
+  node.dataset.pdfExclude = "1";
+  node.dataset.printExclude = "1";
+  return node;
+}
+
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -54,9 +61,23 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     const root = captureRef?.current;
     if (!root) return;
 
+    const publicInfoBanner = markExcluded(root.children[1]);
+    const surveyArchitectureNote = markExcluded(root.children[2]);
+    const supplement = markExcluded(
+      document.querySelector("section[aria-label='সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য']"),
+    );
+
     const headerCard = root.children[0] as HTMLElement | undefined;
     const details = headerCard?.children[1] as HTMLElement | undefined;
-    if (!details) return;
+    if (!details) {
+      return () => {
+        [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+          if (!node) return;
+          delete node.dataset.pdfExclude;
+          delete node.dataset.printExclude;
+        });
+      };
+    }
 
     const children = Array.from(details.children) as HTMLElement[];
     const duplicatedMetaGrid = children[1];
@@ -96,6 +117,11 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     }
 
     return () => {
+      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+        if (!node) return;
+        delete node.dataset.pdfExclude;
+        delete node.dataset.printExclude;
+      });
       if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = previousMetaDisplay;
       if (summaryGrid) {
         summaryGrid.style.cssText = previousSummaryCss;
@@ -108,7 +134,7 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         });
       }
     };
-  }, [captureRef, khatian.ID]);
+  }, [captureRef, khatian.ID, resolvedFullKhatian]);
 
   const downloadPdf = async () => {
     if (!captureRef?.current || downloadingPdf) return;
