@@ -1,17 +1,30 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
+import { getDefaultPageAccessRules, normalizeStoredPageAccess } from "@/src/shared/config/pageAccess";
 
 export async function GET() {
   try {
     const doc = await collections.settings.doc("pageAccess").get();
-    
-    return NextResponse.json({ access: doc.exists ? doc.data() : {} }, { 
-      status: 200,
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120"
-      }
-    });
+    const data = doc.exists ? doc.data() : null;
+
+    return NextResponse.json(
+      {
+        access: normalizeStoredPageAccess(data),
+        updatedAt: typeof data?.updatedAt === "string" ? data.updatedAt : null,
+      },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      },
+    );
   } catch (error) {
-    return NextResponse.json({ access: {} }, { status: 200 });
+    console.error("Public page access GET failed", error);
+    return NextResponse.json(
+      { access: getDefaultPageAccessRules(), updatedAt: null },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      },
+    );
   }
 }
