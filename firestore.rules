@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function claimRole() {
+      return isSignedIn() && 'role' in request.auth.token
+        ? request.auth.token.role
+        : null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (claimRole() in ['Admin', 'Super Admin']
+            || request.auth.token.admin == true);
+    }
+
+    function isEditor() {
+      return isSignedIn()
+        && claimRole() in ['Editor', 'Admin', 'Super Admin'];
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && uid() == userId;
+    }
+
+    function roleUnchanged() {
+      return !('role' in request.resource.data)
+        || request.resource.data.role == resource.data.role;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && request.resource.data.role in ['User', 'Basic User']
+        && request.resource.data.email == request.auth.token.email;
+
+      allow update: if (isOwner(userId) && roleUnchanged()
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['role', 'lockedUntil', 'status']))
+        || isAdmin();
+
+      allow delete: if claimRole() == 'Super Admin';
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+
+    match /blogComments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == uid();
+      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+
+    match /customPages/{pageId} {
+      allow read: if resource.data.published == true || isEditor();
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+
+    match /siteSettings/{settingId} {
+      allow read: if resource.data.public == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == uid();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /loginHistory/{entryId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow update: if isOwner(resource.data.userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['read', 'readAt']);
+      allow create, delete: if isAdmin();
+    }
+
+    match /rajukPlots/{plotId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

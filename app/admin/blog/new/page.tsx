@@ -1,0 +1,252 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Save, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+import { Button } from "@/src/shared/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/src/shared/ui/form";
+import { Input } from "@/src/shared/ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/Card";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
+import { CldUploadWidget } from "next-cloudinary";
+
+const blogSchema = z.object({
+  title: z.string().min(5, { message: "Title must be at least 5 characters" }),
+  coverImage: z
+    .string()
+    .url({ message: "Must be a valid image URL" })
+    .or(z.string().min(1, { message: "Cover image URL is required" })),
+  category: z.string().min(1, { message: "Category is required" }),
+  author: z.string().min(1, { message: "Author is required" }),
+  content: z.string().min(10, { message: "Content is required" }),
+});
+
+type BlogFormValues = z.infer<typeof blogSchema>;
+
+const isCloudinaryConfigured = !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME && !!process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+
+export default function NewBlogPage() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<BlogFormValues>({
+    resolver: zodResolver(blogSchema),
+    defaultValues: {
+      title: "",
+      coverImage: "",
+      category: "",
+      author: "মো. ওমর ফারুক",
+      content: "",
+    },
+  });
+
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ color: [] }, { background: [] }],
+      [{ align: [] }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["blockquote", "code-block"],
+      ["link", "image", "video"],
+      ["clean"],
+    ],
+  };
+
+  const onSubmit = async (data: BlogFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/blogs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || "ব্লগ তৈরি করতে সমস্যা হয়েছে।");
+      }
+
+      router.push("/admin/blog");
+      router.refresh();
+    } catch (error: any) {
+      console.error("Error creating blog:", error);
+      alert(error.message || "ব্লগ তৈরি করতে সমস্যা হয়েছে।");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 fade-in visible">
+      <div className="flex items-center gap-4">
+        <Link href="/admin/blog">
+          <Button variant="outline" size="icon">
+            <ArrowLeft size={18} />
+          </Button>
+        </Link>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">নতুন ব্লগ</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">একটি নতুন ব্লগ পোস্ট তৈরি করুন</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>ব্লগ তথ্য</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>শিরোনাম (Title)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ব্লগের শিরোনাম..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="coverImage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>কভার ইমেজ URL (Cover Image)</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://example.com/image.jpg"
+                            className="flex-1"
+                            {...field}
+                          />
+                          {isCloudinaryConfigured ? (
+                            <CldUploadWidget
+                              signatureEndpoint="/api/cloudinary/sign"
+                              onSuccess={(result: any) => {
+                                if (result.info?.secure_url) {
+                                  form.setValue("coverImage", result.info.secure_url);
+                                }
+                              }}
+                            >
+                              {({ open }) => (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={(e) => { e.preventDefault(); open(); }}
+                                >
+                                  Upload
+                                </Button>
+                              )}
+                            </CldUploadWidget>
+                          ) : (
+                            <Button type="button" variant="outline" disabled title="Cloudinary is not configured">
+                              Upload (Disabled)
+                            </Button>
+                          )}
+                        </div>
+                      </FormControl>
+                      {!isCloudinaryConfigured && (
+                        <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
+                          Cloudinary image upload is currently unavailable. Please configure Cloudinary environment variables.
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>বিভাগ (Category)</FormLabel>
+                      <FormControl>
+                        <select
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={field.value}
+                          onChange={field.onChange}
+                        >
+                          <option value="" disabled>বিভাগ নির্বাচন করুন</option>
+                          <option value="ডিজিটাল জরিপ">ডিজিটাল জরিপ</option>
+                          <option value="ভূমি রেকর্ড">ভূমি রেকর্ড</option>
+                          <option value="আইন ও উত্তরাধিকার">আইন ও উত্তরাধিকার</option>
+                          <option value="জোনিং">জোনিং</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="author"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>লেখক (Author)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="লেখকের নাম" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>বিস্তারিত (Content)</FormLabel>
+                    <FormControl>
+                      <div className="bg-white dark:bg-slate-900 rounded-md [&_.ql-toolbar]:rounded-t-md [&_.ql-container]:rounded-b-md [&_.ql-toolbar]:border-slate-200 dark:[&_.ql-toolbar]:border-slate-800 [&_.ql-container]:border-slate-200 dark:[&_.ql-container]:border-slate-800 [&_.ql-editor]:min-h-[400px]">
+                        <ReactQuill
+                          theme="snow"
+                          value={field.value}
+                          onChange={field.onChange}
+                          modules={modules}
+                          className="text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                <Button type="submit" disabled={isSubmitting} className="px-8 bg-[#006a4e] text-white hover:bg-[#00523b]">
+                  {isSubmitting ? "সংরক্ষণ হচ্ছে..." : <><Save size={16} className="mr-2" /> সংরক্ষণ করুন</>}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

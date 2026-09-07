@@ -1,0 +1,306 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bd-green: var(--primary);
+  --color-bd-red: #ef4444;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card-bg);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: #fff;
+  --color-border: var(--border-color);
+  --color-input: var(--border-color);
+  --color-ring: var(--primary);
+  --shadow-sm: 0 1px 2px rgba(13,31,23,.04);
+  --shadow-md: 0 8px 24px rgba(13,31,23,.055);
+  --shadow-lg: 0 18px 48px rgba(13,31,23,.075);
+  --radius-xl: .95rem;
+  --radius-lg: .8rem;
+  --radius-md: .7rem;
+  --radius-sm: .55rem;
+  --font-bangla: var(--font-hind-siliguri), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-bangla);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --background: #FBFCFB;
+    --foreground: #102019;
+    --card-bg: #ffffff;
+    --border-color: #E0E9E4;
+    --primary: #17663A;
+    --primary-foreground: #ffffff;
+    --secondary: #F2F6F3;
+    --muted: #EAF0EC;
+    --muted-foreground: #617269;
+    --accent: #D99A08;
+    --destructive: #dc2626;
+    --radius: .8rem;
+  }
+
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --background: #08130E;
+    --foreground: #F2F7F4;
+    --card-bg: #102019;
+    --border-color: #263B31;
+    --primary: #54A878;
+    --primary-foreground: #07130C;
+    --secondary: #172B21;
+    --muted: #14271E;
+    --muted-foreground: #A8BDB2;
+    --accent: #F0A500;
+    --destructive: #f87171;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-bangla);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color .2s ease, color .2s ease;
+  }
+
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button { min-height: 44px; }
+  ::selection { background: #17663A; color: #fff; }
+  .dark ::selection { background: #54A878; color: #07130C; }
+}
+
+@layer components {
+  .app-surface { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+  .app-panel { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); }
+  .nav-blur { backdrop-filter: blur(20px) saturate(160%); background: color-mix(in srgb, var(--card-bg) 94%, transparent); border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent); }
+  .map-panel-card { background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md); border-radius: var(--radius-lg); }
+  .fade-in { animation: fadeIn .28s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+  .blog-article-body { color: #334155; line-height: 1.8; font-size: 1.05rem; }
+  .dark .blog-article-body { color: #cbd5e1; }
+  .blog-article-body p, .blog-article-body li, .blog-article-body span, .blog-article-body div { color: inherit; }
+  .blog-article-body h1, .blog-article-body h2, .blog-article-body h3, .blog-article-body h4, .blog-article-body strong, .blog-article-body b { color: #0f172a; }
+  .dark .blog-article-body h1, .dark .blog-article-body h2, .dark .blog-article-body h3, .dark .blog-article-body h4, .dark .blog-article-body strong, .dark .blog-article-body b { color: #f8fafc; }
+  .blog-article-body a { color: #17663A; font-weight: 600; }
+  .blog-article-body img { max-width: 100%; height: auto; border-radius: .75rem; }
+  .blog-article-body ul, .blog-article-body ol { padding-left: 1.25rem; }
+}
+
+/* Khatian print mode: print the record, not the application shell. */
+@media print {
+  /* Keep the paper size/orientation controlled by the browser print dialog.
+     This lets the same Khatian render correctly on A4 Portrait or A4 Landscape. */
+  @page {
+    size: auto;
+    margin: 10mm 11mm;
+  }
+
+  html,
+  body {
+    width: auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111827 !important;
+    font-size: 10.5pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Application chrome must never become part of a Khatian print/PDF. */
+  nav,
+  footer,
+  a[aria-label="হিসাবের ইতিহাস"],
+  [data-khatian-export-host="1"],
+  .hero-gradient {
+    display: none !important;
+  }
+
+  body:has(#khatian-details-panel) > div,
+  body:has(#khatian-details-panel) main {
+    min-height: 0 !important;
+  }
+
+  #khatian-details-panel {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  #khatian-details-panel > div {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111827 !important;
+  }
+
+  /* Generic section-level break avoidance caused large blank pages. */
+  #khatian-details-panel section,
+  #khatian-details-panel [class*="print:break-inside-avoid"] {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  #khatian-details-panel section {
+    margin: 0 0 6mm !important;
+    border-color: #d7ded9 !important;
+    border-radius: 7px !important;
+  }
+
+  #khatian-details-panel section > header {
+    padding: 5px 8px !important;
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+    background: #f7f9f8 !important;
+    color: #111827 !important;
+  }
+
+  #khatian-details-panel section > div {
+    padding: 7px 8px !important;
+  }
+
+  /* Always print compact tables instead of tall mobile cards. */
+  #khatian-details-panel [class~="md:hidden"] {
+    display: none !important;
+  }
+
+  #khatian-details-panel [class~="hidden"][class~="md:block"] {
+    display: block !important;
+  }
+
+  #khatian-details-panel table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+    font-size: 9.2pt !important;
+  }
+
+  #khatian-details-panel thead {
+    display: table-header-group !important;
+  }
+
+  #khatian-details-panel tfoot {
+    display: table-footer-group !important;
+  }
+
+  #khatian-details-panel tr {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  #khatian-details-panel th,
+  #khatian-details-panel td {
+    padding: 4px 6px !important;
+    border-color: #dde4e0 !important;
+    color: #111827 !important;
+    background: #fff !important;
+    vertical-align: top !important;
+  }
+
+  #khatian-details-panel th {
+    font-weight: 700 !important;
+    background: #f7f9f8 !important;
+  }
+
+  #khatian-details-panel p,
+  #khatian-details-panel li,
+  #khatian-details-panel span,
+  #khatian-details-panel strong,
+  #khatian-details-panel h2,
+  #khatian-details-panel h3 {
+    color: #111827 !important;
+  }
+
+  #khatian-details-panel [class*="shadow"],
+  #khatian-details-panel [class*="backdrop"] {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  #khatian-details-panel [class*="rounded-xl"] {
+    border-radius: 7px !important;
+  }
+
+  #khatian-details-panel [class*="space-y-4"] > * + * {
+    margin-top: 7px !important;
+  }
+
+  #khatian-details-panel a {
+    text-decoration: none !important;
+  }
+}
+
+/* Portrait keeps the compact report flow. */
+@media print and (orientation: portrait) {
+  #khatian-details-panel table {
+    font-size: 9.2pt !important;
+  }
+
+  #khatian-details-panel section {
+    margin-bottom: 6mm !important;
+  }
+}
+
+/* Landscape must use the full A4 width, not a portrait-width column on the left. */
+@media print and (orientation: landscape) {
+  #khatian-details-panel,
+  #khatian-details-panel > div {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #khatian-details-panel table {
+    width: 100% !important;
+    font-size: 8.8pt !important;
+  }
+
+  #khatian-details-panel section {
+    margin-bottom: 4.5mm !important;
+  }
+
+  #khatian-details-panel section > header {
+    padding: 4px 7px !important;
+  }
+
+  #khatian-details-panel section > div {
+    padding: 6px 7px !important;
+  }
+
+  #khatian-details-panel th,
+  #khatian-details-panel td {
+    padding: 3px 5px !important;
+  }
+}

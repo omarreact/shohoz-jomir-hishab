@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Land-record regression tests
+        run: >-
+          npm test -- --ci
+          src/features/land-records/server/dlrms-provider.test.ts
+          src/features/land-records/server/khatian-reconstruction.test.ts
+          src/features/land-records/server/dlrms-public-extras.test.ts
+          src/features/land-records/server/full-khatian-service.test.ts
+
+      - name: Tests
+        id: tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test -- --ci 2>&1 | tee test-output.log
+
+      - name: Upload failing test log
+        if: ${{ failure() && steps.tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failure-log
+          path: test-output.log
+          retention-days: 3
+
+      - name: Production build
+        if: ${{ always() && !cancelled() }}
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

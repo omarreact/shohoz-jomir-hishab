@@ -1,0 +1,38 @@
+name: Restore GeospatialMap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/restore-geospatial-map.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore complete geospatial-map folder from known commit
+        run: |
+          SOURCE_COMMIT=0b1af95a89fc1e9429d5bfac7c3e0c9d2c3b078f
+          git fetch origin "$SOURCE_COMMIT"
+          rm -rf src/features/geospatial-map
+          git archive "$SOURCE_COMMIT" src/features/geospatial-map | tar -x
+
+      - name: Commit restored geospatial-map folder and remove temporary workflow trigger
+        run: |
+          git config user.name "LandBD CI"
+          git config user.email "ci@landbd.local"
+          git add src/features/geospatial-map
+          git rm --cached .github/workflows/restore-geospatial-map.yml || true
+          git add -u .github/workflows/restore-geospatial-map.yml
+          git commit -m "restore geospatial-map from 0b1af95"
+          git push origin HEAD:main
