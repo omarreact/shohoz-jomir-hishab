@@ -18,6 +18,15 @@ describe("Bangla UI localization", () => {
       .toBe("নামজারি যাচাইকরণ রেকর্ড");
   });
 
+  test("uses MS-only wording for the MS search notice", () => {
+    const source =
+      "এম এস-এর বিদ্যমান রাজউক ফিচারসার্ভার ঠিকানা-ধাপ ব্যবহার করেই অনুসন্ধান সংকুচিত করা হচ্ছে; মূল আর এস/এম এস ডেটা উৎস ও এপিআই অপরিবর্তিত।";
+
+    expect(translateUiText(source)).toBe(
+      "নির্বাচিত এলাকা ব্যবহার করে এম এস প্লট অনুসন্ধান আরও নির্দিষ্ট করা হবে।",
+    );
+  });
+
   test("does not alter technical URLs or UUIDs", () => {
     const url = "https://dlrms.land.gov.bd/v/123e4567-e89b-12d3-a456-426614174000";
     expect(translateUiText(url)).toBe(url);
