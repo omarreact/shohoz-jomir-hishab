@@ -33,9 +33,25 @@ async function apiJson(url: string) {
   return data;
 }
 
+function toAsciiDigits(value: string): string {
+  const banglaDigits: Record<string, string> = {
+    "০": "0",
+    "১": "1",
+    "২": "2",
+    "৩": "3",
+    "৪": "4",
+    "৫": "5",
+    "৬": "6",
+    "৭": "7",
+    "৮": "8",
+    "৯": "9",
+  };
+  return value.replace(/[০-৯]/g, (digit) => banglaDigits[digit] ?? digit);
+}
+
 function normalizePlotInput(raw: string, mode: PlotMode): string {
-  const prefix = mode === "rs" ? /^RS[\s\-_]*/i : /^MS[\s\-_]*/i;
-  return raw.trim().replace(prefix, "").replace(/\s+/g, "").replace(/^0+/, "") || "0";
+  const prefix = mode === "rs" ? /^(?:RS|আর\s*এস)[\s\-_]*/i : /^(?:MS|এম\s*এস)[\s\-_]*/i;
+  return toAsciiDigits(raw).trim().replace(prefix, "").replace(/\s+/g, "").replace(/^0+/, "") || "0";
 }
 
 function plotNo(feature: RajukPlotFeature, mode: PlotMode): string {
@@ -83,7 +99,7 @@ function SelectField({
   );
 }
 
-function useRsAddressCascade(enabled: boolean) {
+function useAddressCascade(kind: PlotMode) {
   const [districts, setDistricts] = useState<RajukDistrict[]>([]);
   const [upazilas, setUpazilas] = useState<RajukUpazila[]>([]);
   const [mouzas, setMouzas] = useState<RajukMauza[]>([]);
@@ -94,11 +110,20 @@ function useRsAddressCascade(enabled: boolean) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!enabled) return;
+    setDistricts([]);
+    setUpazilas([]);
+    setMouzas([]);
+    setDGuid("");
+    setTGuid("");
+    setMauzaId("");
     setLoading("district");
     setError("");
+
     const controller = new AbortController();
-    void fetch("/api/rajuk/query?action=districts&kind=rs", { cache: "no-store", signal: controller.signal })
+    void fetch(`/api/rajuk/query?action=districts&kind=${kind}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "জেলা লোড করা যায়নি");
@@ -111,19 +136,21 @@ function useRsAddressCascade(enabled: boolean) {
       .finally(() => {
         if (!controller.signal.aborted) setLoading("");
       });
+
     return () => controller.abort();
-  }, [enabled]);
+  }, [kind]);
 
   useEffect(() => {
     setUpazilas([]);
     setMouzas([]);
     setTGuid("");
     setMauzaId("");
-    if (!enabled || !dGuid) return;
+    if (!dGuid) return;
     setLoading("upazila");
     setError("");
+
     const controller = new AbortController();
-    void fetch(`/api/rajuk/query?action=upazilas&d_guid=${encodeURIComponent(dGuid)}&kind=rs`, {
+    void fetch(`/api/rajuk/query?action=upazilas&d_guid=${encodeURIComponent(dGuid)}&kind=${kind}`, {
       cache: "no-store",
       signal: controller.signal,
     })
@@ -139,17 +166,19 @@ function useRsAddressCascade(enabled: boolean) {
       .finally(() => {
         if (!controller.signal.aborted) setLoading("");
       });
+
     return () => controller.abort();
-  }, [dGuid, enabled]);
+  }, [dGuid, kind]);
 
   useEffect(() => {
     setMouzas([]);
     setMauzaId("");
-    if (!enabled || !tGuid) return;
+    if (!tGuid) return;
     setLoading("mouza");
     setError("");
+
     const controller = new AbortController();
-    void fetch(`/api/rajuk/query?action=mouzas&t_guid=${encodeURIComponent(tGuid)}&kind=rs`, {
+    void fetch(`/api/rajuk/query?action=mouzas&t_guid=${encodeURIComponent(tGuid)}&kind=${kind}`, {
       cache: "no-store",
       signal: controller.signal,
     })
@@ -165,8 +194,9 @@ function useRsAddressCascade(enabled: boolean) {
       .finally(() => {
         if (!controller.signal.aborted) setLoading("");
       });
+
     return () => controller.abort();
-  }, [tGuid, enabled]);
+  }, [tGuid, kind]);
 
   return {
     districts,
@@ -181,6 +211,7 @@ function useRsAddressCascade(enabled: boolean) {
     loading,
     error,
     setError,
+    selectedDistrict: districts.find((item) => item.d_guid === dGuid),
     selectedUpazila: upazilas.find((item) => item.t_guid === tGuid),
     selectedMouza: mouzas.find((item) => item.m_guid === mauzaId),
   };
@@ -203,7 +234,7 @@ function downloadCanvas(canvas: HTMLCanvasElement, fileName: string) {
 
 export default function RajukTestPage() {
   const [mode, setMode] = useState<PlotMode>("rs");
-  const loc = useRsAddressCascade(mode === "rs");
+  const loc = useAddressCascade(mode);
   const { isLoggedIn } = useAuth();
   const [plots, setPlots] = useState<RajukPlotFeature[]>([]);
   const [plotsLoaded, setPlotsLoaded] = useState(false);
@@ -266,16 +297,24 @@ export default function RajukTestPage() {
     setMsMatches([]);
     setMsInside([]);
     const bare = normalizePlotInput(plotInput, mode);
-    const label = mode === "rs" ? "RS" : "MS";
+    const label = mode === "rs" ? "আর এস" : "এম এস";
     if (!bare || bare === "0") {
       setSearchError(`একটি ${label} প্লট নম্বর লিখুন।`);
       return;
     }
 
     if (mode === "ms") {
+      if (!loc.selectedMouza || !loc.selectedUpazila) {
+        setSearchError("এম এস প্লট খুঁজতে আগে জেলা, উপজেলা ও মৌজা নির্বাচন করুন।");
+        return;
+      }
+
       const query = new URLSearchParams({
         action: "plots",
         kind: "ms",
+        mouza: loc.selectedMouza.mauza,
+        jl: String(loc.selectedMouza.jl_no),
+        upazila: loc.selectedUpazila.upazila_ps,
         ms_plot_no: bare,
         limit: "50",
       });
@@ -288,13 +327,13 @@ export default function RajukTestPage() {
           (feature) => normalizePlotInput(plotNo(feature, "ms"), "ms") === bare,
         );
         if (!features.length) {
-          setSearchError(`MS প্লট ${bare} পাওয়া যায়নি।`);
+          setSearchError(`নির্বাচিত এলাকায় এম এস প্লট ${bare} পাওয়া যায়নি।`);
           return;
         }
         setMsMatches(features);
         setSelected(features[0]);
       } catch (reason) {
-        setSearchError(reason instanceof Error ? reason.message : "MS প্লট অনুসন্ধান করা যায়নি।");
+        setSearchError(reason instanceof Error ? reason.message : "এম এস প্লট অনুসন্ধান করা যায়নি।");
       } finally {
         setLoadingPlots(false);
       }
@@ -302,7 +341,7 @@ export default function RajukTestPage() {
     }
 
     if (!plotsLoaded || plots.length === 0) {
-      setSearchError("আগে RS প্লট লোড করুন।");
+      setSearchError("আগে আর এস প্লট লোড করুন।");
       return;
     }
 
@@ -312,7 +351,7 @@ export default function RajukTestPage() {
       return normalized === bare || plain === bare || plain.replace(/^0+/, "") === bare;
     });
     if (!match) {
-      setSearchError(`RS প্লট ${bare} পাওয়া যায়নি।`);
+      setSearchError(`আর এস প্লট ${bare} পাওয়া যায়নি।`);
       return;
     }
     setSelected(match);
@@ -336,9 +375,9 @@ export default function RajukTestPage() {
     const area = areaFromPlotAttributes(attributes);
     const rawNo = plotNo(selected, mode);
     const bare = normalizePlotInput(rawNo, mode);
-    const prefix = mode.toUpperCase();
+    const prefix = mode === "rs" ? "আর এস" : "এম এস";
     return [
-      { label: `${prefix} প্লট নম্বর`, value: rawNo.toUpperCase().startsWith(prefix) ? rawNo : `${prefix}-${bare}` },
+      { label: `${prefix} প্লট নম্বর`, value: `${prefix}-${bare}` },
       { label: "প্লট নং", value: bare },
       { label: "জে.এল. নং", value: attrStr(attributes, ["jl_no", "rs_jl_no", "ms_jl_no"]) },
       { label: "পরিমাণ (শতাংশ)", value: area.isValid ? `${formatAreaValue(area.shotok, 4)} শতাংশ` : "—" },
@@ -398,7 +437,10 @@ export default function RajukTestPage() {
 
   const error = loc.error || searchError;
   const prefix = mode === "rs" ? "আর এস" : "এম এস";
-  const searchDisabled = loadingPlots || !plotInput.trim() || (mode === "rs" && !plotsLoaded);
+  const searchDisabled =
+    loadingPlots ||
+    !plotInput.trim() ||
+    (mode === "rs" ? !plotsLoaded : !loc.selectedMouza || !loc.selectedUpazila);
 
   return (
     <main className="min-h-screen bg-[var(--background)] px-3 py-6 text-[var(--foreground)] sm:px-5 md:px-8 md:py-8">
@@ -406,10 +448,10 @@ export default function RajukTestPage() {
         <header className="space-y-3">
           <div className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
             <Database className="text-[#17663A]" size={28} />
-            RAJUK প্লট অনুসন্ধান
+            রাজউক প্লট অনুসন্ধান
           </div>
           <p className="max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
-            আর এস প্লট মৌজা / জে.এল. অনুযায়ী এবং এম এস প্লট সঠিক প্লট নম্বর দিয়ে অনুসন্ধান করুন।
+            আর এস ও এম এস প্লট জেলা, উপজেলা, মৌজা, জে.এল. এবং সঠিক প্লট নম্বর দিয়ে নির্দিষ্টভাবে অনুসন্ধান করুন।
           </p>
           <div className="inline-flex rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-1">
             {(["rs", "ms"] as const).map((value) => (
@@ -429,49 +471,72 @@ export default function RajukTestPage() {
           </div>
         </header>
 
-        {mode === "rs" ? (
-          <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
-            <h2 className="mb-4 text-base font-bold">ঠিকানা নির্বাচন</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <SelectField
-                  label="জেলা"
-                  value={loc.dGuid}
-                  onChange={(event) => loc.setDGuid(event.target.value)}
-                  disabled={loc.loading === "district"}
-                  loading={loc.loading === "district"}
-                >
-                  <option value="">জেলা নির্বাচন করুন</option>
-                  {loc.districts.map((district) => (
-                    <option key={district.d_guid} value={district.d_guid}>{district.m_district}</option>
-                  ))}
-                </SelectField>
-              </div>
-              <SelectField
-                label="থানা / উপজেলা"
-                value={loc.tGuid}
-                onChange={(event) => loc.setTGuid(event.target.value)}
-                disabled={!loc.dGuid || loc.loading === "upazila"}
-                loading={loc.loading === "upazila"}
-              >
-                <option value="">উপজেলা নির্বাচন করুন</option>
-                {loc.upazilas.map((upazila) => (
-                  <option key={upazila.t_guid} value={upazila.t_guid}>{upazila.upazila_ps}</option>
-                ))}
-              </SelectField>
-              <SelectField
-                label="মৌজা + জে.এল."
-                value={loc.mauzaId}
-                onChange={(event) => loc.setMauzaId(event.target.value)}
-                disabled={!loc.tGuid || loc.loading === "mouza"}
-                loading={loc.loading === "mouza"}
-              >
-                <option value="">{loc.loading === "mouza" ? "লোড হচ্ছে…" : "মৌজা নির্বাচন করুন"}</option>
-                {loc.mouzas.map((mouza) => (
-                  <option key={mouza.m_guid} value={mouza.m_guid}>{mouza.mauza} — JL {mouza.jl_no}</option>
-                ))}
-              </SelectField>
+        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
+          <div className="mb-4">
+            <h2 className="text-base font-bold">
+              {mode === "rs" ? "আর এস প্লটের এলাকা নির্বাচন" : "নির্দিষ্ট এম এস প্লটের এলাকা নির্বাচন"}
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
+              {mode === "rs"
+                ? "জেলা → উপজেলা → মৌজা/জে.এল. নির্বাচন করে ওই এলাকার আর এস প্লট লোড করুন।"
+                : "জেলা → উপজেলা → মৌজা → জে.এল. নির্বাচন করলে একই এম এস প্লট নম্বরের অপ্রাসঙ্গিক ফলাফল বাদ যাবে।"}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SelectField
+              label="জেলা"
+              value={loc.dGuid}
+              onChange={(event) => loc.setDGuid(event.target.value)}
+              disabled={loc.loading === "district"}
+              loading={loc.loading === "district"}
+            >
+              <option value="">জেলা নির্বাচন করুন</option>
+              {loc.districts.map((district) => (
+                <option key={district.d_guid} value={district.d_guid}>{district.m_district}</option>
+              ))}
+            </SelectField>
+
+            <SelectField
+              label="থানা / উপজেলা"
+              value={loc.tGuid}
+              onChange={(event) => loc.setTGuid(event.target.value)}
+              disabled={!loc.dGuid || loc.loading === "upazila"}
+              loading={loc.loading === "upazila"}
+            >
+              <option value="">উপজেলা নির্বাচন করুন</option>
+              {loc.upazilas.map((upazila) => (
+                <option key={upazila.t_guid} value={upazila.t_guid}>{upazila.upazila_ps}</option>
+              ))}
+            </SelectField>
+
+            <SelectField
+              label="মৌজা"
+              value={loc.mauzaId}
+              onChange={(event) => loc.setMauzaId(event.target.value)}
+              disabled={!loc.tGuid || loc.loading === "mouza"}
+              loading={loc.loading === "mouza"}
+            >
+              <option value="">{loc.loading === "mouza" ? "লোড হচ্ছে…" : "মৌজা নির্বাচন করুন"}</option>
+              {loc.mouzas.map((mouza) => (
+                <option key={mouza.m_guid} value={mouza.m_guid}>{mouza.mauza} — জে.এল. {mouza.jl_no}</option>
+              ))}
+            </SelectField>
+
+            <div className="min-w-0">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">জে.এল. নম্বর</label>
+              <input
+                type="text"
+                readOnly
+                value={loc.selectedMouza ? String(loc.selectedMouza.jl_no) : ""}
+                placeholder="মৌজা নির্বাচন করলে জে.এল. নম্বর আসবে"
+                className="mt-1 w-full rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-2.5 text-sm font-semibold text-[var(--foreground)] outline-none placeholder:font-normal placeholder:text-[var(--muted-foreground)]"
+                aria-label="জে.এল. নম্বর"
+              />
             </div>
+          </div>
+
+          {mode === "rs" ? (
             <button
               type="button"
               onClick={() => void loadRsPlots()}
@@ -481,12 +546,12 @@ export default function RajukTestPage() {
               {loadingPlots ? <Loader2 size={17} className="animate-spin" /> : <Database size={17} />}
               {loadingPlots ? "আর এস প্লট লোড হচ্ছে…" : "আর এস প্লট লোড করুন"}
             </button>
-          </section>
-        ) : (
-          <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100 sm:p-5">
-            <strong>এম এস প্লট অনুসন্ধান:</strong> এম এস লেয়ারে আলাদা জেলা/মৌজা GUID নেই। তাই সঠিক MS প্লট নম্বর সরাসরি খোঁজা হয়। একই নম্বর একাধিক স্থানে থাকলে নিচের ফলাফল থেকে ঠিকানাটি নির্বাচন করুন।
-          </section>
-        )}
+          ) : (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-xs leading-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
+              এম এস-এর বিদ্যমান রাজউক ফিচারসার্ভার ঠিকানা-ধাপ ব্যবহার করেই অনুসন্ধান সংকুচিত করা হচ্ছে; মূল আর এস/এম এস ডেটা উৎস ও এপিআই অপরিবর্তিত।
+            </div>
+          )}
+        </section>
 
         <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
           <h2 className="text-base font-bold">{prefix} প্লট নম্বর</h2>
@@ -495,7 +560,9 @@ export default function RajukTestPage() {
               ? plotsLoaded
                 ? `${plots.length.toLocaleString("bn-BD")}টি আর এস প্লট লোড হয়েছে।`
                 : "আগে নির্বাচিত মৌজার আর এস প্লট লোড করুন।"
-              : "যেমন 4711 অথবা MS-4711 লিখে সরাসরি অনুসন্ধান করুন।"}
+              : loc.selectedMouza
+                ? `${loc.selectedMouza.mauza} · জে.এল. ${String(loc.selectedMouza.jl_no).toLocaleString()} — এখন যেমন ৪৭১১ অথবা এম এস-৪৭১১ লিখুন।`
+                : "আগে জেলা, উপজেলা ও মৌজা নির্বাচন করুন; তারপর যেমন ৪৭১১ অথবা এম এস-৪৭১১ লিখুন।"}
           </p>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <input
@@ -509,7 +576,7 @@ export default function RajukTestPage() {
                   void runSearch();
                 }
               }}
-              placeholder={mode === "rs" ? "যেমন: 467 বা RS-467" : "যেমন: 4711 বা MS-4711"}
+              placeholder={mode === "rs" ? "যেমন: ৪৬৭ বা আর এস-৪৬৭" : "যেমন: ৪৭১১ বা এম এস-৪৭১১"}
               disabled={loadingPlots || (mode === "rs" && !plotsLoaded)}
               className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2.5 text-sm outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[#17663A] focus:ring-2 focus:ring-[#17663A]/20 disabled:bg-[var(--secondary)]"
               aria-label={`${prefix} প্লট নম্বর`}
@@ -535,8 +602,8 @@ export default function RajukTestPage() {
 
         {mode === "ms" && msMatches.length > 1 ? (
           <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5">
-            <h2 className="text-base font-bold">একই নম্বরের এম এস ফলাফল — {msMatches.length.toLocaleString("bn-BD")}টি</h2>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">মৌজা/ঠিকানা দেখে সঠিক প্লটটি নির্বাচন করুন।</p>
+            <h2 className="text-base font-bold">নির্বাচিত এলাকায় একই নম্বরের এম এস ফলাফল — {msMatches.length.toLocaleString("bn-BD")}টি</h2>
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">ঠিকানা ও জমির পরিমাণ মিলিয়ে সঠিক প্লটটি নির্বাচন করুন।</p>
             <div className="mt-3 grid gap-2">
               {msMatches.map((feature, index) => {
                 const attributes = feature.attributes as Record<string, unknown>;
@@ -579,15 +646,15 @@ export default function RajukTestPage() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[#17663A] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
                 >
                   {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                  {downloading ? "তৈরি হচ্ছে…" : "PNG ডাউনলোড"}
+                  {downloading ? "তৈরি হচ্ছে…" : "পিএনজি ডাউনলোড"}
                 </button>
               </div>
             </div>
 
             <div ref={exportRef} className="rounded-xl border border-[var(--border-color)] bg-white p-4 text-slate-900 sm:p-5">
               <div className="mb-4 border-b border-slate-200 pb-3">
-                <p className="text-lg font-bold text-[#17663A]">সহজ জমির হিসাব · LandBD</p>
-                <p className="text-sm font-semibold">RAJUK {prefix} প্লট ফলাফল</p>
+                <p className="text-lg font-bold text-[#17663A]">সহজ জমির হিসাব · ল্যান্ডবিডি</p>
+                <p className="text-sm font-semibold">রাজউক {prefix} প্লট ফলাফল</p>
               </div>
               <div className="overflow-hidden rounded-xl border border-slate-200">
                 <table className="w-full text-sm">
@@ -614,7 +681,7 @@ export default function RajukTestPage() {
                         <thead className="bg-violet-50 text-left text-xs text-violet-800">
                           <tr>
                             <th className="px-3 py-2">ক্রম</th>
-                            <th className="px-3 py-2">MS প্লট নম্বর</th>
+                            <th className="px-3 py-2">এম এস প্লট নম্বর</th>
                             <th className="px-3 py-2">পরিমাণ (শতাংশ)</th>
                             <th className="px-3 py-2">পরিমাণ (কাঠা)</th>
                           </tr>
@@ -623,7 +690,7 @@ export default function RajukTestPage() {
                           {msRows.map((row, index) => (
                             <tr key={`${row.no}-${index}`} className="border-t border-violet-100">
                               <td className="px-3 py-2">{index + 1}</td>
-                              <td className="px-3 py-2 font-medium">{row.no.toUpperCase().startsWith("MS") ? row.no : `MS-${row.no}`}</td>
+                              <td className="px-3 py-2 font-medium">এম এস-{normalizePlotInput(row.no, "ms")}</td>
                               <td className="px-3 py-2">{row.shotok}</td>
                               <td className="px-3 py-2">{row.katha}</td>
                             </tr>
@@ -636,7 +703,7 @@ export default function RajukTestPage() {
               ) : null}
 
               <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-500">
-                তথ্য RAJUK-এর উপলব্ধ সার্ভে ডেটা থেকে নেওয়া হয়েছে। আনুষ্ঠানিক কাজে সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।
+                তথ্য রাজউকের উপলব্ধ সার্ভে ডেটা থেকে নেওয়া হয়েছে। আনুষ্ঠানিক কাজে সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।
               </p>
             </div>
 
