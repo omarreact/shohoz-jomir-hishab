@@ -15,7 +15,7 @@ export type KhatianPdfExportResult =
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
-const JPEG_QUALITY = 0.92;
+const JPEG_QUALITY = 0.95;
 const MAX_PAGES = 80;
 
 function sanitizeFileName(name: string): string {
@@ -64,19 +64,24 @@ function exportFontFamily(): string {
     : '"Nirmala UI", "Segoe UI", Arial, sans-serif';
 }
 
+function setImportant(node: HTMLElement | null | undefined, property: string, value: string): void {
+  node?.style.setProperty(property, value, "important");
+}
+
 function compactPdfClone(clone: HTMLElement): void {
   const fontFamily = exportFontFamily();
   clone.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.maxWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.margin = "0";
-  clone.style.padding = "8px";
+  clone.style.padding = "12px";
   clone.style.boxSizing = "border-box";
   clone.style.background = "#ffffff";
-  clone.style.color = "#111827";
+  clone.style.color = "#13261b";
   clone.style.overflow = "visible";
   clone.style.fontFamily = fontFamily;
   clone.style.fontVariantNumeric = "tabular-nums";
+  clone.style.fontSize = "14px";
   clone.classList.remove("dark");
 
   clone
@@ -93,8 +98,8 @@ function compactPdfClone(clone: HTMLElement): void {
     }
 
     node.style.setProperty("font-family", "inherit", "important");
-    node.style.setProperty("color", "#111827", "important");
-    node.style.setProperty("border-color", "#d7ded9", "important");
+    node.style.setProperty("color", "#13261b", "important");
+    node.style.setProperty("border-color", "#dce7e1", "important");
     node.style.setProperty("background-color", "transparent", "important");
     node.style.setProperty("box-shadow", "none", "important");
     node.style.setProperty("text-shadow", "none", "important");
@@ -107,44 +112,149 @@ function compactPdfClone(clone: HTMLElement): void {
     }
   });
 
-  clone.querySelectorAll<HTMLElement>("header, th").forEach((node) => {
-    node.style.setProperty("background-color", "#f4f7f5", "important");
+  setImportant(clone, "background-color", "#ffffff");
+  setImportant(clone, "color", "#13261b");
+  setImportant(clone, "border-top", "4px solid #17663a");
+
+  const documentCard = clone.children[0] as HTMLElement | undefined;
+  if (documentCard) {
+    setImportant(documentCard, "border", "1px solid #a9cdb9");
+    setImportant(documentCard, "border-radius", "12px");
+    setImportant(documentCard, "overflow", "hidden");
+    setImportant(documentCard, "background-color", "#ffffff");
+
+    const brandHeader = documentCard.children[0] as HTMLElement | undefined;
+    if (brandHeader) {
+      setImportant(brandHeader, "background-color", "#eef8f2");
+      setImportant(brandHeader, "border-bottom", "2px solid #b9d6c7");
+      setImportant(brandHeader, "padding", "10px 12px");
+
+      const brandGroup = brandHeader.children[0] as HTMLElement | undefined;
+      const logo = brandGroup?.children[0] as HTMLElement | undefined;
+      if (logo) {
+        setImportant(logo, "background-color", "#17663a");
+        setImportant(logo, "color", "#ffffff");
+        setImportant(logo, "border-color", "#17663a");
+      }
+    }
+
+    const details = documentCard.children[1] as HTMLElement | undefined;
+    if (details) {
+      setImportant(details, "background-color", "#ffffff");
+      setImportant(details, "padding", "11px 12px");
+
+      const summaryGrid = details.children[2] as HTMLElement | undefined;
+      if (summaryGrid) {
+        setImportant(summaryGrid, "gap", "7px");
+        setImportant(summaryGrid, "margin-top", "9px");
+        Array.from(summaryGrid.children).forEach((child) => {
+          const card = child as HTMLElement;
+          setImportant(card, "background-color", "#f4faf6");
+          setImportant(card, "border", "1px solid #cfe3d8");
+          setImportant(card, "border-radius", "8px");
+          setImportant(card, "padding", "7px 10px");
+          setImportant(card, "min-height", "40px");
+
+          const paragraphs = card.querySelectorAll<HTMLElement>("p");
+          if (paragraphs[0]) {
+            setImportant(paragraphs[0], "color", "#5d7065");
+            setImportant(paragraphs[0], "font-size", "11px");
+            setImportant(paragraphs[0], "font-weight", "600");
+          }
+          if (paragraphs[1]) {
+            setImportant(paragraphs[1], "color", "#0f5132");
+            setImportant(paragraphs[1], "font-size", "14px");
+            setImportant(paragraphs[1], "font-weight", "800");
+          }
+        });
+      }
+    }
+  }
+
+  clone.querySelectorAll<HTMLElement>("h1, h2, h3").forEach((heading) => {
+    setImportant(heading, "color", "#10251a");
+    setImportant(heading, "font-weight", "800");
   });
+
   clone.querySelectorAll<HTMLElement>("a, svg").forEach((node) => {
-    node.style.setProperty("color", "#17663a", "important");
+    setImportant(node, "color", "#17663a");
   });
+
   clone.querySelectorAll<HTMLElement>("[class~='tabular-nums'], [data-bangla-number='1']").forEach((node) => {
-    node.style.setProperty("font-family", fontFamily, "important");
-    node.style.setProperty("font-variant-numeric", "tabular-nums", "important");
+    setImportant(node, "font-family", fontFamily);
+    setImportant(node, "font-variant-numeric", "tabular-nums");
+    setImportant(node, "font-weight", "700");
   });
 
   clone.querySelectorAll<HTMLElement>("section").forEach((section) => {
-    section.style.margin = "0";
-    section.style.borderRadius = "7px";
-    section.style.backgroundColor = "#ffffff";
-  });
-  clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
-    header.style.padding = "4px 7px";
-  });
-  clone.querySelectorAll<HTMLElement>("section > div").forEach((body) => {
-    body.style.padding = "5px 7px";
-  });
-  clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
-    cell.style.padding = "3px 5px";
-    cell.style.lineHeight = "1.25";
-  });
-  clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
-    table.style.width = "100%";
-    table.style.maxWidth = "100%";
-    table.style.minWidth = "0";
-    table.style.tableLayout = "auto";
-  });
-  clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
-    node.style.overflow = "visible";
+    setImportant(section, "margin", "8px 0 0");
+    setImportant(section, "border", "1px solid #d6e4dc");
+    setImportant(section, "border-radius", "10px");
+    setImportant(section, "background-color", "#ffffff");
+    setImportant(section, "overflow", "hidden");
   });
 
-  clone.style.setProperty("background-color", "#ffffff", "important");
-  clone.style.setProperty("color", "#111827", "important");
+  clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
+    setImportant(header, "padding", "7px 10px");
+    setImportant(header, "background-color", "#eef7f2");
+    setImportant(header, "border-bottom", "1px solid #cfe3d8");
+    header.querySelectorAll<HTMLElement>("*").forEach((child) => {
+      setImportant(child, "color", "#184d32");
+    });
+  });
+
+  clone.querySelectorAll<HTMLElement>("section > div").forEach((body) => {
+    setImportant(body, "padding", "8px 10px");
+  });
+
+  clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
+    setImportant(table, "width", "100%");
+    setImportant(table, "max-width", "100%");
+    setImportant(table, "min-width", "0");
+    setImportant(table, "table-layout", "auto");
+    setImportant(table, "border-collapse", "collapse");
+    setImportant(table, "background-color", "#ffffff");
+  });
+
+  clone.querySelectorAll<HTMLElement>("thead th").forEach((cell) => {
+    setImportant(cell, "background-color", "#e8f3ec");
+    setImportant(cell, "color", "#173b29");
+    setImportant(cell, "font-weight", "800");
+    setImportant(cell, "border-bottom", "1px solid #bfd8c9");
+  });
+
+  clone.querySelectorAll<HTMLElement>("tbody th").forEach((cell) => {
+    setImportant(cell, "background-color", "#f3f8f5");
+    setImportant(cell, "color", "#395447");
+    setImportant(cell, "font-weight", "700");
+  });
+
+  clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
+    setImportant(cell, "padding", "5px 7px");
+    setImportant(cell, "line-height", "1.35");
+    setImportant(cell, "border-bottom", "1px solid #e7eee9");
+    setImportant(cell, "vertical-align", "top");
+  });
+
+  clone.querySelectorAll<HTMLElement>("tbody tr:nth-child(even) td").forEach((cell) => {
+    setImportant(cell, "background-color", "#fbfdfc");
+  });
+
+  clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
+    setImportant(node, "overflow", "visible");
+  });
+
+  const sealWrapper = clone.querySelector<HTMLElement>("[data-landbd-seal='1']");
+  const seal = sealWrapper?.firstElementChild as HTMLElement | undefined;
+  if (seal) {
+    setImportant(seal, "background-color", "#f4fbf7");
+    setImportant(seal, "border", "4px double #17663a");
+    setImportant(seal, "color", "#17663a");
+    seal.querySelectorAll<HTMLElement>("*").forEach((node) => {
+      setImportant(node, "color", "#17663a");
+      setImportant(node, "border-color", "#8db9a0");
+    });
+  }
 }
 
 function collectBreakpoints(root: HTMLElement): number[] {
@@ -327,7 +437,7 @@ export async function exportKhatianPdf(
     "top:0",
     `width:${PDF_EXPORT_WIDTH_PX}px`,
     "background:#ffffff",
-    "color:#111827",
+    "color:#13261b",
     "z-index:-1",
     "pointer-events:none",
     "overflow:visible",
@@ -339,7 +449,7 @@ export async function exportKhatianPdf(
     `width:${PDF_EXPORT_WIDTH_PX}px`,
     "overflow:hidden",
     "background:#ffffff",
-    "color:#111827",
+    "color:#13261b",
   ].join(";");
 
   const clone = options.source.cloneNode(true) as HTMLElement;
