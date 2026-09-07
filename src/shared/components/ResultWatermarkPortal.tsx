@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ResultWatermark from "@/src/shared/components/ResultWatermark";
 
@@ -9,23 +9,27 @@ type Props = {
 };
 
 export default function ResultWatermarkPortal({ targetRef }: Props) {
-  const target = targetRef.current;
+  const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const node = targetRef.current;
-    if (!node) return;
+    const frame = requestAnimationFrame(() => setTarget(targetRef.current));
+    return () => cancelAnimationFrame(frame);
+  }, [targetRef]);
 
-    const hadRelative = node.classList.contains("relative");
-    const hadIsolate = node.classList.contains("isolate");
-    node.classList.add("relative", "isolate");
-    node.dataset.resultDocument = "1";
+  useEffect(() => {
+    if (!target) return;
+
+    const hadRelative = target.classList.contains("relative");
+    const hadIsolate = target.classList.contains("isolate");
+    target.classList.add("relative", "isolate");
+    target.dataset.resultDocument = "1";
 
     return () => {
-      if (!hadRelative) node.classList.remove("relative");
-      if (!hadIsolate) node.classList.remove("isolate");
-      delete node.dataset.resultDocument;
+      if (!hadRelative) target.classList.remove("relative");
+      if (!hadIsolate) target.classList.remove("isolate");
+      delete target.dataset.resultDocument;
     };
-  }, [targetRef, target]);
+  }, [target]);
 
   return target ? createPortal(<ResultWatermark />, target) : null;
 }
