@@ -9,9 +9,29 @@ export type MsPlotLocationFilter = {
   jl?: string | number;
 };
 
+const BANGLA_TO_ASCII: Record<string, string> = {
+  "০": "0",
+  "১": "1",
+  "২": "2",
+  "৩": "3",
+  "৪": "4",
+  "৫": "5",
+  "৬": "6",
+  "৭": "7",
+  "৮": "8",
+  "৯": "9",
+};
+
+function toAsciiDigits(value: string): string {
+  return value.replace(/[০-৯]/g, (digit) => BANGLA_TO_ASCII[digit] ?? digit);
+}
+
 export function normalizePlotInput(raw: string, mode: PlotMode): string {
-  const prefix = mode === "rs" ? /^RS[\s\-_]*/i : /^MS[\s\-_]*/i;
-  return raw.trim().replace(prefix, "").replace(/\s+/g, "").replace(/^0+/, "") || "0";
+  const ascii = toAsciiDigits(raw.trim());
+  const prefix = mode === "rs"
+    ? /^(?:RS|আর\s*এস)[\s\-_]*/i
+    : /^(?:MS|এম\s*এস)[\s\-_]*/i;
+  return ascii.replace(prefix, "").replace(/\s+/g, "").replace(/^0+/, "") || "0";
 }
 
 export function plotNo(feature: RajukPlotFeature, mode: PlotMode): string {
