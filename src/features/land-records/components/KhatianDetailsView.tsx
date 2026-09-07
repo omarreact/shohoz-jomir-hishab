@@ -21,6 +21,14 @@ function safePart(value: unknown, fallback: string): string {
   return text.replace(/[^\w\u0980-\u09FF-]+/g, "_").replace(/_+/g, "_").slice(0, 48);
 }
 
+function markExcluded(node: Element | null): HTMLElement | null {
+  if (!(node instanceof HTMLElement)) return null;
+  node.dataset.pdfExclude = "1";
+  node.dataset.printExclude = "1";
+  node.classList.add("print:hidden");
+  return node;
+}
+
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -54,9 +62,31 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     const root = captureRef?.current;
     if (!root) return;
 
+    const previousFontFamily = root.style.fontFamily;
+    const previousFontVariantNumeric = root.style.fontVariantNumeric;
+    root.style.fontFamily = 'var(--font-noto-bengali), var(--font-hind-siliguri), "Nirmala UI", "Segoe UI", Arial, sans-serif';
+    root.style.fontVariantNumeric = "tabular-nums";
+
+    const publicInfoBanner = markExcluded(root.children[1]);
+    const surveyArchitectureNote = markExcluded(root.children[2]);
+    const supplement = markExcluded(
+      document.querySelector("section[aria-label='সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য']"),
+    );
+
     const headerCard = root.children[0] as HTMLElement | undefined;
     const details = headerCard?.children[1] as HTMLElement | undefined;
-    if (!details) return;
+    if (!details) {
+      return () => {
+        root.style.fontFamily = previousFontFamily;
+        root.style.fontVariantNumeric = previousFontVariantNumeric;
+        [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+          if (!node) return;
+          delete node.dataset.pdfExclude;
+          delete node.dataset.printExclude;
+          node.classList.remove("print:hidden");
+        });
+      };
+    }
 
     const children = Array.from(details.children) as HTMLElement[];
     const duplicatedMetaGrid = children[1];
@@ -96,6 +126,14 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     }
 
     return () => {
+      root.style.fontFamily = previousFontFamily;
+      root.style.fontVariantNumeric = previousFontVariantNumeric;
+      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+        if (!node) return;
+        delete node.dataset.pdfExclude;
+        delete node.dataset.printExclude;
+        node.classList.remove("print:hidden");
+      });
       if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = previousMetaDisplay;
       if (summaryGrid) {
         summaryGrid.style.cssText = previousSummaryCss;
@@ -108,7 +146,7 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         });
       }
     };
-  }, [captureRef, khatian.ID]);
+  }, [captureRef, khatian.ID, resolvedFullKhatian]);
 
   const downloadPdf = async () => {
     if (!captureRef?.current || downloadingPdf) return;
@@ -121,13 +159,13 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
       const mouza = safePart(khatian.MOUZA_NAME, "mouza");
       const result = await exportKhatianPdf({
         source: captureRef.current,
-        fileName: `LandBD-${survey}-Khatian-${khatianNo}-${mouza}-A4-Landscape`,
+        fileName: `LandBD-${survey}-Khatian-${khatianNo}-${mouza}-A4-Portrait`,
       });
 
       if (!result.ok) setPdfError(result.error);
     } catch (error) {
       console.error("Khatian PDF download failed", error);
-      setPdfError("A4 Landscape PDF ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।");
+      setPdfError("A4 পোর্ট্রেট পিডিএফ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।");
     } finally {
       setDownloadingPdf(false);
     }
@@ -143,7 +181,7 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
           className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-          {downloadingPdf ? "PDF তৈরি হচ্ছে…" : "A4 Landscape PDF ডাউনলোড"}
+          {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "A4 পোর্ট্রেট পিডিএফ ডাউনলোড"}
         </button>
       </div>
 
