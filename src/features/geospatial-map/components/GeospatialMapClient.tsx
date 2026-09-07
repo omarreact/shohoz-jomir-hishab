@@ -55,7 +55,7 @@ export default function GeospatialMapClient() {
         href="/"
         aria-label="হোমে ফিরে যান"
         title="হোমে ফিরে যান"
-        className="absolute left-3 top-3 z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-white/30 bg-slate-950/85 text-white shadow-xl backdrop-blur-md transition hover:bg-[#006a4e] focus:outline-none focus:ring-2 focus:ring-white/80"
+        className="absolute left-3 top-[4.75rem] z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-white/30 bg-slate-950/85 text-white shadow-xl backdrop-blur-md transition hover:bg-[#006a4e] focus:outline-none focus:ring-2 focus:ring-white/80 sm:left-4 sm:top-20"
       >
         <House size={20} />
       </Link>
