@@ -16,6 +16,12 @@ type Props = {
   captureRef?: RefObject<HTMLDivElement | null>;
 };
 
+type ChildLayerSnapshot = {
+  node: HTMLElement;
+  position: string;
+  zIndex: string;
+};
+
 function safePart(value: unknown, fallback: string): string {
   const text = String(value ?? "").trim();
   if (!text) return fallback;
@@ -71,8 +77,37 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
 
     const previousFontFamily = root.style.fontFamily;
     const previousFontVariantNumeric = root.style.fontVariantNumeric;
+    const previousPosition = root.style.position;
+    const previousIsolation = root.style.isolation;
+    const childLayers: ChildLayerSnapshot[] = Array.from(root.children)
+      .filter((child): child is HTMLElement => child instanceof HTMLElement)
+      .map((node) => ({
+        node,
+        position: node.style.position,
+        zIndex: node.style.zIndex,
+      }));
+
     root.style.fontFamily = 'var(--font-noto-bengali), var(--font-hind-siliguri), "Nirmala UI", "Segoe UI", Arial, sans-serif';
     root.style.fontVariantNumeric = "tabular-nums";
+    root.style.position = "relative";
+    root.style.isolation = "isolate";
+    root.dataset.resultDocument = "1";
+    childLayers.forEach(({ node }) => {
+      node.style.position = "relative";
+      node.style.zIndex = "1";
+    });
+
+    const restoreRootPresentation = () => {
+      root.style.fontFamily = previousFontFamily;
+      root.style.fontVariantNumeric = previousFontVariantNumeric;
+      root.style.position = previousPosition;
+      root.style.isolation = previousIsolation;
+      delete root.dataset.resultDocument;
+      childLayers.forEach(({ node, position, zIndex }) => {
+        node.style.position = position;
+        node.style.zIndex = zIndex;
+      });
+    };
 
     const publicInfoBanner = markExcluded(root.children[1]);
     const surveyArchitectureNote = markExcluded(root.children[2]);
@@ -80,18 +115,21 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
       document.querySelector("section[aria-label='সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য']"),
     );
 
+    const restoreExcluded = () => {
+      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+        if (!node) return;
+        delete node.dataset.pdfExclude;
+        delete node.dataset.printExclude;
+        node.classList.remove("print:hidden");
+      });
+    };
+
     const headerCard = root.children[0] as HTMLElement | undefined;
     const details = headerCard?.children[1] as HTMLElement | undefined;
     if (!details) {
       return () => {
-        root.style.fontFamily = previousFontFamily;
-        root.style.fontVariantNumeric = previousFontVariantNumeric;
-        [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
-          if (!node) return;
-          delete node.dataset.pdfExclude;
-          delete node.dataset.printExclude;
-          node.classList.remove("print:hidden");
-        });
+        restoreRootPresentation();
+        restoreExcluded();
       };
     }
 
@@ -133,14 +171,8 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     }
 
     return () => {
-      root.style.fontFamily = previousFontFamily;
-      root.style.fontVariantNumeric = previousFontVariantNumeric;
-      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
-        if (!node) return;
-        delete node.dataset.pdfExclude;
-        delete node.dataset.printExclude;
-        node.classList.remove("print:hidden");
-      });
+      restoreRootPresentation();
+      restoreExcluded();
       if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = previousMetaDisplay;
       if (summaryGrid) {
         summaryGrid.style.cssText = previousSummaryCss;
