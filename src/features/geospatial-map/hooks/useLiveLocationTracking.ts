@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { Marker, type Map as MapLibreInstance } from "maplibre-gl";
-import type { FeatureCollection, Geometry } from "geojson";
 import { createAccuracyPolygon, updateSourceData } from "@/src/features/geospatial-map/maplibre/mapUtils";
 import { VECTOR_SOURCES } from "@/src/features/geospatial-map/maplibre/types";
 
@@ -74,7 +73,7 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
     try {
       await OrientationEvent.requestPermission();
     } catch {
-      // Orientation permission is optional; geolocation tracking still works.
+      // Orientation is optional; geolocation heading remains available when supplied.
     }
   }, []);
 
@@ -105,7 +104,6 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
 
   useEffect(() => {
     if (!trackingEnabled || !mapReady || !mapRef.current || !navigator.geolocation) return;
-    const map = mapRef.current;
 
     if (!markerRef.current) {
       const { root, arrow } = markerElement();
@@ -115,15 +113,16 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        if (!mapRef.current) return;
+        const map = mapRef.current;
+        if (!map) return;
         lastPositionRef.current = position;
         const { latitude, longitude, accuracy, heading } = position.coords;
 
-        markerRef.current?.setLngLat([longitude, latitude]).addTo(mapRef.current);
+        markerRef.current?.setLngLat([longitude, latitude]).addTo(map);
         updateSourceData(
-          mapRef.current,
+          map,
           VECTOR_SOURCES.accuracy,
-          createAccuracyPolygon(latitude, longitude, accuracy) as FeatureCollection<Geometry>,
+          createAccuracyPolygon(latitude, longitude, accuracy),
         );
 
         if (typeof heading === "number" && Number.isFinite(heading) && heading >= 0) {
@@ -131,9 +130,9 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
         }
 
         if (flyOnNextFixRef.current) {
-          mapRef.current.flyTo({
+          map.flyTo({
             center: [longitude, latitude],
-            zoom: Math.max(mapRef.current.getZoom(), 17),
+            zoom: Math.max(map.getZoom(), 17),
             duration: 700,
           });
           flyOnNextFixRef.current = false;
@@ -160,7 +159,7 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
   useEffect(() => {
     if (!trackingEnabled || typeof window === "undefined") return;
 
-    const handleOrientation = (event: Event) => {
+    const handleOrientation = ((event: Event) => {
       const orientation = event as OrientationEventWithCompass;
       const iosHeading = orientation.webkitCompassHeading;
       if (typeof iosHeading === "number" && Number.isFinite(iosHeading)) {
@@ -169,10 +168,9 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
       }
 
       if (typeof orientation.alpha === "number" && Number.isFinite(orientation.alpha)) {
-        // alpha rotates clockwise from the device reference frame; convert to compass bearing.
         rotateMarker(360 - orientation.alpha);
       }
-    };
+    }) as EventListener;
 
     window.addEventListener("deviceorientationabsolute", handleOrientation, true);
     window.addEventListener("deviceorientation", handleOrientation, true);
