@@ -50,7 +50,7 @@ function toAsciiDigits(value: string): string {
 }
 
 function normalizePlotInput(raw: string, mode: PlotMode): string {
-  const prefix = mode === "rs" ? /^RS[\s\-_]*/i : /^MS[\s\-_]*/i;
+  const prefix = mode === "rs" ? /^(?:RS|আর\s*এস)[\s\-_]*/i : /^(?:MS|এম\s*এস)[\s\-_]*/i;
   return toAsciiDigits(raw).trim().replace(prefix, "").replace(/\s+/g, "").replace(/^0+/, "") || "0";
 }
 
