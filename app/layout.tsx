@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
+import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import VisitTracker from "@/src/shared/components/VisitTracker";
 import { Analytics } from "@vercel/analytics/next";
@@ -26,7 +27,7 @@ const notoSansBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "সহজ জমির হিসাব | Shohoz Jomir Hishab",
+  title: "সহজ জমির হিসাব | ল্যান্ডবিডি",
   description:
     "বাংলাদেশের ভূমি পরিমাপ, খতিয়ান এবং উত্তরাধিকার হিসাবের আধুনিক ডিজিটাল প্ল্যাটফর্ম।",
   keywords: [
@@ -36,13 +37,13 @@ export const metadata: Metadata = {
     "উত্তরাধিকার আইন",
     "বাংলাদেশ ভূমি",
   ],
-  authors: [{ name: "Admin" }],
+  authors: [{ name: "অ্যাডমিন" }],
   openGraph: {
     title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
     description:
       "খতিয়ানের হিসাব, জমির পরিমাপ এবং উত্তরাধিকার বন্টনের স্মার্ট সমাধান।",
     url: "https://landbd.pincodeit.com/",
-    siteName: SITE_CONFIG.name,
+    siteName: "ল্যান্ডবিডি",
     locale: "bn_BD",
     type: "website",
   },
@@ -75,6 +76,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ConditionalShell>{children}</ConditionalShell>
+          <BanglaUiEnforcer />
           <VisitTracker />
           <Analytics />
           <SpeedInsights />
