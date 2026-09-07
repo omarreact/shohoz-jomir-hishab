@@ -46,7 +46,7 @@ export function parseAddressSearch(address: string | null | undefined): {
 
 /**
  * @param source which FeatureServer layer the row came from.
- * MS layer (5) must never invent RS-* labels from plot_no.
+ * MS layer (5) must never invent RS-* labels or RS-specific JL fields.
  * @param rings optional GIS polygon rings [lng,lat][][] — preferred for area.
  */
 export function enrichPlotAttributes(
@@ -77,18 +77,22 @@ export function enrichPlotAttributes(
     if (!rsPlot && !msPlot && present(raw.plot_no)) rsPlot = `RS-${raw.plot_no}`;
   }
 
+  const resolvedJl = present(raw.jl_no)
+    ? raw.jl_no
+    : parsed.jlNo ?? extras?.jl ?? null;
+  const resolvedRsJl = present(raw.rs_jl_no) ? raw.rs_jl_no : resolvedJl;
+  const resolvedMsJl = present(raw.ms_jl_no) ? raw.ms_jl_no : resolvedJl;
+
   const attributes: Record<string, unknown> = {
     ...raw,
     _layer_source: source,
     plot_no: raw.plot_no ?? parsed.plotHint ?? null,
     rs_plot_no: rsPlot,
     ms_plot_no: msPlot,
-    rs_jl_no: present(raw.rs_jl_no)
-      ? raw.rs_jl_no
-      : present(raw.jl_no)
-        ? raw.jl_no
-        : parsed.jlNo ?? extras?.jl ?? null,
-    jl_no: present(raw.jl_no) ? raw.jl_no : parsed.jlNo ?? extras?.jl ?? null,
+    // Keep survey-specific JL provenance clean: MS rows get ms_jl_no, not rs_jl_no.
+    rs_jl_no: source === "ms" ? null : resolvedRsJl,
+    ms_jl_no: source === "rs" ? (present(raw.ms_jl_no) ? raw.ms_jl_no : null) : resolvedMsJl,
+    jl_no: resolvedJl,
     rs_plot_type: source === "ms" ? "MS" : source === "rs" ? "RS" : rsPlot ? "RS" : msPlot ? "MS" : null,
     // Always derive from GIS geometry / Shape__Area — never trust stale attribute katha
     rs_plot_area: source === "ms" ? null : katha,
