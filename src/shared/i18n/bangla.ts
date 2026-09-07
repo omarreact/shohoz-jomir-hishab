@@ -139,9 +139,18 @@ const UI_TRANSLATIONS: Record<string, string> = {
   "LandBD": "ল্যান্ডবিডি",
 };
 
+const UI_PHRASE_REPLACEMENTS: Record<string, string> = {
+  "এম এস-এর বিদ্যমান রাজউক ফিচারসার্ভার ঠিকানা-ধাপ ব্যবহার করেই অনুসন্ধান সংকুচিত করা হচ্ছে; মূল আর এস/এম এস ডেটা উৎস ও এপিআই অপরিবর্তিত।":
+    "নির্বাচিত এলাকা ব্যবহার করে এম এস প্লট অনুসন্ধান আরও নির্দিষ্ট করা হবে।",
+};
+
 const TECHNICAL_SEGMENT_RE = /(https?:\/\/[^\s]+|\/api\/[^\s]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|\b[0-9a-f]{20,}\b)/gi;
 
 const TRANSLATION_ENTRIES = Object.entries(UI_TRANSLATIONS).sort(
+  ([a], [b]) => b.length - a.length,
+);
+
+const PHRASE_REPLACEMENT_ENTRIES = Object.entries(UI_PHRASE_REPLACEMENTS).sort(
   ([a], [b]) => b.length - a.length,
 );
 
@@ -180,6 +189,10 @@ export function translateUiText(value: string): string {
 
   const { protectedText, restore } = protectTechnicalSegments(value);
   let translated = protectedText;
+
+  for (const [source, replacement] of PHRASE_REPLACEMENT_ENTRIES) {
+    translated = translated.split(source).join(replacement);
+  }
 
   for (const [english, bangla] of TRANSLATION_ENTRIES) {
     const pattern = new RegExp(`\\b${escapeRegExp(english)}\\b`, "gi");
