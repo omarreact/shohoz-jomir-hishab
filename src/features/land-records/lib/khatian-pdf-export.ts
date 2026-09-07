@@ -1,3 +1,10 @@
+import {
+  PDF_EXPORT_WIDTH_PX,
+  PDF_MARGIN_MM,
+  planPortraitSlices,
+  portraitContentSizeMm,
+} from "./khatian-pdf-layout";
+
 export type KhatianPdfExportOptions = {
   source: HTMLElement;
   fileName: string;
@@ -7,10 +14,9 @@ export type KhatianPdfExportResult =
   | { ok: true; pages: number; scale: number }
   | { ok: false; error: string };
 
-const EXPORT_WIDTH = 1380;
-const MAX_CANVAS_PIXELS = 24_000_000;
-const MAX_CANVAS_DIMENSION = 12_000;
-const RENDER_SCALES = [1.5, 1.25, 1];
+const RENDER_SCALES = [1.35, 1.15, 1];
+const JPEG_QUALITY = 0.92;
+const MAX_PAGES = 80;
 
 function sanitizeFileName(name: string): string {
   return (
@@ -49,85 +55,74 @@ async function waitForAssets(root: HTMLElement): Promise<void> {
   );
 }
 
+function exportFontFamily(): string {
+  const configured = getComputedStyle(document.documentElement)
+    .getPropertyValue("--font-noto-bengali")
+    .trim();
+  return configured
+    ? `${configured}, "Nirmala UI", "Segoe UI", Arial, sans-serif`
+    : '"Nirmala UI", "Segoe UI", Arial, sans-serif';
+}
+
 function compactPdfClone(clone: HTMLElement): void {
-  clone.style.width = `${EXPORT_WIDTH}px`;
-  clone.style.maxWidth = `${EXPORT_WIDTH}px`;
-  clone.style.minWidth = `${EXPORT_WIDTH}px`;
+  const fontFamily = exportFontFamily();
+  clone.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
+  clone.style.maxWidth = `${PDF_EXPORT_WIDTH_PX}px`;
+  clone.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.margin = "0";
   clone.style.padding = "8px";
   clone.style.boxSizing = "border-box";
-  clone.style.background = "#fff";
-  clone.style.color = "#0f172a";
+  clone.style.background = "#ffffff";
+  clone.style.color = "#111827";
   clone.style.overflow = "visible";
+  clone.style.fontFamily = fontFamily;
+  clone.style.fontVariantNumeric = "tabular-nums";
   clone.classList.remove("dark");
 
   clone
-    .querySelectorAll<HTMLElement>("[data-exclude-export='1'], [data-pdf-exclude='1']")
+    .querySelectorAll<HTMLElement>(
+      "[data-exclude-export='1'], [data-pdf-exclude='1'], [data-print-exclude='1']",
+    )
     .forEach((node) => {
       node.style.display = "none";
     });
 
-  // The public-info banner and survey architecture note are useful on screen,
-  // but intentionally omitted from the compact downloadable PDF.
-  const topLevel = Array.from(clone.children) as HTMLElement[];
-  if (topLevel[1]) topLevel[1].style.display = "none";
-  if (topLevel[2]) topLevel[2].style.display = "none";
-
-  // Compact the record header. The combined location line already contains the
-  // Division/District/Upazila/Mouza values, so the repeated four-card grid is
-  // hidden from the PDF. Summary values are rendered as one compact row.
-  const headerCard = topLevel[0];
-  if (headerCard) {
-    headerCard.style.borderRadius = "7px";
-    const brandBar = headerCard.children[0] as HTMLElement | undefined;
-    const details = headerCard.children[1] as HTMLElement | undefined;
-
-    if (brandBar) {
-      brandBar.style.padding = "6px 9px";
-      brandBar.style.gap = "7px";
+  clone.querySelectorAll<HTMLElement>("*").forEach((node) => {
+    for (const className of Array.from(node.classList)) {
+      if (className.startsWith("dark:")) node.classList.remove(className);
     }
 
-    if (details) {
-      details.style.padding = "6px 9px";
-      const detailsChildren = Array.from(details.children) as HTMLElement[];
-      const titleLocation = detailsChildren[0];
-      const duplicatedMetaGrid = detailsChildren[1];
-      const summaryGrid = detailsChildren[2];
+    node.style.setProperty("font-family", "inherit", "important");
+    node.style.setProperty("color", "#111827", "important");
+    node.style.setProperty("border-color", "#d7ded9", "important");
+    node.style.setProperty("background-color", "transparent", "important");
+    node.style.setProperty("box-shadow", "none", "important");
+    node.style.setProperty("text-shadow", "none", "important");
+    node.style.setProperty("filter", "none", "important");
+    node.style.setProperty("backdrop-filter", "none", "important");
 
-      if (titleLocation) titleLocation.style.gap = "6px";
-      if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = "none";
-
-      if (summaryGrid) {
-        summaryGrid.style.marginTop = "5px";
-        summaryGrid.style.display = "flex";
-        summaryGrid.style.flexWrap = "nowrap";
-        summaryGrid.style.gap = "5px";
-
-        Array.from(summaryGrid.children).forEach((child) => {
-          const card = child as HTMLElement;
-          card.style.flex = "1 1 0";
-          card.style.minWidth = "0";
-          card.style.padding = "4px 6px";
-          card.style.display = "flex";
-          card.style.alignItems = "center";
-          card.style.justifyContent = "center";
-          card.style.gap = "5px";
-
-          Array.from(card.querySelectorAll<HTMLElement>("p")).forEach((p) => {
-            p.style.margin = "0";
-            p.style.lineHeight = "1.15";
-            p.style.whiteSpace = "nowrap";
-          });
-        });
-      }
+    const position = getComputedStyle(node).position;
+    if (position === "fixed" || position === "sticky") {
+      node.style.setProperty("position", "static", "important");
     }
-  }
+  });
+
+  clone.querySelectorAll<HTMLElement>("header, th").forEach((node) => {
+    node.style.setProperty("background-color", "#f4f7f5", "important");
+  });
+  clone.querySelectorAll<HTMLElement>("a, svg").forEach((node) => {
+    node.style.setProperty("color", "#17663a", "important");
+  });
+  clone.querySelectorAll<HTMLElement>("[class~='tabular-nums'], [data-bangla-number='1']").forEach((node) => {
+    node.style.setProperty("font-family", fontFamily, "important");
+    node.style.setProperty("font-variant-numeric", "tabular-nums", "important");
+  });
 
   clone.querySelectorAll<HTMLElement>("section").forEach((section) => {
     section.style.margin = "0";
     section.style.borderRadius = "7px";
+    section.style.backgroundColor = "#ffffff";
   });
-
   clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
     header.style.padding = "4px 7px";
   });
@@ -136,37 +131,33 @@ function compactPdfClone(clone: HTMLElement): void {
   });
   clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
     cell.style.padding = "3px 5px";
-    cell.style.lineHeight = "1.2";
+    cell.style.lineHeight = "1.25";
+  });
+  clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
+    table.style.width = "100%";
+    table.style.maxWidth = "100%";
+    table.style.minWidth = "0";
+    table.style.tableLayout = "auto";
+  });
+  clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
+    node.style.overflow = "visible";
   });
 
-  clone.querySelectorAll<HTMLElement>("*").forEach((node) => {
-    for (const className of Array.from(node.classList)) {
-      if (className.startsWith("dark:")) node.classList.remove(className);
-    }
-    const position = getComputedStyle(node).position;
-    if (position === "fixed" || position === "sticky") node.style.position = "static";
-  });
+  clone.style.setProperty("background-color", "#ffffff", "important");
+  clone.style.setProperty("color", "#111827", "important");
 }
 
-function chooseRenderScale(node: HTMLElement): number {
-  const width = Math.max(node.scrollWidth, node.clientWidth, EXPORT_WIDTH);
-  const height = Math.max(node.scrollHeight, node.clientHeight, 1);
+function collectBreakpoints(root: HTMLElement): number[] {
+  const rootRect = root.getBoundingClientRect();
+  const candidates: Element[] = [
+    ...Array.from(root.children),
+    ...Array.from(root.querySelectorAll("section, tr")),
+  ];
 
-  for (const scale of RENDER_SCALES) {
-    const scaledWidth = Math.ceil(width * scale);
-    const scaledHeight = Math.ceil(height * scale);
-    if (
-      scaledWidth <= MAX_CANVAS_DIMENSION &&
-      scaledHeight <= MAX_CANVAS_DIMENSION &&
-      scaledWidth * scaledHeight <= MAX_CANVAS_PIXELS
-    ) {
-      return scale;
-    }
-  }
-
-  const byDimension = Math.min(MAX_CANVAS_DIMENSION / width, MAX_CANVAS_DIMENSION / height);
-  const byPixels = Math.sqrt(MAX_CANVAS_PIXELS / Math.max(width * height, 1));
-  return Math.max(0.65, Math.min(1, byDimension, byPixels) * 0.92);
+  return candidates
+    .filter((element) => getComputedStyle(element).display !== "none")
+    .map((element) => Math.round(element.getBoundingClientRect().bottom - rootRect.top))
+    .filter((value) => value > 0 && value < root.scrollHeight);
 }
 
 function canvasToBlob(
@@ -193,14 +184,117 @@ function triggerPdfDownload(blob: Blob, fileName: string): void {
   link.href = url;
   link.download = fileName;
   link.rel = "noopener";
-  link.style.display = "none";
+  link.style.position = "fixed";
+  link.style.left = "-10000px";
+  link.style.top = "-10000px";
   document.body.appendChild(link);
-  link.click();
-  link.remove();
 
-  // Android Chrome can consume the object URL after the click task returns.
-  // Keep it alive longer than the image-export implementation did.
-  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  if ("download" in link) {
+    link.click();
+  } else {
+    window.location.assign(url);
+  }
+
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
+}
+
+async function buildPdfAtScale(
+  html2canvas: typeof import("html2canvas").default,
+  JsPdf: typeof import("jspdf").jsPDF,
+  viewport: HTMLElement,
+  clone: HTMLElement,
+  fileName: string,
+  scale: number,
+): Promise<{ pages: number; scale: number }> {
+  const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
+  const slices = planPortraitSlices(totalHeight, collectBreakpoints(clone));
+  if (!slices.length || slices.length > MAX_PAGES) {
+    throw new Error(`Unsafe PDF page count: ${slices.length}`);
+  }
+
+  const pdf = new JsPdf({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const content = portraitContentSizeMm(PDF_MARGIN_MM);
+  const contentWidth = Math.min(content.width, pageWidth - PDF_MARGIN_MM * 2);
+  const contentHeight = Math.min(content.height, pageHeight - PDF_MARGIN_MM * 2);
+
+  for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
+    const slice = slices[pageIndex];
+    viewport.style.height = `${slice.height}px`;
+    clone.style.transform = `translateY(-${slice.offsetY}px)`;
+    clone.style.transformOrigin = "top left";
+
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const canvas = await html2canvas(viewport, {
+      backgroundColor: "#ffffff",
+      scale,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      imageTimeout: 8000,
+      foreignObjectRendering: false,
+      width: PDF_EXPORT_WIDTH_PX,
+      height: slice.height,
+      windowWidth: PDF_EXPORT_WIDTH_PX,
+      windowHeight: slice.height,
+      scrollX: 0,
+      scrollY: 0,
+      ignoreElements: (element) =>
+        element instanceof HTMLElement &&
+        (element.dataset.excludeExport === "1" ||
+          element.dataset.pdfExclude === "1" ||
+          element.dataset.printExclude === "1"),
+    });
+
+    if (!canvas.width || !canvas.height) {
+      canvas.width = 1;
+      canvas.height = 1;
+      throw new Error(`Empty PDF page canvas at page ${pageIndex + 1}`);
+    }
+
+    const pageBlob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+    const renderedHeight = Math.min(
+      contentHeight,
+      (slice.height * contentWidth) / PDF_EXPORT_WIDTH_PX,
+    );
+    canvas.width = 1;
+    canvas.height = 1;
+
+    if (!pageBlob || pageBlob.size === 0) {
+      throw new Error(`PDF page encoding failed at page ${pageIndex + 1}`);
+    }
+
+    if (pageIndex > 0) pdf.addPage("a4", "portrait");
+    const imageBytes = await blobToBytes(pageBlob);
+    pdf.addImage(
+      imageBytes,
+      "JPEG",
+      PDF_MARGIN_MM,
+      PDF_MARGIN_MM,
+      contentWidth,
+      renderedHeight,
+      undefined,
+      "FAST",
+    );
+
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+  }
+
+  clone.style.transform = "none";
+  viewport.style.height = "auto";
+
+  const pdfBlob = pdf.output("blob");
+  if (!(pdfBlob instanceof Blob) || pdfBlob.size === 0) {
+    throw new Error("Empty PDF blob");
+  }
+
+  triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}.pdf`);
+  return { pages: slices.length, scale };
 }
 
 export async function exportKhatianPdf(
@@ -211,180 +305,86 @@ export async function exportKhatianPdf(
   }
 
   let html2canvas: typeof import("html2canvas").default;
-  let jsPDF: typeof import("jspdf").jsPDF;
+  let JsPdf: typeof import("jspdf").jsPDF;
   try {
     const [canvasModule, pdfModule] = await Promise.all([
       import("html2canvas"),
       import("jspdf"),
     ]);
     html2canvas = canvasModule.default;
-    jsPDF = pdfModule.jsPDF;
+    JsPdf = pdfModule.jsPDF;
   } catch (error) {
     console.error("Khatian PDF libraries failed to load", error);
-    return { ok: false, error: "PDF তৈরির লাইব্রেরি লোড করা যায়নি।" };
+    return { ok: false, error: "পিডিএফ তৈরির লাইব্রেরি লোড করা যায়নি।" };
   }
 
   const host = document.createElement("div");
   host.setAttribute("data-khatian-pdf-host", "1");
+  host.setAttribute("data-bangla-ignore", "true");
   host.style.cssText = [
     "position:fixed",
     "left:-20000px",
     "top:0",
-    `width:${EXPORT_WIDTH}px`,
-    "background:#fff",
-    "color:#0f172a",
+    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    "background:#ffffff",
+    "color:#111827",
     "z-index:-1",
     "pointer-events:none",
     "overflow:visible",
   ].join(";");
 
-  const clone = options.source.cloneNode(true) as HTMLElement;
-  host.appendChild(clone);
-  document.body.appendChild(host);
+  const viewport = document.createElement("div");
+  viewport.style.cssText = [
+    "position:relative",
+    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    "overflow:hidden",
+    "background:#ffffff",
+    "color:#111827",
+  ].join(";");
 
-  let fullCanvas: HTMLCanvasElement | null = null;
+  const clone = options.source.cloneNode(true) as HTMLElement;
+  viewport.appendChild(clone);
+  host.appendChild(viewport);
+  document.body.appendChild(host);
 
   try {
     compactPdfClone(clone);
+    viewport.style.height = "auto";
+    viewport.style.overflow = "visible";
     await waitForAssets(clone);
 
-    const scale = chooseRenderScale(clone);
-    const expectedWidth = Math.ceil(Math.max(clone.scrollWidth, clone.clientWidth) * scale);
-    const expectedHeight = Math.ceil(Math.max(clone.scrollHeight, clone.clientHeight) * scale);
+    const measuredHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
+    viewport.style.height = `${measuredHeight}px`;
+    viewport.style.overflow = "hidden";
 
-    if (
-      expectedWidth <= 0 ||
-      expectedHeight <= 0 ||
-      expectedWidth > MAX_CANVAS_DIMENSION ||
-      expectedHeight > MAX_CANVAS_DIMENSION ||
-      expectedWidth * expectedHeight > MAX_CANVAS_PIXELS * 1.05
-    ) {
-      console.error("Khatian PDF canvas exceeds safe mobile limits", {
-        expectedWidth,
-        expectedHeight,
-        scale,
-      });
-      return {
-        ok: false,
-        error: "খতিয়ানটি PDF তৈরির জন্য অনেক বড়। ছোট স্কেলে আবার চেষ্টা করুন।",
-      };
-    }
-
-    fullCanvas = await html2canvas(clone, {
-      backgroundColor: "#ffffff",
-      scale,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      imageTimeout: 12000,
-      foreignObjectRendering: false,
-      windowWidth: EXPORT_WIDTH,
-      windowHeight: Math.max(clone.scrollHeight, clone.clientHeight, 1),
-      scrollX: 0,
-      scrollY: 0,
-    });
-
-    if (!fullCanvas.width || !fullCanvas.height) {
-      return { ok: false, error: "PDF-এর জন্য খতিয়ান রেন্ডার করা যায়নি।" };
-    }
-
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4",
-      compress: true,
-    });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 6;
-    const contentWidth = pageWidth - margin * 2;
-    const contentHeight = pageHeight - margin * 2;
-    const pagePixelHeight = Math.max(
-      1,
-      Math.floor((fullCanvas.width * contentHeight) / contentWidth),
-    );
-
-    let offsetY = 0;
-    let page = 0;
-
-    while (offsetY < fullCanvas.height) {
-      const sliceHeight = Math.min(pagePixelHeight, fullCanvas.height - offsetY);
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = fullCanvas.width;
-      pageCanvas.height = sliceHeight;
-
-      const context = pageCanvas.getContext("2d", { alpha: false });
-      if (!context) {
-        pageCanvas.width = 1;
-        pageCanvas.height = 1;
-        return { ok: false, error: "PDF পৃষ্ঠা তৈরি করা যায়নি।" };
+    let lastError: unknown;
+    for (const scale of RENDER_SCALES) {
+      try {
+        const result = await buildPdfAtScale(
+          html2canvas,
+          JsPdf,
+          viewport,
+          clone,
+          options.fileName,
+          scale,
+        );
+        return { ok: true, ...result };
+      } catch (error) {
+        lastError = error;
+        clone.style.transform = "none";
+        viewport.style.height = `${measuredHeight}px`;
       }
-
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-      context.drawImage(
-        fullCanvas,
-        0,
-        offsetY,
-        fullCanvas.width,
-        sliceHeight,
-        0,
-        0,
-        fullCanvas.width,
-        sliceHeight,
-      );
-
-      // Avoid toDataURL/base64. It creates a very large UTF-16 string and was
-      // the main memory pressure point on Android Chrome. Encode to Blob and
-      // pass binary bytes directly to jsPDF instead.
-      const pageBlob = await canvasToBlob(pageCanvas, "image/jpeg", 0.9);
-      pageCanvas.width = 1;
-      pageCanvas.height = 1;
-
-      if (!pageBlob || pageBlob.size === 0) {
-        return { ok: false, error: "PDF পৃষ্ঠার ছবি তৈরি করা যায়নি।" };
-      }
-
-      const imageBytes = await blobToBytes(pageBlob);
-      if (page > 0) pdf.addPage("a4", "landscape");
-
-      const renderedHeight = (sliceHeight * contentWidth) / fullCanvas.width;
-      pdf.addImage(
-        imageBytes,
-        "JPEG",
-        margin,
-        margin,
-        contentWidth,
-        renderedHeight,
-        undefined,
-        "FAST",
-      );
-
-      offsetY += sliceHeight;
-      page += 1;
-
-      // Yield briefly between pages so Android's main thread / GC can recover.
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
     }
 
-    const pdfBlob = pdf.output("blob");
-    if (!(pdfBlob instanceof Blob) || pdfBlob.size === 0) {
-      return { ok: false, error: "PDF ফাইল তৈরি করা যায়নি।" };
-    }
-
-    const fileName = `${sanitizeFileName(options.fileName)}.pdf`;
-    triggerPdfDownload(pdfBlob, fileName);
-
-    return { ok: true, pages: page, scale };
+    console.error("Khatian A4 portrait PDF failed at all safe scales", lastError);
+    return {
+      ok: false,
+      error: "A4 পোর্ট্রেট পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+    };
   } catch (error) {
     console.error("Khatian PDF export failed", error);
-    return { ok: false, error: "A4 Landscape PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
+    return { ok: false, error: "A4 পোর্ট্রেট পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
   } finally {
-    if (fullCanvas) {
-      fullCanvas.width = 1;
-      fullCanvas.height = 1;
-    }
     host.remove();
   }
 }
