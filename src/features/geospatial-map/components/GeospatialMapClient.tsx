@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { House } from "lucide-react";
 import MapVisitConsent from "@/src/features/geospatial-map/components/MapVisitConsent";
 
 const MapLibreMap = dynamic(
@@ -16,12 +18,9 @@ const MapLibreMap = dynamic(
   },
 );
 
-/** Full-viewport map host — no app chrome (navbar/footer). */
+/** Full-viewport map host — deliberately isolated from the global Navbar/Footer. */
 export default function GeospatialMapClient() {
   useEffect(() => {
-    // The map is a viewport application. Prevent the document itself from
-    // becoming scrollable on mobile when browser chrome changes the visual
-    // viewport height. The map and its panels handle their own scrolling.
     const html = document.documentElement;
     const body = document.body;
     const previousHtmlOverflow = html.style.overflow;
@@ -52,6 +51,14 @@ export default function GeospatialMapClient() {
       }}
     >
       <MapLibreMap />
+      <Link
+        href="/"
+        aria-label="হোমে ফিরে যান"
+        title="হোমে ফিরে যান"
+        className="absolute left-3 top-3 z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-white/30 bg-slate-950/85 text-white shadow-xl backdrop-blur-md transition hover:bg-[#006a4e] focus:outline-none focus:ring-2 focus:ring-white/80"
+      >
+        <House size={20} />
+      </Link>
       <MapVisitConsent />
     </div>
   );
