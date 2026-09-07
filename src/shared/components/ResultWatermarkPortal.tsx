@@ -8,52 +8,17 @@ type Props = {
   targetRef: React.RefObject<HTMLElement | null>;
 };
 
-type ChildStyleSnapshot = {
-  node: HTMLElement;
-  position: string;
-  zIndex: string;
-};
-
+/**
+ * Read-only portal used by legacy result layouts. The target component owns
+ * its positioning/layering so React state is never mutated through a DOM node.
+ */
 export default function ResultWatermarkPortal({ targetRef }: Props) {
-  const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setTarget(targetRef.current));
+    const frame = requestAnimationFrame(() => setPortalTarget(targetRef.current));
     return () => cancelAnimationFrame(frame);
   }, [targetRef]);
 
-  useEffect(() => {
-    if (!target) return;
-
-    const hadRelative = target.classList.contains("relative");
-    const hadIsolate = target.classList.contains("isolate");
-    target.classList.add("relative", "isolate");
-    target.dataset.resultDocument = "1";
-
-    const childStyles: ChildStyleSnapshot[] = Array.from(target.children)
-      .filter((child): child is HTMLElement => child instanceof HTMLElement)
-      .filter((child) => child.dataset.landbdWatermark !== "1")
-      .map((node) => ({
-        node,
-        position: node.style.position,
-        zIndex: node.style.zIndex,
-      }));
-
-    childStyles.forEach(({ node }) => {
-      node.style.position = "relative";
-      node.style.zIndex = "1";
-    });
-
-    return () => {
-      childStyles.forEach(({ node, position, zIndex }) => {
-        node.style.position = position;
-        node.style.zIndex = zIndex;
-      });
-      if (!hadRelative) target.classList.remove("relative");
-      if (!hadIsolate) target.classList.remove("isolate");
-      delete target.dataset.resultDocument;
-    };
-  }, [target]);
-
-  return target ? createPortal(<ResultWatermark />, target) : null;
+  return portalTarget ? createPortal(<ResultWatermark />, portalTarget) : null;
 }
