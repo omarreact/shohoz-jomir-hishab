@@ -7,6 +7,7 @@ import Footer from "@/src/shared/components/Footer";
 import MaintenanceGate from "@/src/shared/components/MaintenanceGate";
 import MobileFloatingNav from "@/src/shared/components/MobileFloatingNav";
 import HistoryShortcut from "@/src/shared/components/HistoryShortcut";
+import PageAccessGate from "@/src/shared/components/PageAccessGate";
 
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -32,21 +33,30 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
 
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
+  const isSystemRoute = pathname?.startsWith("/403");
   // Full-viewport GIS — no Navbar / Footer / MobileFloatingNav.
   const isIsolatedMapSandbox =
     pathname?.startsWith("/dap-map") ||
     pathname?.startsWith("/geospatial-map") ||
     pathname?.startsWith("/mouza-map");
 
-  if (isAdminRoute || isLoginRoute || isIsolatedMapSandbox) {
+  // Never place the admin control plane, login, or the fallback error page
+  // behind configurable page rules.
+  if (isAdminRoute || isLoginRoute || isSystemRoute) {
     return <>{children}</>;
+  }
+
+  const gatedChildren = <PageAccessGate>{children}</PageAccessGate>;
+
+  if (isIsolatedMapSandbox) {
+    return gatedChildren;
   }
 
   return (
     <MaintenanceGate>
       <div className="flex min-h-screen flex-1 flex-col">
         <Navbar />
-        <main className="flex-grow-1">{children}</main>
+        <main className="flex-grow-1">{gatedChildren}</main>
         <HistoryShortcut />
         <Footer />
         <MobileFloatingNav />
