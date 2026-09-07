@@ -61,10 +61,11 @@ function annotatePlots(collection: RajukPlotCollection, extras: { district?: str
 }
 
 /**
- * The MS plot layer (FeatureServer/5) stores plot number, geometry and a compact
- * address_search string, but does not expose district/upazila/mouza GUID fields.
- * Use RAJUK's shared administrative + mouza hierarchy (layers 10/9/1) for both
- * RS and MS selectors, then switch only the plot layer at query time.
+ * The MS plot layer (FeatureServer/5) stores plot number, geometry and its own
+ * compact address_search string. The shared administrative/mouza hierarchy
+ * (layers 10/9/1) is used only to choose district/upazila/mouza. Its JL number
+ * belongs to that shared/RS-side hierarchy and must never constrain an MS query;
+ * the real MS JL is read from the matched MS FeatureServer row instead.
  */
 export async function getDistricts(_kind: "rs" | "ms" = "rs"): Promise<RajukDistrict[]> {
   const data = await requestLayer<{ features?: { attributes: RajukDistrict }[] }>(10, {
@@ -87,7 +88,7 @@ export async function getUpazilas(dGuid: string, _kind: "rs" | "ms" = "rs"): Pro
   return (data.features ?? []).map((f) => f.attributes);
 }
 
-export async function getMouzas(tGuid: string, _kind: "rs" | "ms" = "rs"): Promise<RajukMauza[]> {
+export async function getMouzas(tGuid: string, kind: "rs" | "ms" = "rs"): Promise<RajukMauza[]> {
   const data = await requestLayer<{ features?: { attributes: RajukMauza }[] }>(1, {
     where: `t_guid='${escapeSql(tGuid)}'`,
     outFields: "mauza,jl_no,m_guid,t_guid,d_guid,upazila_ps,m_district",
@@ -95,7 +96,20 @@ export async function getMouzas(tGuid: string, _kind: "rs" | "ms" = "rs"): Promi
     orderByFields: "mauza ASC",
     resultRecordCount: 5000,
   });
-  return (data.features ?? []).map((f) => f.attributes);
+  const rows = (data.features ?? []).map((f) => f.attributes);
+  if (kind !== "ms") return rows;
+
+  // MS FeatureServer/5 can have a different JL from the shared RS-side mouza row.
+  // Deduplicate only by mouza and never expose the shared JL as an MS JL.
+  const seen = new Set<string>();
+  const msRows: RajukMauza[] = [];
+  for (const row of rows) {
+    const key = String(row.mauza ?? "").trim().toLocaleLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    msRows.push({ ...row, jl_no: "ফলাফল থেকে" });
+  }
+  return msRows;
 }
 
 /** Debounced UI search: distinct mouza names from RS/shared mouza layer (layer 1), fallback to plot attributes. */
@@ -181,6 +195,21 @@ function buildRsWhere(filters: RajukPlotFilters): string {
   return clauses.length ? clauses.join(" AND ") : "1=0";
 }
 
+function normalizeMsAdminTerm(value: string | undefined): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+(?:Thana|Upazila|Revenue\s+Circle|Circle)$/i, "")
+    .trim();
+}
+
+function buildMsJlClause(value: string | undefined): string | null {
+  const clean = String(value ?? "").trim();
+  if (!/^\d+$/.test(clean)) return null;
+  const bare = String(Number(clean));
+  const padded = bare.padStart(3, "0");
+  return `(address_search LIKE '%-JL ${escapeSql(padded)},%' OR address_search LIKE '%-JL ${escapeSql(bare)},%')`;
+}
+
 function buildMsWhere(filters: RajukPlotFilters): string {
   const clauses: string[] = [];
   if (filters.plotNo !== undefined) {
@@ -192,14 +221,28 @@ function buildMsWhere(filters: RajukPlotFilters): string {
     clauses.push(`(ms_plot_no='${v}' OR ms_plot_no='${bare}' OR plot_no=${Number(bare) || -1})`);
   }
   if (filters.rsPlotNo?.trim() && !filters.msPlotNo?.trim() && filters.plotNo === undefined) return "1=0";
-  for (const term of [filters.mouza, filters.jl, filters.upazila]) if (term?.trim()) clauses.push(`address_search LIKE '%${escapeSql(term.trim())}%'`);
+
+  const mouza = filters.mouza?.trim();
+  if (mouza) clauses.push(`address_search LIKE '%${escapeSql(mouza)}%'`);
+
+  // Only accept a numeric JL that explicitly belongs to an MS row. A shared
+  // selector value like “ফলাফল থেকে” is intentionally ignored here.
+  const jlClause = buildMsJlClause(filters.jl);
+  if (jlClause) clauses.push(jlClause);
+
+  // Shared admin rows often say “Gulshan Thana”, while MS address_search says
+  // only “Gulshan”. Normalize the administrative suffix before matching.
+  const upazila = normalizeMsAdminTerm(filters.upazila);
+  if (upazila) clauses.push(`address_search LIKE '%${escapeSql(upazila)}%'`);
+
   return clauses.length ? clauses.join(" AND ") : "1=0";
 }
 
 export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotCollection> {
   const limit = Math.min(Math.max(filters.resultRecordCount ?? 50, 1), 2000);
   const offset = Math.max(filters.resultOffset ?? 0, 0);
-  const extras = { mauza: filters.mouza, jl: filters.jl, upazila: filters.upazila };
+  const sharedExtras = { mauza: filters.mouza, jl: filters.jl, upazila: filters.upazila };
+  const msExtras = { mauza: filters.mouza, upazila: filters.upazila };
   const wantRs = filters.kind !== "ms";
   const wantMs = filters.kind !== "rs";
   const queries: Promise<{ source: PlotLayerSource; data: RajukPlotCollection }>[] = [];
@@ -207,7 +250,10 @@ export async function getPlots(filters: RajukPlotFilters): Promise<RajukPlotColl
   if (wantMs) queries.push(requestLayer<RajukPlotCollection>(LAYER_MS_PLOT, { where: buildMsWhere(filters), outFields: "*", returnGeometry: true, outSR: 4326, resultRecordCount: limit, resultOffset: offset, orderByFields: "plot_no ASC" }).then((data) => ({ source: "ms" as const, data })));
   const parts = await Promise.all(queries);
   const merged: RajukPlotFeature[] = [];
-  for (const part of parts) for (const f of annotatePlots(part.data, extras, part.source).features ?? []) merged.push(f);
+  for (const part of parts) {
+    const extras = part.source === "ms" ? msExtras : sharedExtras;
+    for (const f of annotatePlots(part.data, extras, part.source).features ?? []) merged.push(f);
+  }
   return { features: merged, count: merged.length };
 }
 
