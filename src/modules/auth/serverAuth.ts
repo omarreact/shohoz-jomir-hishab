@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import {
   isAdminRole,
   isStaffRole,
+  isSuperAdminRole,
   normalizeRole,
   type AppRole,
 } from "@/src/modules/auth/roles";
@@ -79,6 +80,15 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
       userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
     ),
   };
+}
+
+/** Super Admin only (sensitive platform-wide controls). */
+export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
+  const user = await verifyServerAuth(req);
+  if (!isSuperAdminRole(user.role)) {
+    throw new Error("Forbidden: Super Admin access required");
+  }
+  return user;
 }
 
 /** Admin or Super Admin only (users, settings, metrics). */
