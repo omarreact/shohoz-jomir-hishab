@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     description:
       "খতিয়ানের হিসাব, জমির পরিমাপ এবং উত্তরাধিকার বন্টনের স্মার্ট সমাধান।",
     url: "https://landbd.pincodeit.com/",
-    siteName: SITE_CONFIG.name,
+    siteName: "ল্যান্ডবিডি",
     locale: "bn_BD",
     type: "website",
   },
