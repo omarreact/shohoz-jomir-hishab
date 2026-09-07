@@ -129,7 +129,9 @@ async function waitForAssets(root: HTMLElement): Promise<void> {
   ).then(() => undefined);
 
   await Promise.all([fontReady, imagesReady]);
-  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
 }
 
 function applyBaseCloneStyles(clone: HTMLElement, exportWidthPx: number): void {
@@ -233,7 +235,7 @@ async function renderAtScale(
     clone.style.transform = `translateY(-${slice.offsetY}px)`;
     clone.style.transformOrigin = "top left";
 
-    await new Promise<void>((resolve) => requestAnimationFrame(resolve));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const canvas = await html2canvas(viewport, {
       backgroundColor: "#ffffff",
