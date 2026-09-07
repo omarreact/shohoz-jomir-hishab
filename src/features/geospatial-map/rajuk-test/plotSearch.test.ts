@@ -18,12 +18,14 @@ function feature(msPlotNo: string): RajukPlotFeature {
 }
 
 describe("RAJUK MS plot search", () => {
-  it("normalizes common MS prefixes and leading zeroes", () => {
+  it("normalizes English and Bangla prefixes, Bangla digits and leading zeroes", () => {
     expect(normalizePlotInput(" MS-004711 ", "ms")).toBe("4711");
+    expect(normalizePlotInput("এম এস-০০৪৭১১", "ms")).toBe("4711");
+    expect(normalizePlotInput("৪৭১১", "ms")).toBe("4711");
   });
 
   it("adds selected upazila, mouza and JL filters to the existing MS query", () => {
-    const params = buildMsPlotSearchParams("MS-4711", {
+    const params = buildMsPlotSearchParams("এমএস-৪৭১১", {
       district: "ঢাকা",
       upazila: "গুলশান রাজস্ব সার্কেল",
       mouza: "পাতিরা",
@@ -40,6 +42,6 @@ describe("RAJUK MS plot search", () => {
 
   it("keeps only exact MS plot matches after the server-side location filter", () => {
     const rows = [feature("MS-4711"), feature("4711"), feature("MS-47110")];
-    expect(filterExactPlotMatches(rows, "4711", "ms")).toHaveLength(2);
+    expect(filterExactPlotMatches(rows, "৪৭১১", "ms")).toHaveLength(2);
   });
 });
