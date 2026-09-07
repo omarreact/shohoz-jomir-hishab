@@ -25,6 +25,7 @@ function markExcluded(node: Element | null): HTMLElement | null {
   if (!(node instanceof HTMLElement)) return null;
   node.dataset.pdfExclude = "1";
   node.dataset.printExclude = "1";
+  node.classList.add("print:hidden");
   return node;
 }
 
@@ -61,6 +62,11 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     const root = captureRef?.current;
     if (!root) return;
 
+    const previousFontFamily = root.style.fontFamily;
+    const previousFontVariantNumeric = root.style.fontVariantNumeric;
+    root.style.fontFamily = 'var(--font-noto-bengali), var(--font-hind-siliguri), "Nirmala UI", "Segoe UI", Arial, sans-serif';
+    root.style.fontVariantNumeric = "tabular-nums";
+
     const publicInfoBanner = markExcluded(root.children[1]);
     const surveyArchitectureNote = markExcluded(root.children[2]);
     const supplement = markExcluded(
@@ -71,10 +77,13 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     const details = headerCard?.children[1] as HTMLElement | undefined;
     if (!details) {
       return () => {
+        root.style.fontFamily = previousFontFamily;
+        root.style.fontVariantNumeric = previousFontVariantNumeric;
         [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
           if (!node) return;
           delete node.dataset.pdfExclude;
           delete node.dataset.printExclude;
+          node.classList.remove("print:hidden");
         });
       };
     }
@@ -117,10 +126,13 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     }
 
     return () => {
+      root.style.fontFamily = previousFontFamily;
+      root.style.fontVariantNumeric = previousFontVariantNumeric;
       [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
         if (!node) return;
         delete node.dataset.pdfExclude;
         delete node.dataset.printExclude;
+        node.classList.remove("print:hidden");
       });
       if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = previousMetaDisplay;
       if (summaryGrid) {
