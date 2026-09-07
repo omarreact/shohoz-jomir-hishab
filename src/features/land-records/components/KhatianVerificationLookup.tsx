@@ -2,6 +2,8 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { CheckCircle2, Link2, Loader2, QrCode, Search, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import { landRecordsApi } from "../api";
 import type { FullKhatian } from "../full-khatian";
 import KhatianDetailsView from "./KhatianDetailsView";
@@ -43,11 +45,16 @@ function surveyLabel(surveyId?: number): string {
 }
 
 export default function KhatianVerificationLookup() {
+  const { user, loading: authLoading } = useAuth();
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [record, setRecord] = useState<FullKhatian | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
+
+  if (authLoading || !isSuperAdminRole(user?.role)) {
+    return null;
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -88,7 +95,7 @@ export default function KhatianVerificationLookup() {
                   সরকারি DLRMS QR / Verification
                 </h2>
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                  <ShieldCheck size={11} /> Public resolver
+                  <ShieldCheck size={11} /> Super Admin
                 </span>
               </div>
               <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
