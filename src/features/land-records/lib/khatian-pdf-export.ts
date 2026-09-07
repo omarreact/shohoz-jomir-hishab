@@ -15,8 +15,15 @@ export type KhatianPdfExportResult =
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
-const JPEG_QUALITY = 0.92;
+const JPEG_QUALITY = 0.94;
 const MAX_PAGES = 80;
+const BRAND_GREEN = "#17663a";
+const BRAND_GREEN_DARK = "#0f4f2c";
+const BRAND_GREEN_SOFT = "#eef7f1";
+const BRAND_GREEN_PALE = "#f7fbf8";
+const BORDER = "#d7e2da";
+const TEXT = "#17211b";
+const MUTED = "#5f6d64";
 
 function sanitizeFileName(name: string): string {
   return (
@@ -64,16 +71,186 @@ function exportFontFamily(): string {
     : '"Nirmala UI", "Segoe UI", Arial, sans-serif';
 }
 
+function setImportant(node: HTMLElement, property: string, value: string): void {
+  node.style.setProperty(property, value, "important");
+}
+
+function applyDocumentFrame(clone: HTMLElement): void {
+  setImportant(clone, "border", `1px solid ${BORDER}`);
+  setImportant(clone, "border-top", `5px solid ${BRAND_GREEN}`);
+  setImportant(clone, "border-radius", "12px");
+  setImportant(clone, "padding", "14px");
+  setImportant(clone, "background-color", "#ffffff");
+
+  const firstCard = clone.firstElementChild;
+  if (firstCard instanceof HTMLElement) {
+    setImportant(firstCard, "border", `1px solid ${BORDER}`);
+    setImportant(firstCard, "border-radius", "10px");
+    setImportant(firstCard, "overflow", "hidden");
+    setImportant(firstCard, "background-color", "#ffffff");
+
+    const topBand = firstCard.firstElementChild;
+    if (topBand instanceof HTMLElement) {
+      setImportant(topBand, "background-color", BRAND_GREEN_PALE);
+      setImportant(topBand, "border-bottom", `1px solid ${BORDER}`);
+      setImportant(topBand, "padding", "10px 12px");
+    }
+  }
+}
+
+function applySectionStyling(clone: HTMLElement): void {
+  clone.querySelectorAll<HTMLElement>("section").forEach((section) => {
+    setImportant(section, "margin", "0");
+    setImportant(section, "border", `1px solid ${BORDER}`);
+    setImportant(section, "border-radius", "9px");
+    setImportant(section, "background-color", "#ffffff");
+    setImportant(section, "overflow", "hidden");
+  });
+
+  clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
+    setImportant(header, "padding", "7px 10px");
+    setImportant(header, "background-color", BRAND_GREEN_SOFT);
+    setImportant(header, "border-bottom", `1px solid ${BORDER}`);
+    setImportant(header, "color", BRAND_GREEN_DARK);
+  });
+
+  clone.querySelectorAll<HTMLElement>("section > header h3").forEach((heading) => {
+    setImportant(heading, "font-size", "12.5px");
+    setImportant(heading, "font-weight", "800");
+    setImportant(heading, "letter-spacing", "0");
+    setImportant(heading, "color", BRAND_GREEN_DARK);
+  });
+
+  clone.querySelectorAll<HTMLElement>("section > div").forEach((body) => {
+    setImportant(body, "padding", "8px 10px");
+  });
+}
+
+function applySummaryStyling(clone: HTMLElement): void {
+  const firstCard = clone.firstElementChild;
+  if (!(firstCard instanceof HTMLElement)) return;
+  const details = firstCard.children[1];
+  if (!(details instanceof HTMLElement)) return;
+
+  const summaryGrid = details.children[2];
+  if (!(summaryGrid instanceof HTMLElement)) return;
+
+  setImportant(summaryGrid, "margin-top", "10px");
+  setImportant(summaryGrid, "gap", "8px");
+
+  Array.from(summaryGrid.children).forEach((child) => {
+    if (!(child instanceof HTMLElement)) return;
+    setImportant(child, "background-color", BRAND_GREEN_PALE);
+    setImportant(child, "border", `1px solid #cfe2d5`);
+    setImportant(child, "border-radius", "9px");
+    setImportant(child, "padding", "7px 10px");
+  });
+
+  summaryGrid.querySelectorAll<HTMLElement>("p:first-child").forEach((label) => {
+    setImportant(label, "color", MUTED);
+    setImportant(label, "font-size", "10px");
+    setImportant(label, "font-weight", "600");
+  });
+
+  summaryGrid.querySelectorAll<HTMLElement>("p:last-child").forEach((value) => {
+    setImportant(value, "color", BRAND_GREEN_DARK);
+    setImportant(value, "font-size", "15px");
+    setImportant(value, "font-weight", "800");
+  });
+}
+
+function applyTableStyling(clone: HTMLElement): void {
+  clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
+    setImportant(table, "width", "100%");
+    setImportant(table, "max-width", "100%");
+    setImportant(table, "min-width", "0");
+    setImportant(table, "table-layout", "auto");
+    setImportant(table, "border-collapse", "collapse");
+    setImportant(table, "font-size", "11.5px");
+  });
+
+  clone.querySelectorAll<HTMLElement>("thead tr").forEach((row) => {
+    setImportant(row, "background-color", "#e7f2eb");
+    setImportant(row, "border-bottom", `1px solid #c9ddcf`);
+  });
+
+  clone.querySelectorAll<HTMLElement>("thead th").forEach((cell) => {
+    setImportant(cell, "background-color", "#e7f2eb");
+    setImportant(cell, "color", BRAND_GREEN_DARK);
+    setImportant(cell, "font-size", "10.5px");
+    setImportant(cell, "font-weight", "800");
+    setImportant(cell, "padding", "5px 7px");
+    setImportant(cell, "line-height", "1.3");
+  });
+
+  clone.querySelectorAll<HTMLElement>("tbody tr").forEach((row, index) => {
+    setImportant(row, "background-color", index % 2 === 0 ? "#ffffff" : "#fafcfb");
+    setImportant(row, "border-bottom", `1px solid #e5ebe7`);
+  });
+
+  clone.querySelectorAll<HTMLElement>("tbody td, tbody th").forEach((cell) => {
+    setImportant(cell, "padding", "4.5px 7px");
+    setImportant(cell, "line-height", "1.35");
+    setImportant(cell, "vertical-align", "top");
+    setImportant(cell, "color", TEXT);
+  });
+}
+
+function applyVerificationStyling(clone: HTMLElement): void {
+  const verification = clone.querySelector<HTMLElement>("#verify");
+  if (!verification) return;
+
+  setImportant(verification, "background-color", "#fbfcfb");
+  verification.querySelectorAll<HTMLElement>("li").forEach((item) => {
+    setImportant(item, "font-size", "10.5px");
+    setImportant(item, "line-height", "1.55");
+    setImportant(item, "color", "#435047");
+  });
+
+  verification.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+    const label = link.textContent?.trim() ?? "";
+    if (label.includes("যাচাই করুন") || label.includes("দেখুন")) {
+      setImportant(link, "display", "none");
+    }
+  });
+
+  const seal = verification.querySelector<HTMLElement>("[data-landbd-seal='1'] > div");
+  if (seal) {
+    setImportant(seal, "width", "92px");
+    setImportant(seal, "height", "92px");
+    setImportant(seal, "border-width", "3px");
+    setImportant(seal, "background-color", "#f7fbf8");
+    setImportant(seal, "color", BRAND_GREEN_DARK);
+  }
+}
+
+function appendDocumentFooter(clone: HTMLElement): void {
+  if (clone.querySelector("[data-pdf-document-footer='1']")) return;
+  const footer = document.createElement("div");
+  footer.dataset.pdfDocumentFooter = "1";
+  footer.textContent = "ল্যান্ডবিডি · ডিজিটাল খতিয়ান সারসংক্ষেপ · সরকারি সার্টিফাইড কপি নয়";
+  footer.style.cssText = [
+    `margin-top:10px`,
+    `padding:8px 10px 2px`,
+    `border-top:1px solid ${BORDER}`,
+    `color:${MUTED}`,
+    `font-size:9.5px`,
+    `font-weight:600`,
+    `text-align:center`,
+    `line-height:1.4`,
+  ].join(";");
+  clone.appendChild(footer);
+}
+
 function compactPdfClone(clone: HTMLElement): void {
   const fontFamily = exportFontFamily();
   clone.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.maxWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
   clone.style.margin = "0";
-  clone.style.padding = "8px";
   clone.style.boxSizing = "border-box";
   clone.style.background = "#ffffff";
-  clone.style.color = "#111827";
+  clone.style.color = TEXT;
   clone.style.overflow = "visible";
   clone.style.fontFamily = fontFamily;
   clone.style.fontVariantNumeric = "tabular-nums";
@@ -92,59 +269,42 @@ function compactPdfClone(clone: HTMLElement): void {
       if (className.startsWith("dark:")) node.classList.remove(className);
     }
 
-    node.style.setProperty("font-family", "inherit", "important");
-    node.style.setProperty("color", "#111827", "important");
-    node.style.setProperty("border-color", "#d7ded9", "important");
-    node.style.setProperty("background-color", "transparent", "important");
-    node.style.setProperty("box-shadow", "none", "important");
-    node.style.setProperty("text-shadow", "none", "important");
-    node.style.setProperty("filter", "none", "important");
-    node.style.setProperty("backdrop-filter", "none", "important");
+    setImportant(node, "font-family", "inherit");
+    setImportant(node, "color", TEXT);
+    setImportant(node, "border-color", BORDER);
+    setImportant(node, "box-shadow", "none");
+    setImportant(node, "text-shadow", "none");
+    setImportant(node, "filter", "none");
+    setImportant(node, "backdrop-filter", "none");
 
     const position = getComputedStyle(node).position;
     if (position === "fixed" || position === "sticky") {
-      node.style.setProperty("position", "static", "important");
+      setImportant(node, "position", "static");
     }
   });
 
-  clone.querySelectorAll<HTMLElement>("header, th").forEach((node) => {
-    node.style.setProperty("background-color", "#f4f7f5", "important");
-  });
   clone.querySelectorAll<HTMLElement>("a, svg").forEach((node) => {
-    node.style.setProperty("color", "#17663a", "important");
+    setImportant(node, "color", BRAND_GREEN);
   });
+
   clone.querySelectorAll<HTMLElement>("[class~='tabular-nums'], [data-bangla-number='1']").forEach((node) => {
-    node.style.setProperty("font-family", fontFamily, "important");
-    node.style.setProperty("font-variant-numeric", "tabular-nums", "important");
+    setImportant(node, "font-family", fontFamily);
+    setImportant(node, "font-variant-numeric", "tabular-nums");
   });
 
-  clone.querySelectorAll<HTMLElement>("section").forEach((section) => {
-    section.style.margin = "0";
-    section.style.borderRadius = "7px";
-    section.style.backgroundColor = "#ffffff";
-  });
-  clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
-    header.style.padding = "4px 7px";
-  });
-  clone.querySelectorAll<HTMLElement>("section > div").forEach((body) => {
-    body.style.padding = "5px 7px";
-  });
-  clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
-    cell.style.padding = "3px 5px";
-    cell.style.lineHeight = "1.25";
-  });
-  clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
-    table.style.width = "100%";
-    table.style.maxWidth = "100%";
-    table.style.minWidth = "0";
-    table.style.tableLayout = "auto";
-  });
   clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
-    node.style.overflow = "visible";
+    setImportant(node, "overflow", "visible");
   });
 
-  clone.style.setProperty("background-color", "#ffffff", "important");
-  clone.style.setProperty("color", "#111827", "important");
+  applyDocumentFrame(clone);
+  applySectionStyling(clone);
+  applySummaryStyling(clone);
+  applyTableStyling(clone);
+  applyVerificationStyling(clone);
+  appendDocumentFooter(clone);
+
+  setImportant(clone, "background-color", "#ffffff");
+  setImportant(clone, "color", TEXT);
 }
 
 function collectBreakpoints(root: HTMLElement): number[] {
@@ -327,7 +487,7 @@ export async function exportKhatianPdf(
     "top:0",
     `width:${PDF_EXPORT_WIDTH_PX}px`,
     "background:#ffffff",
-    "color:#111827",
+    `color:${TEXT}`,
     "z-index:-1",
     "pointer-events:none",
     "overflow:visible",
@@ -339,7 +499,7 @@ export async function exportKhatianPdf(
     `width:${PDF_EXPORT_WIDTH_PX}px`,
     "overflow:hidden",
     "background:#ffffff",
-    "color:#111827",
+    `color:${TEXT}`,
   ].join(";");
 
   const clone = options.source.cloneNode(true) as HTMLElement;
