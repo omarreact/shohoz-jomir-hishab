@@ -50,6 +50,11 @@ export const initialFaraezHeirs: HeirsInput = {
   consCousinSonSon: 0,
 };
 
+/**
+ * Owns only Faraez input/calculation/history state. Export behaviour lives in
+ * the result component via the shared useGeneratePDF hook so editing PDF logic
+ * never re-renders or couples the calculator form.
+ */
 export function useFaraezCalculator() {
   const [religion, setReligion] = useState<Religion>("muslim");
   const [gender, setGender] = useState<DeceasedGender>("male");
@@ -195,53 +200,6 @@ export function useFaraezCalculator() {
     }
   };
 
-  const downloadPDF = async () => {
-    if (!exportRef.current) return;
-    const element = exportRef.current;
-    const originalWidth = element.style.width;
-    element.style.width = "800px";
-    try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      await html2pdf().set({
-        margin: [15, 10, 15, 10] as [number, number, number, number],
-        filename: "Faraez_Result.pdf",
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
-      }).from(element).save();
-    } catch (error) {
-      console.error(error);
-      alert("PDF তৈরিতে সমস্যা হয়েছে।");
-    } finally {
-      element.style.width = originalWidth;
-    }
-  };
-
-  const downloadExcel = () => {
-    if (!results.length) return;
-    let csvContent = "ওয়ারিশ,অংশ (%),খতিয়ানি অংশ,প্রাপ্ত জমি (শতাংশ),প্রাপ্ত স্বর্ণ (ভরি),প্রাপ্ত অর্থ (টাকা),আইনি ব্যাখ্যা\n";
-    results.filter((result) => result.count > 0).forEach((result) => {
-      for (let i = 1; i <= result.count; i++) {
-        const measurement = result.measurements?.[i - 1];
-        const measurementText = measurement
-          ? `${measurement.ana}A ${measurement.gonda}G ${measurement.kora}K ${measurement.kranti}Kr ${measurement.til}T`
-          : "";
-        const heirName = result.count > 1 ? `${result.heirType} ${i}` : result.heirType;
-        csvContent += `${heirName},${result.fraction === 0 ? "বঞ্চিত" : `${(result.fraction * 100).toFixed(2)}%`},${measurementText},${result.assets.land.toFixed(3)},${result.assets.gold.toFixed(3)},${result.assets.cash.toFixed(2)},${result.reasoning.replace(/,/g, " ")}\n`;
-      }
-    });
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "Faraez_Result.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   return {
     religion,
     setReligion,
@@ -256,7 +214,5 @@ export function useFaraezCalculator() {
     exportRef,
     calculate,
     clearCalculation,
-    downloadPDF,
-    downloadExcel,
   };
 }
