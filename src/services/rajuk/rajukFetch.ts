@@ -1,4 +1,5 @@
 import "server-only";
+import { recordRajukHttpAttempt } from "./rajukObservability";
 
 /** Shared upstream fetch with timeout + retries (helps when RAJUK path is flaky). */
 export async function fetchWithRetry(
@@ -10,6 +11,7 @@ export async function fetchWithRetry(
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    recordRajukHttpAttempt(url, attempt);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {

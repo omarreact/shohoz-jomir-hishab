@@ -1,9 +1,18 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getDistricts, getMouzas, getPlots, getPlotsByExtent, getUpazilas, identifyByPoint, searchMouzas } from "@/src/services/rajuk/rajukQuery.service";
 import { toCalculationSafeKhatiyanPlot, RajukParcelDomainError } from "@/src/services/rajuk/rajukKhatiyanAdapter";
+import {
+  formatRajukServerTiming,
+  getRajukHttpCallBudget,
+  withRajukRequestMetrics,
+} from "@/src/services/rajuk/rajukObservability";
+import { logger, withTrace } from "@/src/shared/logger";
 import type { RajukPlotFeature, RajukPlotKind } from "@/src/types/rajuk-runtime";
 
 export const dynamic = "force-dynamic";
+
+const RAJUK_SLOW_REQUEST_MS = 3_000;
 
 function isRajukAuthFailure(message: string): boolean {
   const m = message.toLowerCase();
@@ -35,7 +44,56 @@ async function identifyWithCalculationBoundary(lat: number, lng: number) {
   };
 }
 
-export async function POST(request: NextRequest) {
+async function observeRajukRequest(
+  request: NextRequest,
+  action: string | null,
+  kind: string | null,
+  handler: () => Promise<NextResponse>,
+): Promise<NextResponse> {
+  const requestId = request.headers.get("x-request-id") || randomUUID();
+  const startedAt = performance.now();
+
+  return withTrace(requestId, async () => {
+    const { value: response, metrics } = await withRajukRequestMetrics(handler);
+    const durationMs = performance.now() - startedAt;
+    const callBudget = getRajukHttpCallBudget(action, kind);
+    const budgetExceeded = metrics.upstreamGroups > callBudget;
+    const slow = durationMs >= RAJUK_SLOW_REQUEST_MS;
+    const logData = {
+      event: "rajuk_api_request",
+      requestId,
+      method: request.method,
+      action: action || "unknown",
+      kind: kind || "default",
+      status: response.status,
+      durationMs: Math.round(durationMs),
+      upstreamGroups: metrics.upstreamGroups,
+      httpAttempts: metrics.httpAttempts,
+      retries: metrics.retries,
+      layers: metrics.layers,
+      callBudget,
+      budgetExceeded,
+      slow,
+    };
+
+    if (response.status >= 500 || budgetExceeded || slow) {
+      logger.warn(logData, "RAJUK API request completed with production signal");
+    } else {
+      logger.info(logData, "RAJUK API request completed");
+    }
+
+    response.headers.set("x-request-id", requestId);
+    response.headers.set("Server-Timing", formatRajukServerTiming(durationMs, metrics));
+    response.headers.set("x-rajuk-upstream-groups", String(metrics.upstreamGroups));
+    response.headers.set("x-rajuk-http-attempts", String(metrics.httpAttempts));
+    response.headers.set("x-rajuk-retries", String(metrics.retries));
+    response.headers.set("x-rajuk-call-budget", String(callBudget));
+
+    return response;
+  });
+}
+
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
   try {
     const body: unknown = await request.json();
     if (!body || typeof body !== "object") {
@@ -76,7 +134,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  return observeRajukRequest(request, "adapt-for-khatiyan", null, () => handlePOST(request));
+}
+
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   try {
     const p = request.nextUrl.searchParams;
     const action = p.get("action");
@@ -170,4 +232,9 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ error: message, code: "RAJUK_UPSTREAM" }, { status: 502 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  return observeRajukRequest(request, params.get("action"), params.get("kind"), () => handleGET(request));
 }
