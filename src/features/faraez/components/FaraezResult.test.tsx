@@ -21,8 +21,6 @@ describe("FaraezResult measurement rendering", () => {
           },
         ]}
         exportRef={{ current: null }}
-        onDownloadPDF={() => undefined}
-        onDownloadExcel={() => undefined}
         religion="muslim"
       />,
     );
