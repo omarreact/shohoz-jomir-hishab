@@ -40,16 +40,10 @@ const nextConfig: NextConfig = {
 
   serverExternalPackages: [
     "firebase-admin",
-    "bullmq",
     "ioredis",
     "pino",
     "pino-pretty",
-    "prom-client",
     "cloudinary",
-    "bcryptjs",
-    "jsonwebtoken",
-    "opossum",
-    "redlock",
     "@upstash/redis",
   ],
 };
