@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER } from "@/src/services/rajuk/rajukAuth.service";
+import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER, REFERER } from "@/src/services/rajuk/rajukAuth.service";
+import {
+  getRajukArcGisErrorCode,
+  getRajukProxyErrorStatus,
+  isRajukArcGisAuthError,
+} from "@/src/services/rajuk/rajukProxyDiagnostics";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,11 +25,19 @@ async function fetchUpstream(url: string, params: URLSearchParams, token?: strin
   const query = new URLSearchParams(params);
   query.set("f", "geojson");
   if (token) query.set("token", token);
-  return fetch(`${url}?${query.toString()}`, { cache: "no-store" });
+  return fetch(`${url}?${query.toString()}`, {
+    cache: "no-store",
+    headers: {
+      accept: "application/json",
+      referer: REFERER,
+      origin: "https://masterplan.rajuk.gov.bd",
+    },
+  });
 }
 
-function isAuthError(response: Response, data: any) {
-  return response.status === 401 || response.status === 403 || data?.error?.code === 498 || data?.error?.code === 499;
+function errorMessage(data: any): string {
+  if (typeof data?.error === "string") return data.error;
+  return data?.error?.message || "RAJUK FeatureServer request failed";
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ layerId: string }> }) {
@@ -41,13 +54,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
     let response = await fetchUpstream(url, params);
     let data = await response.json();
 
-    if (isAuthError(response, data)) {
+    if (isRajukArcGisAuthError(response.status, data)) {
       const token = await getValidToken(RAJUK_SERVER);
       response = await fetchUpstream(url, params, token);
       data = await response.json();
 
-      // One controlled refresh on an invalid/expired Token 2. Never loop indefinitely.
-      if (isAuthError(response, data)) {
+      // One controlled refresh on an invalid/expired token. Never loop indefinitely.
+      if (isRajukArcGisAuthError(response.status, data)) {
         await invalidateToken(RAJUK_SERVER);
         const freshToken = await refreshToken(RAJUK_SERVER);
         response = await fetchUpstream(url, params, freshToken);
@@ -56,11 +69,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ lay
     }
 
     if (!response.ok || data?.error) {
-      const status = data?.error?.code === 498 || data?.error?.code === 499 ? 502 : response.status >= 400 ? response.status : 502;
       return NextResponse.json({
-        error: data?.error?.message || "RAJUK FeatureServer request failed",
-        code: data?.error?.code,
-      }, { status });
+        ok: false,
+        error: errorMessage(data),
+        code: getRajukArcGisErrorCode(data),
+        upstreamStatus: response.status,
+      }, { status: getRajukProxyErrorStatus(response.status, data) });
     }
 
     return NextResponse.json(data, {
