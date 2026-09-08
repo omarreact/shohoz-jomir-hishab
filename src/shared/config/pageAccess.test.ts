@@ -34,6 +34,12 @@ describe("page access registry", () => {
     ].forEach((route) => expect(ids.has(route)).toBe(true));
   });
 
+  it("defaults QA routes to staff-only access", () => {
+    const rules = getDefaultPageAccessRules();
+    expect(rules["/rajuk-test"]).toBe("admin");
+    expect(rules["/ms-test"]).toBe("super_admin");
+  });
+
   it("resolves dynamic blog and custom page routes", () => {
     expect(resolvePageDefinition("/blog/land/bangladesh-records")?.id).toBe("/blog/[category]/[slug]");
     expect(resolvePageDefinition("/p/about-landbd")?.id).toBe("/p/[slug]");

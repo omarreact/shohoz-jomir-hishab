@@ -9,6 +9,7 @@ export const FEATURE_ROUTES = {
   inheritance: "/faraez",
   landMap: "/geospatial-map",
   mouzaDownload: "/mouza-map",
+  /** Staff QA workspace — not in public nav/sitemap. */
   mapQa: "/rajuk-test",
   documents: "/porcha",
   blog: "/blog",
@@ -41,6 +42,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   admin: { en: "Admin", bn: "অ্যাডমিন" },
 };
 
+/** Public primary navigation (excludes staff-only mapQa). */
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
@@ -48,11 +50,11 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "inheritance",
   "landMap",
   "mouzaDownload",
-  "mapQa",
   "documents",
   "blog",
 ];
 
+/** Footer quick links (excludes staff-only mapQa). */
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
@@ -60,7 +62,6 @@ export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "landMeasurement",
   "landMap",
   "mouzaDownload",
-  "mapQa",
   "blog",
 ];
 
@@ -69,4 +70,21 @@ export const FOOTER_LEGAL_LINKS: FeatureRouteKey[] = [
   "terms",
   "faq",
   "contact",
+];
+
+/** Routes safe to list in public sitemap.xml */
+export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
+  "home",
+  "records",
+  "dlrmsKhatian",
+  "landMeasurement",
+  "inheritance",
+  "landMap",
+  "mouzaDownload",
+  "documents",
+  "blog",
+  "faq",
+  "contact",
+  "privacy",
+  "terms",
 ];
