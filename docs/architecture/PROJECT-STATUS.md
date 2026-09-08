@@ -6,7 +6,7 @@ Last reviewed: 2026-09-09
 
 The repository is **substantially developed** and close to production-ready for core flows.
 
-Major features (Next.js app, admin, blog/CMS, land tools, RAJUK GIS, page-access control, PDF export) exist. Remaining work is primarily functional QA and optional dependency hygiene.
+Major features (Next.js app, admin, blog/CMS, land tools, RAJUK GIS, page-access control, PDF export) exist. Remaining work is primarily **functional QA** of land/map flows.
 
 ## Status by area
 
@@ -15,27 +15,36 @@ Major features (Next.js app, admin, blog/CMS, land tools, RAJUK GIS, page-access
 | Next.js application | Ready | Next.js 16.1.6 + React 19 + TypeScript |
 | Main application architecture | Ready | App Router; Firebase Auth/Firestore SSOT |
 | Land calculation | Needs QA | Implemented; functional QA still required |
-| Admin panel | Ready | Users, blog, settings, page-access, data-monitor |
+| Admin panel | Ready | Includes live RAJUK health on dashboard |
 | Blog / CMS | Ready | Create/edit/list routes exist |
 | User management | Ready | Admin users section exists |
-| RAJUK GIS | Needs QA | Product maps: `/dap-map` + `/mouza-map`; smoke covers FS/0 + FS/1 |
+| RAJUK GIS | Needs QA | Product maps: `/dap-map` + `/mouza-map` |
 | Data Monitor | In progress | Registry still mixes Hosted names and app APIs |
-| CI | Healthy | Lint/typecheck/build complete on recent main runs |
+| CI | Healthy | `npm install` in CI (lock may lag package.json briefly) |
 
 ## Recent cleanup (2026-09-09)
 
-- RAJUK smoke test auth-first; verifies mauza + RS plot layers.
-- Removed legacy `/api/rajuk-token` and restore-geospatial-map workflow.
-- `/dap-map`: identify, multi-plot highlight, RS/MS filter, Bangla legend.
-- Canonical `/khatiyan`; `/khatian` redirect alias.
-- QA gates: `/rajuk-test` admin, `/ms-test` super_admin; off public nav/sitemap.
-- **Map consolidation:** primary product maps are `/dap-map` + `/mouza-map`. `/map` → `/dap-map`. `/geospatial-map` remains advanced shell (direct URL).
+- RAJUK smoke auth-first; FS/0 + FS/1.
+- Removed `/api/rajuk-token`, restore workflow.
+- `/dap-map` identify + multi-plot UX; map consolidation.
+- QA gates for `/rajuk-test` / `/ms-test`.
+- Admin RAJUK health widget (diagnose gated Admin+).
+- **Dependency prune:** removed unused `bcryptjs`, `bullmq`, `node-cron`, `opossum`, `redlock`, `tsyringe`, `reflect-metadata`, `leaflet-defaulticon-compatibility`, and related `@types`. Package name → `landbd-app`. Deleted dead `src/modules/jobs/*`.
+
+### Follow-up (local)
+
+```bash
+npm install
+git add package-lock.json
+git commit -m "chore: sync package-lock after dependency prune"
+```
+
+Then optionally restore CI to `npm ci` once the lock is committed.
 
 ## Known remaining technical debt
 
 - Functional QA for land calculation modules and map flows.
-- Possible unused dependencies (verify with knip/depcheck before removal).
-- Optional admin RAJUK health widget (diagnose API exists).
+- Optional design-system consistency pass.
 
 ## Architecture rules (must keep)
 
@@ -47,9 +56,9 @@ See `AGENTS.md`:
 
 ## Recommended next steps
 
-1. Functional QA on land calculation and map flows.
-2. Dependency unused-code pass; design-system consistency.
-3. Optional admin RAJUK health widget.
+1. Commit synced `package-lock.json` after `npm install`.
+2. Functional QA on land calculation and map flows.
+3. Design-system consistency as capacity allows.
 
 ## Related docs
 
