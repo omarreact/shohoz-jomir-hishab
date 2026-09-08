@@ -11,14 +11,32 @@ export type GenerateResultPdfResult =
   | { ok: false; error: string };
 
 type PdfSlice = { offsetY: number; height: number };
+type EncodedCanvas = { bytes: Uint8Array; format: "JPEG" | "PNG" };
+type StylableElement = Element & { style: CSSStyleDeclaration };
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const DEFAULT_MARGIN_MM = 8;
 const DEFAULT_EXPORT_WIDTH_PX = 980;
-const RENDER_SCALES = [1.35, 1.15, 1];
+const RENDER_SCALES = [1.35, 1.15, 1, 0.85];
 const JPEG_QUALITY = 0.94;
 const MAX_PAGES = 80;
+const UNSUPPORTED_COLOR_FUNCTION_RE = /\b(?:oklch|oklab|lab|lch|color-mix|color)\s*\(/i;
+const EMBEDDED_BROWSER_RE = /(?:;\s*wv\)|\bWebView\b|\bFBAN\/|\bFBAV\/|\bInstagram\b|\bLine\/)/i;
+
+const COLOR_FALLBACKS: ReadonlyArray<readonly [string, string]> = [
+  ["color", "#13261b"],
+  ["background-color", "transparent"],
+  ["border-top-color", "#dce7e1"],
+  ["border-right-color", "#dce7e1"],
+  ["border-bottom-color", "#dce7e1"],
+  ["border-left-color", "#dce7e1"],
+  ["outline-color", "#dce7e1"],
+  ["text-decoration-color", "#13261b"],
+  ["fill", "#17663a"],
+  ["stroke", "#64748b"],
+  ["stop-color", "#17663a"],
+];
 
 function sanitizeFileName(name: string): string {
   return (
@@ -134,6 +152,69 @@ async function waitForAssets(root: HTMLElement): Promise<void> {
   );
 }
 
+function isStylableElement(element: Element): element is StylableElement {
+  return "style" in element && typeof (element as { style?: unknown }).style === "object";
+}
+
+function sanitizeUnsupportedCanvasStyles(root: Element): void {
+  const view = root.ownerDocument.defaultView;
+  if (!view) return;
+
+  const elements: Element[] = [root, ...Array.from(root.querySelectorAll("*"))];
+  for (const element of elements) {
+    if (!isStylableElement(element)) continue;
+    const computed = view.getComputedStyle(element);
+
+    for (const [property, fallback] of COLOR_FALLBACKS) {
+      const value = computed.getPropertyValue(property);
+      if (value && UNSUPPORTED_COLOR_FUNCTION_RE.test(value)) {
+        element.style.setProperty(property, fallback, "important");
+      }
+    }
+
+    const backgroundImage = computed.getPropertyValue("background-image");
+    if (backgroundImage && UNSUPPORTED_COLOR_FUNCTION_RE.test(backgroundImage)) {
+      element.style.setProperty("background-image", "none", "important");
+    }
+
+    const boxShadow = computed.getPropertyValue("box-shadow");
+    if (boxShadow && boxShadow !== "none") {
+      element.style.setProperty("box-shadow", "none", "important");
+    }
+
+    const filter = computed.getPropertyValue("filter");
+    if (filter && filter !== "none") {
+      element.style.setProperty("filter", "none", "important");
+    }
+
+    element.style.setProperty("text-shadow", "none", "important");
+    element.style.setProperty("backdrop-filter", "none", "important");
+    element.style.setProperty("-webkit-backdrop-filter", "none", "important");
+  }
+}
+
+function injectCanvasCompatibilityStyles(doc: Document): void {
+  const style = doc.createElement("style");
+  style.setAttribute("data-landbd-pdf-compat", "1");
+  style.textContent = `
+    [data-landbd-pdf-viewport='1'] *,
+    [data-landbd-pdf-viewport='1'] *::before,
+    [data-landbd-pdf-viewport='1'] *::after {
+      text-shadow: none !important;
+      box-shadow: none !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    [data-landbd-pdf-viewport='1'] *::before,
+    [data-landbd-pdf-viewport='1'] *::after {
+      color: #13261b !important;
+      border-color: #dce7e1 !important;
+    }
+  `;
+  doc.head.appendChild(style);
+}
+
 function applyBaseCloneStyles(clone: HTMLElement, exportWidthPx: number): void {
   clone.style.width = `${exportWidthPx}px`;
   clone.style.maxWidth = `${exportWidthPx}px`;
@@ -157,8 +238,13 @@ function applyBaseCloneStyles(clone: HTMLElement, exportWidthPx: number): void {
     });
 
   clone.querySelectorAll<HTMLElement>("*").forEach((node) => {
+    for (const className of Array.from(node.classList)) {
+      if (className.startsWith("dark:")) node.classList.remove(className);
+    }
     node.style.setProperty("font-family", "inherit", "important");
     node.style.setProperty("text-shadow", "none", "important");
+    node.style.setProperty("box-shadow", "none", "important");
+    node.style.setProperty("filter", "none", "important");
     node.style.setProperty("backdrop-filter", "none", "important");
     const position = getComputedStyle(node).position;
     if (position === "fixed" || position === "sticky") {
@@ -169,6 +255,8 @@ function applyBaseCloneStyles(clone: HTMLElement, exportWidthPx: number): void {
   clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
     node.style.setProperty("overflow", "visible", "important");
   });
+
+  sanitizeUnsupportedCanvasStyles(clone);
 }
 
 function collectBreakpoints(root: HTMLElement): number[] {
@@ -184,14 +272,32 @@ function collectBreakpoints(root: HTMLElement): number[] {
     .filter((value) => value > 0 && value < root.scrollHeight);
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: "image/jpeg" | "image/png",
+  quality?: number,
+): Promise<Blob | null> {
   return new Promise((resolve) => {
     try {
-      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY);
+      canvas.toBlob(resolve, type, quality);
     } catch {
       resolve(null);
     }
   });
+}
+
+async function encodeCanvas(canvas: HTMLCanvasElement): Promise<EncodedCanvas> {
+  const jpeg = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+  if (jpeg) {
+    return { bytes: new Uint8Array(await jpeg.arrayBuffer()), format: "JPEG" };
+  }
+
+  const png = await canvasToBlob(canvas, "image/png");
+  if (png) {
+    return { bytes: new Uint8Array(await png.arrayBuffer()), format: "PNG" };
+  }
+
+  throw new Error("Unable to encode PDF page image");
 }
 
 function triggerDownload(blob: Blob, fileName: string): void {
@@ -202,12 +308,23 @@ function triggerDownload(blob: Blob, fileName: string): void {
   link.rel = "noopener";
   link.style.position = "fixed";
   link.style.left = "-10000px";
+  link.style.top = "-10000px";
   document.body.appendChild(link);
-  link.click();
+
+  const userAgent = navigator.userAgent || "";
+  const shouldNavigate = EMBEDDED_BROWSER_RE.test(userAgent) || !("download" in link);
+
+  if (!shouldNavigate) {
+    link.click();
+  } else {
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.assign(url);
+  }
+
   window.setTimeout(() => {
     link.remove();
     URL.revokeObjectURL(url);
-  }, 60_000);
+  }, 5 * 60_000);
 }
 
 async function renderAtScale(
@@ -251,26 +368,33 @@ async function renderAtScale(
       windowHeight: slice.height,
       scrollX: 0,
       scrollY: 0,
-      ignoreElements: (element) =>
-        element instanceof HTMLElement &&
-        (element.dataset.excludeExport === "1" ||
-          element.dataset.pdfExclude === "1" ||
-          element.dataset.printExclude === "1"),
+      onclone: (clonedDocument) => {
+        injectCanvasCompatibilityStyles(clonedDocument);
+        const clonedViewport = clonedDocument.querySelector("[data-landbd-pdf-viewport='1']");
+        if (clonedViewport) sanitizeUnsupportedCanvasStyles(clonedViewport);
+      },
+      ignoreElements: (element) => {
+        const node = element as HTMLElement;
+        return (
+          node?.dataset?.excludeExport === "1" ||
+          node?.dataset?.pdfExclude === "1" ||
+          node?.dataset?.printExclude === "1"
+        );
+      },
     });
 
     if (!canvas.width || !canvas.height) throw new Error(`Empty PDF page ${index + 1}`);
-    const blob = await canvasToBlob(canvas);
-    if (!blob) throw new Error(`Unable to encode PDF page ${index + 1}`);
-    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const encoded = await encodeCanvas(canvas);
 
     if (index > 0) pdf.addPage();
     const renderedHeight = Math.min(content.height, (slice.height * content.width) / exportWidthPx);
-    pdf.addImage(bytes, "JPEG", marginMm, marginMm, content.width, renderedHeight, undefined, "FAST");
+    pdf.addImage(encoded.bytes, encoded.format, marginMm, marginMm, content.width, renderedHeight, undefined, "FAST");
     canvas.width = 1;
     canvas.height = 1;
   }
 
   const output = pdf.output("blob");
+  if (!output.size) throw new Error("Generated PDF is empty");
   triggerDownload(output, `${sanitizeFileName(fileName)}.pdf`);
   return { pages: slices.length, scale };
 }
@@ -286,6 +410,10 @@ export async function generateResultPdf({
     return { ok: false, error: "পিডিএফ শুধু ব্রাউজার থেকে তৈরি করা যায়।" };
   }
 
+  if (!source.isConnected) {
+    return { ok: false, error: "ডাউনলোডযোগ্য ফলাফলটি পেজে পাওয়া যাচ্ছে না। ফলাফল আবার তৈরি করে চেষ্টা করুন।" };
+  }
+
   await waitForAssets(source);
 
   const host = document.createElement("div");
@@ -299,19 +427,22 @@ export async function generateResultPdf({
   host.style.background = "#ffffff";
 
   const viewport = document.createElement("div");
+  viewport.dataset.landbdPdfViewport = "1";
   viewport.style.width = `${exportWidthPx}px`;
   viewport.style.overflow = "hidden";
   viewport.style.background = "#ffffff";
 
   const clone = source.cloneNode(true) as HTMLElement;
-  applyBaseCloneStyles(clone, exportWidthPx);
-  prepareClone?.(clone);
   viewport.appendChild(clone);
   host.appendChild(viewport);
   document.body.appendChild(host);
 
   try {
+    applyBaseCloneStyles(clone, exportWidthPx);
+    prepareClone?.(clone);
+    sanitizeUnsupportedCanvasStyles(clone);
     await waitForAssets(clone);
+
     const html2canvas = (await import("html2canvas")).default;
     const { jsPDF } = await import("jspdf");
     let lastError: unknown = null;
