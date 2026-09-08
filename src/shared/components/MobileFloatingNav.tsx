@@ -46,10 +46,10 @@ const TABS: Tab[] = [
     label: "মানচিত্র",
     icon: Map,
     match: (p) =>
-      p.startsWith(FEATURE_ROUTES.landMap) ||
-      p.startsWith("/geospatial-map") ||
+      p.startsWith("/dap-map") ||
       p.startsWith("/mouza-map") ||
-      p.startsWith("/dap-map"),
+      p.startsWith("/geospatial-map") ||
+      p.startsWith("/map"),
   },
 ];
 

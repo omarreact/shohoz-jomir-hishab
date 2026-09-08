@@ -50,10 +50,6 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   admin: ShieldCheck,
 };
 
-const SECONDARY_NAV: NavItem[] = [
-  { href: "/dap-map", label: "ArcGIS DAP", icon: Map },
-];
-
 function buildPrimaryNav(): NavItem[] {
   return PRIMARY_NAV_KEYS.map((key) => ({
     href: FEATURE_ROUTES[key],
@@ -64,17 +60,28 @@ function buildPrimaryNav(): NavItem[] {
 
 const PRIMARY_NAV = buildPrimaryNav();
 
-/** Visitors cannot open these pages — hide from nav when logged out. */
+/** Visitors cannot open these from nav when logged out (pages may still be public). */
 const AUTH_REQUIRED_HREFS = new Set<string>([
+  FEATURE_ROUTES.documents,
+]);
+
+const TOOL_HREFS = new Set([
+  FEATURE_ROUTES.records,
+  FEATURE_ROUTES.dlrmsKhatian,
+  FEATURE_ROUTES.landMeasurement,
+  FEATURE_ROUTES.inheritance,
+  FEATURE_ROUTES.documents,
+]);
+
+const MAP_KNOWLEDGE_HREFS = new Set([
   FEATURE_ROUTES.landMap,
   FEATURE_ROUTES.mouzaDownload,
-  FEATURE_ROUTES.documents,
+  FEATURE_ROUTES.blog,
 ]);
 
 const SEARCH_NAV: NavItem[] = [
   { href: FEATURE_ROUTES.home, label: FEATURE_LABELS.home.bn, icon: Home },
   ...PRIMARY_NAV,
-  ...SECONDARY_NAV,
   {
     href: FEATURE_ROUTES.contact,
     label: FEATURE_LABELS.contact.bn,
@@ -93,11 +100,9 @@ function activePath(pathname: string, href: string) {
 
 export default function Navbar() {
   const pathname = usePathname();
-  // Absolute overlay only for legacy/immersive map shells — product maps use sticky nav.
+  // Product maps keep sticky nav; only legacy immersive shells use absolute overlay.
   const isMapRoute =
-    pathname.startsWith(FEATURE_ROUTES.landMap) ||
-    pathname.startsWith("/dap-map") ||
-    pathname.startsWith("/lios-map");
+    pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, loading: authLoading, logout } = useAuth();
   const visiblePrimaryNav = useMemo(
@@ -318,9 +323,10 @@ export default function Navbar() {
               <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                 হিসাব টুলস
               </p>
-              {PRIMARY_NAV.filter((i) =>
-                ["/khatiyan", "/dlrms-khatian", "/land-measurement", "/faraez", "/porcha"].includes(i.href) &&
-                (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
+              {PRIMARY_NAV.filter(
+                (i) =>
+                  TOOL_HREFS.has(i.href) &&
+                  (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
@@ -338,9 +344,10 @@ export default function Navbar() {
               <p className="mt-3 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                 মানচিত্র ও জ্ঞান
               </p>
-              {PRIMARY_NAV.filter((i) =>
-                ["/geospatial-map", "/mouza-map", "/rajuk-test", "/blog"].includes(i.href) &&
-                (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
+              {PRIMARY_NAV.filter(
+                (i) =>
+                  MAP_KNOWLEDGE_HREFS.has(i.href) &&
+                  (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
               ).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
