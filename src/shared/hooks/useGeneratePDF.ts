@@ -12,8 +12,13 @@ export function useGeneratePDF({ sourceRef, ...options }: UseGeneratePdfOptions)
   const [error, setError] = useState<string | null>(null);
 
   const generatePDF = useCallback(async () => {
+    if (isGenerating) return false;
+
     const source = sourceRef.current;
-    if (!source || isGenerating) return false;
+    if (!source) {
+      setError("ডাউনলোডযোগ্য ফলাফলটি পাওয়া যাচ্ছে না। ফলাফল আবার তৈরি করে চেষ্টা করুন।");
+      return false;
+    }
 
     setIsGenerating(true);
     setError(null);
