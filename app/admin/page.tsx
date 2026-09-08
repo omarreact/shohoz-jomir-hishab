@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Users,
   Zap,
+  Map,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
@@ -34,6 +35,21 @@ type StatusRow = {
   href?: string;
 };
 
+type RajukDiagnose = {
+  ok: boolean;
+  authMode?: string;
+  serverTokenGenerated?: boolean;
+  portalTokenConfigured?: boolean;
+  portalCredentialsConfigured?: boolean;
+  serverTokenConfigured?: boolean;
+  publicConfigFallback?: string;
+  upstashConfigured?: boolean;
+  error?: string;
+  fix?: string;
+  note?: string;
+  checkedAt?: string;
+};
+
 const toneCard: Record<Tone, string> = {
   green:
     "bg-white dark:bg-slate-900 border border-emerald-500/25 border-l-4 border-l-emerald-500",
@@ -54,6 +70,14 @@ const tonePill: Record<Tone, string> = {
   slate:
     "bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20",
   blue: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+};
+
+const AUTH_MODE_BN: Record<string, string> = {
+  "public-config": "পাবলিক config.json",
+  "server-token": "সার্ভার টোকেন",
+  "portal-token": "পোর্টাল টোকেন",
+  "portal-credentials": "ইউজারনেম/পাসওয়ার্ড",
+  none: "কোনো অথ নেই",
 };
 
 function KpiSkeleton() {
@@ -97,6 +121,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KpiCard[]>([]);
   const [statusRows, setStatusRows] = useState<StatusRow[]>([]);
+  const [rajuk, setRajuk] = useState<RajukDiagnose | null>(null);
 
   const serviceCards = useMemo(() => {
     const all = [
@@ -147,6 +172,19 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "ড্যাশবোর্ড ডেটা লোড হয়নি");
 
+      let diagnose: RajukDiagnose | null = null;
+      if (admin) {
+        try {
+          const dRes = await fetch("/api/rajuk/auth/diagnose", { cache: "no-store" });
+          diagnose = (await dRes.json()) as RajukDiagnose;
+          setRajuk(diagnose);
+        } catch {
+          setRajuk(null);
+        }
+      } else {
+        setRajuk(null);
+      }
+
       const blogCount =
         typeof data.blogCount === "number" ? data.blogCount : null;
       const pageCount =
@@ -185,7 +223,17 @@ export default function AdminDashboard() {
         tone: "green",
       });
 
-      if (data.rajukTokenSet != null) {
+      if (diagnose) {
+        const modeLabel =
+          AUTH_MODE_BN[diagnose.authMode || ""] || diagnose.authMode || "—";
+        nextKpis.push({
+          title: "রাজউক অথ",
+          value: diagnose.ok ? "সচল" : "ব্যর্থ",
+          helper: modeLabel,
+          icon: Map,
+          tone: diagnose.ok ? "green" : "red",
+        });
+      } else if (data.rajukTokenSet != null) {
         nextKpis.push({
           title: "রাজউক টোকেন",
           value: rajukSet ? "সেট" : "নেই",
@@ -232,8 +280,8 @@ export default function AdminDashboard() {
 
       setKpis(nextKpis);
 
-      if (data.database != null || data.rajukTokenSet != null) {
-        setStatusRows([
+      if (data.database != null || data.rajukTokenSet != null || diagnose) {
+        const rows: StatusRow[] = [
           {
             name: "Firebase / Firestore",
             detail: dbOk
@@ -243,25 +291,43 @@ export default function AdminDashboard() {
             tone: dbOk ? "green" : "red",
             href: "/admin/data-monitor",
           },
-          {
-            name: "Rajuk Token",
+        ];
+
+        if (diagnose) {
+          const modeLabel =
+            AUTH_MODE_BN[diagnose.authMode || ""] || diagnose.authMode || "অজানা";
+          rows.push({
+            name: "RAJUK GIS অথ",
+            detail: diagnose.ok
+              ? `মোড: ${modeLabel} · টোকেন জেনারেট: ${diagnose.serverTokenGenerated ? "হ্যাঁ" : "না"}`
+              : diagnose.error || "অথ ব্যর্থ — diagnose দেখুন",
+            status: diagnose.ok ? "সচল" : "ব্যর্থ",
+            tone: diagnose.ok ? "green" : "red",
+            href: "/admin/data-monitor",
+          });
+        } else {
+          rows.push({
+            name: "Rajuk Token (Firestore)",
             detail: rajukSet
               ? "সাইট সেটিংসে টোকেন সংরক্ষিত"
               : "টোকেন সেট করা হয়নি",
             status: rajukSet ? "কনফিগারড" : "অনুপস্থিত",
             tone: rajukSet ? "green" : "amber",
             href: "/admin/settings",
-          },
-          {
-            name: "রক্ষণাবেক্ষণ মোড",
-            detail: maintenance
-              ? "পাবলিক সাইট লক থাকতে পারে"
-              : "পাবলিক সাইট উন্মুক্ত",
-            status: maintenance ? "চালু" : "বন্ধ",
-            tone: maintenance ? "amber" : "green",
-            href: "/admin/settings",
-          },
-        ]);
+          });
+        }
+
+        rows.push({
+          name: "রক্ষণাবেক্ষণ মোড",
+          detail: maintenance
+            ? "পাবলিক সাইট লক থাকতে পারে"
+            : "পাবলিক সাইট উন্মুক্ত",
+          status: maintenance ? "চালু" : "বন্ধ",
+          tone: maintenance ? "amber" : "green",
+          href: "/admin/settings",
+        });
+
+        setStatusRows(rows);
       } else {
         setStatusRows([
           {
@@ -277,10 +343,11 @@ export default function AdminDashboard() {
       setError(e instanceof Error ? e.message : "লোড ব্যর্থ");
       setKpis([]);
       setStatusRows([]);
+      setRajuk(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [admin]);
 
   useEffect(() => {
     void load();
@@ -295,7 +362,7 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
             {admin
-              ? "ইউজার, কন্টেন্ট ও সিস্টেম স্বাস্থ্য — লাইভ ডেটা।"
+              ? "ইউজার, কন্টেন্ট, RAJUK ও সিস্টেম স্বাস্থ্য — লাইভ ডেটা।"
               : "ব্লগ ও পেজ পরিচালনা — আপনার ওয়ার্কস্পেস।"}
             {user?.role ? (
               <span className="ml-2 text-xs font-semibold text-[#006a4e]">
@@ -366,6 +433,91 @@ export default function AdminDashboard() {
               );
             })}
       </div>
+
+      {admin && rajuk && !loading && (
+        <div className="mb-10 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm border-l-4 border-l-[#006a4e]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Map size={20} className="text-[#006a4e]" />
+                RAJUK ইন্টিগ্রেশন হেলথ
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                লাইভ অথ চেক · টোকেন মান কখনো দেখানো হয় না
+                {rajuk.checkedAt
+                  ? ` · ${new Date(rajuk.checkedAt).toLocaleString("bn-BD")}`
+                  : ""}
+              </p>
+            </div>
+            <span
+              className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-bold ${tonePill[rajuk.ok ? "green" : "red"]}`}
+            >
+              {rajuk.ok ? "সচল" : "ব্যর্থ"}
+            </span>
+          </div>
+          <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
+              <dt className="text-slate-500 dark:text-slate-400">অথ মোড</dt>
+              <dd className="mt-0.5 font-semibold text-slate-900 dark:text-white">
+                {AUTH_MODE_BN[rajuk.authMode || ""] || rajuk.authMode || "—"}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
+              <dt className="text-slate-500 dark:text-slate-400">সার্ভার টোকেন</dt>
+              <dd className="mt-0.5 font-semibold text-slate-900 dark:text-white">
+                {rajuk.serverTokenGenerated ? "জেনারেট সফল" : "না"}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
+              <dt className="text-slate-500 dark:text-slate-400">Env টোকেন / ক্রেডেনশিয়াল</dt>
+              <dd className="mt-0.5 font-semibold text-slate-900 dark:text-white">
+                {[
+                  rajuk.serverTokenConfigured && "server",
+                  rajuk.portalTokenConfigured && "portal",
+                  rajuk.portalCredentialsConfigured && "user/pass",
+                ]
+                  .filter(Boolean)
+                  .join(", ") || "শুধু public config"}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
+              <dt className="text-slate-500 dark:text-slate-400">Upstash Redis</dt>
+              <dd className="mt-0.5 font-semibold text-slate-900 dark:text-white">
+                {rajuk.upstashConfigured ? "কনফিগারড" : "অফ"}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3 border border-slate-100 dark:border-slate-800 sm:col-span-2">
+              <dt className="text-slate-500 dark:text-slate-400">পাবলিক কনফিগ ফলব্যাক</dt>
+              <dd className="mt-0.5 font-mono text-xs font-semibold text-slate-900 dark:text-white break-all">
+                {rajuk.publicConfigFallback || "—"}
+              </dd>
+            </div>
+          </dl>
+          {rajuk.error && (
+            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+              {rajuk.error}
+              {rajuk.fix ? ` — ${rajuk.fix}` : ""}
+            </p>
+          )}
+          {rajuk.note && !rajuk.error && (
+            <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">{rajuk.note}</p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/dap-map"
+              className="text-sm font-semibold text-[#006a4e] no-underline hover:underline"
+            >
+              /dap-map খুলুন →
+            </Link>
+            <Link
+              href="/admin/data-monitor"
+              className="text-sm font-semibold text-[#006a4e] no-underline hover:underline"
+            >
+              ডেটা মনিটর →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
