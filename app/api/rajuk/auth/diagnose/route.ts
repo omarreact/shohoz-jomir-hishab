@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   getRajukAuthMode,
   getValidToken,
@@ -7,20 +7,41 @@ import {
   RAJUK_PUBLIC_CONFIG,
 } from "@/src/services/rajuk/rajukAuth.service";
 import { hasUpstashConfig } from "@/src/services/rajuk/rajukRedis.service";
+import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+/**
+ * Admin-only RAJUK auth health check. Never returns token values.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const user = await verifyStaffAuth(req);
+    if (!isAdminRole(user.role)) {
+      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unauthorized";
+    if (msg === "Unauthorized" || msg.startsWith("Forbidden")) {
+      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "অনুমতি যাচাই ব্যর্থ।" }, { status: 403 });
+  }
+
   const mode = getRajukAuthMode();
   const base = {
     authMode: mode,
     portalTokenConfigured: Boolean(process.env.RAJUK_PORTAL_TOKEN || process.env.RAJUK_API_KEY),
-    portalCredentialsConfigured: Boolean(process.env.RAJUK_PORTAL_USERNAME && process.env.RAJUK_PORTAL_PASSWORD),
+    portalCredentialsConfigured: Boolean(
+      process.env.RAJUK_PORTAL_USERNAME && process.env.RAJUK_PORTAL_PASSWORD,
+    ),
     serverTokenConfigured: Boolean(process.env.RAJUK_SERVER_TOKEN),
     publicConfigFallback: RAJUK_PUBLIC_CONFIG,
     upstashConfigured: hasUpstashConfig(),
     server: RAJUK_SERVER,
+    checkedAt: new Date().toISOString(),
   };
 
   try {
@@ -42,7 +63,7 @@ export async function GET() {
         ok: Boolean(token),
         ...base,
         serverTokenGenerated: Boolean(token),
-        note: "Token value is intentionally never returned. Auth works without username/password via public config.json when env token is missing or expired.",
+        note: "Token value is intentionally never returned. Auth works via public config.json when env token is missing or expired.",
       },
       { headers: { "Cache-Control": "no-store" } },
     );
