@@ -5,7 +5,8 @@ const PORTAL = "https://masterplan.rajuk.gov.bd/portal/sharing/rest";
 const PUBLIC_CONFIG = "https://masterplan.rajuk.gov.bd/config.json";
 const REFERER = "https://masterplan.rajuk.gov.bd/";
 const ORIGIN = "https://masterplan.rajuk.gov.bd";
-const LAYER = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/1`;
+const LAYER_MAUZA = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/1`;
+const LAYER_RS_PLOT = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/0`;
 
 async function json(url: string, init?: RequestInit) {
   const response = await fetch(url, {
@@ -94,38 +95,43 @@ async function getServerToken(): Promise<{ token: string; source: string }> {
   return { token: exchange.data.token, source: "portal-credentials" };
 }
 
-async function main() {
-  // RAJUK layer metadata now requires a token (HTTP 200 + ArcGIS 499 in body without one).
-  // Align with production: obtain auth first, then verify metadata and query with the token.
-  const auth = await getServerToken();
-  console.log(`[RAJUK] Authentication source: ${auth.source}`);
-
-  console.log("[RAJUK] Checking layer metadata with production-compatible auth...");
-  const metadataUrl = new URL(LAYER);
+async function assertLayerQuery(layerUrl: string, token: string, label: string) {
+  const metadataUrl = new URL(layerUrl);
   metadataUrl.searchParams.set("f", "json");
-  metadataUrl.searchParams.set("token", auth.token);
+  metadataUrl.searchParams.set("token", token);
   const metadata = await json(metadataUrl.toString());
-  console.log(`[RAJUK] Layer metadata HTTP ${metadata.response.status}`);
-  assert(metadata.response.ok, `Layer metadata HTTP ${metadata.response.status}`);
-  assert(!metadata.data?.error, `Layer metadata error: ${JSON.stringify(metadata.data?.error)}`);
-  assert(metadata.data?.name || metadata.data?.type, `Unexpected metadata response: ${JSON.stringify(metadata.data)}`);
+  console.log(`[RAJUK] ${label} metadata HTTP ${metadata.response.status}`);
+  assert(metadata.response.ok, `${label} metadata HTTP ${metadata.response.status}`);
+  assert(!metadata.data?.error, `${label} metadata error: ${JSON.stringify(metadata.data?.error)}`);
+  assert(metadata.data?.name || metadata.data?.type, `Unexpected ${label} metadata: ${JSON.stringify(metadata.data)}`);
 
-  const query = new URL(`${LAYER}/query`);
+  const query = new URL(`${layerUrl}/query`);
   query.searchParams.set("f", "json");
   query.searchParams.set("where", "1=1");
   query.searchParams.set("outFields", "*");
   query.searchParams.set("returnGeometry", "false");
   query.searchParams.set("resultRecordCount", "1");
-  query.searchParams.set("token", auth.token);
+  query.searchParams.set("token", token);
 
-  console.log("[RAJUK] Querying FeatureServer/1 through the production-compatible auth path...");
   const result = await json(query.toString());
-  console.log(`[RAJUK] Feature query HTTP ${result.response.status}`);
-  assert(result.response.ok, `Feature query HTTP ${result.response.status}`);
-  assert(!result.data?.error, `ArcGIS rejected token/query: ${JSON.stringify(result.data?.error ?? result.data)}`);
-  assert(Array.isArray(result.data?.features), `Unexpected query response: ${JSON.stringify(result.data)}`);
+  console.log(`[RAJUK] ${label} query HTTP ${result.response.status}`);
+  assert(result.response.ok, `${label} query HTTP ${result.response.status}`);
+  assert(!result.data?.error, `${label} rejected: ${JSON.stringify(result.data?.error ?? result.data)}`);
+  assert(Array.isArray(result.data?.features), `Unexpected ${label} response: ${JSON.stringify(result.data)}`);
+  console.log(`[RAJUK] ${label}: ${result.data.features.length} feature(s).`);
+}
 
-  console.log(`[RAJUK] SUCCESS: received ${result.data.features.length} feature(s).`);
+async function main() {
+  const auth = await getServerToken();
+  console.log(`[RAJUK] Authentication source: ${auth.source}`);
+
+  console.log("[RAJUK] Verifying mauza boundary layer (FeatureServer/1)...");
+  await assertLayerQuery(LAYER_MAUZA, auth.token, "FeatureServer/1");
+
+  console.log("[RAJUK] Verifying RS plot layer (FeatureServer/0)...");
+  await assertLayerQuery(LAYER_RS_PLOT, auth.token, "FeatureServer/0");
+
+  console.log("[RAJUK] SUCCESS: mauza + RS plot layers reachable with production-compatible auth.");
 }
 
 main().catch((error) => {
