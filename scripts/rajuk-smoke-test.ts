@@ -95,14 +95,20 @@ async function getServerToken(): Promise<{ token: string; source: string }> {
 }
 
 async function main() {
-  console.log("[RAJUK] Checking public server metadata...");
-  const metadata = await json(`${LAYER}?f=json`);
+  // RAJUK layer metadata now requires a token (HTTP 200 + ArcGIS 499 in body without one).
+  // Align with production: obtain auth first, then verify metadata and query with the token.
+  const auth = await getServerToken();
+  console.log(`[RAJUK] Authentication source: ${auth.source}`);
+
+  console.log("[RAJUK] Checking layer metadata with production-compatible auth...");
+  const metadataUrl = new URL(LAYER);
+  metadataUrl.searchParams.set("f", "json");
+  metadataUrl.searchParams.set("token", auth.token);
+  const metadata = await json(metadataUrl.toString());
   console.log(`[RAJUK] Layer metadata HTTP ${metadata.response.status}`);
   assert(metadata.response.ok, `Layer metadata HTTP ${metadata.response.status}`);
   assert(!metadata.data?.error, `Layer metadata error: ${JSON.stringify(metadata.data?.error)}`);
-
-  const auth = await getServerToken();
-  console.log(`[RAJUK] Authentication source: ${auth.source}`);
+  assert(metadata.data?.name || metadata.data?.type, `Unexpected metadata response: ${JSON.stringify(metadata.data)}`);
 
   const query = new URL(`${LAYER}/query`);
   query.searchParams.set("f", "json");
