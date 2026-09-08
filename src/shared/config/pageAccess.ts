@@ -40,14 +40,14 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   {
     id: "/khatiyan",
     name: "খতিয়ান ক্যালকুলেটর",
-    description: "খতিয়ানের জমির অংশ ও হিসাব।",
+    description: "খতিয়ানের জমির অংশ ও হিসাব (ক্যাননিক্যাল রুট)।",
     category: "খতিয়ান ও রেকর্ড",
     defaultAccess: "public",
   },
   {
     id: "/khatian",
-    name: "খতিয়ান পেজ",
-    description: "খতিয়ান সম্পর্কিত বিকল্প রুট।",
+    name: "খতিয়ান (পুরনো লিংক)",
+    description: "/khatiyan-এ রিডাইরেক্ট — SEO/পুরনো বুকমার্কের জন্য।",
     category: "খতিয়ান ও রেকর্ড",
     defaultAccess: "public",
   },
@@ -102,10 +102,10 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   },
   {
     id: "/rajuk-test",
-    name: "রাজউক প্লট অনুসন্ধান",
-    description: "আরএস/এমএস প্লট পরীক্ষা, মিল ও এক্সপোর্ট।",
-    category: "মানচিত্র ও জিআইএস",
-    defaultAccess: "public",
+    name: "রাজউক প্লট QA",
+    description: "আরএস/এমএস প্লট পরীক্ষা ও এক্সপোর্ট — স্টাফ/অ্যাডমিন।",
+    category: "পরীক্ষামূলক",
+    defaultAccess: "admin",
   },
   {
     id: "/land-measurement",
