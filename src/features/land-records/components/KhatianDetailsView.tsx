@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { useEffect, useRef, type RefObject } from "react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import { exportKhatianPdf } from "../lib/khatian-pdf-export";
+import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
+import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
 import CompactKhatianDetailsView from "./CompactKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
 
@@ -13,6 +14,12 @@ type Props = {
   fullKhatian?: FullKhatian;
   surveyKey?: string;
   captureRef?: RefObject<HTMLDivElement | null>;
+};
+
+type ChildLayerSnapshot = {
+  node: HTMLElement;
+  position: string;
+  zIndex: string;
 };
 
 function safePart(value: unknown, fallback: string): string {
@@ -30,10 +37,16 @@ function markExcluded(node: Element | null): HTMLElement | null {
 }
 
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+  const internalCaptureRef = useRef<HTMLDivElement | null>(null);
+  const resolvedCaptureRef = captureRef ?? internalCaptureRef;
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
   const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
+
+  const fileName = `LandBD-${safePart(surveyKey, "Khatian")}-Khatian-${safePart(khatian.KHATIAN_NO, "record")}-${safePart(khatian.MOUZA_NAME, "mouza")}-A4-Portrait`;
+  const { generatePDF, isGenerating, pdfError } = useGeneratePDF({
+    sourceRef: resolvedCaptureRef,
+    fileName,
+  });
 
   useEffect(() => {
     const panel = document.getElementById("khatian-details-panel");
@@ -59,13 +72,42 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
   }, [khatian.ID]);
 
   useEffect(() => {
-    const root = captureRef?.current;
+    const root = resolvedCaptureRef.current;
     if (!root) return;
 
     const previousFontFamily = root.style.fontFamily;
     const previousFontVariantNumeric = root.style.fontVariantNumeric;
+    const previousPosition = root.style.position;
+    const previousIsolation = root.style.isolation;
+    const childLayers: ChildLayerSnapshot[] = Array.from(root.children)
+      .filter((child): child is HTMLElement => child instanceof HTMLElement)
+      .map((node) => ({
+        node,
+        position: node.style.position,
+        zIndex: node.style.zIndex,
+      }));
+
     root.style.fontFamily = 'var(--font-noto-bengali), var(--font-hind-siliguri), "Nirmala UI", "Segoe UI", Arial, sans-serif';
     root.style.fontVariantNumeric = "tabular-nums";
+    root.style.position = "relative";
+    root.style.isolation = "isolate";
+    root.dataset.resultDocument = "1";
+    childLayers.forEach(({ node }) => {
+      node.style.position = "relative";
+      node.style.zIndex = "1";
+    });
+
+    const restoreRootPresentation = () => {
+      root.style.fontFamily = previousFontFamily;
+      root.style.fontVariantNumeric = previousFontVariantNumeric;
+      root.style.position = previousPosition;
+      root.style.isolation = previousIsolation;
+      delete root.dataset.resultDocument;
+      childLayers.forEach(({ node, position, zIndex }) => {
+        node.style.position = position;
+        node.style.zIndex = zIndex;
+      });
+    };
 
     const publicInfoBanner = markExcluded(root.children[1]);
     const surveyArchitectureNote = markExcluded(root.children[2]);
@@ -73,18 +115,21 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
       document.querySelector("section[aria-label='সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য']"),
     );
 
+    const restoreExcluded = () => {
+      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+        if (!node) return;
+        delete node.dataset.pdfExclude;
+        delete node.dataset.printExclude;
+        node.classList.remove("print:hidden");
+      });
+    };
+
     const headerCard = root.children[0] as HTMLElement | undefined;
     const details = headerCard?.children[1] as HTMLElement | undefined;
     if (!details) {
       return () => {
-        root.style.fontFamily = previousFontFamily;
-        root.style.fontVariantNumeric = previousFontVariantNumeric;
-        [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
-          if (!node) return;
-          delete node.dataset.pdfExclude;
-          delete node.dataset.printExclude;
-          node.classList.remove("print:hidden");
-        });
+        restoreRootPresentation();
+        restoreExcluded();
       };
     }
 
@@ -126,14 +171,8 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     }
 
     return () => {
-      root.style.fontFamily = previousFontFamily;
-      root.style.fontVariantNumeric = previousFontVariantNumeric;
-      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
-        if (!node) return;
-        delete node.dataset.pdfExclude;
-        delete node.dataset.printExclude;
-        node.classList.remove("print:hidden");
-      });
+      restoreRootPresentation();
+      restoreExcluded();
       if (duplicatedMetaGrid) duplicatedMetaGrid.style.display = previousMetaDisplay;
       if (summaryGrid) {
         summaryGrid.style.cssText = previousSummaryCss;
@@ -146,43 +185,12 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         });
       }
     };
-  }, [captureRef, khatian.ID, resolvedFullKhatian]);
-
-  const downloadPdf = async () => {
-    if (!captureRef?.current || downloadingPdf) return;
-
-    setDownloadingPdf(true);
-    setPdfError(null);
-    try {
-      const survey = safePart(surveyKey, "Khatian");
-      const khatianNo = safePart(khatian.KHATIAN_NO, "record");
-      const mouza = safePart(khatian.MOUZA_NAME, "mouza");
-      const result = await exportKhatianPdf({
-        source: captureRef.current,
-        fileName: `LandBD-${survey}-Khatian-${khatianNo}-${mouza}-A4-Portrait`,
-      });
-
-      if (!result.ok) setPdfError(result.error);
-    } catch (error) {
-      console.error("Khatian PDF download failed", error);
-      setPdfError("A4 পোর্ট্রেট পিডিএফ ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।");
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
+  }, [khatian.ID, resolvedCaptureRef, resolvedFullKhatian]);
 
   return (
     <>
       <div className="mb-2 flex justify-end print:hidden" data-exclude-export="1">
-        <button
-          type="button"
-          onClick={() => void downloadPdf()}
-          disabled={downloadingPdf}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-          {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "A4 পোর্ট্রেট পিডিএফ ডাউনলোড"}
-        </button>
+        <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
       </div>
 
       {pdfError ? (
@@ -191,7 +199,8 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         </div>
       ) : null}
 
-      <CompactKhatianDetailsView khatian={khatian} surveyKey={surveyKey} captureRef={captureRef} />
+      <CompactKhatianDetailsView khatian={khatian} surveyKey={surveyKey} captureRef={resolvedCaptureRef} />
+      <ResultWatermarkPortal targetRef={resolvedCaptureRef} />
       {resolvedFullKhatian ? <FullKhatianSupplement fullKhatian={resolvedFullKhatian} /> : null}
     </>
   );

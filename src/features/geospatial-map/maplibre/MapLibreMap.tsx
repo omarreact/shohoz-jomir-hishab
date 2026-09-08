@@ -10,6 +10,7 @@ import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { sendPlotToFaraez, sendPlotToKhatiyan } from "@/src/modules/khatiyan/gis-bridge";
+import { useLiveLocationTracking } from "@/src/features/geospatial-map/hooks/useLiveLocationTracking";
 import {
   BASEMAP_SOURCE_DEFINITIONS,
   EMPTY_FEATURE_COLLECTION,
@@ -26,7 +27,6 @@ import {
 } from "./types";
 import { BASEMAP_RASTER_LAYERS, RAJUK_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";
 import {
-  createAccuracyPolygon,
   detailRows,
   featuresToFc,
   fetchWithTimeout,
@@ -78,7 +78,6 @@ export default function MapLibreMap() {
   const [mapReady, setMapReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [vectorStatus, setVectorStatus] = useState("");
-  const [locating, setLocating] = useState(false);
   const [publicResultsOpen, setPublicResultsOpen] = useState(true);
   const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);
 
@@ -88,6 +87,12 @@ export default function MapLibreMap() {
     setToast(message);
     window.setTimeout(() => setToast(""), 4000);
   }, []);
+
+  const { jumpToCurrentLocation, locating } = useLiveLocationTracking({
+    mapRef,
+    mapReady,
+    notify,
+  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -202,7 +207,6 @@ export default function MapLibreMap() {
           setSelected(found[0] ?? null);
           setTab("results");
           setPanelOpen(false);
-          // Atomic multi-feature highlight: RS+MS from one identify share one setData call.
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
@@ -241,7 +245,6 @@ export default function MapLibreMap() {
     map.on("zoomend", handleMove);
 
     return () => {
-      // Invariant: freeze request generation before tearing down WebGL.
       mapReadyRef.current = false;
       if (extentTimerRef.current) window.clearTimeout(extentTimerRef.current);
       extentTimerRef.current = null;
@@ -253,7 +256,6 @@ export default function MapLibreMap() {
       map.off("click", handleClick);
       map.off("moveend", handleMove);
       map.off("zoomend", handleMove);
-      // Empty vector sources before remove() so no late setData targets a live GL buffer.
       try {
         updateSourceData(map, VECTOR_SOURCES.rsBoundary, EMPTY_GEOJSON);
         updateSourceData(map, VECTOR_SOURCES.msBoundary, EMPTY_GEOJSON);
@@ -305,7 +307,6 @@ export default function MapLibreMap() {
         if (controller.signal.aborted || requestId !== extentRequestIdRef.current || !mapReadyRef.current) return;
         const rsFeatures = sanitizeRajukFeatures(Array.isArray(rs.features) ? rs.features : []);
         const msFeatures = sanitizeRajukFeatures(Array.isArray(ms.features) ? ms.features : []);
-        // Two atomic setData calls — one per source; never mutate in place.
         updateSourceData(map, VECTOR_SOURCES.rsBoundary, featuresToFc(rsFeatures) as FeatureCollection<Geometry>);
         updateSourceData(map, VECTOR_SOURCES.msBoundary, featuresToFc(msFeatures) as FeatureCollection<Geometry>);
         setVectorStatus(`${rsFeatures.length + msFeatures.length}টি দাগ লোড হয়েছে`);
@@ -329,7 +330,9 @@ export default function MapLibreMap() {
     (Object.entries(sourceLayerMap) as Array<[BasemapKey, string]>).forEach(([key, layerId]) => {
       if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", key === basemap ? "visible" : "none");
     });
-    if (basemap === "satellite2003") map.flyTo({ center: HISTORIC_2003_CENTER, zoom: HISTORIC_2003_ZOOM, duration: 700 });
+    if (basemap === "satellite2003") {
+      map.flyTo({ center: HISTORIC_2003_CENTER, zoom: HISTORIC_2003_ZOOM, duration: 700 });
+    }
   }, [basemap, mapReady]);
 
   useEffect(() => {
@@ -397,39 +400,6 @@ export default function MapLibreMap() {
     }
   }, [notify, plotNo]);
 
-  const goToMyLocation = useCallback(() => {
-    if (!mapRef.current || !navigator.geolocation) return notify("এই ডিভাইসে অবস্থান সেবা পাওয়া যাচ্ছে না");
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        const point: GeoJSON.Feature<GeoJSON.Point> = {
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [longitude, latitude] },
-          properties: {},
-        };
-        const circle = createAccuracyPolygon(latitude, longitude, accuracy);
-        updateSourceData(mapRef.current!, VECTOR_SOURCES.location, {
-          type: "FeatureCollection",
-          features: [point],
-        } as FeatureCollection<Geometry>);
-        updateSourceData(mapRef.current!, VECTOR_SOURCES.accuracy, circle);
-        mapRef.current!.flyTo({
-          center: [longitude, latitude],
-          zoom: Math.max(mapRef.current!.getZoom(), 17),
-          duration: 800,
-        });
-        setLocating(false);
-      },
-      (error) => {
-        console.error("Geolocation failed:", error);
-        setLocating(false);
-        notify(error.message || "অবস্থান নির্ণয় করা যায়নি");
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-    );
-  }, [notify]);
-
   const validateAndRoute = useCallback(
     async (calculator: "khatiyan" | "faraez", feature: RajukPlotFeature) => {
       setRoutingCalculator(calculator);
@@ -490,7 +460,7 @@ export default function MapLibreMap() {
       setPlotNo={setPlotNo}
       searching={searching}
       searchPlots={searchPlots}
-      goToMyLocation={goToMyLocation}
+      goToMyLocation={jumpToCurrentLocation}
       locating={locating}
       identifyMode={identifyMode}
       setIdentifyMode={setIdentifyMode}
