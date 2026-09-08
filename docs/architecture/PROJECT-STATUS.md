@@ -1,69 +1,58 @@
 # LandBD / Shohoz Jomir Hishab — Project Status
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-09-09
 
 ## Overall assessment
 
-The repository is **substantially developed** but **not yet production-complete**.
+The repository is **substantially developed** and close to production-ready for core flows.
 
-Major features (Next.js app, admin, blog/CMS, land tools, RAJUK GIS rebuild) exist. Remaining work is primarily functional QA, lockfile/CI health, and cleanup of legacy routes.
+Major features (Next.js app, admin, blog/CMS, land tools, RAJUK GIS, page-access control, PDF export) exist. Remaining work is primarily functional QA, route consolidation, and optional dependency hygiene.
 
 ## Status by area
 
 | Area | Status | Notes |
 |------|--------|-------|
 | Next.js application | Ready | Next.js 16.1.6 + React 19 + TypeScript |
-| Main application architecture | Ready | Large App Router structure |
+| Main application architecture | Ready | App Router; Firebase Auth/Firestore SSOT |
 | Land calculation | Needs QA | Implemented; functional QA still required |
-| Admin panel | Ready | Multiple admin modules exist |
+| Admin panel | Ready | Users, blog, settings, page-access, data-monitor |
 | Blog / CMS | Ready | Create/edit/list routes exist |
 | User management | Ready | Admin users section exists |
-| RAJUK GIS | Needs QA | Major rebuild implemented; needs functional QA |
-| Data Monitor | In progress | Being refactored |
-| CI / package-lock | **Broken** | `package-lock.json` out of sync with `package.json` |
+| RAJUK GIS | Needs QA | Rebuild + proxies live; smoke test aligned with production auth |
+| Data Monitor | In progress | Registry still mixes Hosted names and app APIs |
+| CI | Healthy | Lint/typecheck/build complete on recent main runs |
 
-## Critical issue (blocks CI)
+## Recent cleanup (2026-09-09)
 
-`package-lock.json` is missing `@arcgis/core@4.34.8` and many transitive dependencies.
+- RAJUK smoke test obtains auth **before** metadata/query (anonymous layer metadata returns ArcGIS 499).
+- Removed legacy `/api/rajuk-token` (HTTP 410 stub; tiles use `/api/rajuk/tile/...`).
+- Removed one-shot `.github/workflows/restore-geospatial-map.yml` (pushed restores to main).
+- Legacy `/api/tiles` route is **already gone**; only historical docs mentioned it.
 
-Result: `npm ci` fails immediately → CI jobs finish in ~20s without running lint, typecheck, or build.
+## Known remaining technical debt
 
-### Fix (run on a normal machine / GitHub Actions runner)
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-npm run typecheck
-npm run lint
-npm run build
-git add package-lock.json
-git commit -m "fix: regenerate package-lock.json for @arcgis/core and deps"
-```
-
-After this commit lands on `main`, CI should run the full pipeline (lint → typecheck → production build).
-
-## Known remaining technical debt (from Phase 1)
-
-- Legacy `/api/tiles` still referenced (admin/data-monitor audit needed before deletion).
-- Legacy `/api/rajuk-token` returns HTTP 410 (safe to remove after deployment reference check).
-- Route migration candidates (`/khatiyan` → `/records/...`, etc.) not yet applied.
-- Functional QA still required for land calculation modules and RAJUK map flows (`/dap-map`, `/rajuk-test`).
+- Duplicate public routes: `/khatiyan` and `/khatian` — pick one canonical path + redirect.
+- Map surface overlap: `/dap-map`, `/mouza-map`, `/geospatial-map`, `/map`, plus QA pages `/rajuk-test`, `/ms-test`.
+- Gate QA/demo surfaces (`/ms-test`, seed-demo APIs) behind staff/super-admin.
+- Functional QA still required for land calculation modules and RAJUK map flows.
+- Possible unused dependencies (verify with knip/depcheck before removal): bcryptjs, bullmq, ioredis, redlock, tsyringe, opossum, node-cron, axios.
+- Dual nav (global vs GIS) not fully unified.
 
 ## Architecture rules (must keep)
 
 See `AGENTS.md`:
 
 - Firebase Auth + Firestore remain the primary auth/database.
-- RAJUK credentials stay server-only (`RAJUK_API_KEY`).
+- RAJUK credentials stay server-only.
 - `/dap-map` must fall back to public RAJUK data if private token is unavailable.
 
 ## Recommended next steps
 
-1. **Highest priority:** Regenerate and commit a healthy `package-lock.json` (see fix above).
-2. Confirm CI (lint + typecheck + build) passes on `main`.
-3. Run functional QA on land calculation and `/dap-map` + `/rajuk-test`.
-4. Audit and remove legacy `/api/tiles` + `/api/rajuk-token` after confirming no remaining consumers.
-5. Continue Phase 2 hardening and design-system consistency.
+1. Confirm RAJUK integration workflow is green on main after smoke-test fix.
+2. Canonicalize `/khatiyan` vs `/khatian` with redirects.
+3. Gate or unpublish `/ms-test` and tighten `/rajuk-test`.
+4. Run functional QA on land calculation and map flows.
+5. Dependency unused-code pass; continue design-system consistency.
 
 ## Related docs
 
