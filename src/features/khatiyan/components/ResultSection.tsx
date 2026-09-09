@@ -3,6 +3,7 @@
 import { FileSpreadsheet } from "lucide-react";
 import { toBn } from "@/src/shared/utils";
 import { generateCSVFromResults } from "@/src/modules/khatiyan/calculations";
+import { KHATIYAN_RECORD_STANDARD } from "@/src/modules/khatiyan/standards";
 import { downloadTextFile } from "@/src/shared/lib/export";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
@@ -78,7 +79,7 @@ export default function ResultSection({ detailedResults, exportRef }: ResultSect
                             <td className="px-4 py-3"><span className="text-slate-500 font-medium">{p.plotClass}</span></td>
                             <td className="px-4 py-3 font-medium text-slate-900">{toBn(p.totalArea)}</td>
                             <td className="px-4 py-3 text-right font-bold text-green-600">{toBn(p.gotArea.toFixed(4))}</td>
-                            <td className="px-4 py-3 text-right text-slate-500 font-medium">{toBn((p.gotArea * 435.6).toFixed(1))}</td>
+                            <td className="px-4 py-3 text-right text-slate-500 font-medium">{toBn((p.gotArea * KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal).toFixed(1))}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -86,7 +87,7 @@ export default function ResultSection({ detailedResults, exportRef }: ResultSect
                         <tr>
                           <td colSpan={3} className="px-4 py-4 text-right font-bold text-slate-500">মোট প্রাপ্ত:</td>
                           <td className="px-4 py-4 text-right font-bold text-lg text-green-700">{toBn(res.totalLand.toFixed(3))}</td>
-                          <td className="px-4 py-4 text-right font-medium text-slate-500">{toBn((res.totalLand / 1.65).toFixed(2))} কাঠা</td>
+                          <td className="px-4 py-4 text-right font-medium text-slate-500">{toBn(((res.totalLand * KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal) / KHATIYAN_RECORD_STANDARD.squareFeetPerKatha).toFixed(2))} কাঠা</td>
                         </tr>
                       </tfoot>
                     </table>
