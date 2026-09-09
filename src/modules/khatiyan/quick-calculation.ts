@@ -1,4 +1,5 @@
 import type { KhatiyanOwner, KhatiyanQuickData } from "@/src/shared/types";
+import { KHATIYAN_RECORD_STANDARD } from "./standards";
 import {
   shareToTilExact,
   TIL_PER_FULL_UNIT_BIGINT,
@@ -13,8 +14,9 @@ export interface KhatiyanQuickResult {
 
 /** Exact fixed-point scale for continuous land area at the calculation boundary. */
 const AREA_SCALE = 1_000_000n;
-const SQFT_PER_SHOTOK_SCALED = 435_600_000n;
-const KATHA_PER_SHOTOK_SCALED = 1_650_000n;
+const SQFT_PER_DECIMAL = BigInt(KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal);
+const SQFT_PER_KATHA = BigInt(KHATIYAN_RECORD_STANDARD.squareFeetPerKatha);
+const BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯";
 
 function toShare(owner: Pick<KhatiyanOwner, "a" | "g" | "k" | "kr" | "ti">): KhatiyanShare {
   return {
@@ -39,8 +41,15 @@ export function totalOwnerTil(
   return Number(total);
 }
 
+function normalizeNumericText(value: string | number): string {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[০-৯]/g, (digit) => String(BANGLA_DIGITS.indexOf(digit)));
+}
+
 function toScaledDecimal(value: string | number): bigint {
-  const text = String(value).trim().toLowerCase();
+  const text = normalizeNumericText(value);
   if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/.test(text)) {
     throw new RangeError("Invalid land area");
   }
@@ -91,9 +100,9 @@ export function calculateQuickKhatiyan(
   if (scaledLand <= 0n) return null;
 
   const land = fromScaled(scaledLand);
-  const sqft = fromScaled((scaledLand * SQFT_PER_SHOTOK_SCALED) / AREA_SCALE);
-  // Convert the exact rational land/1.65 to a Number only at the presentation boundary.
-  const katha = Number(scaledLand) / Number(KATHA_PER_SHOTOK_SCALED);
+  const sqft = fromScaled(scaledLand * SQFT_PER_DECIMAL);
+  // Khatiyan-specific record conversion: decimal -> sq ft -> katha.
+  const katha = Number(scaledLand * SQFT_PER_DECIMAL) / Number(AREA_SCALE * SQFT_PER_KATHA);
 
   return { land, sqft, katha };
 }
