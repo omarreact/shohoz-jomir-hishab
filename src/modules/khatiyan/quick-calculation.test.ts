@@ -1,4 +1,5 @@
 import { calculateQuickKhatiyan, ownerShareToTil, totalOwnerTil } from "./quick-calculation";
+import { KHATIYAN_RECORD_STANDARD } from "./standards";
 
 describe("Khatiyan quick calculation", () => {
   const identity = (value: string | number) => Number(value);
@@ -15,13 +16,37 @@ describe("Khatiyan quick calculation", () => {
     expect(() => ownerShareToTil({ a: 0.5, g: 0, k: 0, kr: 0, ti: 0 })).toThrow();
   });
 
-  it("computes half of 100 শতাংশ as 50 via scaled bigint allocation", () => {
+  it("computes half of 100 শতাংশ using the khatiyan record standard", () => {
     const result = calculateQuickKhatiyan(
       { totalLand: "100", a: 8, g: 0, k: 0, kr: 0, ti: 0 },
       identity,
     );
 
-    expect(result).toEqual({ land: 50, sqft: 21780, katha: 50 / 1.65 });
+    const expectedLand = 50;
+    const expectedSqft = expectedLand * KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal;
+    const expectedKatha = expectedSqft / KHATIYAN_RECORD_STANDARD.squareFeetPerKatha;
+
+    expect(result).toEqual({ land: expectedLand, sqft: expectedSqft, katha: expectedKatha });
+  });
+
+  it("accepts Bengali digits exactly as the UI stores them", () => {
+    const result = calculateQuickKhatiyan(
+      { totalLand: "১০০", a: 8, g: 0, k: 0, kr: 0, ti: 0 },
+      identity,
+    );
+
+    expect(result?.land).toBe(50);
+    expect(result?.sqft).toBe(21600);
+  });
+
+  it("accepts Bengali fractional decimal input", () => {
+    const result = calculateQuickKhatiyan(
+      { totalLand: "১২.৫", a: 8, g: 0, k: 0, kr: 0, ti: 0 },
+      identity,
+    );
+
+    expect(result?.land).toBe(6.25);
+    expect(result?.sqft).toBe(2700);
   });
 
   it("returns null for non-positive land, zero share, or invalid share", () => {
