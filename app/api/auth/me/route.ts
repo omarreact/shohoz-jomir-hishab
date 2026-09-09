@@ -1,53 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, collections } from "@/src/modules/database/firebaseAdmin";
+import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieToken = req.cookies.get("access_token")?.value ?? null;
-    const authHeader = req.headers.get("authorization");
-    const bearerToken = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
-    const token = cookieToken ?? bearerToken;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decodedToken = await auth.verifyIdToken(token);
-    if (!decodedToken) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 },
-      );
-    }
-
-    const userDoc = await collections.users.doc(decodedToken.uid).get();
-    
-    if (!userDoc.exists) {
-      // If user is in Firebase Auth but not in Firestore users collection, we can return the auth data
-      return NextResponse.json({ 
-        user: { 
-          id: decodedToken.uid, 
-          email: decodedToken.email, 
-          name: decodedToken.name || null,
-          role: decodedToken.email?.includes('admin') ? 'Admin' : 'User' 
-        } 
-      }, { status: 200 });
-    }
-
-    const userData = userDoc.data()!;
-    const user = {
-      id: userDoc.id,
-      email: userData.email,
-      name: userData.name,
-      role: userData.role || (userData.email?.includes('admin') ? 'Admin' : 'User'),
-    };
-
+    const user = await verifyServerAuth(req);
     return NextResponse.json({ user }, { status: 200 });
   } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (message === "Account disabled" || message === "Account locked") {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    console.error("[auth/me] Firebase authentication failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "ব্যবহারকারীর তথ্য যাচাই করা যায়নি।" },
       { status: 500 },
     );
   }

@@ -17,7 +17,6 @@ interface DetailedCalculatorProps {
   onAddOwner: () => void;
   onRemoveOwner: (id: number) => void;
   onUpdateOwner: <Key extends keyof KhatiyanOwner>(id: number, field: Key, value: KhatiyanOwner[Key]) => void;
-  lockedAreaIds?: readonly number[];
 }
 
 function formatShare(til: number) {
@@ -48,7 +47,6 @@ export default function DetailedCalculator({
   onAddOwner,
   onRemoveOwner,
   onUpdateOwner,
-  lockedAreaIds = [],
 }: DetailedCalculatorProps) {
   return (
     <div>
@@ -79,7 +77,7 @@ export default function DetailedCalculator({
       )}
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <PlotsCard plots={plots} onAddPlot={onAddPlot} onRemovePlot={onRemovePlot} onUpdatePlot={onUpdatePlot} lockedAreaIds={lockedAreaIds} />
+        <PlotsCard plots={plots} onAddPlot={onAddPlot} onRemovePlot={onRemovePlot} onUpdatePlot={onUpdatePlot} />
         <OwnersCard owners={owners} onAddOwner={onAddOwner} onRemoveOwner={onRemoveOwner} onUpdateOwner={onUpdateOwner} />
       </div>
     </div>

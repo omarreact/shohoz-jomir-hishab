@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getRajukAuthMode,
   getValidToken,
-  hasRajukCredential,
   RAJUK_SERVER,
   RAJUK_PUBLIC_CONFIG,
 } from "@/src/services/rajuk/rajukAuth.service";
@@ -45,18 +44,6 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    if (!hasRajukCredential()) {
-      return NextResponse.json(
-        {
-          ok: false,
-          ...base,
-          serverTokenGenerated: false,
-          error: "No RAJUK auth method available.",
-        },
-        { status: 503, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
     const token = await getValidToken(RAJUK_SERVER);
     return NextResponse.json(
       {

@@ -65,7 +65,7 @@ const AUTH_REQUIRED_HREFS = new Set<string>([
   FEATURE_ROUTES.documents,
 ]);
 
-const TOOL_HREFS = new Set([
+const TOOL_HREFS = new Set<string>([
   FEATURE_ROUTES.records,
   FEATURE_ROUTES.dlrmsKhatian,
   FEATURE_ROUTES.landMeasurement,
@@ -73,7 +73,7 @@ const TOOL_HREFS = new Set([
   FEATURE_ROUTES.documents,
 ]);
 
-const MAP_KNOWLEDGE_HREFS = new Set([
+const MAP_KNOWLEDGE_HREFS = new Set<string>([
   FEATURE_ROUTES.landMap,
   FEATURE_ROUTES.mouzaDownload,
   FEATURE_ROUTES.blog,

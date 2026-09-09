@@ -1,5 +1,3 @@
-import "reflect-metadata";
-
 export async function register() {
-  // Polyfill is loaded via import
+  // No-op: this project does not use reflect-metadata or decorator-based DI.
 }

@@ -1,4 +1,4 @@
-import { MapPin, X, Plus, ShieldCheck } from "lucide-react";
+import { MapPin, X, Plus } from "lucide-react";
 import { plotClassOptionsList } from "@/src/shared/constants";
 import { toBn } from "@/src/shared/utils";
 import type { KhatiyanPlot } from "@/src/shared/types";
@@ -8,7 +8,6 @@ interface PlotsCardProps {
   onAddPlot: () => void;
   onRemovePlot: (id: number) => void;
   onUpdatePlot: (id: number, field: keyof KhatiyanPlot, value: string) => void;
-  lockedAreaIds?: readonly number[];
 }
 
 export default function PlotsCard({
@@ -16,10 +15,7 @@ export default function PlotsCard({
   onAddPlot,
   onRemovePlot,
   onUpdatePlot,
-  lockedAreaIds = [],
 }: PlotsCardProps) {
-  const locked = (id: number) => lockedAreaIds.includes(id);
-
   return (
     <div className="h-full flex flex-col border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden bg-white dark:bg-slate-900">
       <div className="bg-[#006a4e] text-white py-4 px-6 flex flex-row justify-between items-center">
@@ -42,20 +38,13 @@ export default function PlotsCard({
         )}
         
         <div className="space-y-4">
-          {plots.map((p, index) => {
-            const areaLocked = locked(p.id);
-            return (
+          {plots.map((p, index) => (
               <div key={p.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative group">
                 <div className="flex justify-between items-center mb-4">
                   <span className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50 px-3 py-1 rounded-full text-xs font-bold">
                     দাগ নং: {toBn(index + 1)}
                   </span>
                   <div className="flex items-center gap-2">
-                    {areaLocked && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" title="RAJUK থেকে যাচাইকৃত জমির পরিমাণ">
-                        <ShieldCheck size={13} /> GIS যাচাইকৃত
-                      </span>
-                    )}
                     <button
                       onClick={() => onRemovePlot(p.id)}
                       className="h-8 w-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center opacity-70 group-hover:opacity-100"
@@ -97,18 +86,14 @@ export default function PlotsCard({
                     <input
                       type="text"
                       value={p.a}
-                      readOnly={areaLocked}
-                      aria-readonly={areaLocked}
-                      onChange={(e) => { if (!areaLocked) onUpdatePlot(p.id, "a", e.target.value); }}
+                      onChange={(e) => onUpdatePlot(p.id, "a", e.target.value)}
                       placeholder="০.০০"
-                      className={`w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[#006a4e] font-bold focus:outline-none focus:border-[#006a4e] transition-colors text-sm ${areaLocked ? "cursor-not-allowed bg-emerald-50/60 dark:bg-emerald-900/10" : ""}`}
+                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[#006a4e] font-bold focus:outline-none focus:border-[#006a4e] transition-colors text-sm"
                     />
-                    {areaLocked && <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">RAJUK server-validated area</p>}
                   </div>
                 </div>
               </div>
-            );
-          })}
+          ))}
         </div>
       </div>
     </div>

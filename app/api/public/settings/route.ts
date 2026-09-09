@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { collections } from "@/src/modules/database/firebaseAdmin";
+import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 
 const ALLOWED_KEYS = [
   "siteName",
@@ -10,17 +10,23 @@ const ALLOWED_KEYS = [
   "announcement",
 ];
 
+const DEFAULT_SETTINGS: Record<string, string> = {
+  siteName: "LandBD",
+  contactEmail: "",
+  contactPhone: "",
+  facebookUrl: "",
+  youtubeUrl: "",
+  announcement: "",
+};
+
 export async function GET() {
+  if (!isFirebaseAdminReady()) {
+    return NextResponse.json({ settings: DEFAULT_SETTINGS }, { status: 200 });
+  }
+
   try {
     const settingsSnapshot = await collections.settings.where("key", "in", ALLOWED_KEYS).get();
-    const result: Record<string, string> = {
-      siteName: "LandBD",
-      contactEmail: "",
-      contactPhone: "",
-      facebookUrl: "",
-      youtubeUrl: "",
-      announcement: "",
-    };
+    const result: Record<string, string> = { ...DEFAULT_SETTINGS };
 
     for (const doc of settingsSnapshot.docs) {
       const data = doc.data();

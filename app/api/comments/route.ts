@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
+import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import { z } from "zod";
+
+const CommentSchema = z.object({
+  blogId: z.string().trim().min(1).max(128),
+  name: z.string().trim().min(1).max(80),
+  text: z.string().trim().min(1).max(2_000),
+});
+
+function clientIp(req: NextRequest): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "unknown";
+}
 
 // GET /api/comments?blogId=xxx
 export async function GET(req: NextRequest) {
@@ -40,18 +54,22 @@ export async function GET(req: NextRequest) {
 // POST /api/comments — public submit
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { blogId, name, text } = body;
-
-    if (!blogId || !name?.trim() || !text?.trim()) {
-      return NextResponse.json({ error: "blogId, name, and text are required" }, { status: 400 });
+    const ip = clientIp(req).slice(0, 64);
+    if (!(await allowRateLimit(`comments:${ip}`, 5, 10 * 60))) {
+      return NextResponse.json({ error: "অল্প সময়ে অনেক মন্তব্য পাঠানো হয়েছে।" }, { status: 429 });
     }
+
+    const parsed = CommentSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "মন্তব্যের তথ্য সঠিক নয়।" }, { status: 400 });
+    }
+    const { blogId, name, text } = parsed.data;
 
     const now = new Date().toISOString();
     const data = {
       blogId,
-      name: name.trim(),
-      text: text.trim(),
+      name,
+      text,
       createdAt: now,
     };
 
@@ -60,7 +78,8 @@ export async function POST(req: NextRequest) {
     const comment = { id: doc.id, ...doc.data() };
 
     return NextResponse.json({ comment }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[comments] POST failed", error);
+    return NextResponse.json({ error: "মন্তব্য সংরক্ষণ করা যায়নি।" }, { status: 500 });
   }
 }

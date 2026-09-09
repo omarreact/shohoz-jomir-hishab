@@ -17,7 +17,7 @@ const TRAILING_ELLIPSIS = /(?:,\s*)?(?:\.{3,}|…)+\s*$/u;
  * DLRMS_ENRICH_ENABLED=0. Override base with DLRMS_ENRICH_BASE_URL.
  */
 function enrichEnabled(): boolean {
-  return process.env.DLRMS_ENRICH_ENABLED?.trim() !== "0";
+  return process.env.DLRMS_ENRICH_ENABLED?.trim() === "1";
 }
 
 function enrichBaseUrl(): string {

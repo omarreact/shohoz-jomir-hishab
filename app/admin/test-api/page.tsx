@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isStaffRole } from "@/src/modules/auth/roles";
+import { isAdminRole } from "@/src/modules/auth/roles";
 import { Button } from "@/src/shared/ui/button";
 import { ShieldCheck, Globe, Loader2, Play } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function TestApiPage() {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
   }
 
-  if (!isLoggedIn || !isStaffRole(user?.role)) {
+  if (!isLoggedIn || !isAdminRole(user?.role)) {
     return <div className="p-8 text-center text-red-500">অননুমোদিত অ্যাক্সেস</div>;
   }
 
@@ -90,8 +90,8 @@ export default function TestApiPage() {
             <>
               <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                 <h3 className="font-semibold">RAJUK API Status</h3>
-                <p className="mb-3 text-xs text-slate-500">GET /api/rajuk/status</p>
-                <Button onClick={() => runTest("/api/rajuk/status")} disabled={loading} size="sm">
+                <p className="mb-3 text-xs text-slate-500">GET /api/rajuk/auth/diagnose</p>
+                <Button onClick={() => runTest("/api/rajuk/auth/diagnose")} disabled={loading} size="sm">
                   <Play size={14} className="mr-2" /> টেস্ট করুন
                 </Button>
               </div>

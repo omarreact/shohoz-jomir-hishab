@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import type { Metadata } from "next";
+import { sanitizeBlogHtml } from "@/src/features/blog/sanitizeBlogText";
 
 interface PageData {
   id: string;
@@ -37,8 +38,9 @@ async function getPage(slug: string): Promise<PageData | null> {
   };
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const page = await getPage(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const page = await getPage(slug);
 
   if (!page) {
     return { title: "Page Not Found" };
@@ -50,8 +52,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function Page({ params }: { params: { slug: string } }) {
-  const page = await getPage(params.slug);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const page = await getPage(slug);
 
   if (!page) {
     notFound();
@@ -62,7 +65,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
       <article className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">{page.title}</h1>
         {/* The content is assumed to be safe HTML from a trusted source (e.g., an admin). */}
-        <div className="prose lg:prose-xl max-w-none" dangerouslySetInnerHTML={{ __html: page.content }} />
+        <div className="prose lg:prose-xl max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(page.content) }} />
       </article>
     </main>
   );
