@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Legacy short URL → canonical product map. */
+/** Legacy short URL → canonical full GIS map. */
 export default function LegacyMapPage() {
-  redirect("/dap-map");
+  redirect("/geospatial-map");
 }
