@@ -1,10 +1,12 @@
-﻿import GeospatialMapClient from "@/src/features/geospatial-map/components/GeospatialMapClient";
-import DynamicPageGate from "@/src/shared/components/DynamicPageGate";
+import GeospatialMapClient from "@/src/features/geospatial-map/components/GeospatialMapClient";
 
+/**
+ * Primary public GIS map.
+ *
+ * The route itself stays public so visitors can use the satellite/OSM map and
+ * plot identify experience. Authenticated users automatically receive the
+ * advanced layer/control experience inside GeospatialMapClient/MapLibreMap.
+ */
 export default function UrbanPlanningMapPage() {
-  return (
-    <DynamicPageGate pageId="/geospatial-map" featureName="GIS ডাইনামিক ম্যাপ">
-      <GeospatialMapClient />
-    </DynamicPageGate>
-  );
+  return <GeospatialMapClient />;
 }
