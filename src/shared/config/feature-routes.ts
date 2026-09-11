@@ -2,9 +2,9 @@
  * Canonical product routes used by navigation and CTAs.
  *
  * Product maps:
- * - landMap → /dap-map (RAJUK DAP + plot search/identify)
+ * - landMap → /geospatial-map (primary full-screen GIS map; satellite/public mode + authenticated advanced controls)
  * - mouzaDownload → /mouza-map (mouza select/export)
- * Advanced GIS shell remains at /geospatial-map (direct URL only).
+ * Legacy /dap-map and /map URLs redirect to /geospatial-map.
  */
 export const FEATURE_ROUTES = {
   home: "/",
@@ -12,8 +12,8 @@ export const FEATURE_ROUTES = {
   dlrmsKhatian: "/dlrms-khatian",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
-  /** Primary interactive RAJUK map */
-  landMap: "/dap-map",
+  /** Primary interactive RAJUK GIS map */
+  landMap: "/geospatial-map",
   mouzaDownload: "/mouza-map",
   /** Staff QA workspace — not in public nav/sitemap. */
   mapQa: "/rajuk-test",
@@ -35,7 +35,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   dlrmsKhatian: { en: "DLRMS khatian", bn: "DLRMS খতিয়ান" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
   inheritance: { en: "Inheritance", bn: "ফারায়েজ" },
-  landMap: { en: "RAJUK DAP map", bn: "রাজউক ম্যাপ" },
+  landMap: { en: "RAJUK GIS map", bn: "রাজউক ম্যাপ" },
   mouzaDownload: { en: "Download mouza map", bn: "মৌজা ম্যাপ" },
   mapQa: { en: "Map QA", bn: "মানচিত্র পরীক্ষা" },
   documents: { en: "Documents", bn: "পর্চা" },
