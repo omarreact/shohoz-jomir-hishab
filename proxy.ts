@@ -42,7 +42,6 @@ async function verifyFirebaseToken(token: string) {
 
 /** Page routes that require a verified logged-in user (any role). */
 const MEMBER_ONLY_PAGE_PREFIXES = [
-  "/geospatial-map",
   "/mouza-map",
   "/porcha",
   "/admin",
@@ -121,8 +120,9 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Members-only product pages (GIS, mouza download, porcha) + admin shell.
-  // Token validity is checked here; app roles for /admin UI are enforced in the admin layout.
+  // Member-only product pages + admin shell. The primary /geospatial-map route
+  // is intentionally public; authenticated advanced controls are enforced by
+  // the map UI itself rather than by redirecting visitors away from the map.
   if (isMemberOnlyPage(pathname) && !userPayload) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname + request.nextUrl.search);
