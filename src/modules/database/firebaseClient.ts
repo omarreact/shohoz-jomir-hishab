@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
@@ -20,7 +19,7 @@ if (firebaseConfig.apiKey === "dummy-api-key") {
   );
 }
 
+/** Firebase Auth only on the client. User profile/role is loaded via /api/auth/me (Admin SDK). */
 const auth = getAuth(app);
-const db = getFirestore(app);
 
-export { app, auth, db };
+export { app, auth };

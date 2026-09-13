@@ -6,6 +6,8 @@ describe("DLRMS public land-record provider", () => {
     jest.resetModules();
     process.env = { ...originalEnv };
     delete process.env.DLRMS_ACCESS_TOKEN;
+    // Keep tests on official gateway only — enrich is on by default in production.
+    process.env.DLRMS_ENRICH_ENABLED = "0";
     fetchMock = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
       if (url === "https://dlrms.land.gov.bd/") {
@@ -70,7 +72,8 @@ describe("DLRMS public land-record provider", () => {
       OWNER_DETAILS: [{ NAME: "নমুনা মালিক", SHARE: "৮ আনা" }],
     });
     expect(details.PUBLIC_RECORD).not.toHaveProperty("access_token");
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // session bootstrap + mouza + list search + detail + list expand inside getKhatian
+    expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(String(fetchMock.mock.calls[2][0])).toContain("OWNER=%E0%A6%A8%E0%A6%AE%E0%A7%81%E0%A6%A8%E0%A6%BE");
   });
 });
