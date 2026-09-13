@@ -4,6 +4,12 @@ import { reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
 import { getLisfProvider } from "./lisf-provider";
+import {
+  extractStructuredPublicRecord,
+  fetchStrictPublicMirrorRecord,
+  publicMirrorBaseUrl,
+  restoreOfficialDetailBase,
+} from "./public-structured-record";
 
 export interface FullKhatianInput {
   surveyKey: string;
@@ -172,13 +178,41 @@ function enrichBaseFromTracking(base: KhatianDetails, tracking: KhatianTracking 
   };
 }
 
+function enrichBaseFromStructuredPublic(
+  base: KhatianDetails,
+  owners: FullKhatianOwner[],
+  dags: FullKhatianDag[],
+): KhatianDetails {
+  const ownerNames = unique([...splitList(base.OWNERS), ...owners.map((item) => item.name)]);
+  const dagNumbers = unique([...splitList(base.DAGS), ...dags.map((item) => item.dagNo)]);
+  return {
+    ...base,
+    OWNERS: ownerNames.join(", ") || base.OWNERS,
+    DAGS: dagNumbers.join(", ") || base.DAGS,
+    PUBLIC_RECORD: {
+      ...(base.PUBLIC_RECORD ?? {}),
+      LANDBD_STRUCTURED_PUBLIC_COUNTS: {
+        OWNERS: owners.length,
+        DAGS: dags.length,
+      },
+    },
+  };
+}
+
+function reconstructionStillPartial(base: KhatianDetails): boolean {
+  const value = base.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return (value as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true;
+}
+
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
   const warnings: string[] = [];
   const fetchedAt = new Date().toISOString();
   const upstreamBase = await providers.landRecords.getKhatian(input.surveyKey, input.id, signal);
+  const officialBase = restoreOfficialDetailBase(upstreamBase);
   const baseDetail: KhatianDetails = {
-    ...upstreamBase,
-    MOUZA_ID: upstreamBase.MOUZA_ID || input.mouzaId || 0,
+    ...officialBase,
+    MOUZA_ID: officialBase.MOUZA_ID || input.mouzaId || 0,
   };
   const jlNumberId = baseDetail.JL_NUMBER_ID || input.jlNumberId;
 
@@ -214,7 +248,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
     const [exactPage, ownerPage, dagPage] = await Promise.all([exactLookup, ownerLookup, dagLookup]);
     const sameRecord = (row: { ID: number; KHATIAN_NO: string }) =>
-      row.ID === baseDetail.ID || row.KHATIAN_NO.trim() === baseDetail.KHATIAN_NO.trim();
+      row.ID === baseDetail.ID && row.KHATIAN_NO.trim() === baseDetail.KHATIAN_NO.trim();
     const exactRows = exactPage?.items.filter(sameRecord) ?? [];
     const ownerRows = ownerPage?.items.filter(sameRecord) ?? [];
     const dagRows = dagPage?.items.filter(sameRecord) ?? [];
@@ -243,6 +277,24 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   }
 
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
+
+  const officialStructured = extractStructuredPublicRecord(rebuilt.PUBLIC_RECORD, "DLRMS_PUBLIC");
+  const mirrorRecord = rebuilt.JL_NUMBER_ID
+    ? await fetchStrictPublicMirrorRecord({
+        surveyKey: input.surveyKey,
+        jlNumberId: rebuilt.JL_NUMBER_ID,
+        khatianNo: rebuilt.KHATIAN_NO,
+        id: rebuilt.ID,
+      }, signal)
+    : null;
+  const mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
+  const structuredPublicOwners = mergeStructuredOwners(officialStructured.owners, mirrorStructured.owners);
+  const structuredPublicDags = mergeStructuredDags(officialStructured.dags, mirrorStructured.dags);
+  rebuilt = enrichBaseFromStructuredPublic(rebuilt, structuredPublicOwners, structuredPublicDags);
+
+  if (reconstructionStillPartial(rebuilt)) {
+    warnings.push("DLRMS-এর upstream compact তালিকার কিছু অংশ এখনো truncated/আংশিক। LandBD কেবল উৎসে পাওয়া তথ্যই দেখাচ্ছে; অনুপস্থিত তথ্য অনুমান করে যোগ করা হয়নি।");
+  }
 
   const locationCodes = await resolveBbsCodesFromPublicLocation(rebuilt, {
     divisionBbsCode: input.divisionBbsCode || (tracking?.matchesBaseRecord ? tracking.divisionBbsCode : undefined),
@@ -287,8 +339,14 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   }
 
   const useAuthorizedLisf = lisf.status === "ready";
-  const owners = mergeStructuredOwners(publicOwners(rebuilt, tracking), useAuthorizedLisf ? lisf.owners : []);
-  const dags = mergeStructuredDags(publicDags(rebuilt, tracking), useAuthorizedLisf ? lisf.dags : []);
+  const structuredOwners = useAuthorizedLisf
+    ? mergeStructuredOwners(structuredPublicOwners, lisf.owners)
+    : structuredPublicOwners;
+  const structuredDags = useAuthorizedLisf
+    ? mergeStructuredDags(structuredPublicDags, lisf.dags)
+    : structuredPublicDags;
+  const owners = mergeStructuredOwners(publicOwners(rebuilt, tracking), structuredOwners);
+  const dags = mergeStructuredDags(publicDags(rebuilt, tracking), structuredDags);
 
   const evidence: SourceEvidence[] = [
     {
@@ -300,6 +358,16 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       fetchedAt,
     },
   ];
+  if (mirrorRecord) {
+    evidence.push({
+      field: "strict-ID public mirror expansion and structured owner/dag details",
+      source: "DLRMS_PUBLIC",
+      endpoint: `${publicMirrorBaseUrl()}/index-khatian/${input.surveyKey}`,
+      official: false,
+      access: "public",
+      fetchedAt,
+    });
+  }
   if (tracking) {
     evidence.push({
       field: "verification tracking",
