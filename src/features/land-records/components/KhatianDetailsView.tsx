@@ -111,12 +111,9 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
 
     const publicInfoBanner = markExcluded(root.children[1]);
     const surveyArchitectureNote = markExcluded(root.children[2]);
-    const supplement = markExcluded(
-      document.querySelector("section[aria-label='সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য']"),
-    );
 
     const restoreExcluded = () => {
-      [publicInfoBanner, surveyArchitectureNote, supplement].forEach((node) => {
+      [publicInfoBanner, surveyArchitectureNote].forEach((node) => {
         if (!node) return;
         delete node.dataset.pdfExclude;
         delete node.dataset.printExclude;
