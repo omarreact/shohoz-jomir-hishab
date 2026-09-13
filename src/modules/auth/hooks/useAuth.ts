@@ -7,8 +7,7 @@ import {
   onAuthStateChanged,
   getIdToken,
 } from "firebase/auth";
-import { auth, db } from "@/src/modules/database/firebaseClient";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "@/src/modules/database/firebaseClient";
 import { normalizeRole } from "@/src/modules/auth/roles";
 
 export interface AuthUser {
@@ -32,22 +31,6 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
-}
-
-function isLocked(lockedUntil: unknown): boolean {
-  if (!lockedUntil) return false;
-  const t =
-    typeof lockedUntil === "string"
-      ? Date.parse(lockedUntil)
-      : lockedUntil instanceof Date
-        ? lockedUntil.getTime()
-        : typeof lockedUntil === "object" &&
-            lockedUntil !== null &&
-            "toDate" in lockedUntil &&
-            typeof (lockedUntil as { toDate: () => Date }).toDate === "function"
-          ? (lockedUntil as { toDate: () => Date }).toDate().getTime()
-          : NaN;
-  return Number.isFinite(t) && t > Date.now();
 }
 
 export function useAuth(): AuthState & {
@@ -85,38 +68,61 @@ export function useAuth(): AuthState & {
         const token = await getIdToken(firebaseUser as never, true);
         setAccessTokenCookie(token);
 
-        const payload = parseJwtPayload(token);
-        let role: string | undefined =
-          typeof payload?.role === "string" ? payload.role : undefined;
-        let lockedUntil: unknown = null;
-        let status: string | undefined;
+        // Profile + role come from the server (Admin SDK). Avoid client Firestore
+        // so browsers/ad-blockers that block firestore.googleapis.com do not
+        // spam the console with ERR_BLOCKED_BY_CLIENT on Listen/terminate.
+        let role: string | undefined;
         let profileName: string | null = firebaseUser.displayName;
+        let profileId = firebaseUser.uid;
+        let profileEmail = firebaseUser.email || "";
 
         try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (!role && data.role) role = String(data.role);
-            lockedUntil = data.lockedUntil ?? null;
-            status = typeof data.status === "string" ? data.status : undefined;
-            if (typeof data.name === "string" && data.name.trim()) {
-              profileName = data.name;
+          const response = await fetch("/api/auth/me", {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          });
+
+          if (response.status === 401) {
+            await signOut(auth).catch(() => undefined);
+            clearSession();
+            return;
+          }
+
+          if (response.status === 403) {
+            await signOut(auth).catch(() => undefined);
+            clearSession();
+            throw new Error("অ্যাকাউন্ট সাময়িকভাবে লক করা আছে। পরে আবার চেষ্টা করুন।");
+          }
+
+          if (response.ok) {
+            const body = (await response.json()) as {
+              user?: { id?: string; email?: string; name?: string | null; role?: string };
+            };
+            const remote = body.user;
+            if (remote) {
+              if (remote.id) profileId = remote.id;
+              if (typeof remote.email === "string") profileEmail = remote.email;
+              if (typeof remote.name === "string" && remote.name.trim()) {
+                profileName = remote.name;
+              }
+              if (typeof remote.role === "string" && remote.role.trim()) {
+                role = remote.role;
+              }
             }
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          if (error instanceof Error && error.message.includes("লক")) throw error;
+          // Fall through to token claims / bootstrap when /api/auth/me is unreachable.
         }
 
-        if (status === "deleted") {
-          await signOut(auth).catch(() => undefined);
-          clearSession();
-          return;
-        }
-
-        if (isLocked(lockedUntil)) {
-          await signOut(auth).catch(() => undefined);
-          clearSession();
-          throw new Error("অ্যাকাউন্ট সাময়িকভাবে লক করা আছে। পরে আবার চেষ্টা করুন।");
+        if (!role) {
+          const payload = parseJwtPayload(token);
+          if (typeof payload?.role === "string") role = payload.role;
         }
 
         // Break-glass Super Admin only when explicitly enabled (never in production by default)
@@ -137,8 +143,8 @@ export function useAuth(): AuthState & {
 
         setState({
           user: {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || "",
+            id: profileId,
+            email: profileEmail,
             name: profileName,
             role: normalized,
           },
