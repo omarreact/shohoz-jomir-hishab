@@ -207,6 +207,7 @@ function records(payload: unknown): JsonRecord[] {
 
 function mirrorEnabled(): boolean {
   const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
+  if (process.env.NODE_ENV === "test" && raw === undefined) return false;
   return raw !== "0" && raw !== "false" && raw !== "off";
 }
 
