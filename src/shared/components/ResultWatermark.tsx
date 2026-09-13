@@ -25,7 +25,7 @@ export default function ResultWatermark() {
     <div
       aria-hidden="true"
       data-landbd-watermark="1"
-      className="pointer-events-none absolute inset-0 z-0 grid place-items-center overflow-hidden"
+      className="pointer-events-none absolute inset-0 z-[2] grid place-items-center overflow-hidden"
     >
       <div style={frameStyle}>
         <div style={redDiscStyle} />
