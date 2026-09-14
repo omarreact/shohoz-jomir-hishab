@@ -1,6 +1,6 @@
 import "server-only";
 import type { RajukPlotFeature, RajukPlotKind } from "@/src/types/rajuk-runtime";
-import { areaFromGisFeature } from "@/src/modules/land/plotArea";
+import { acreFromJsonAttributes } from "@/src/modules/land/jsonArea";
 
 function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
@@ -45,23 +45,23 @@ export function parseAddressSearch(address: string | null | undefined): {
 }
 
 /**
+ * Normalize RAJUK plot attributes without deriving land area from geometry.
+ * Area is read only from scalar JSON attributes with an explicit/known unit
+ * and is exposed to the application in Acre as `area_acre`.
+ *
  * @param source which FeatureServer layer the row came from.
  * MS layer (5) must never invent RS-* labels from plot_no.
- * @param rings optional GIS polygon rings [lng,lat][][] — preferred for area.
  */
 export function enrichPlotAttributes(
   raw: Record<string, unknown>,
   extras?: { district?: string; upazila?: string; mauza?: string; jl?: string },
   source: PlotLayerSource = "unknown",
-  rings?: number[][][] | null,
 ): Record<string, unknown> {
   const parsed = parseAddressSearch(
     present(raw.address_search) ? String(raw.address_search) : null,
   );
 
-  // Prefer geodesic area from the actual GIS বহুভুজ; else Shape__Area
-  const area = areaFromGisFeature({ rings, attributes: raw });
-  const katha = area.isValid ? Number(area.katha.toFixed(4)) : null;
+  const jsonArea = acreFromJsonAttributes(raw);
 
   let rsPlot: string | null = present(raw.rs_plot_no) ? String(raw.rs_plot_no) : null;
   let msPlot: string | null = present(raw.ms_plot_no) ? String(raw.ms_plot_no) : null;
@@ -90,9 +90,6 @@ export function enrichPlotAttributes(
         : parsed.jlNo ?? extras?.jl ?? null,
     jl_no: present(raw.jl_no) ? raw.jl_no : parsed.jlNo ?? extras?.jl ?? null,
     rs_plot_type: source === "ms" ? "MS" : source === "rs" ? "RS" : rsPlot ? "RS" : msPlot ? "MS" : null,
-    // Always derive from GIS geometry / Shape__Area — never trust stale attribute katha
-    rs_plot_area: source === "ms" ? null : katha,
-    ms_plot_area: source === "ms" || msPlot ? katha : null,
     rs_mauza_name: present(raw.rs_mauza_name)
       ? raw.rs_mauza_name
       : present(raw.mauza)
@@ -118,13 +115,11 @@ export function enrichPlotAttributes(
         ? raw.m_district
         : extras?.district ?? null,
     address_search: present(raw.address_search) ? raw.address_search : null,
-    area_sq_m: area.isValid ? Number(area.area_sq_m.toFixed(4)) : null,
-    area_katha: katha,
-    area_shotok: area.isValid ? Number(area.shotok.toFixed(4)) : null,
-    area_sq_ft: area.isValid ? Number(area.sqFt.toFixed(2)) : null,
-    area_bigha: area.isValid ? Number(area.bigha.toFixed(6)) : null,
-    area_acre: area.isValid ? Number(area.acre.toFixed(6)) : null,
-    area_source: area.source,
+    area_acre: jsonArea ? Number(jsonArea.acre.toFixed(6)) : null,
+    area_source_field: jsonArea?.sourceField ?? null,
+    area_source_unit: jsonArea?.sourceUnit ?? null,
+    area_source_value: jsonArea?.sourceValue ?? null,
+    area_source: jsonArea ? "json_attribute" : "none",
   };
 
   attributes.plot_kind = classifyPlotKind(attributes);
@@ -138,12 +133,10 @@ export function enrichPlotFeature(
   extras?: { district?: string; upazila?: string; mauza?: string; jl?: string },
   source: PlotLayerSource = "unknown",
 ): RajukPlotFeature {
-  const rings = feature.geometry?.rings as number[][][] | undefined;
   const attributes = enrichPlotAttributes(
     feature.attributes as Record<string, unknown>,
     extras,
     source,
-    rings,
   ) as RajukPlotFeature["attributes"];
   return {
     ...feature,
