@@ -6,31 +6,44 @@ interface OpacitySliderProps {
   label?: string;
 }
 
-export function OpacitySlider({ value, onChange, label = "Opacity" }: OpacitySliderProps) {
+export function OpacitySlider({ value, onChange, label = "স্বচ্ছতা" }: OpacitySliderProps) {
+  const percent = Math.round(value * 100);
+
   return (
-    <div className="d-flex flex-column gap-1 w-100">
-      <div className="d-flex justify-content-between align-items-center small text-muted">
-        <span className="fw-bold">{label}</span>
-        <span>{Math.round(value * 100)}%</span>
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+        <span className="font-bold">{label}</span>
+        <span className="rounded-full bg-[var(--brand-gold-soft)] px-2 py-0.5 font-extrabold tabular-nums text-[var(--brand-gold-text)]">
+          {percent}%
+        </span>
       </div>
       <input
         type="range"
-        className="form-range custom-range-success"
+        className="landbd-opacity-slider h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-[var(--brand-gold)]"
         min="0"
         max="1"
         step="0.05"
         value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        aria-label={label}
+        onChange={(event) => onChange(parseFloat(event.target.value))}
       />
       <style>{`
-        .custom-range-success::-webkit-slider-thumb {
-          background: #198754;
+        .landbd-opacity-slider::-webkit-slider-thumb {
+          width: 18px;
+          height: 18px;
+          appearance: none;
+          border-radius: 999px;
+          border: 3px solid white;
+          background: var(--brand-gold);
+          box-shadow: 0 1px 5px rgba(24, 29, 37, .2);
         }
-        .custom-range-success::-moz-range-thumb {
-          background: #198754;
-        }
-        .custom-range-success::-ms-thumb {
-          background: #198754;
+        .landbd-opacity-slider::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          border: 3px solid white;
+          background: var(--brand-gold);
+          box-shadow: 0 1px 5px rgba(24, 29, 37, .2);
         }
       `}</style>
     </div>

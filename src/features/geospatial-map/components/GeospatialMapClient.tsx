@@ -11,7 +11,7 @@ const MapLibreMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid h-dvh w-full place-items-center overflow-hidden bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
+      <div className="grid h-dvh w-full place-items-center overflow-hidden bg-[var(--background)] px-4 text-center text-sm font-semibold text-[var(--muted-foreground)]">
         নগর পরিকল্পনা মানচিত্র প্রস্তুত হচ্ছে…
       </div>
     ),
@@ -55,9 +55,9 @@ export default function GeospatialMapClient() {
         href="/"
         aria-label="হোমে ফিরে যান"
         title="হোমে ফিরে যান"
-        className="absolute left-3 top-[4.75rem] z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-white/30 bg-slate-950/85 text-white shadow-xl backdrop-blur-md transition hover:bg-[#006a4e] focus:outline-none focus:ring-2 focus:ring-white/80 sm:left-4 sm:top-20"
+        className="absolute left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-[var(--border-color)] bg-white/95 text-[var(--foreground)] shadow-[var(--shadow-md)] backdrop-blur-xl transition hover:bg-[var(--brand-gold-soft)] hover:text-[var(--brand-gold-text)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] sm:left-4 sm:top-4"
       >
-        <House size={20} />
+        <House size={19} />
       </Link>
       <MapVisitConsent />
     </div>
