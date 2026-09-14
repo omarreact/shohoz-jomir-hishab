@@ -45,6 +45,30 @@ export function parseAddressSearch(address: string | null | undefined): {
 }
 
 /**
+ * The existing RAJUK parcel/Khatian boundary treats Shape__Area from the
+ * verified RS/MS plot FeatureServer layers as square feet. Attach that unit
+ * explicitly to the normalized JSON object before the shared Acre extractor
+ * sees it. This is metadata about a scalar upstream JSON field; no geometry,
+ * ring or coordinate is used to derive area.
+ */
+function withRajukAreaUnitContract(
+  raw: Record<string, unknown>,
+  source: PlotLayerSource,
+): Record<string, unknown> {
+  if (source !== "rs" && source !== "ms") return raw;
+  if (!present(raw.Shape__Area) && !present(raw.shape__area)) return raw;
+
+  const hasExplicitUnit = [
+    raw.shape_area_unit,
+    raw.shapeAreaUnit,
+    raw.Shape__Area_Unit,
+    raw.shape__area_unit,
+  ].some(present);
+
+  return hasExplicitUnit ? raw : { ...raw, shape_area_unit: "square-feet" };
+}
+
+/**
  * Normalize RAJUK plot attributes without deriving land area from geometry.
  * Area is read only from scalar JSON attributes with an explicit/known unit
  * and is exposed to the application in Acre as `area_acre`.
@@ -61,7 +85,8 @@ export function enrichPlotAttributes(
     present(raw.address_search) ? String(raw.address_search) : null,
   );
 
-  const jsonArea = acreFromJsonAttributes(raw);
+  const areaAttributes = withRajukAreaUnitContract(raw, source);
+  const jsonArea = acreFromJsonAttributes(areaAttributes);
 
   let rsPlot: string | null = present(raw.rs_plot_no) ? String(raw.rs_plot_no) : null;
   let msPlot: string | null = present(raw.ms_plot_no) ? String(raw.ms_plot_no) : null;
@@ -78,7 +103,7 @@ export function enrichPlotAttributes(
   }
 
   const attributes: Record<string, unknown> = {
-    ...raw,
+    ...areaAttributes,
     _layer_source: source,
     plot_no: raw.plot_no ?? parsed.plotHint ?? null,
     rs_plot_no: rsPlot,
@@ -130,7 +155,7 @@ export function enrichPlotAttributes(
 
 export function enrichPlotFeature(
   feature: RajukPlotFeature,
-  extras?: { district?: string; upazila?: string; mauza?: string; jl?: string },
+  extras?: { district?: string; upazila?: string; mouza?: string; jl?: string },
   source: PlotLayerSource = "unknown",
 ): RajukPlotFeature {
   const attributes = enrichPlotAttributes(
