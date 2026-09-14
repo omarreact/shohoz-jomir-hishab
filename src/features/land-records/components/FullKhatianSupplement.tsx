@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Database, FileText, History, Link2, ShieldCheck } from "lucide-react";
+import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian } from "../full-khatian";
 
 type Props = {
@@ -19,6 +20,10 @@ function sourceLabel(source: FullKhatian["evidence"][number]["source"]): string 
     case "LISF_AUTHORIZED": return "LISF Authorized";
     case "LISF_MOCK": return "LISF Mock";
   }
+}
+
+function dlrmsAreaLabel(value: string | null | undefined): string {
+  return formatAcre(acreFromDlrmsValue(value, "acre"));
 }
 
 export default function FullKhatianSupplement({ fullKhatian }: Props) {
@@ -56,7 +61,7 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
               ))}
             </div>
             <p className="mt-2 text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/90">
-              কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। LISF-এর structured data পাওয়া গেলে ঠিক সেই উৎসের তথ্য আলাদাভাবে দেখানো হবে।
+              কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। জমির পরিমাণ শুধু উৎস JSON-এর area value থেকে Acre-এ দেখানো হয়; geometry থেকে area গণনা করা হয় না।
             </p>
           </div>
         </div>
@@ -72,7 +77,7 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
             <div><span className="text-[var(--muted-foreground)]">Verification ID:</span> <Value>{tracking.displayCode}</Value></div>
             {tracking.khatianId ? <div><span className="text-[var(--muted-foreground)]">Tracking Khatian ID:</span> <Value>{tracking.khatianId}</Value></div> : null}
             {tracking.applicationStatus !== undefined ? <div><span className="text-[var(--muted-foreground)]">Application status:</span> <Value>{tracking.applicationStatus}</Value></div> : null}
-            {tracking.totalLandRaw ? <div><span className="text-[var(--muted-foreground)]">মোট জমি:</span> <Value>{tracking.totalLandRaw}</Value></div> : null}
+            {tracking.totalLandRaw ? <div><span className="text-[var(--muted-foreground)]">মোট জমি (একর):</span> <Value>{dlrmsAreaLabel(tracking.totalLandRaw)}</Value></div> : null}
           </div>
           {!tracking.matchesBaseRecord ? (
             <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
@@ -121,10 +126,10 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
           <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক পূর্ণ তথ্য</h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] text-sm">
-              <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">দাগ</th><th className="py-2 pr-3">শ্রেণী</th><th className="py-2 pr-3">মোট আয়তন</th><th className="py-2 pr-3">খতিয়ান অংশ</th><th className="py-2">GIS/ব্যবহার</th></tr></thead>
+              <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">দাগ</th><th className="py-2 pr-3">শ্রেণী</th><th className="py-2 pr-3">মোট আয়তন (একর)</th><th className="py-2 pr-3">খতিয়ান অংশ (একর)</th><th className="py-2">GIS/ব্যবহার</th></tr></thead>
               <tbody>{structuredDags.map((dag, index) => {
                 const flags = [dag.isGovernmentOwned ? "সরকারি" : "", dag.isRoad ? "রাস্তা" : "", dag.isWetland ? "জলাভূমি" : "", dag.isForest ? "বন" : "", dag.isReligiousType ? "ধর্মীয়" : ""].filter(Boolean).join(", ");
-                return <tr key={`${dag.dagNo}-${index}`} className="border-b border-[var(--border-color)]/60 last:border-0"><td className="py-2 pr-3 font-semibold tabular-nums">{dag.dagNo}</td><td className="py-2 pr-3">{dag.landType || dag.agriculturalType || "—"}</td><td className="py-2 pr-3">{dag.totalAreaRaw || "—"}</td><td className="py-2 pr-3">{dag.khatianAreaRaw || "—"}</td><td className="py-2">{flags || dag.remarks || "—"}</td></tr>;
+                return <tr key={`${dag.dagNo}-${index}`} className="border-b border-[var(--border-color)]/60 last:border-0"><td className="py-2 pr-3 font-semibold tabular-nums">{dag.dagNo}</td><td className="py-2 pr-3">{dag.landType || dag.agriculturalType || "—"}</td><td className="py-2 pr-3">{dag.totalAreaRaw ? dlrmsAreaLabel(dag.totalAreaRaw) : "—"}</td><td className="py-2 pr-3">{dag.khatianAreaRaw ? dlrmsAreaLabel(dag.khatianAreaRaw) : "—"}</td><td className="py-2">{flags || dag.remarks || "—"}</td></tr>;
               })}</tbody>
             </table>
           </div>
