@@ -38,6 +38,32 @@ function normalizeToken(value: string): string {
     .normalize("NFC");
 }
 
+const BN_ROMAN: Record<string, string> = {
+  অ: "a", আ: "a", ই: "i", ঈ: "i", উ: "u", ঊ: "u", ঋ: "ri", এ: "e", ঐ: "oi", ও: "o", ঔ: "ou",
+  ক: "k", খ: "kh", গ: "g", ঘ: "gh", ঙ: "ng", চ: "ch", ছ: "chh", জ: "j", ঝ: "jh", ঞ: "n",
+  ট: "t", ঠ: "th", ড: "d", ঢ: "dh", ণ: "n", ত: "t", থ: "th", দ: "d", ধ: "dh", ন: "n",
+  প: "p", ফ: "f", ব: "b", ভ: "bh", ম: "m", য: "y", র: "r", ল: "l", শ: "sh", ষ: "sh", স: "s", হ: "h",
+  ড়: "r", ঢ়: "rh", য়: "y", ৎ: "t",
+  া: "a", ি: "i", ী: "i", ু: "u", ূ: "u", ৃ: "ri", ে: "e", ৈ: "oi", ো: "o", ৌ: "ou",
+  ং: "ng", ঃ: "h", ঁ: "n", "্": "",
+};
+
+/**
+ * Conservative cross-script key used only to match DLRMS Bangla Mouza names
+ * against RAJUK's English JSON labels. Vowels/punctuation are removed so
+ * common spelling variants do not create a false mismatch (পাতিরা -> ptr,
+ * Patira -> ptr). This never participates in area calculation.
+ */
+function mouzaPhoneticKey(value: string): string {
+  const normalized = normalizeToken(value);
+  let roman = "";
+  for (const char of normalized) roman += BN_ROMAN[char] ?? char;
+  return roman
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/[aeiou]/g, "");
+}
+
 function normalizeJl(value: string): string {
   const digits = value.replace(/[^0-9০-৯]/g, "");
   const map: Record<string, string> = {
@@ -99,6 +125,7 @@ function jlMatches(attrs: Record<string, unknown>, jl: string): boolean {
 function mouzaMatches(attrs: Record<string, unknown>, mouza: string): boolean {
   if (!mouza.trim()) return true;
   const want = normalizeToken(mouza);
+  const wantPhonetic = mouzaPhoneticKey(mouza);
   const candidates = [
     attrs.mauza,
     attrs.rs_mauza_name,
@@ -109,9 +136,13 @@ function mouzaMatches(attrs: Record<string, unknown>, mouza: string): boolean {
     if (c == null) continue;
     const got = normalizeToken(String(c));
     if (got === want || got.includes(want) || want.includes(got)) return true;
+    const gotPhonetic = mouzaPhoneticKey(String(c));
+    if (wantPhonetic.length >= 3 && gotPhonetic === wantPhonetic) return true;
   }
   const address = normalizeToken(String(attrs.address_search ?? ""));
-  return address.includes(want);
+  if (address.includes(want)) return true;
+  const addressMouza = address.split("-jl")[0]?.replace(/^\s*\d+\s*,\s*/, "").trim() ?? "";
+  return wantPhonetic.length >= 3 && mouzaPhoneticKey(addressMouza) === wantPhonetic;
 }
 
 async function fetchPlotFeatures(params: URLSearchParams, signal?: AbortSignal): Promise<PlotFeature[]> {
@@ -136,8 +167,9 @@ function selectUniqueRsFallback(
 
   if (!jlCandidates.length) return {};
 
-  // If the DLRMS and RAJUK Mouza names happen to use the same script/name,
-  // use that evidence first. We intentionally do not transliterate or guess.
+  // Mouza evidence is required before accepting one of several identical Dag/JL
+  // records. Exact same-script names are preferred; the conservative phonetic
+  // key handles Bangla DLRMS vs English RAJUK labels without changing area data.
   const mouzaCandidates = jlCandidates.filter((feature) =>
     mouzaMatches(feature.attributes ?? {}, input.mouzaName),
   );
@@ -148,9 +180,6 @@ function selectUniqueRsFallback(
     return { note: "RS area unavailable: multiple plot/JL/mouza matches" };
   }
 
-  // Bangla DLRMS Mouza names and English RAJUK Mouza names cannot be compared
-  // safely without a verified crosswalk. Exact plot + exact JL is accepted only
-  // when it identifies one and only one RS parcel; otherwise fail closed.
   if (jlCandidates.length === 1) {
     return { feature: jlCandidates[0], note: "RS match: unique plot + JL" };
   }
@@ -215,15 +244,14 @@ async function queryPlotsForDag(
   }
 
   // DLRMS commonly supplies Bangla Mouza/Upazila names while RAJUK publishes
-  // English address_search values (for example পাতিরা vs Patira). A text filter
-  // can therefore return no row even for the correct parcel. Fall back only for
-  // RS, using scalar JSON area and exact numeric JL evidence, and accept a result
-  // only when it is unique. No transliteration and no geometry are involved.
+  // English address_search values. The fallback stays JSON-only for area and
+  // uses exact numeric JL plus Mouza identity to select the correct RS parcel.
   if (rsAcre === undefined && input.jlNumber.trim()) {
     const fallbackParams = new URLSearchParams({
       action: "plots",
       plot_no: String(Math.trunc(plotNo)),
       kind: "rs",
+      jl: input.jlNumber.trim(),
       limit: "100",
     });
     const fallback = selectUniqueRsFallback(
