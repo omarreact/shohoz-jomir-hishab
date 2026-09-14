@@ -98,7 +98,7 @@ function useMsAddressCascade() {
   const [mouzas, setMouzas] = useState<RajukMauza[]>([]);
   const [dGuid, setDGuid] = useState("");
   const [tGuid, setTGuid] = useState("");
-  const [mauzaId, setMouzaId] = useState("");
+  const [mouzaId, setMouzaId] = useState("");
   const [loading, setLoading] = useState<
     "" | "district" | "upazila" | "mouza"
   >("");
@@ -119,7 +119,7 @@ function useMsAddressCascade() {
     setUpazilas([]);
     setMouzas([]);
     setTGuid("");
-    setMauzaId("");
+    setMouzaId("");
     if (!dGuid) return;
     setLoading("upazila");
     setError("");
@@ -135,7 +135,7 @@ function useMsAddressCascade() {
 
   useEffect(() => {
     setMouzas([]);
-    setMauzaId("");
+    setMouzaId("");
     if (!tGuid) return;
     setLoading("mouza");
     setError("");
@@ -157,14 +157,14 @@ function useMsAddressCascade() {
     setDGuid,
     tGuid,
     setTGuid,
-    mauzaId,
-    setMauzaId,
+    mouzaId,
+    setMouzaId,
     loading,
     error,
     setError,
     selectedDistrict: districts.find((x) => x.d_guid === dGuid),
     selectedUpazila: upazilas.find((x) => x.t_guid === tGuid),
-    selectedMouza: mouzas.find((x) => x.m_guid === mauzaId),
+    selectedMouza: mouzas.find((x) => x.m_guid === mouzaId),
   };
 }
 
@@ -371,7 +371,7 @@ export default function MsTestPage() {
             <SelectField
               label="মৌজা + JL / MS Mouza"
               value={loc.mauzaId}
-              onChange={(e) => loc.setMauzaId(e.target.value)}
+              onChange={(e) => loc.setMouzaId(e.target.value)}
               disabled={!loc.tGuid || loc.loading === "mouza"}
               loading={loc.loading === "mouza"}
             >
