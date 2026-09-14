@@ -1,6 +1,7 @@
 import type { MapGeoJSONFeature } from "maplibre-gl";
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 
 export function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
@@ -40,6 +41,10 @@ export function msNumber(feature: RajukPlotFeature): string {
   return "—";
 }
 
+function acreLabel(attributes: Record<string, unknown>): string {
+  return formatAcre(acreFromJsonAttributes(attributes)?.acre);
+}
+
 export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
   const attributes = feature.attributes as Record<string, unknown>;
   if (kind === "ms") {
@@ -47,7 +52,7 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
       ["এমএস দাগ নম্বর", msNumber(feature)],
       ["দাগ নং", formatValue(attributes.plot_no)],
       ["জেএল নং", formatValue(attributes.jl_no ?? attributes.rs_jl_no)],
-      ["আয়তন (কাঠা)", formatValue(attributes.ms_plot_area ?? attributes.area_katha)],
+      ["আয়তন (একর)", acreLabel(attributes)],
       ["মৌজা", formatValue(attributes.mauza ?? attributes.rs_mauza_name)],
       ["থানা/উপজেলা", formatValue(attributes.thana_upazila ?? attributes.upazila_ps)],
       ["জেলা", formatValue(attributes.m_district ?? attributes.district)],
@@ -58,7 +63,7 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
     ["আরএস দাগ নম্বর", rsNumber(feature)],
     ["দাগ নং", formatValue(attributes.plot_no)],
     ["জেএল নং", formatValue(attributes.rs_jl_no ?? attributes.jl_no)],
-    ["আয়তন (কাঠা)", formatValue(attributes.rs_plot_area ?? attributes.area_katha)],
+    ["আয়তন (একর)", acreLabel(attributes)],
     ["মৌজা", formatValue(attributes.rs_mauza_name ?? attributes.mauza)],
     ["থানা/উপজেলা", formatValue(attributes.thana_upazila ?? attributes.upazila_ps)],
     ["জেলা", formatValue(attributes.m_district ?? attributes.district)],
