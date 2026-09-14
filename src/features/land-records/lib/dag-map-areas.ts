@@ -1,12 +1,17 @@
 /**
  * Client-side lookup of RS/MS plot areas for Khatian dag numbers.
- * Reuses /api/rajuk/query (same stack as GIS map). Never fabricates area.
+ * Reuses /api/rajuk/query (same stack as GIS map).
+ *
+ * IMPORTANT: area is read only from JSON attributes and shown only in Acre.
+ * Geometry/polygon coordinates are never used to calculate area here.
  */
 
-import { areaFromGisFeature } from "@/src/modules/land/plotArea";
+import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 
 export type DagMapAreaRow = {
   dagNo: string;
+  rsAreaAcre?: number;
+  msAreaAcre?: number;
   rsAreaLabel?: string;
   msAreaLabel?: string;
   rsFeatureId?: string;
@@ -33,7 +38,6 @@ function normalizeToken(value: string): string {
 
 function normalizeJl(value: string): string {
   const digits = value.replace(/[^0-9০-৯]/g, "");
-  // map Bangla digits to ASCII
   const map: Record<string, string> = {
     "০": "0",
     "১": "1",
@@ -50,34 +54,13 @@ function normalizeJl(value: string): string {
   return ascii.replace(/^0+/, "") || ascii;
 }
 
-function formatAcreLabel(acre: number, shotok: number): string {
-  const a = acre.toLocaleString("bn-BD", { maximumFractionDigits: 4, minimumFractionDigits: 0 });
-  const s = shotok.toLocaleString("bn-BD", { maximumFractionDigits: 2, minimumFractionDigits: 0 });
-  return `${a} একর (${s} শতাংশ)`;
-}
-
-function areaLabelFromFeature(feature: {
-  attributes?: Record<string, unknown>;
-  geometry?: { rings?: number[][][] };
-}): string | undefined {
-  const rings = feature.geometry?.rings;
-  const attrs = feature.attributes ?? {};
-  const measured = areaFromGisFeature({ rings, attributes: attrs });
-  if (measured.isValid && measured.acre > 0) {
-    return formatAcreLabel(measured.acre, measured.shotok);
-  }
-
-  // Attribute fallbacks used by GIS UI (katha)
-  const kathaRaw = attrs.rs_plot_area ?? attrs.ms_plot_area ?? attrs.area_katha;
-  const katha = typeof kathaRaw === "number" ? kathaRaw : Number(kathaRaw);
-  if (Number.isFinite(katha) && katha > 0) {
-    // Bangladesh standard: 1 decimal (শতাংশ) ≈ 1.65 katha is regional; use plotArea path if possible.
-    // Prefer geodesic path above; here only show katha as secondary label.
-    const k = katha.toLocaleString("bn-BD", { maximumFractionDigits: 4 });
-    return `${k} কাঠা (মানচিত্র বৈশিষ্ট্য)`;
-  }
-
-  return undefined;
+function areaFromAttributes(attributes: Record<string, unknown>): { acre: number; label: string } | undefined {
+  const result = acreFromJsonAttributes(attributes);
+  if (!result) return undefined;
+  return {
+    acre: result.acre,
+    label: formatAcre(result.acre),
+  };
 }
 
 function isRsFeature(attrs: Record<string, unknown>): boolean {
@@ -105,7 +88,6 @@ function jlMatches(attrs: Record<string, unknown>, jl: string): boolean {
     if (c == null) continue;
     if (normalizeJl(String(c)) === want) return true;
   }
-  // address_search often embeds "JL 5" / "JL 023"
   const address = String(attrs.address_search ?? "");
   const m = address.match(/JL\s*0*(\d+)/i);
   if (m && normalizeJl(m[1]) === want) return true;
@@ -133,7 +115,14 @@ function mouzaMatches(attrs: Record<string, unknown>, mouza: string): boolean {
 async function queryPlotsForDag(
   dagNo: string,
   input: DagMapLookupInput,
-): Promise<{ rs?: string; ms?: string; rsId?: string; msId?: string }> {
+): Promise<{
+  rs?: number;
+  ms?: number;
+  rsLabel?: string;
+  msLabel?: string;
+  rsId?: string;
+  msId?: string;
+}> {
   const plotNo = Number(String(dagNo).replace(/[^0-9০-৯]/g, "").replace(/[০-৯]/g, (d) =>
     String("০১২৩৪৫৬৭৮৯".indexOf(d)),
   ));
@@ -156,10 +145,12 @@ async function queryPlotsForDag(
   if (!res.ok) return {};
 
   const data = (await res.json()) as {
-    features?: Array<{ attributes?: Record<string, unknown>; geometry?: { rings?: number[][][] } }>;
+    features?: Array<{ attributes?: Record<string, unknown> }>;
   };
   const features = Array.isArray(data.features) ? data.features : [];
 
+  let rsAcre: number | undefined;
+  let msAcre: number | undefined;
   let rsLabel: string | undefined;
   let msLabel: string | undefined;
   let rsId: string | undefined;
@@ -170,35 +161,37 @@ async function queryPlotsForDag(
     if (!jlMatches(attrs, input.jlNumber)) continue;
     if (!mouzaMatches(attrs, input.mouzaName)) continue;
 
-    const label = areaLabelFromFeature(feature);
-    if (!label) continue;
+    const area = areaFromAttributes(attrs);
+    if (!area) continue;
 
     const objectId = attrs.objectid != null ? String(attrs.objectid) : undefined;
 
-    if (isMsFeature(attrs) && !msLabel) {
-      msLabel = label;
+    if (isMsFeature(attrs) && msAcre === undefined) {
+      msAcre = area.acre;
+      msLabel = area.label;
       msId = objectId;
-    } else if (isRsFeature(attrs) && !rsLabel) {
-      rsLabel = label;
+    } else if (isRsFeature(attrs) && rsAcre === undefined) {
+      rsAcre = area.acre;
+      rsLabel = area.label;
       rsId = objectId;
-    } else if (!rsLabel && !msLabel) {
-      // Unknown kind — treat as RS-style if only one
-      rsLabel = label;
+    } else if (rsAcre === undefined && msAcre === undefined) {
+      rsAcre = area.acre;
+      rsLabel = area.label;
       rsId = objectId;
     }
   }
 
-  return { rs: rsLabel, ms: msLabel, rsId, msId };
+  return { rs: rsAcre, ms: msAcre, rsLabel, msLabel, rsId, msId };
 }
 
 /**
- * Resolve map-derived areas for a list of dags. Fault-tolerant: failures return empty labels.
+ * Resolve JSON-derived Acre values for a list of dags.
+ * Fault-tolerant: failures return the dag number without an area.
  */
 export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagMapAreaRow[]> {
   const unique = [...new Set(input.dags.map((d) => d.trim()).filter(Boolean))];
   if (!unique.length) return [];
 
-  // Bound concurrency to avoid hammering RAJUK
   const concurrency = 3;
   const results: DagMapAreaRow[] = [];
 
@@ -210,8 +203,10 @@ export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagM
           const hit = await queryPlotsForDag(dagNo, input);
           return {
             dagNo,
-            rsAreaLabel: hit.rs,
-            msAreaLabel: hit.ms,
+            rsAreaAcre: hit.rs,
+            msAreaAcre: hit.ms,
+            rsAreaLabel: hit.rsLabel,
+            msAreaLabel: hit.msLabel,
             rsFeatureId: hit.rsId,
             msFeatureId: hit.msId,
           } satisfies DagMapAreaRow;
@@ -223,7 +218,6 @@ export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagM
     results.push(...settled);
   }
 
-  // Preserve original dag order (including duplicates)
   const byDag = new Map(results.map((r) => [r.dagNo, r]));
   return input.dags.map((dagNo) => byDag.get(dagNo) ?? { dagNo });
 }
