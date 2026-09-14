@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
@@ -36,9 +36,28 @@ function markExcluded(node: Element | null): HTMLElement | null {
   return node;
 }
 
+function dagAreaLookupIsPending(root: HTMLElement): boolean {
+  return Array.from(root.querySelectorAll<HTMLElement>('[aria-live="polite"]')).some((node) =>
+    node.textContent?.includes("মানচিত্রের জমির পরিমাণ যাচাই করা হচ্ছে"),
+  );
+}
+
+async function waitForDagAreaLookup(
+  sourceRef: RefObject<HTMLDivElement | null>,
+  timeoutMs = 45_000,
+): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const root = sourceRef.current;
+    if (!root || !dagAreaLookupIsPending(root)) return;
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 150));
+  }
+}
+
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const internalCaptureRef = useRef<HTMLDivElement | null>(null);
   const resolvedCaptureRef = captureRef ?? internalCaptureRef;
+  const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
   const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
 
@@ -47,6 +66,21 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
     sourceRef: resolvedCaptureRef,
     fileName,
   });
+
+  const handleGeneratePdf = async () => {
+    if (isPreparingPdf || isGenerating) return;
+    setIsPreparingPdf(true);
+    try {
+      // Per-Dag RAJUK areas are resolved asynchronously after the Khatian renders.
+      // Wait for that JSON-only Acre lookup to settle so the exported PDF captures
+      // the same Acre columns visible on screen. Timeout is fail-safe only; it does
+      // not calculate or fabricate a missing area.
+      await waitForDagAreaLookup(resolvedCaptureRef);
+      await generatePDF();
+    } finally {
+      setIsPreparingPdf(false);
+    }
+  };
 
   useEffect(() => {
     const panel = document.getElementById("khatian-details-panel");
@@ -187,7 +221,7 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
   return (
     <>
       <div className="mb-2 flex justify-end print:hidden" data-exclude-export="1">
-        <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
+        <ResultDownloadButton onClick={() => void handleGeneratePdf()} loading={isGenerating || isPreparingPdf} />
       </div>
 
       {pdfError ? (
