@@ -1,0 +1,240 @@
+/*
+ * LandBD Gold Design System
+ * Inspired by the supplied LandBD reference screens: warm gold actions,
+ * clean white surfaces, dark ink typography, soft borders and compact cards.
+ * This layer intentionally changes presentation only; application behavior stays untouched.
+ */
+
+:root {
+  --background: #f8f9fb;
+  --foreground: #17191f;
+  --card-bg: #ffffff;
+  --border-color: #e8eaee;
+  --primary: #f4b928;
+  --primary-foreground: #17191f;
+  --secondary: #fff8e8;
+  --muted: #f2f4f7;
+  --muted-foreground: #68707c;
+  --accent: #f8d66d;
+  --destructive: #dc2626;
+  --brand-gold: #f4b928;
+  --brand-gold-strong: #dda20f;
+  --brand-gold-soft: #fff4cf;
+  --brand-gold-faint: #fffaf0;
+  --brand-ink: #17191f;
+  --brand-ink-soft: #30343d;
+  --brand-success: #22a06b;
+  --brand-info: #3b82f6;
+  --brand-purple: #8b5cf6;
+  --brand-coral: #f56f7f;
+  --shadow-sm: 0 1px 2px rgba(24, 29, 37, 0.04), 0 1px 4px rgba(24, 29, 37, 0.03);
+  --shadow-md: 0 8px 28px rgba(24, 29, 37, 0.07);
+  --shadow-lg: 0 18px 50px rgba(24, 29, 37, 0.10);
+  --radius-xl: 1rem;
+  --radius-lg: 0.875rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.625rem;
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: #111318;
+  --foreground: #f7f7f5;
+  --card-bg: #191c22;
+  --border-color: #2b2f37;
+  --primary: #f6c64c;
+  --primary-foreground: #17191f;
+  --secondary: #2a261b;
+  --muted: #22262d;
+  --muted-foreground: #a9afb9;
+  --accent: #5a4922;
+  --brand-gold: #f6c64c;
+  --brand-gold-strong: #e4b239;
+  --brand-gold-soft: #332b19;
+  --brand-gold-faint: #1d1b16;
+  --brand-ink: #f7f7f5;
+  --brand-ink-soft: #d7d9de;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.34);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% -10%, color-mix(in srgb, var(--brand-gold) 8%, transparent), transparent 30rem),
+    var(--background);
+}
+
+/* Shared premium surfaces */
+.app-surface,
+.landbd-surface {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-panel,
+.landbd-panel,
+.map-panel-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.nav-blur {
+  background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 94%, transparent);
+  box-shadow: 0 8px 30px rgba(24, 29, 37, 0.06);
+  backdrop-filter: blur(22px) saturate(155%);
+}
+
+.landbd-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.landbd-card-elevated {
+  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 16%, var(--border-color));
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.landbd-icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  color: #9d6800;
+  background: var(--brand-gold-soft);
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 25%, transparent);
+}
+
+.landbd-primary-button {
+  color: var(--primary-foreground);
+  background: linear-gradient(135deg, #f8c744 0%, var(--brand-gold) 58%, #e9aa16 100%);
+  border: 1px solid color-mix(in srgb, var(--brand-gold-strong) 65%, transparent);
+  border-radius: 0.8rem;
+  box-shadow: 0 8px 20px rgba(222, 164, 20, 0.18);
+}
+
+.landbd-primary-button:hover {
+  filter: brightness(0.98);
+  box-shadow: 0 10px 24px rgba(222, 164, 20, 0.24);
+}
+
+.landbd-input {
+  color: var(--foreground);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.landbd-input:focus,
+.landbd-input:focus-visible {
+  outline: none;
+  border-color: var(--brand-gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 20%, transparent);
+}
+
+.landbd-section-kicker {
+  color: #9a6700;
+  background: var(--brand-gold-soft);
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 20%, transparent);
+  border-radius: 999px;
+}
+
+.dark .landbd-section-kicker,
+.dark .landbd-icon-tile {
+  color: #f7d36f;
+}
+
+/*
+ * Compatibility bridge for legacy hard-coded LandBD green utility classes.
+ * Screen only: print/PDF colors remain controlled by the dedicated print rules.
+ */
+@media screen {
+  [class*="bg-[#006a4e]"],
+  [class*="bg-[#17663A]"],
+  [class*="bg-[#1A6B3C]"] {
+    background-color: var(--brand-gold) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  [class*="hover:bg-[#00523b]"]:hover,
+  [class*="hover:bg-[#155b33]"]:hover,
+  [class*="hover:bg-[#005b43]"]:hover {
+    background-color: var(--brand-gold-strong) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  [class*="text-[#006a4e]"],
+  [class*="text-[#17663A]"],
+  [class*="text-[#1A6B3C]"] {
+    color: #9a6700 !important;
+  }
+
+  .dark [class*="text-[#006a4e]"],
+  .dark [class*="text-[#17663A]"],
+  .dark [class*="text-[#1A6B3C]"] {
+    color: #f7d36f !important;
+  }
+
+  [class*="border-[#006a4e]"],
+  [class*="border-[#17663A]"],
+  [class*="border-[#1A6B3C]"] {
+    border-color: var(--brand-gold) !important;
+  }
+
+  [class*="ring-[#006a4e]"],
+  [class*="ring-[#17663A]"],
+  [class*="ring-[#1A6B3C]"] {
+    --tw-ring-color: color-mix(in srgb, var(--brand-gold) 40%, transparent) !important;
+  }
+
+  [class*="focus:border-[#006a4e]"]:focus,
+  [class*="focus-visible:border-[#006a4e]"]:focus-visible {
+    border-color: var(--brand-gold) !important;
+  }
+
+  [class*="focus:ring-[#006a4e]"]:focus,
+  [class*="focus-visible:ring-[#006a4e]"]:focus-visible {
+    --tw-ring-color: color-mix(in srgb, var(--brand-gold) 25%, transparent) !important;
+  }
+}
+
+/* Tables and forms get the quieter, information-dense treatment seen in the references. */
+table {
+  border-color: var(--border-color);
+}
+
+thead {
+  background: color-mix(in srgb, var(--muted) 70%, var(--card-bg));
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-radius: 0.75rem;
+}
+
+/* Consistent focus treatment across the product. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 22%, transparent);
+}
+
+/* Subtle mobile density improvements matching the supplied mobile reference. */
+@media (max-width: 767px) {
+  .landbd-card,
+  .landbd-panel,
+  .app-panel,
+  .map-panel-card {
+    border-radius: 0.9rem;
+  }
+}
