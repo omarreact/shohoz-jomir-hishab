@@ -363,6 +363,7 @@ async function queryRsAreaForDag(dagNo: string, input: DagMapLookupInput): Promi
     if (!selected.feature || !selected.area) {
       return {
         dagNo,
+        rsAreaLabel: "—",
         matchNote: selected.diagnostics.reason,
         diagnostics: selected.diagnostics,
       };
@@ -391,7 +392,7 @@ async function queryRsAreaForDag(dagNo: string, input: DagMapLookupInput): Promi
       normalizedMouza: normalizeMouzaName(input.mouzaName),
     };
     logDiagnostics(diagnostics);
-    return { dagNo, matchNote: diagnostics.reason, diagnostics };
+    return { dagNo, rsAreaLabel: "—", matchNote: diagnostics.reason, diagnostics };
   }
 }
 
@@ -412,5 +413,5 @@ export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagM
   }
 
   const byDag = new Map(results.map((row) => [row.dagNo, row]));
-  return input.dags.map((dagNo) => byDag.get(dagNo) ?? { dagNo });
+  return input.dags.map((dagNo) => byDag.get(dagNo) ?? { dagNo, rsAreaLabel: "—" });
 }
