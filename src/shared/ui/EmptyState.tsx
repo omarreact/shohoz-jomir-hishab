@@ -21,20 +21,22 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`d-flex flex-column align-items-center justify-content-center text-center p-5 border rounded-4 bg-light ${className}`}
+      className={`flex min-h-[15rem] flex-col items-center justify-center rounded-2xl border border-dashed border-[color-mix(in_srgb,var(--brand-gold)_28%,var(--border-color))] bg-[var(--brand-gold-faint)] px-5 py-10 text-center ${className}`}
     >
-      <div className="text-muted mb-4 p-4 rounded-circle bg-white shadow-sm d-inline-flex">
-        {icon || <FolderX size={48} strokeWidth={1.5} />}
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[var(--brand-gold-text)] shadow-sm ring-1 ring-[var(--border-color)]">
+        {icon || <FolderX size={27} strokeWidth={1.8} />}
       </div>
-      <h4 className="fw-bold text-body">{title}</h4>
-      {description && (
-        <p className="text-muted mb-4 max-w-md mx-auto">{description}</p>
-      )}
-      {actionLabel && onAction && (
-        <Button onClick={onAction} variant="primary">
+      <h3 className="mt-4 text-lg font-extrabold text-[var(--foreground)]">{title}</h3>
+      {description ? (
+        <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
+          {description}
+        </p>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Button onClick={onAction} variant="primary" className="mt-5">
           {actionLabel}
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
