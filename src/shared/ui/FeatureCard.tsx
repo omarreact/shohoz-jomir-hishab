@@ -14,10 +14,10 @@ interface FeatureCardProps {
 }
 
 const badgeColorMap: Record<string, string> = {
-  primary: "bg-[#006a4e]/10 text-[#006a4e]",
-  success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  destructive: "bg-red-500/10 text-red-600 dark:text-red-400",
+  primary: "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]",
+  success: "bg-emerald-50 text-emerald-700",
+  warning: "bg-amber-50 text-amber-700",
+  destructive: "bg-red-50 text-red-700",
 };
 
 export default function FeatureCard({
@@ -26,53 +26,47 @@ export default function FeatureCard({
   title,
   description,
   badge,
-  ctaLabel = "Explore",
-  badgeColor = "success",
+  ctaLabel = "দেখুন",
+  badgeColor = "primary",
 }: FeatureCardProps) {
   return (
-    <Link href={href} className="no-underline h-full block group">
-      <div className="h-full rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden hover:shadow-lg hover:-translate-y-1 hover:border-[#006a4e]/30">
-        <div className="p-4 sm:p-6 relative">
-          {/* Ghost background icon */}
-          <div className="absolute top-0 right-0 opacity-5 -translate-y-1/2 translate-x-1/2 pointer-events-none text-[#006a4e]">
-            <Icon size={120} />
-          </div>
+    <Link href={href} className="group block h-full no-underline">
+      <article className="relative flex h-full min-h-[12rem] flex-col overflow-hidden rounded-2xl border border-[var(--border-color)] bg-white p-5 shadow-[var(--shadow-sm)] transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--brand-gold)_30%,var(--border-color))] hover:shadow-[var(--shadow-md)] sm:p-6">
+        <div className="pointer-events-none absolute -right-8 -top-10 text-[var(--brand-gold)] opacity-[0.045]">
+          <Icon size={132} />
+        </div>
 
-          <div className="flex justify-between items-start mb-6 relative z-10">
-            <div
-              className="rounded-2xl bg-[#006a4e]/10 flex items-center justify-center transition-colors group-hover:bg-[#006a4e] group-hover:text-white text-[#006a4e]"
-              style={{ width: 64, height: 64 }}
+        <div className="relative z-10 flex items-start justify-between gap-3">
+          <span className="landbd-icon-tile h-12 w-12 shrink-0 sm:h-14 sm:w-14">
+            <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+          </span>
+
+          {badge ? (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-extrabold sm:text-xs",
+                badgeColorMap[badgeColor] || badgeColorMap.primary,
+              )}
             >
-              <Icon size={32} />
-            </div>
-            {badge && (
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold shadow-sm",
-                  badgeColorMap[badgeColor] || badgeColorMap.success,
-                )}
-              >
-                {badge}
-              </span>
-            )}
-          </div>
+              {badge}
+            </span>
+          ) : null}
+        </div>
 
-          <h4 className="font-bold mb-3 text-slate-900 dark:text-white relative z-10 text-xl group-hover:text-[#006a4e] transition-colors">
+        <div className="relative z-10 mt-5 flex-1">
+          <h3 className="text-lg font-extrabold leading-tight text-[var(--foreground)] transition-colors group-hover:text-[var(--brand-gold-text)] sm:text-xl">
             {title}
-          </h4>
-          <p className="text-slate-500 dark:text-slate-400 mb-6 relative z-10 leading-relaxed line-clamp-2">
+          </h3>
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--muted-foreground)]">
             {description}
           </p>
-
-          <div className="inline-flex items-center font-bold text-[#006a4e] relative z-10 mt-auto group-hover:gap-3 transition-all">
-            {ctaLabel}{" "}
-            <ArrowRight
-              size={18}
-              className="ml-2 transition-transform group-hover:translate-x-1"
-            />
-          </div>
         </div>
-      </div>
+
+        <span className="relative z-10 mt-5 inline-flex items-center gap-1.5 text-sm font-extrabold text-[var(--brand-gold-text)]">
+          {ctaLabel}
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </article>
     </Link>
   );
 }
