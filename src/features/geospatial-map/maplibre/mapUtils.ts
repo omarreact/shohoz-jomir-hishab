@@ -1,6 +1,7 @@
 import type { FeatureCollection, Geometry } from "geojson";
 import type { GeoJSONSource, Map as MapLibreInstance } from "maplibre-gl";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 import { GIS_REQUEST_TIMEOUT_MS } from "./types";
 import { isValidPolygonRings } from "./geometryValidation";
 
@@ -40,6 +41,10 @@ export function msNumber(feature: RajukPlotFeature): string {
   return "—";
 }
 
+function acreLabel(attributes: Record<string, unknown>): string {
+  return formatAcre(acreFromJsonAttributes(attributes)?.acre);
+}
+
 export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
   const a = feature.attributes as Record<string, unknown>;
   if (kind === "ms") {
@@ -47,7 +52,7 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
       ["এমএস দাগ নম্বর", msNumber(feature)],
       ["দাগ নং", formatValue(a.plot_no)],
       ["জেএল নং", formatValue(a.jl_no ?? a.rs_jl_no)],
-      ["আয়তন (কাঠা)", formatValue(a.ms_plot_area ?? a.area_katha)],
+      ["আয়তন (একর)", acreLabel(a)],
       ["মৌজা", formatValue(a.mauza ?? a.rs_mauza_name)],
       ["থানা/উপজেলা", formatValue(a.thana_upazila ?? a.upazila_ps)],
       ["জেলা", formatValue(a.m_district ?? a.district)],
@@ -58,7 +63,7 @@ export function detailRows(feature: RajukPlotFeature, kind: "rs" | "ms") {
     ["আরএস দাগ নম্বর", rsNumber(feature)],
     ["দাগ নং", formatValue(a.plot_no)],
     ["জেএল নং", formatValue(a.rs_jl_no ?? a.jl_no)],
-    ["আয়তন (কাঠা)", formatValue(a.rs_plot_area ?? a.area_katha)],
+    ["আয়তন (একর)", acreLabel(a)],
     ["মৌজা", formatValue(a.rs_mauza_name ?? a.mauza)],
     ["থানা/উপজেলা", formatValue(a.thana_upazila ?? a.upazila_ps)],
     ["জেলা", formatValue(a.m_district ?? a.district)],
