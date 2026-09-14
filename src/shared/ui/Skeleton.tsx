@@ -6,28 +6,30 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   rounded?: boolean | "circle" | "pill";
 }
 
-export function Skeleton({ 
-  className = "", 
-  width, 
-  height, 
-  rounded = true, 
-  style, 
-  ...props 
+export function Skeleton({
+  className = "",
+  width,
+  height,
+  rounded = true,
+  style,
+  ...props
 }: SkeletonProps) {
-  let roundedClass = "";
-  if (rounded === true) roundedClass = "rounded";
-  else if (rounded === "circle") roundedClass = "rounded-circle";
-  else if (rounded === "pill") roundedClass = "rounded-pill";
-  else if (rounded === false) roundedClass = "rounded-0";
+  const roundedClass =
+    rounded === "circle"
+      ? "rounded-full"
+      : rounded === "pill"
+        ? "rounded-full"
+        : rounded === false
+          ? "rounded-none"
+          : "rounded-xl";
 
   return (
     <div
-      className={`bg-secondary bg-opacity-25 placeholder-glow ${roundedClass} ${className}`}
+      className={`animate-pulse bg-slate-200/75 ${roundedClass} ${className}`}
       style={{
         width: width || "100%",
         height: height || "1rem",
-        animation: "placeholder-glow 2s ease-in-out infinite",
-        ...style
+        ...style,
       }}
       aria-hidden="true"
       {...props}
