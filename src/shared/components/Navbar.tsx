@@ -137,10 +137,9 @@ function groupIsActive(pathname: string, group: NavGroup) {
 
 export default function Navbar() {
   const pathname = usePathname();
-  // Product maps keep sticky nav; only legacy immersive shells use absolute overlay.
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
   const canSeeMapQa = isAdminRole(user?.role);
 
@@ -163,8 +162,8 @@ export default function Navbar() {
     [pathname, visibleGroups],
   );
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarGroup, setSidebarGroup] = useState<string | null>(null);
   const [desktopOpenGroup, setDesktopOpenGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -174,7 +173,7 @@ export default function Navbar() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    setMobileOpen(false);
+    setSidebarOpen(false);
     setDesktopOpenGroup(null);
     setSearchOpen(false);
   }, [pathname]);
@@ -183,11 +182,12 @@ export default function Navbar() {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        setSidebarOpen(false);
         setSearchOpen(true);
       }
       if (event.key === "Escape") {
         setSearchOpen(false);
-        setMobileOpen(false);
+        setSidebarOpen(false);
         setDesktopOpenGroup(null);
       }
     };
@@ -225,18 +225,20 @@ export default function Navbar() {
     window.location.assign("/");
   };
 
-  const openMobileMenu = () => {
-    setMobileGroup(activeGroupId ?? "records");
-    setMobileOpen(true);
+  const openSidebar = () => {
+    setSidebarGroup(activeGroupId ?? "records");
+    setSidebarOpen(true);
   };
 
-  const openSearchFromMobile = () => {
-    setMobileOpen(false);
+  const openSearchFromSidebar = () => {
+    setSidebarOpen(false);
     setSearchOpen(true);
   };
 
   const shell =
     "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
+
+  const effectiveTheme = resolvedTheme ?? theme;
 
   return (
     <>
@@ -250,7 +252,7 @@ export default function Navbar() {
           <Link
             href={FEATURE_ROUTES.home}
             className="flex min-w-0 shrink-0 items-center gap-2 no-underline"
-            onClick={() => setMobileOpen(false)}
+            onClick={() => setSidebarOpen(false)}
             aria-label={`${SITE_CONFIG.name} — হোম`}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)] shadow-sm">
@@ -354,64 +356,15 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center">
             <button
               type="button"
-              aria-label="সার্চ"
-              onClick={() => setSearchOpen(true)}
-              className="hidden items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] md:flex"
+              aria-label="সাইডবার মেনু খুলুন"
+              aria-expanded={sidebarOpen}
+              onClick={openSidebar}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[color-mix(in_srgb,var(--secondary)_75%,var(--foreground)_8%)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006a4e]/35"
             >
-              <Search size={15} />
-              <span>সার্চ</span>
-              <kbd className="hidden rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px] 2xl:inline">
-                Ctrl K
-              </kbd>
-            </button>
-
-            {mounted && (
-              <button
-                type="button"
-                aria-label="থিম পরিবর্তন"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)] md:flex"
-              >
-                {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
-              </button>
-            )}
-
-            {authLoading ? null : isLoggedIn ? (
-              <div className="hidden items-center gap-2 md:flex">
-                <Link
-                  href={FEATURE_ROUTES.admin}
-                  className="flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-semibold no-underline transition-colors hover:bg-[var(--secondary)]"
-                >
-                  <ShieldCheck size={15} /> ড্যাশবোর্ড
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20"
-                >
-                  <LogOut size={15} /> লগআউট
-                </button>
-              </div>
-            ) : (
-              <Link
-                href={FEATURE_ROUTES.login}
-                className="hidden items-center gap-1.5 rounded-xl bg-[var(--foreground)] px-4 py-2 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90 md:flex"
-              >
-                <LogIn size={15} /> {FEATURE_LABELS.login.bn}
-              </Link>
-            )}
-
-            <button
-              type="button"
-              aria-label="মেনু"
-              aria-expanded={mobileOpen}
-              onClick={openMobileMenu}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] xl:hidden"
-            >
-              <Menu size={19} />
+              <Menu size={20} />
             </button>
           </div>
         </div>
@@ -471,25 +424,26 @@ export default function Navbar() {
         </div>
       )}
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-[1250] xl:hidden" role="dialog" aria-modal="true">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[1250]" role="dialog" aria-modal="true" aria-label="সাইডবার মেনু">
           <button
             type="button"
-            aria-label="মেনু বন্ধ করুন"
+            aria-label="সাইডবার বন্ধ করুন"
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
+            onClick={() => setSidebarOpen(false)}
           />
+
           <aside
-            className={`absolute right-0 top-0 flex h-full w-[340px] max-w-[92vw] flex-col p-4 ${shell}`}
+            className={`absolute right-0 top-0 flex h-full w-[370px] max-w-[94vw] flex-col border-l p-4 shadow-2xl ${shell}`}
           >
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
               <Link
                 href={FEATURE_ROUTES.home}
                 className="flex min-w-0 items-center gap-2 no-underline"
-                onClick={() => setMobileOpen(false)}
+                onClick={() => setSidebarOpen(false)}
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
-                  <Calculator size={18} />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
+                  <Calculator size={19} />
                 </span>
                 <span className="min-w-0">
                   <strong className="block truncate text-sm">{SITE_CONFIG.name}</strong>
@@ -500,118 +454,218 @@ export default function Navbar() {
               </Link>
               <button
                 type="button"
-                onClick={() => setMobileOpen(false)}
-                aria-label="মেনু বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)]"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="সাইডবার বন্ধ করুন"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)]"
               >
                 <X size={19} />
               </button>
             </div>
 
-            <div className="flex flex-1 flex-col gap-1 overflow-y-auto py-4">
-              {visibleGroups.map((group) => {
-                const GroupIcon = group.icon;
-                const groupActive = groupIsActive(pathname, group);
-                const expanded = mobileGroup === group.id;
+            <div className="flex-1 overflow-y-auto py-4">
+              <section aria-label="দ্রুত নিয়ন্ত্রণ">
+                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  দ্রুত নিয়ন্ত্রণ
+                </p>
 
-                return (
-                  <div key={group.id} className="rounded-xl">
-                    <button
-                      type="button"
-                      aria-expanded={expanded}
-                      onClick={() => setMobileGroup(expanded ? null : group.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
-                        groupActive
-                          ? "bg-[var(--secondary)] text-[var(--foreground)]"
-                          : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                      }`}
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--secondary)] text-[var(--foreground)]">
-                        <GroupIcon size={16} />
-                      </span>
-                      <span className="min-w-0 flex-1">{group.label}</span>
-                      <ChevronDown
-                        size={16}
-                        className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                      />
-                    </button>
-
-                    {expanded ? (
-                      <div className="ml-7 mt-1 space-y-1 border-l border-[var(--border-color)] pl-3">
-                        {group.items.map((item) => {
-                          const ItemIcon = item.icon;
-                          const itemActive = activePath(pathname, item.href);
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setMobileOpen(false)}
-                              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
-                                itemActive
-                                  ? "bg-[#006a4e] text-white"
-                                  : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                              }`}
-                            >
-                              <ItemIcon size={16} className="shrink-0" />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
-              <button
-                type="button"
-                onClick={openSearchFromMobile}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-4 py-3 text-sm font-bold"
-              >
-                <Search size={16} /> সার্চ
-              </button>
-
-              {mounted && (
                 <button
                   type="button"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="flex w-full items-center justify-between rounded-xl border border-[var(--border-color)] px-4 py-3 text-sm"
+                  onClick={openSearchFromSidebar}
+                  className="mt-2 flex w-full items-center gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:text-[var(--foreground)]"
                 >
-                  <span className="flex items-center gap-2">
-                    {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />} থিম
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card-bg)]">
+                    <Search size={17} />
                   </span>
-                  <span>{theme === "dark" ? "ডার্ক" : "লাইট"}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">সার্চ</span>
+                    <span className="block text-[11px] text-[var(--muted-foreground)]">
+                      পেজ, টুল, মানচিত্র বা ব্লগ খুঁজুন
+                    </span>
+                  </span>
+                  <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px] text-[var(--muted-foreground)]">
+                    Ctrl K
+                  </kbd>
                 </button>
-              )}
 
-              {isLoggedIn ? (
-                <div className="grid gap-2">
-                  <Link
-                    href={FEATURE_ROUTES.admin}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] py-3 font-bold text-[var(--primary-foreground)] no-underline"
-                  >
-                    <User size={16} /> ড্যাশবোর্ড
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-red-200 py-3 font-semibold text-red-600"
-                  >
-                    <LogOut size={16} /> লগআউট
-                  </button>
+                {mounted ? (
+                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--secondary)]">
+                          {effectiveTheme === "dark" ? <Moon size={17} /> : <Sun size={17} />}
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold">থিম</p>
+                          <p className="text-[11px] text-[var(--muted-foreground)]">
+                            লাইট অথবা ডার্ক মোড নির্বাচন করুন
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTheme("light")}
+                        aria-pressed={effectiveTheme === "light"}
+                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                          effectiveTheme === "light"
+                            ? "bg-[#006a4e] text-white"
+                            : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        <Sun size={14} /> লাইট
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTheme("dark")}
+                        aria-pressed={effectiveTheme === "dark"}
+                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                          effectiveTheme === "dark"
+                            ? "bg-[#006a4e] text-white"
+                            : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        <Moon size={14} /> ডার্ক
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="mt-4" aria-label="অ্যাকাউন্ট">
+                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  অ্যাকাউন্ট
+                </p>
+
+                {authLoading ? (
+                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-4 text-sm text-[var(--muted-foreground)]">
+                    লগইন তথ্য যাচাই হচ্ছে…
+                  </div>
+                ) : isLoggedIn ? (
+                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#006a4e] text-white">
+                        <User size={18} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-[var(--foreground)]">
+                          {user?.name || user?.email || "স্টাফ অ্যাকাউন্ট"}
+                        </p>
+                        {user?.email ? (
+                          <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
+                            {user.email}
+                          </p>
+                        ) : null}
+                        {user?.role ? (
+                          <span className="mt-2 inline-flex rounded-full bg-[var(--secondary)] px-2.5 py-1 text-[10px] font-bold text-[var(--muted-foreground)]">
+                            {user.role}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <Link
+                        href={FEATURE_ROUTES.admin}
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                      >
+                        <ShieldCheck size={15} /> ড্যাশবোর্ড
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/70 dark:hover:bg-red-950/20"
+                      >
+                        <LogOut size={15} /> লগআউট
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]">
+                        <LogIn size={18} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold">স্টাফ লগইন</p>
+                        <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">
+                          অনুমোদিত স্টাফ বা অ্যাডমিন অ্যাকাউন্ট দিয়ে প্রবেশ করুন।
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={FEATURE_ROUTES.login}
+                      onClick={() => setSidebarOpen(false)}
+                      className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                    >
+                      <LogIn size={16} /> {FEATURE_LABELS.login.bn}
+                    </Link>
+                  </div>
+                )}
+              </section>
+
+              <section className="mt-5 border-t border-[var(--border-color)] pt-4" aria-label="সাইট মেনু">
+                <p className="px-1 pb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  সাইট মেনু
+                </p>
+
+                <div className="space-y-1">
+                  {visibleGroups.map((group) => {
+                    const GroupIcon = group.icon;
+                    const groupActive = groupIsActive(pathname, group);
+                    const expanded = sidebarGroup === group.id;
+
+                    return (
+                      <div key={group.id} className="rounded-xl">
+                        <button
+                          type="button"
+                          aria-expanded={expanded}
+                          onClick={() => setSidebarGroup(expanded ? null : group.id)}
+                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
+                            groupActive
+                              ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                              : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--secondary)] text-[var(--foreground)]">
+                            <GroupIcon size={16} />
+                          </span>
+                          <span className="min-w-0 flex-1">{group.label}</span>
+                          <ChevronDown
+                            size={16}
+                            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                          />
+                        </button>
+
+                        {expanded ? (
+                          <div className="ml-7 mt-1 space-y-1 border-l border-[var(--border-color)] pl-3">
+                            {group.items.map((item) => {
+                              const ItemIcon = item.icon;
+                              const itemActive = activePath(pathname, item.href);
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  onClick={() => setSidebarOpen(false)}
+                                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
+                                    itemActive
+                                      ? "bg-[#006a4e] text-white"
+                                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                                  }`}
+                                >
+                                  <ItemIcon size={16} className="shrink-0" />
+                                  {item.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : (
-                <Link
-                  href={FEATURE_ROUTES.login}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] py-3 font-bold text-[var(--primary-foreground)] no-underline"
-                >
-                  <LogIn size={16} /> {FEATURE_LABELS.login.bn}
-                </Link>
-              )}
+              </section>
             </div>
           </aside>
         </div>
