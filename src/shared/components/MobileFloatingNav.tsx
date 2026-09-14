@@ -59,8 +59,9 @@ function isActive(pathname: string, tab: Tab) {
 }
 
 /**
- * Mobile-only bottom floating nav — large targets for all ages.
- * Hidden on md+, admin/login routes, and print/PDF output.
+ * Mobile-only primary navigation.
+ * Uses the same white + gold visual language as the reference mobile app and
+ * preserves safe-area spacing on modern Android/iOS devices.
  */
 export default function MobileFloatingNav() {
   const pathname = usePathname() || "/";
@@ -71,9 +72,8 @@ export default function MobileFloatingNav() {
 
   return (
     <>
-      {/* Mobile spacer so page content / footer clear the fixed bottom nav */}
       <div
-        className="h-[4.75rem] md:hidden print:hidden"
+        className="h-[5.35rem] md:hidden print:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-hidden
       />
@@ -83,32 +83,35 @@ export default function MobileFloatingNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="মোবাইল মেনু"
       >
-        <div className="mx-auto max-w-lg px-2 pb-2 pt-1">
-          <div className="flex items-stretch justify-between gap-0.5 rounded-2xl border border-slate-200/90 bg-white/95 px-1 py-1.5 shadow-[0_-4px_24px_rgba(15,23,42,0.12)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-[0_-4px_24px_rgba(0,0,0,0.45)]">
+        <div className="mx-auto max-w-lg px-2.5 pb-2 pt-1">
+          <div className="flex items-stretch justify-between gap-0.5 rounded-[1.15rem] border border-[var(--border-color)] bg-white/98 px-1 py-1.5 shadow-[0_-6px_28px_rgba(24,29,37,0.10)] backdrop-blur-xl">
             {TABS.map((tab) => {
               const active = isActive(pathname, tab);
               const Icon = tab.icon;
+
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 no-underline transition ${
+                  className={`flex min-h-[3.45rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 no-underline transition-colors ${
                     active
-                      ? "bg-[#006a4e] text-white"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                      ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                   }`}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon
-                    className="h-5 w-5 shrink-0"
-                    strokeWidth={active ? 2.5 : 2}
-                    aria-hidden
-                  />
                   <span
-                    className={`max-w-full truncate text-[11px] font-bold leading-tight ${
-                      active ? "text-white" : ""
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+                      active ? "bg-[var(--brand-gold-soft)]" : "bg-transparent"
                     }`}
                   >
+                    <Icon
+                      className="h-[1.15rem] w-[1.15rem] shrink-0"
+                      strokeWidth={active ? 2.5 : 2}
+                      aria-hidden
+                    />
+                  </span>
+                  <span className="max-w-full truncate text-[10.5px] font-bold leading-tight">
                     {tab.label}
                   </span>
                 </Link>
