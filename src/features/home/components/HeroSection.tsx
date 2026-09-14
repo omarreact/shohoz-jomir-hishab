@@ -4,69 +4,44 @@ import Link from "next/link";
 import {
   ArrowRight,
   Calculator,
+  Download,
   FileSearch,
   MapPinned,
   Ruler,
+  Scale,
   ShieldCheck,
 } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 
-const QUICK_CARDS = [
-  {
-    icon: MapPinned,
-    title: "ভূমি মানচিত্র",
-    desc: "RS/MS মানচিত্রে প্লট ও মৌজা দেখুন",
-    href: FEATURE_ROUTES.landMap,
-  },
-  {
-    icon: FileSearch,
-    title: "খতিয়ান অনুসন্ধান",
-    desc: "DLRMS থেকে খতিয়ানের তথ্য দেখুন",
-    href: FEATURE_ROUTES.dlrmsKhatian,
-  },
-  {
-    icon: Ruler,
-    title: "জমি পরিমাপ",
-    desc: "শতক, কাঠা ও একরের হিসাব করুন",
-    href: FEATURE_ROUTES.landMeasurement,
-  },
+const HERO_FEATURES = [
+  { icon: FileSearch, label: "DLRMS খতিয়ান", href: FEATURE_ROUTES.dlrmsKhatian },
+  { icon: MapPinned, label: "RAJUK GIS", href: FEATURE_ROUTES.landMap },
+  { icon: Download, label: "মৌজা ম্যাপ", href: FEATURE_ROUTES.mouzaDownload },
+  { icon: Scale, label: "ফারায়েজ", href: FEATURE_ROUTES.inheritance },
 ];
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden border-b border-[var(--border-color)] bg-[var(--card-bg)]">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] lg:block"
-        style={{
-          background:
-            "radial-gradient(circle at 70% 35%, rgba(244,185,40,.22), transparent 18rem), linear-gradient(135deg, rgba(244,185,40,.06), rgba(255,255,255,0))",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 top-14 h-80 w-80 rounded-full border border-[color-mix(in_srgb,var(--brand-gold)_18%,transparent)] opacity-60"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-8 top-32 h-56 w-56 rounded-full border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)] opacity-50"
-      />
+    <section className="relative overflow-hidden border-b border-[var(--border-color)] bg-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(244,185,40,.18),transparent_28rem)]" aria-hidden />
+      <div className="pointer-events-none absolute -right-24 top-20 h-80 w-80 rounded-full border border-amber-200/70" aria-hidden />
+      <div className="pointer-events-none absolute right-8 top-44 h-52 w-52 rounded-full border border-amber-200/60" aria-hidden />
 
-      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:px-8 lg:py-20">
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:px-8 lg:py-20">
         <div>
           <div className="landbd-section-kicker mb-5 inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold sm:text-sm">
             <ShieldCheck size={15} />
-            বাংলাদেশের ভূমি হিসাবের সহজ ডিজিটাল প্ল্যাটফর্ম
+            ভূমি তথ্য, হিসাব ও মানচিত্র — এক প্ল্যাটফর্মে
           </div>
 
-          <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.02] tracking-[-0.04em] text-[var(--foreground)] sm:text-6xl lg:text-7xl">
+          <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.04] tracking-[-0.04em] text-[var(--foreground)] sm:text-6xl lg:text-7xl">
             Land<span className="text-[var(--brand-gold)]">BD</span>
           </h1>
-          <p className="mt-4 text-2xl font-extrabold leading-tight text-[var(--foreground)] sm:text-3xl">
-            সহজ জমির হিসাব
+          <p className="mt-4 text-2xl font-extrabold text-[var(--foreground)] sm:text-3xl">
+            বাংলাদেশের স্মার্ট ভূমি সহায়ক
           </p>
           <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--muted-foreground)] sm:text-lg">
-            খতিয়ান, জমি পরিমাপ, ফারায়েজ, মৌজা ও RAJUK GIS—প্রয়োজনীয় ভূমি তথ্য ও হিসাবের টুলগুলো এক জায়গায় ব্যবহার করুন।
+            DLRMS খতিয়ান, খতিয়ান হিসাব, জমি পরিমাপ, ফারায়েজ, RAJUK GIS, RS/MS মৌজা ম্যাপ ও পর্চা—LandBD-এর বর্তমান গুরুত্বপূর্ণ সেবাগুলো এখন আরও সহজভাবে এক জায়গায়।
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -75,51 +50,64 @@ export default function HeroSection() {
               className="landbd-primary-button inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3.5 text-sm font-extrabold no-underline sm:text-base"
             >
               <FileSearch size={19} />
-              খতিয়ান অনুসন্ধান করুন
+              খতিয়ান অনুসন্ধান
               <ArrowRight size={17} />
             </Link>
             <Link
-              href="#tools"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-6 py-3.5 text-sm font-extrabold text-[var(--foreground)] no-underline shadow-sm transition hover:border-[color-mix(in_srgb,var(--brand-gold)_45%,var(--border-color))] hover:bg-[var(--brand-gold-faint)] sm:text-base"
+              href={FEATURE_ROUTES.landMap}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-white px-6 py-3.5 text-sm font-extrabold text-[var(--foreground)] no-underline shadow-sm transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)] sm:text-base"
             >
-              <Calculator size={18} />
-              সব সেবা দেখুন
+              <MapPinned size={18} />
+              মানচিত্র খুলুন
             </Link>
           </div>
 
-          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-[var(--muted-foreground)]">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              লগইন ছাড়াই পাবলিক টুল
-            </span>
-            <span>বাংলা ইন্টারফেস</span>
-            <span>মোবাইল উপযোগী</span>
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            {HERO_FEATURES.map(({ icon: Icon, label, href }) => (
+              <Link
+                key={label}
+                href={href}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-white px-3.5 py-2 text-xs font-bold text-[var(--foreground)] no-underline shadow-sm transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)]"
+              >
+                <Icon size={14} className="text-[#9a6700]" />
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
-          <div className="absolute inset-8 rounded-[2rem] bg-[var(--brand-gold-soft)] blur-3xl" aria-hidden />
-          <div className="relative grid gap-4 sm:grid-cols-2">
-            {QUICK_CARDS.map(({ icon: Icon, title, desc, href }, index) => (
-              <Link
-                key={title}
-                href={href}
-                className={`group landbd-card-elevated flex min-h-[11rem] flex-col justify-between p-5 no-underline transition hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] ${
-                  index === 0 ? "sm:col-span-2 sm:ml-auto sm:w-[72%]" : ""
-                }`}
-              >
-                <span className="landbd-icon-tile h-12 w-12">
-                  <Icon size={24} />
-                </span>
-                <div className="mt-6">
-                  <h2 className="text-lg font-extrabold text-[var(--foreground)]">{title}</h2>
-                  <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{desc}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[#9a6700] dark:text-[#f7d36f]">
-                    খুলুন <ArrowRight size={14} className="transition group-hover:translate-x-0.5" />
-                  </span>
-                </div>
+        <div className="relative">
+          <div className="landbd-card-elevated overflow-hidden p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-4 border-b border-[var(--border-color)] pb-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9a6700]">দ্রুত কাজ</p>
+                <h2 className="mt-1 text-xl font-extrabold text-[var(--foreground)]">আজ কী করতে চান?</h2>
+              </div>
+              <div className="landbd-icon-tile h-12 w-12"><Calculator size={23} /></div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Link href={FEATURE_ROUTES.records} className="group rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4 no-underline transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)]">
+                <Calculator className="h-5 w-5 text-[#9a6700]" />
+                <h3 className="mt-3 font-extrabold text-[var(--foreground)]">খতিয়ান হিসাব</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">আনা, গন্ডা ও হিস্যার হিসাব</p>
               </Link>
-            ))}
+              <Link href={FEATURE_ROUTES.landMeasurement} className="group rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4 no-underline transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)]">
+                <Ruler className="h-5 w-5 text-blue-600" />
+                <h3 className="mt-3 font-extrabold text-[var(--foreground)]">জমি পরিমাপ</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">শতক, কাঠা, বিঘা ও একক রূপান্তর</p>
+              </Link>
+              <Link href={FEATURE_ROUTES.inheritance} className="group rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4 no-underline transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)]">
+                <Scale className="h-5 w-5 text-violet-600" />
+                <h3 className="mt-3 font-extrabold text-[var(--foreground)]">ফারায়েজ</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">উত্তরাধিকার বণ্টনের সহায়ক হিসাব</p>
+              </Link>
+              <Link href={FEATURE_ROUTES.mouzaDownload} className="group rounded-2xl border border-[var(--border-color)] bg-[var(--background)] p-4 no-underline transition hover:border-amber-300 hover:bg-[var(--brand-gold-faint)]">
+                <Download className="h-5 w-5 text-emerald-600" />
+                <h3 className="mt-3 font-extrabold text-[var(--foreground)]">মৌজা ম্যাপ</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">RS/MS মৌজা নির্বাচন ও এক্সপোর্ট</p>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

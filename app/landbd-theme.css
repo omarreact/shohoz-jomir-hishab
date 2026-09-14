@@ -1,11 +1,10 @@
 /*
- * LandBD Gold Design System
- * Inspired by the supplied LandBD reference screens: warm gold actions,
- * clean white surfaces, dark ink typography, soft borders and compact cards.
- * This layer intentionally changes presentation only; application behavior stays untouched.
+ * LandBD single-theme design system
+ * Warm gold actions, clean white surfaces, dark ink typography and soft borders.
  */
 
 :root {
+  color-scheme: light;
   --background: #f8f9fb;
   --foreground: #17191f;
   --card-bg: #ffffff;
@@ -36,27 +35,9 @@
   --radius-sm: 0.625rem;
 }
 
-.dark,
-[data-theme="dark"] {
-  --background: #111318;
-  --foreground: #f7f7f5;
-  --card-bg: #191c22;
-  --border-color: #2b2f37;
-  --primary: #f6c64c;
-  --primary-foreground: #17191f;
-  --secondary: #2a261b;
-  --muted: #22262d;
-  --muted-foreground: #a9afb9;
-  --accent: #5a4922;
-  --brand-gold: #f6c64c;
-  --brand-gold-strong: #e4b239;
-  --brand-gold-soft: #332b19;
-  --brand-gold-faint: #1d1b16;
-  --brand-ink: #f7f7f5;
-  --brand-ink-soft: #d7d9de;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.22);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.34);
+html,
+body {
+  color-scheme: light;
 }
 
 body {
@@ -65,7 +46,12 @@ body {
     var(--background);
 }
 
-/* Shared premium surfaces */
+/* Dark-mode controls are intentionally removed from the single-theme product UI. */
+button[aria-label="থিম পরিবর্তন"],
+section[aria-label="দ্রুত নিয়ন্ত্রণ"] > div:has(button[aria-pressed]) {
+  display: none !important;
+}
+
 .app-surface,
 .landbd-surface {
   background: var(--card-bg);
@@ -132,7 +118,6 @@ body {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .landbd-input:focus,
@@ -149,15 +134,6 @@ body {
   border-radius: 999px;
 }
 
-.dark .landbd-section-kicker,
-.dark .landbd-icon-tile {
-  color: #f7d36f;
-}
-
-/*
- * Compatibility bridge for legacy hard-coded LandBD green utility classes.
- * Screen only: print/PDF colors remain controlled by the dedicated print rules.
- */
 @media screen {
   [class*="bg-[#006a4e]"],
   [class*="bg-[#17663A]"],
@@ -177,12 +153,6 @@ body {
   [class*="text-[#17663A]"],
   [class*="text-[#1A6B3C]"] {
     color: #9a6700 !important;
-  }
-
-  .dark [class*="text-[#006a4e]"],
-  .dark [class*="text-[#17663A]"],
-  .dark [class*="text-[#1A6B3C]"] {
-    color: #f7d36f !important;
   }
 
   [class*="border-[#006a4e]"],
@@ -208,14 +178,8 @@ body {
   }
 }
 
-/* Tables and forms get the quieter, information-dense treatment seen in the references. */
-table {
-  border-color: var(--border-color);
-}
-
-thead {
-  background: color-mix(in srgb, var(--muted) 70%, var(--card-bg));
-}
+table { border-color: var(--border-color); }
+thead { background: color-mix(in srgb, var(--muted) 70%, var(--card-bg)); }
 
 input:not([type="checkbox"]):not([type="radio"]),
 select,
@@ -223,13 +187,11 @@ textarea {
   border-radius: 0.75rem;
 }
 
-/* Consistent focus treatment across the product. */
 :where(a, button, input, select, textarea):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 22%, transparent);
 }
 
-/* Subtle mobile density improvements matching the supplied mobile reference. */
 @media (max-width: 767px) {
   .landbd-card,
   .landbd-panel,
