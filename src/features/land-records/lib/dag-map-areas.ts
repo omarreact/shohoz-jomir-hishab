@@ -1,12 +1,49 @@
 /**
- * Client-side lookup of RS/MS plot areas for Khatian dag numbers.
- * Reuses /api/rajuk/query (same stack as GIS map).
+ * Client-side RS plot area lookup for Khatian Dag numbers.
  *
- * IMPORTANT: area is read only from JSON attributes and shown only in Acre.
- * Geometry/polygon coordinates are never used to calculate area here.
+ * Production contract:
+ * - Query RAJUK RS Plot layer (FeatureServer/0) by Dag only.
+ * - Apply JL -> Mouza -> optional Upazila/Thana identity checks in memory.
+ * - Accept exactly one RS parcel; zero/multiple candidates fail closed.
+ * - Read area only from scalar JSON Shape__Area with a verified unit contract.
+ * - Never calculate area from geometry, rings, coordinates or Shape__Length.
  */
 
 import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
+import {
+  mouzaNamesMatch,
+  normalizeAdminName,
+  normalizeMouzaName,
+} from "./mouza-normalize";
+
+export type DagMatchDiagnostics = {
+  dagNo: string;
+  rawCandidateCount: number;
+  dagCandidateCount: number;
+  jlCandidateCount: number;
+  mouzaCandidateCount: number;
+  adminCandidateCount: number | null;
+  finalCandidateCount: number;
+  status: "resolved" | "unresolved";
+  reason:
+    | "resolved"
+    | "invalid_dag"
+    | "missing_jl"
+    | "missing_mouza"
+    | "zero_dag_candidates"
+    | "zero_jl_candidates"
+    | "zero_mouza_candidates"
+    | "zero_admin_candidates"
+    | "ambiguous_identity"
+    | "missing_shape_area"
+    | "invalid_shape_area_unit"
+    | "request_failed";
+  objectId?: string;
+  areaAcre?: number;
+  areaSourceField?: "Shape__Area";
+  areaSourceUnit?: string;
+  normalizedMouza?: string;
+};
 
 export type DagMapAreaRow = {
   dagNo: string;
@@ -17,6 +54,7 @@ export type DagMapAreaRow = {
   rsFeatureId?: string;
   msFeatureId?: string;
   matchNote?: string;
+  diagnostics?: DagMatchDiagnostics;
 };
 
 export type DagMapLookupInput = {
@@ -30,284 +68,349 @@ export type DagMapLookupInput = {
 
 type PlotFeature = { attributes?: Record<string, unknown> };
 
-function normalizeToken(value: string): string {
-  return value
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLocaleLowerCase("bn-BD")
-    .normalize("NFC");
-}
-
-const BN_ROMAN: Record<string, string> = {
-  "অ": "a", "আ": "a", "ই": "i", "ঈ": "i", "উ": "u", "ঊ": "u", "ঋ": "ri", "এ": "e", "ঐ": "oi", "ও": "o", "ঔ": "ou",
-  "ক": "k", "খ": "kh", "গ": "g", "ঘ": "gh", "ঙ": "ng", "চ": "ch", "ছ": "chh", "জ": "j", "ঝ": "jh", "ঞ": "n",
-  "ট": "t", "ঠ": "th", "ড": "d", "ঢ": "dh", "ণ": "n", "ত": "t", "থ": "th", "দ": "d", "ধ": "dh", "ন": "n",
-  "প": "p", "ফ": "f", "ব": "b", "ভ": "bh", "ম": "m", "য": "y", "র": "r", "ল": "l", "শ": "sh", "ষ": "sh", "স": "s", "হ": "h",
-  "ড়": "r", "ঢ়": "rh", "য়": "y", "ৎ": "t",
-  "া": "a", "ি": "i", "ী": "i", "ু": "u", "ূ": "u", "ৃ": "ri", "ে": "e", "ৈ": "oi", "ো": "o", "ৌ": "ou",
-  "ং": "ng", "ঃ": "h", "ঁ": "n", "্": "",
+type CandidateSelection = {
+  feature?: PlotFeature;
+  area?: { acre: number; label: string; sourceUnit: string };
+  diagnostics: DagMatchDiagnostics;
 };
 
-/**
- * Conservative cross-script key used only to match DLRMS Bangla Mouza names
- * against RAJUK's English JSON labels. Vowels/punctuation are removed so
- * common spelling variants do not create a false mismatch (পাতিরা -> ptr,
- * Patira -> ptr). This never participates in area calculation.
- */
-function mouzaPhoneticKey(value: string): string {
-  const normalized = normalizeToken(value);
-  let roman = "";
-  for (const char of normalized) roman += BN_ROMAN[char] ?? char;
-  return roman
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
-    .replace(/[aeiou]/g, "");
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+
+function asciiDigits(value: string): string {
+  return value.replace(/[০-৯]/g, (digit) => String(BN_DIGITS.indexOf(digit)));
 }
 
-function normalizeJl(value: string): string {
-  const digits = value.replace(/[^0-9০-৯]/g, "");
-  const map: Record<string, string> = {
-    "০": "0",
-    "১": "1",
-    "২": "2",
-    "৩": "3",
-    "৪": "4",
-    "৫": "5",
-    "৬": "6",
-    "৭": "7",
-    "৮": "8",
-    "৯": "9",
+export function normalizeJl(value: unknown): string {
+  const digits = asciiDigits(String(value ?? "")).replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.replace(/^0+/, "") || "0";
+}
+
+export function normalizeDagNumber(value: unknown): string {
+  const raw = asciiDigits(String(value ?? ""))
+    .trim()
+    .replace(/^RS\s*[-:]?\s*/i, "");
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.replace(/^0+/, "") || "0";
+}
+
+function parseAddressSearch(value: unknown): {
+  plotNo: string;
+  mouza: string;
+  jl: string;
+  admin: string;
+} {
+  const raw = String(value ?? "").trim();
+  if (!raw) return { plotNo: "", mouza: "", jl: "", admin: "" };
+  const match = raw.match(/^\s*([^,]+)\s*,\s*(.+?)\s*-\s*JL\s*0*(\d+)\s*,\s*(.+?)\s*$/i);
+  if (!match) return { plotNo: "", mouza: "", jl: "", admin: "" };
+  return {
+    plotNo: normalizeDagNumber(match[1]),
+    mouza: match[2].trim(),
+    jl: normalizeJl(match[3]),
+    admin: match[4].trim(),
   };
-  const ascii = [...digits].map((c) => map[c] ?? c).join("");
-  return ascii.replace(/^0+/, "") || ascii;
 }
 
-function areaFromAttributes(attributes: Record<string, unknown>): { acre: number; label: string } | undefined {
-  const result = acreFromJsonAttributes(attributes);
-  if (!result) return undefined;
+function featureIdentity(feature: PlotFeature) {
+  const attrs = feature.attributes ?? {};
+  const parsed = parseAddressSearch(attrs.address_search);
+  const objectId = attrs.objectid != null ? String(attrs.objectid) : "";
+  const pGuid = attrs.p_guid != null ? String(attrs.p_guid) : "";
+  return {
+    attrs,
+    objectId,
+    uniqueKey: pGuid || objectId || JSON.stringify([
+      attrs.plot_no,
+      attrs.rs_plot_no,
+      attrs.jl_no,
+      attrs.rs_jl_no,
+      attrs.mauza,
+      attrs.rs_mauza_name,
+      attrs.address_search,
+    ]),
+    parsed,
+  };
+}
+
+function dedupeFeatures(features: PlotFeature[]): PlotFeature[] {
+  const seen = new Set<string>();
+  const output: PlotFeature[] = [];
+  for (const feature of features) {
+    const key = featureIdentity(feature).uniqueKey;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(feature);
+  }
+  return output;
+}
+
+function isRsFeature(feature: PlotFeature): boolean {
+  const attrs = feature.attributes ?? {};
+  return (
+    attrs._layer_source === "rs"
+    || attrs.plot_kind === "rs"
+    || (Boolean(attrs.rs_plot_no) && !attrs.ms_plot_no)
+  );
+}
+
+function dagMatches(feature: PlotFeature, dagNo: string): boolean {
+  const { attrs, parsed } = featureIdentity(feature);
+  const wanted = normalizeDagNumber(dagNo);
+  if (!wanted) return false;
+  const candidates = [attrs.plot_no, attrs.rs_plot_no, parsed.plotNo];
+  return candidates.some((value) => normalizeDagNumber(value) === wanted);
+}
+
+function jlMatches(feature: PlotFeature, jlNumber: string): boolean {
+  const { attrs, parsed } = featureIdentity(feature);
+  const wanted = normalizeJl(jlNumber);
+  if (!wanted) return false;
+  const candidates = [attrs.jl_no, attrs.rs_jl_no, attrs.jl, parsed.jl];
+  return candidates.some((value) => normalizeJl(value) === wanted);
+}
+
+function featureMouzaMatches(feature: PlotFeature, mouzaName: string): boolean {
+  const { attrs, parsed } = featureIdentity(feature);
+  const candidates = [attrs.mauza, attrs.rs_mauza_name, attrs.mauza_name, parsed.mouza];
+  return candidates.some((value) => mouzaNamesMatch(value, mouzaName));
+}
+
+function featureAdminMatches(feature: PlotFeature, adminName: string): boolean {
+  const wanted = normalizeAdminName(adminName);
+  if (!wanted) return false;
+  const { attrs, parsed } = featureIdentity(feature);
+  const candidates = [attrs.thana_upazila, attrs.upazila_ps, attrs.upazila, parsed.admin];
+  return candidates.some((value) => normalizeAdminName(value) === wanted);
+}
+
+/**
+ * Extract Acre exclusively from Shape__Area in the normalized JSON attributes.
+ * Even if area_acre exists, this path deliberately reconstructs the extractor
+ * input so Shape__Area is the sole scalar source field.
+ */
+function areaFromShapeJson(attributes: Record<string, unknown>): {
+  acre: number;
+  label: string;
+  sourceUnit: string;
+} | null {
+  const shapeArea = attributes.Shape__Area ?? attributes.shape__area;
+  if (shapeArea == null || String(shapeArea).trim() === "") return null;
+
+  const explicitUnit = attributes.shape_area_unit
+    ?? attributes.shapeAreaUnit
+    ?? attributes.Shape__Area_Unit
+    ?? attributes.shape__area_unit
+    ?? (attributes.area_source_field === "Shape__Area" ? attributes.area_source_unit : undefined);
+
+  const result = acreFromJsonAttributes({
+    Shape__Area: shapeArea,
+    shape_area_unit: explicitUnit,
+  });
+  if (!result || result.sourceField !== "Shape__Area") return null;
+
   return {
     acre: result.acre,
     label: formatAcre(result.acre),
+    sourceUnit: result.sourceUnit,
   };
 }
 
-function isRsFeature(attrs: Record<string, unknown>): boolean {
-  return (
-    attrs._layer_source === "rs" ||
-    attrs.plot_kind === "rs" ||
-    (Boolean(attrs.rs_plot_no) && !attrs.ms_plot_no)
-  );
-}
+export function selectUniqueRsCandidate(
+  features: PlotFeature[],
+  input: Pick<DagMapLookupInput, "mouzaName" | "jlNumber" | "upazilaName"> & { dagNo: string },
+): CandidateSelection {
+  const diagnostics: DagMatchDiagnostics = {
+    dagNo: input.dagNo,
+    rawCandidateCount: features.length,
+    dagCandidateCount: 0,
+    jlCandidateCount: 0,
+    mouzaCandidateCount: 0,
+    adminCandidateCount: null,
+    finalCandidateCount: 0,
+    status: "unresolved",
+    reason: "zero_dag_candidates",
+    normalizedMouza: normalizeMouzaName(input.mouzaName),
+  };
 
-function isMsFeature(attrs: Record<string, unknown>): boolean {
-  return (
-    attrs._layer_source === "ms" ||
-    attrs.plot_kind === "ms" ||
-    Boolean(attrs.ms_plot_no)
-  );
-}
-
-function jlMatches(attrs: Record<string, unknown>, jl: string): boolean {
-  if (!jl) return true;
-  const want = normalizeJl(jl);
-  if (!want) return true;
-  const candidates = [attrs.jl_no, attrs.rs_jl_no, attrs.ms_jl_no, attrs.jl];
-  for (const c of candidates) {
-    if (c == null) continue;
-    if (normalizeJl(String(c)) === want) return true;
+  if (!normalizeDagNumber(input.dagNo)) {
+    diagnostics.reason = "invalid_dag";
+    return { diagnostics };
   }
-  const address = String(attrs.address_search ?? "");
-  const m = address.match(/JL\s*0*(\d+)/i);
-  if (m && normalizeJl(m[1]) === want) return true;
-  return false;
-}
-
-function mouzaMatches(attrs: Record<string, unknown>, mouza: string): boolean {
-  if (!mouza.trim()) return true;
-  const want = normalizeToken(mouza);
-  const wantPhonetic = mouzaPhoneticKey(mouza);
-  const candidates = [
-    attrs.mauza,
-    attrs.rs_mauza_name,
-    attrs.ms_mauza_name,
-    attrs.mauza_name,
-  ];
-  for (const c of candidates) {
-    if (c == null) continue;
-    const got = normalizeToken(String(c));
-    if (got === want || got.includes(want) || want.includes(got)) return true;
-    const gotPhonetic = mouzaPhoneticKey(String(c));
-    if (wantPhonetic.length >= 3 && gotPhonetic === wantPhonetic) return true;
+  if (!normalizeJl(input.jlNumber)) {
+    diagnostics.reason = "missing_jl";
+    return { diagnostics };
   }
-  const address = normalizeToken(String(attrs.address_search ?? ""));
-  if (address.includes(want)) return true;
-  const addressMouza = address.split("-jl")[0]?.replace(/^\s*\d+\s*,\s*/, "").trim() ?? "";
-  return wantPhonetic.length >= 3 && mouzaPhoneticKey(addressMouza) === wantPhonetic;
+  if (!normalizeMouzaName(input.mouzaName)) {
+    diagnostics.reason = "missing_mouza";
+    return { diagnostics };
+  }
+
+  const rawRs = dedupeFeatures(features.filter(isRsFeature));
+  const dagCandidates = rawRs.filter((feature) => dagMatches(feature, input.dagNo));
+  diagnostics.dagCandidateCount = dagCandidates.length;
+  if (!dagCandidates.length) {
+    diagnostics.reason = "zero_dag_candidates";
+    return { diagnostics };
+  }
+
+  const jlCandidates = dagCandidates.filter((feature) => jlMatches(feature, input.jlNumber));
+  diagnostics.jlCandidateCount = jlCandidates.length;
+  if (!jlCandidates.length) {
+    diagnostics.reason = "zero_jl_candidates";
+    return { diagnostics };
+  }
+
+  const mouzaCandidates = jlCandidates.filter((feature) => featureMouzaMatches(feature, input.mouzaName));
+  diagnostics.mouzaCandidateCount = mouzaCandidates.length;
+  if (!mouzaCandidates.length) {
+    diagnostics.reason = "zero_mouza_candidates";
+    return { diagnostics };
+  }
+
+  let finalCandidates = mouzaCandidates;
+
+  // Upazila/Thana is a secondary ambiguity breaker. A unique Dag+JL+Mouza
+  // parcel is already sufficient; an admin label mismatch must not reject a
+  // unique Patira parcel where DLRMS and RAJUK use different admin systems.
+  if (finalCandidates.length > 1 && input.upazilaName?.trim()) {
+    const adminCandidates = finalCandidates.filter((feature) =>
+      featureAdminMatches(feature, input.upazilaName || ""),
+    );
+    diagnostics.adminCandidateCount = adminCandidates.length;
+    finalCandidates = adminCandidates;
+    if (!finalCandidates.length) {
+      diagnostics.reason = "zero_admin_candidates";
+      diagnostics.finalCandidateCount = 0;
+      return { diagnostics };
+    }
+  }
+
+  finalCandidates = dedupeFeatures(finalCandidates);
+  diagnostics.finalCandidateCount = finalCandidates.length;
+  if (finalCandidates.length !== 1) {
+    diagnostics.reason = "ambiguous_identity";
+    return { diagnostics };
+  }
+
+  const feature = finalCandidates[0];
+  const attrs = feature.attributes ?? {};
+  const shapeAreaPresent = attrs.Shape__Area != null || attrs.shape__area != null;
+  if (!shapeAreaPresent) {
+    diagnostics.reason = "missing_shape_area";
+    return { diagnostics };
+  }
+
+  const area = areaFromShapeJson(attrs);
+  if (!area) {
+    diagnostics.reason = "invalid_shape_area_unit";
+    return { diagnostics };
+  }
+
+  diagnostics.status = "resolved";
+  diagnostics.reason = "resolved";
+  diagnostics.objectId = attrs.objectid != null ? String(attrs.objectid) : undefined;
+  diagnostics.areaAcre = area.acre;
+  diagnostics.areaSourceField = "Shape__Area";
+  diagnostics.areaSourceUnit = area.sourceUnit;
+
+  return { feature, area, diagnostics };
 }
 
-async function fetchPlotFeatures(params: URLSearchParams, signal?: AbortSignal): Promise<PlotFeature[]> {
-  const res = await fetch(`/api/rajuk/query?${params.toString()}`, {
+async function fetchRsCandidatesByDag(dagNo: string, signal?: AbortSignal): Promise<PlotFeature[]> {
+  const normalizedDag = normalizeDagNumber(dagNo);
+  if (!normalizedDag) return [];
+
+  // Broad identity query by Dag only. No address_search/Mouza/JL/Upazila SQL
+  // filters are allowed here; all identity checks happen deterministically in
+  // memory after the candidate list is returned from RS FeatureServer layer 0.
+  const params = new URLSearchParams({
+    action: "plots",
+    kind: "rs",
+    plot_no: normalizedDag,
+    limit: "2000",
+  });
+
+  const response = await fetch(`/api/rajuk/query?${params.toString()}`, {
     method: "GET",
     signal,
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) return [];
-  const data = (await res.json()) as { features?: PlotFeature[] };
+  if (!response.ok) throw new Error(`RAJUK candidate query failed (${response.status})`);
+  const data = (await response.json()) as { features?: PlotFeature[] };
   return Array.isArray(data.features) ? data.features : [];
 }
 
-function selectUniqueRsFallback(
-  features: PlotFeature[],
-  input: DagMapLookupInput,
-): { feature?: PlotFeature; note?: string } {
-  const jlCandidates = features.filter((feature) => {
-    const attrs = feature.attributes ?? {};
-    return isRsFeature(attrs) && jlMatches(attrs, input.jlNumber) && Boolean(areaFromAttributes(attrs));
-  });
-
-  if (!jlCandidates.length) return {};
-
-  // Mouza evidence is required before accepting one of several identical Dag/JL
-  // records. Exact same-script names are preferred; the conservative phonetic
-  // key handles Bangla DLRMS vs English RAJUK labels without changing area data.
-  const mouzaCandidates = jlCandidates.filter((feature) =>
-    mouzaMatches(feature.attributes ?? {}, input.mouzaName),
-  );
-  if (mouzaCandidates.length === 1) {
-    return { feature: mouzaCandidates[0], note: "RS match: plot + JL + mouza" };
-  }
-  if (mouzaCandidates.length > 1) {
-    return { note: "RS area unavailable: multiple plot/JL/mouza matches" };
-  }
-
-  if (jlCandidates.length === 1) {
-    return { feature: jlCandidates[0], note: "RS match: unique plot + JL" };
-  }
-  return { note: "RS area unavailable: multiple plot/JL matches" };
+function logDiagnostics(diagnostics: DagMatchDiagnostics) {
+  // Intentional production diagnostic: contains parcel identity counts only,
+  // no auth material or personal data. This is used to diagnose unresolved
+  // Khatian Dags such as BRS 41/312 without weakening fail-closed matching.
+  console.info("[LandBD][RAJUK Dag Acre]", diagnostics);
 }
 
-async function queryPlotsForDag(
-  dagNo: string,
-  input: DagMapLookupInput,
-): Promise<{
-  rs?: number;
-  ms?: number;
-  rsLabel?: string;
-  msLabel?: string;
-  rsId?: string;
-  msId?: string;
-  note?: string;
-}> {
-  const plotNo = Number(String(dagNo).replace(/[^0-9০-৯]/g, "").replace(/[০-৯]/g, (d) =>
-    String("০১২৩৪৫৬৭৮৯".indexOf(d)),
-  ));
-  if (!Number.isFinite(plotNo) || plotNo < 0) return {};
-
-  const params = new URLSearchParams({
-    action: "plots",
-    plot_no: String(Math.trunc(plotNo)),
-    limit: "20",
-  });
-  if (input.mouzaName.trim()) params.set("mouza", input.mouzaName.trim());
-  if (input.jlNumber.trim()) params.set("jl", input.jlNumber.trim());
-  if (input.upazilaName?.trim()) params.set("upazila", input.upazilaName.trim());
-
-  const features = await fetchPlotFeatures(params, input.signal);
-
-  let rsAcre: number | undefined;
-  let msAcre: number | undefined;
-  let rsLabel: string | undefined;
-  let msLabel: string | undefined;
-  let rsId: string | undefined;
-  let msId: string | undefined;
-  let note: string | undefined;
-
-  for (const feature of features) {
-    const attrs = feature.attributes ?? {};
-    if (!jlMatches(attrs, input.jlNumber)) continue;
-    if (!mouzaMatches(attrs, input.mouzaName)) continue;
-
-    const area = areaFromAttributes(attrs);
-    if (!area) continue;
-
-    const objectId = attrs.objectid != null ? String(attrs.objectid) : undefined;
-
-    if (isMsFeature(attrs) && msAcre === undefined) {
-      msAcre = area.acre;
-      msLabel = area.label;
-      msId = objectId;
-    } else if (isRsFeature(attrs) && rsAcre === undefined) {
-      rsAcre = area.acre;
-      rsLabel = area.label;
-      rsId = objectId;
-    }
-  }
-
-  // DLRMS commonly supplies Bangla Mouza/Upazila names while RAJUK publishes
-  // English address_search values. The fallback stays JSON-only for area and
-  // uses exact numeric JL plus Mouza identity to select the correct RS parcel.
-  if (rsAcre === undefined && input.jlNumber.trim()) {
-    const fallbackParams = new URLSearchParams({
-      action: "plots",
-      plot_no: String(Math.trunc(plotNo)),
-      kind: "rs",
-      jl: input.jlNumber.trim(),
-      limit: "100",
+async function queryRsAreaForDag(dagNo: string, input: DagMapLookupInput): Promise<DagMapAreaRow> {
+  try {
+    const features = await fetchRsCandidatesByDag(dagNo, input.signal);
+    const selected = selectUniqueRsCandidate(features, {
+      dagNo,
+      mouzaName: input.mouzaName,
+      jlNumber: input.jlNumber,
+      upazilaName: input.upazilaName,
     });
-    const fallback = selectUniqueRsFallback(
-      await fetchPlotFeatures(fallbackParams, input.signal),
-      input,
-    );
-    note = fallback.note;
-    if (fallback.feature) {
-      const attrs = fallback.feature.attributes ?? {};
-      const area = areaFromAttributes(attrs);
-      if (area) {
-        rsAcre = area.acre;
-        rsLabel = area.label;
-        rsId = attrs.objectid != null ? String(attrs.objectid) : undefined;
-      }
-    }
-  }
+    logDiagnostics(selected.diagnostics);
 
-  return { rs: rsAcre, ms: msAcre, rsLabel, msLabel, rsId, msId, note };
+    if (!selected.feature || !selected.area) {
+      return {
+        dagNo,
+        matchNote: selected.diagnostics.reason,
+        diagnostics: selected.diagnostics,
+      };
+    }
+
+    const attrs = selected.feature.attributes ?? {};
+    return {
+      dagNo,
+      rsAreaAcre: selected.area.acre,
+      rsAreaLabel: selected.area.label,
+      rsFeatureId: attrs.objectid != null ? String(attrs.objectid) : undefined,
+      matchNote: "RS match: exact Dag + JL + normalized Mouza",
+      diagnostics: selected.diagnostics,
+    };
+  } catch {
+    const diagnostics: DagMatchDiagnostics = {
+      dagNo,
+      rawCandidateCount: 0,
+      dagCandidateCount: 0,
+      jlCandidateCount: 0,
+      mouzaCandidateCount: 0,
+      adminCandidateCount: null,
+      finalCandidateCount: 0,
+      status: "unresolved",
+      reason: "request_failed",
+      normalizedMouza: normalizeMouzaName(input.mouzaName),
+    };
+    logDiagnostics(diagnostics);
+    return { dagNo, matchNote: diagnostics.reason, diagnostics };
+  }
 }
 
-/**
- * Resolve JSON-derived Acre values for a list of dags.
- * Fault-tolerant: failures return the dag number without an area.
- */
+/** Resolve JSON-derived RS Acre values for a list of Khatian Dags. */
 export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagMapAreaRow[]> {
-  const unique = [...new Set(input.dags.map((d) => d.trim()).filter(Boolean))];
+  const unique = [...new Set(input.dags.map((dag) => dag.trim()).filter(Boolean))];
   if (!unique.length) return [];
 
   const concurrency = 3;
   const results: DagMapAreaRow[] = [];
 
-  for (let i = 0; i < unique.length; i += concurrency) {
-    const slice = unique.slice(i, i + concurrency);
+  for (let index = 0; index < unique.length; index += concurrency) {
+    const slice = unique.slice(index, index + concurrency);
     const settled = await Promise.all(
-      slice.map(async (dagNo) => {
-        try {
-          const hit = await queryPlotsForDag(dagNo, input);
-          return {
-            dagNo,
-            rsAreaAcre: hit.rs,
-            msAreaAcre: hit.ms,
-            rsAreaLabel: hit.rsLabel,
-            msAreaLabel: hit.msLabel,
-            rsFeatureId: hit.rsId,
-            msFeatureId: hit.msId,
-            matchNote: hit.note,
-          } satisfies DagMapAreaRow;
-        } catch {
-          return { dagNo } satisfies DagMapAreaRow;
-        }
-      }),
+      slice.map((dagNo) => queryRsAreaForDag(dagNo, input)),
     );
     results.push(...settled);
   }
 
-  const byDag = new Map(results.map((r) => [r.dagNo, r]));
+  const byDag = new Map(results.map((row) => [row.dagNo, row]));
   return input.dags.map((dagNo) => byDag.get(dagNo) ?? { dagNo });
 }
