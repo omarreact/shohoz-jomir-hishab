@@ -19,7 +19,7 @@ import type {
   RajukPlotFeature,
   RajukUpazila,
 } from "@/src/types/rajuk-runtime";
-import { areaFromPlotAttributes, formatAreaValue } from "@/src/modules/land/plotArea";
+import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), { ssr: false });
@@ -374,7 +374,7 @@ export default function RajukTestPage() {
   const resultRows = useMemo(() => {
     if (!selected) return [];
     const attributes = selected.attributes as Record<string, unknown>;
-    const area = areaFromPlotAttributes(attributes);
+    const area = acreFromJsonAttributes(attributes);
     const rawNo = plotNo(selected, mode);
     const bare = normalizePlotInput(rawNo, mode);
     const prefix = mode === "rs" ? "আর এস" : "এম এস";
@@ -382,8 +382,7 @@ export default function RajukTestPage() {
       { label: `${prefix} প্লট নম্বর`, value: `${prefix}-${bare}` },
       { label: "প্লট নং", value: bare },
       { label: "জে.এল. নং", value: attrStr(attributes, ["jl_no", "rs_jl_no", "ms_jl_no"]) },
-      { label: "পরিমাণ (শতাংশ)", value: area.isValid ? `${formatAreaValue(area.shotok, 4)} শতাংশ` : "—" },
-      { label: "পরিমাণ (কাঠা)", value: area.isValid ? `${formatAreaValue(area.katha)} কাঠা` : "—" },
+      { label: "পরিমাণ (একর)", value: formatAcre(area?.acre) },
       { label: "মৌজা", value: attrStr(attributes, ["mauza", `${mode}_mauza_name`, "mauza_name"]) },
       { label: "থানা / উপজেলা", value: attrStr(attributes, ["upazila_ps", "thana_upazila", "upazila"]) },
       { label: "জেলা", value: attrStr(attributes, ["m_district", "district", "district_name"]) },
@@ -394,12 +393,11 @@ export default function RajukTestPage() {
   const msRows = useMemo(
     () => msInside.map((feature, index) => {
       const attributes = feature.attributes as Record<string, unknown>;
-      const area = areaFromPlotAttributes(attributes);
+      const area = acreFromJsonAttributes(attributes);
       const no = plotNo(feature, "ms") || String(index + 1);
       return {
         no,
-        shotok: area.isValid ? formatAreaValue(area.shotok, 4) : "—",
-        katha: area.isValid ? formatAreaValue(area.katha) : "—",
+        acre: formatAcre(area?.acre),
       };
     }),
     [msInside],
@@ -666,7 +664,7 @@ export default function RajukTestPage() {
               {msMatches.map((feature, index) => {
                 const attributes = feature.attributes as Record<string, unknown>;
                 const address = attrStr(attributes, ["address_search", "address"]);
-                const area = areaFromPlotAttributes(attributes);
+                const area = acreFromJsonAttributes(attributes);
                 const active = feature === selected;
                 return (
                   <button
@@ -677,7 +675,7 @@ export default function RajukTestPage() {
                   >
                     <span className="block text-sm font-semibold">{address}</span>
                     <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
-                      {area.isValid ? `${formatAreaValue(area.shotok, 4)} শতাংশ · ${formatAreaValue(area.katha)} কাঠা` : "জমির পরিমাণ পাওয়া যায়নি"}
+                      {area ? formatAcre(area.acre) : "জমির পরিমাণ পাওয়া যায়নি"}
                     </span>
                   </button>
                 );
@@ -750,8 +748,7 @@ export default function RajukTestPage() {
                           <tr>
                             <th className="px-3 py-2">ক্রম</th>
                             <th className="px-3 py-2">এম এস প্লট নম্বর</th>
-                            <th className="px-3 py-2">পরিমাণ (শতাংশ)</th>
-                            <th className="px-3 py-2">পরিমাণ (কাঠা)</th>
+                            <th className="px-3 py-2">পরিমাণ (একর)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -759,8 +756,7 @@ export default function RajukTestPage() {
                             <tr key={`${row.no}-${index}`} className="border-t border-violet-100">
                               <td className="px-3 py-2">{index + 1}</td>
                               <td className="px-3 py-2 font-medium">এম এস-{normalizePlotInput(row.no, "ms")}</td>
-                              <td className="px-3 py-2">{row.shotok}</td>
-                              <td className="px-3 py-2">{row.katha}</td>
+                              <td className="px-3 py-2">{row.acre}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -771,7 +767,7 @@ export default function RajukTestPage() {
               ) : null}
 
               <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-500">
-                তথ্য রাজউকের উপলব্ধ সার্ভে ডেটা থেকে নেওয়া হয়েছে। আনুষ্ঠানিক কাজে সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।
+                জমির পরিমাণ শুধু রাজউক JSON ডেটার বিদ্যমান area field থেকে Acre-এ দেখানো হয়; polygon/coordinate থেকে area গণনা করা হয় না। আনুষ্ঠানিক কাজে সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।
               </p>
             </div>
 
