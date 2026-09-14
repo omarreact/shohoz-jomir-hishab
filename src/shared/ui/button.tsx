@@ -4,18 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/src/shared/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
   {
     variants: {
       variant: {
-        default: "bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200",
-        primary: "bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200",
-        dark: "bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700",
+        default: "border border-[color-mix(in_srgb,var(--brand-gold-strong)_70%,transparent)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_8px_20px_rgba(222,164,20,0.18)] hover:-translate-y-px hover:bg-[var(--brand-gold-strong)] hover:shadow-[0_10px_24px_rgba(222,164,20,0.24)]",
+        primary: "border border-[color-mix(in_srgb,var(--brand-gold-strong)_70%,transparent)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_8px_20px_rgba(222,164,20,0.18)] hover:-translate-y-px hover:bg-[var(--brand-gold-strong)] hover:shadow-[0_10px_24px_rgba(222,164,20,0.24)]",
+        dark: "bg-[var(--foreground)] text-[var(--card-bg)] shadow-sm hover:opacity-90",
         destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700",
-        outline: "border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-sm hover:bg-[var(--secondary)]",
-        secondary: "bg-[var(--secondary)] text-[var(--foreground)] hover:bg-[var(--accent)]",
-        ghost: "hover:bg-[var(--secondary)] hover:text-[var(--foreground)]",
-        link: "text-[var(--foreground)] underline-offset-4 hover:underline",
+        outline: "border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-sm hover:border-[color-mix(in_srgb,var(--brand-gold)_45%,var(--border-color))] hover:bg-[var(--brand-gold-faint)]",
+        secondary: "border border-[color-mix(in_srgb,var(--brand-gold)_18%,var(--border-color))] bg-[var(--secondary)] text-[var(--foreground)] hover:bg-[var(--brand-gold-soft)]",
+        ghost: "text-[var(--foreground)] hover:bg-[var(--secondary)]",
+        link: "text-[#9a6700] underline-offset-4 hover:underline dark:text-[#f7d36f]",
       },
       size: {
         default: "h-10 px-4 py-2.5 has-[>svg]:px-3",
