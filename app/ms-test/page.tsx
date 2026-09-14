@@ -17,7 +17,7 @@ import type {
   RajukPlotFeature,
   RajukUpazila,
 } from "@/src/types/rajuk-runtime";
-import { areaFromPlotAttributes, formatAreaValue } from "@/src/modules/land/plotArea";
+import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), {
@@ -98,7 +98,7 @@ function useMsAddressCascade() {
   const [mouzas, setMouzas] = useState<RajukMauza[]>([]);
   const [dGuid, setDGuid] = useState("");
   const [tGuid, setTGuid] = useState("");
-  const [mauzaId, setMauzaId] = useState("");
+  const [mauzaId, setMouzaId] = useState("");
   const [loading, setLoading] = useState<
     "" | "district" | "upazila" | "mouza"
   >("");
@@ -277,7 +277,7 @@ export default function MsTestPage() {
   const resultRows = useMemo(() => {
     if (!selected) return [];
     const a = selected.attributes as Record<string, unknown>;
-    const area = areaFromPlotAttributes(a);
+    const area = acreFromJsonAttributes(a);
     const plotDisplay = msPlotNo(selected);
     const bare = normalizePlotInput(plotDisplay);
     return [
@@ -293,8 +293,8 @@ export default function MsTestPage() {
         value: attrStr(a, ["jl_no", "ms_jl_no", "rs_jl_no"]),
       },
       {
-        label: "Area (katha)",
-        value: area.isValid ? formatAreaValue(area.katha) : "—",
+        label: "Area (Acre)",
+        value: formatAcre(area?.acre),
       },
       {
         label: "Mauza",
@@ -496,6 +496,10 @@ export default function MsTestPage() {
                 </tbody>
               </table>
             </div>
+
+            <p className="text-xs leading-5 text-slate-500">
+              Area is read only from an existing JSON area field and displayed in Acre. Polygon/coordinate geometry is not used for area calculation.
+            </p>
 
             {isLoggedIn && lastRequestUrl && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
