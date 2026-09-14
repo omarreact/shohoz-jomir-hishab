@@ -10,7 +10,7 @@ export const SITE_CONFIG = {
   contactEmail: "support@landbd.pincodeit.com",
   theme: {
     default: "light" as const,
-    allowDark: true,
+    allowDark: false,
   },
   /** Shown under calculator / map results. */
   legalDisclaimer:
