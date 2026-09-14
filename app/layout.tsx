@@ -73,7 +73,9 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme={SITE_CONFIG.theme.default}
-          enableSystem
+          forcedTheme="light"
+          enableSystem={false}
+          enableColorScheme={false}
           disableTransitionOnChange
         >
           <ConditionalShell>{children}</ConditionalShell>
