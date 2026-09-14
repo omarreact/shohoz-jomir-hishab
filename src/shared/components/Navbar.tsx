@@ -2,37 +2,51 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Calculator,
-  Search,
-  Map,
-  FileText,
   BookOpen,
-  Ruler,
-  Users,
-  Menu,
-  X,
+  Calculator,
+  ChevronDown,
+  FileText,
+  Home,
   LogIn,
   LogOut,
-  ShieldCheck,
-  User,
+  Map,
+  Menu,
   Moon,
+  Ruler,
+  Search,
+  ShieldCheck,
   Sun,
-  Home,
+  User,
+  Users,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 import {
   FEATURE_LABELS,
   FEATURE_ROUTES,
-  PRIMARY_NAV_KEYS,
   type FeatureRouteKey,
 } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavItem = {
+  key: FeatureRouteKey;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+};
+
+type NavGroup = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  items: NavItem[];
+};
 
 const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   home: Home,
@@ -44,58 +58,81 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   mouzaDownload: Map,
   mapQa: Map,
   documents: FileText,
+  history: BookOpen,
   blog: BookOpen,
   faq: BookOpen,
+  contact: Users,
+  privacy: ShieldCheck,
+  terms: FileText,
   login: LogIn,
   admin: ShieldCheck,
 };
 
-function buildPrimaryNav(): NavItem[] {
-  return PRIMARY_NAV_KEYS.map((key) => ({
+function navItem(key: FeatureRouteKey, options?: { adminOnly?: boolean }): NavItem {
+  return {
+    key,
     href: FEATURE_ROUTES[key],
     label: FEATURE_LABELS[key].bn,
-    icon: NAV_ICONS[key] ?? Calculator,
-  }));
+    icon: NAV_ICONS[key] ?? FileText,
+    adminOnly: options?.adminOnly,
+  };
 }
 
-const PRIMARY_NAV = buildPrimaryNav();
-
-/** Visitors cannot open these from nav when logged out (pages may still be public). */
-const AUTH_REQUIRED_HREFS = new Set<string>([
-  FEATURE_ROUTES.documents,
-]);
-
-const TOOL_HREFS = new Set<string>([
-  FEATURE_ROUTES.records,
-  FEATURE_ROUTES.dlrmsKhatian,
-  FEATURE_ROUTES.landMeasurement,
-  FEATURE_ROUTES.inheritance,
-  FEATURE_ROUTES.documents,
-]);
-
-const MAP_KNOWLEDGE_HREFS = new Set<string>([
-  FEATURE_ROUTES.landMap,
-  FEATURE_ROUTES.mouzaDownload,
-  FEATURE_ROUTES.blog,
-]);
-
-const SEARCH_NAV: NavItem[] = [
-  { href: FEATURE_ROUTES.home, label: FEATURE_LABELS.home.bn, icon: Home },
-  ...PRIMARY_NAV,
+const NAV_GROUPS: NavGroup[] = [
   {
-    href: FEATURE_ROUTES.contact,
-    label: FEATURE_LABELS.contact.bn,
-    icon: Users,
+    id: "records",
+    label: "খতিয়ান ও রেকর্ড",
+    icon: FileText,
+    items: [
+      navItem("records"),
+      navItem("dlrmsKhatian"),
+      navItem("documents"),
+      navItem("history"),
+    ],
   },
   {
-    href: FEATURE_ROUTES.faq,
-    label: FEATURE_LABELS.faq.bn,
+    id: "calculations",
+    label: "হিসাব ও উত্তরাধিকার",
+    icon: Calculator,
+    items: [navItem("landMeasurement"), navItem("inheritance")],
+  },
+  {
+    id: "maps",
+    label: "মানচিত্র ও প্লট",
+    icon: Map,
+    items: [
+      navItem("landMap"),
+      navItem("mouzaDownload"),
+      navItem("mapQa", { adminOnly: true }),
+    ],
+  },
+  {
+    id: "help",
+    label: "সহায়তা",
     icon: BookOpen,
+    items: [navItem("blog"), navItem("faq"), navItem("contact")],
+  },
+  {
+    id: "policies",
+    label: "তথ্য ও নীতিমালা",
+    icon: ShieldCheck,
+    items: [navItem("terms"), navItem("privacy")],
   },
 ];
 
+function normalizePath(value: string) {
+  if (!value || value === "/") return "/";
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
 function activePath(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const current = normalizePath(pathname);
+  const target = normalizePath(href);
+  return target === "/" ? current === "/" : current === target || current.startsWith(`${target}/`);
+}
+
+function groupIsActive(pathname: string, group: NavGroup) {
+  return group.items.some((item) => activePath(pathname, item.href));
 }
 
 export default function Navbar() {
@@ -104,20 +141,44 @@ export default function Navbar() {
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
   const { theme, setTheme } = useTheme();
-  const { isLoggedIn, loading: authLoading, logout } = useAuth();
-  const visiblePrimaryNav = useMemo(
+  const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
+  const canSeeMapQa = isAdminRole(user?.role);
+
+  const visibleGroups = useMemo(
     () =>
-      PRIMARY_NAV.filter(
-        (item) => isLoggedIn || !AUTH_REQUIRED_HREFS.has(item.href),
-      ),
-    [isLoggedIn],
+      NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !item.adminOnly || canSeeMapQa),
+      })).filter((group) => group.items.length > 0),
+    [canSeeMapQa],
   );
+
+  const searchableNav = useMemo<NavItem[]>(
+    () => [navItem("home"), ...visibleGroups.flatMap((group) => group.items)],
+    [visibleGroups],
+  );
+
+  const activeGroupId = useMemo(
+    () => visibleGroups.find((group) => groupIsActive(pathname, group))?.id ?? null,
+    [pathname, visibleGroups],
+  );
+
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
+  const [desktopOpenGroup, setDesktopOpenGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const desktopNavRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setDesktopOpenGroup(null);
+    setSearchOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
@@ -127,105 +188,209 @@ export default function Navbar() {
       if (event.key === "Escape") {
         setSearchOpen(false);
         setMobileOpen(false);
+        setDesktopOpenGroup(null);
       }
     };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        desktopOpenGroup &&
+        desktopNavRef.current &&
+        !desktopNavRef.current.contains(event.target as Node)
+      ) {
+        setDesktopOpenGroup(null);
+      }
+    };
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [desktopOpenGroup]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return SEARCH_NAV.filter(
+    return searchableNav.filter(
       (item) =>
-        (isLoggedIn || !AUTH_REQUIRED_HREFS.has(item.href)) &&
-        (!q ||
-          item.label.toLowerCase().includes(q) ||
-          item.href.includes(q)),
+        !q ||
+        item.label.toLowerCase().includes(q) ||
+        item.href.toLowerCase().includes(q),
     );
-  }, [query, isLoggedIn]);
+  }, [query, searchableNav]);
 
   const handleLogout = async () => {
     await logout();
     window.location.assign("/");
   };
 
+  const openMobileMenu = () => {
+    setMobileGroup(activeGroupId ?? "records");
+    setMobileOpen(true);
+  };
+
+  const openSearchFromMobile = () => {
+    setMobileOpen(false);
+    setSearchOpen(true);
+  };
+
   const shell =
-    "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_92%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
+    "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
 
   return (
     <>
       <nav
-        className={`${isMapRoute ? "absolute top-0 left-0 right-0" : "sticky top-0"} z-[1100] px-3 pt-3 sm:px-4`}
+        className={`${isMapRoute ? "absolute left-0 right-0 top-0" : "sticky top-0"} z-[1100] px-3 pt-3 sm:px-4`}
         aria-label="প্রধান নেভিগেশন"
       >
         <div
-          className={`mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}
+          className={`mx-auto flex h-14 max-w-[1440px] items-center gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}
         >
           <Link
             href={FEATURE_ROUTES.home}
-            className="flex min-w-0 shrink items-center gap-2 no-underline"
+            className="flex min-w-0 shrink-0 items-center gap-2 no-underline"
             onClick={() => setMobileOpen(false)}
+            aria-label={`${SITE_CONFIG.name} — হোম`}
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)] shadow-sm">
               <Calculator size={18} />
             </span>
-            <span className="truncate text-sm font-bold tracking-tight sm:text-base">
-              {SITE_CONFIG.name}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold tracking-tight sm:text-base">
+                {SITE_CONFIG.name}
+              </span>
+              <span className="hidden text-[10px] font-medium leading-none text-[var(--muted-foreground)] sm:block">
+                {SITE_CONFIG.shortName}
+              </span>
             </span>
           </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
-            {visiblePrimaryNav.map(({ href, label }) => {
-              const active = activePath(pathname, href);
+          <div
+            ref={desktopNavRef}
+            className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex"
+          >
+            {visibleGroups.map((group) => {
+              const GroupIcon = group.icon;
+              const active = groupIsActive(pathname, group);
+              const open = desktopOpenGroup === group.id;
+
               return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`rounded-xl px-3 py-2 text-sm font-semibold no-underline transition-colors ${
-                    active
-                      ? "bg-[var(--secondary)] text-[var(--foreground)]"
-                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                  }`}
+                <div
+                  key={group.id}
+                  className="relative"
+                  onMouseEnter={() => setDesktopOpenGroup(group.id)}
+                  onMouseLeave={() => setDesktopOpenGroup(null)}
                 >
-                  {label}
-                </Link>
+                  <button
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    onClick={() => setDesktopOpenGroup(open ? null : group.id)}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006a4e]/35 2xl:px-3 2xl:text-sm ${
+                      active
+                        ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                        : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                    }`}
+                  >
+                    <GroupIcon size={15} className="shrink-0" />
+                    <span className="whitespace-nowrap">{group.label}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  <div
+                    className={`absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 pt-2 transition-all duration-150 ${
+                      open
+                        ? "visible translate-y-0 opacity-100"
+                        : "invisible -translate-y-1 opacity-0 pointer-events-none"
+                    }`}
+                  >
+                    <div
+                      className={`rounded-2xl p-1.5 shadow-xl shadow-black/10 ${shell}`}
+                      role="menu"
+                      aria-label={group.label}
+                    >
+                      <div className="px-3 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                        {group.label}
+                      </div>
+                      {group.items.map((item) => {
+                        const ItemIcon = item.icon;
+                        const itemActive = activePath(pathname, item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            role="menuitem"
+                            onClick={() => setDesktopOpenGroup(null)}
+                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
+                              itemActive
+                                ? "bg-[#006a4e] text-white"
+                                : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                            }`}
+                          >
+                            <span
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                itemActive
+                                  ? "bg-white/15 text-white"
+                                  : "bg-[var(--secondary)] text-[var(--foreground)]"
+                              }`}
+                            >
+                              <ItemIcon size={15} />
+                            </span>
+                            <span className="min-w-0 flex-1">{item.label}</span>
+                            {itemActive ? (
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                            ) : null}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <button
               type="button"
               aria-label="সার্চ"
               onClick={() => setSearchOpen(true)}
-              className="hidden items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] md:flex"
+              className="hidden items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] md:flex"
             >
               <Search size={15} />
               <span>সার্চ</span>
-              <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px]">
+              <kbd className="hidden rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px] 2xl:inline">
                 Ctrl K
               </kbd>
             </button>
+
             {mounted && (
               <button
+                type="button"
                 aria-label="থিম পরিবর্তন"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] hover:bg-[var(--secondary)] md:flex"
+                className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)] md:flex"
               >
                 {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
               </button>
             )}
+
             {authLoading ? null : isLoggedIn ? (
               <div className="hidden items-center gap-2 md:flex">
                 <Link
                   href={FEATURE_ROUTES.admin}
-                  className="flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-semibold no-underline hover:bg-[var(--secondary)]"
+                  className="flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-semibold no-underline transition-colors hover:bg-[var(--secondary)]"
                 >
                   <ShieldCheck size={15} /> ড্যাশবোর্ড
                 </Link>
                 <button
+                  type="button"
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20"
                 >
                   <LogOut size={15} /> লগআউট
                 </button>
@@ -233,16 +398,18 @@ export default function Navbar() {
             ) : (
               <Link
                 href={FEATURE_ROUTES.login}
-                className="hidden items-center gap-1.5 rounded-xl bg-[var(--foreground)] px-4 py-2 text-sm font-bold text-[var(--primary-foreground)] no-underline hover:opacity-90 md:flex"
+                className="hidden items-center gap-1.5 rounded-xl bg-[var(--foreground)] px-4 py-2 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90 md:flex"
               >
                 <LogIn size={15} /> {FEATURE_LABELS.login.bn}
               </Link>
             )}
+
             <button
               type="button"
               aria-label="মেনু"
-              onClick={() => setMobileOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] lg:hidden"
+              aria-expanded={mobileOpen}
+              onClick={openMobileMenu}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] xl:hidden"
             >
               <Menu size={19} />
             </button>
@@ -257,18 +424,25 @@ export default function Navbar() {
         >
           <div
             className={`w-full max-w-xl overflow-hidden rounded-2xl ${shell}`}
-            onMouseDown={(e) => e.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="সাইট সার্চ"
           >
             <div className="flex items-center gap-3 border-b border-[var(--border-color)] px-4">
               <Search size={18} />
               <input
                 autoFocus
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="টুল, ব্লগ বা পেজ খুঁজুন..."
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="টুল, মানচিত্র, ব্লগ বা পেজ খুঁজুন..."
                 className="h-14 flex-1 bg-transparent text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
               />
-              <button type="button" onClick={() => setSearchOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                aria-label="সার্চ বন্ধ করুন"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -278,7 +452,11 @@ export default function Navbar() {
                   key={href}
                   href={href}
                   onClick={() => setSearchOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[var(--muted-foreground)] no-underline hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold no-underline transition-colors ${
+                    activePath(pathname, href)
+                      ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                  }`}
                 >
                   <Icon size={17} /> {label}
                 </Link>
@@ -294,7 +472,7 @@ export default function Navbar() {
       )}
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-[1250] lg:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[1250] xl:hidden" role="dialog" aria-modal="true">
           <button
             type="button"
             aria-label="মেনু বন্ধ করুন"
@@ -302,87 +480,104 @@ export default function Navbar() {
             onClick={() => setMobileOpen(false)}
           />
           <aside
-            className={`absolute right-0 top-0 flex h-full w-[310px] max-w-[88vw] flex-col p-4 ${shell}`}
+            className={`absolute right-0 top-0 flex h-full w-[340px] max-w-[92vw] flex-col p-4 ${shell}`}
           >
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
               <Link
                 href={FEATURE_ROUTES.home}
-                className="flex items-center gap-2 no-underline"
+                className="flex min-w-0 items-center gap-2 no-underline"
                 onClick={() => setMobileOpen(false)}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
                   <Calculator size={18} />
                 </span>
-                <strong className="text-sm">{SITE_CONFIG.name}</strong>
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm">{SITE_CONFIG.name}</strong>
+                  <span className="block text-[10px] text-[var(--muted-foreground)]">
+                    {SITE_CONFIG.shortName}
+                  </span>
+                </span>
               </Link>
-              <button type="button" onClick={() => setMobileOpen(false)}>
-                <X />
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="মেনু বন্ধ করুন"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)]"
+              >
+                <X size={19} />
               </button>
             </div>
+
             <div className="flex flex-1 flex-col gap-1 overflow-y-auto py-4">
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                হিসাব টুলস
-              </p>
-              {PRIMARY_NAV.filter(
-                (i) =>
-                  TOOL_HREFS.has(i.href) &&
-                  (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
-              ).map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline ${
-                    activePath(pathname, href)
-                      ? "bg-[var(--secondary)]"
-                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
-                  }`}
-                >
-                  <Icon size={18} /> {label}
-                </Link>
-              ))}
-              <p className="mt-3 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                মানচিত্র ও জ্ঞান
-              </p>
-              {PRIMARY_NAV.filter(
-                (i) =>
-                  MAP_KNOWLEDGE_HREFS.has(i.href) &&
-                  (isLoggedIn || !AUTH_REQUIRED_HREFS.has(i.href)),
-              ).map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline ${
-                    activePath(pathname, href)
-                      ? "bg-[var(--secondary)] text-[var(--foreground)]"
-                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
-                  }`}
-                >
-                  <Icon size={18} /> {label}
-                </Link>
-              ))}
-              <Link
-                href={FEATURE_ROUTES.faq}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
-              >
-                <BookOpen size={18} /> {FEATURE_LABELS.faq.bn}
-              </Link>
-              <Link
-                href={FEATURE_ROUTES.contact}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold no-underline text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
-              >
-                <Users size={18} /> {FEATURE_LABELS.contact.bn}
-              </Link>
+              {visibleGroups.map((group) => {
+                const GroupIcon = group.icon;
+                const groupActive = groupIsActive(pathname, group);
+                const expanded = mobileGroup === group.id;
+
+                return (
+                  <div key={group.id} className="rounded-xl">
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      onClick={() => setMobileGroup(expanded ? null : group.id)}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
+                        groupActive
+                          ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                          : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--secondary)] text-[var(--foreground)]">
+                        <GroupIcon size={16} />
+                      </span>
+                      <span className="min-w-0 flex-1">{group.label}</span>
+                      <ChevronDown
+                        size={16}
+                        className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {expanded ? (
+                      <div className="ml-7 mt-1 space-y-1 border-l border-[var(--border-color)] pl-3">
+                        {group.items.map((item) => {
+                          const ItemIcon = item.icon;
+                          const itemActive = activePath(pathname, item.href);
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMobileOpen(false)}
+                              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
+                                itemActive
+                                  ? "bg-[#006a4e] text-white"
+                                  : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                              }`}
+                            >
+                              <ItemIcon size={16} className="shrink-0" />
+                              {item.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
-            <div className="border-t border-[var(--border-color)] pt-4">
+
+            <div className="space-y-2 border-t border-[var(--border-color)] pt-4">
+              <button
+                type="button"
+                onClick={openSearchFromMobile}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-4 py-3 text-sm font-bold"
+              >
+                <Search size={16} /> সার্চ
+              </button>
+
               {mounted && (
                 <button
                   type="button"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="mb-3 flex w-full items-center justify-between rounded-xl border border-[var(--border-color)] px-4 py-3 text-sm"
+                  className="flex w-full items-center justify-between rounded-xl border border-[var(--border-color)] px-4 py-3 text-sm"
                 >
                   <span className="flex items-center gap-2">
                     {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />} থিম
@@ -390,6 +585,7 @@ export default function Navbar() {
                   <span>{theme === "dark" ? "ডার্ক" : "লাইট"}</span>
                 </button>
               )}
+
               {isLoggedIn ? (
                 <div className="grid gap-2">
                   <Link
@@ -402,7 +598,7 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-red-600"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-red-200 py-3 font-semibold text-red-600"
                   >
                     <LogOut size={16} /> লগআউট
                   </button>
