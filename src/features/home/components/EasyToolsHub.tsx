@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import {
+  BookOpen,
   Calculator,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  Map,
+  Phone,
   Ruler,
   Scale,
-  Map,
-  FileText,
-  BookOpen,
-  HelpCircle,
-  Phone,
-  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
@@ -18,174 +18,157 @@ import { SITE_CONFIG } from "@/src/shared/config/site";
 
 type Tool = {
   href: string;
-  number: string;
   title: string;
   short: string;
   hint: string;
   icon: LucideIcon;
-  accent: string;
+  iconClass: string;
 };
 
-/** সব প্রধান সুবিধা — এক ট্যাপে খোলা যায় */
 const TOOLS: Tool[] = [
   {
     href: FEATURE_ROUTES.records,
-    number: "১",
     title: "খতিয়ান হিসাব",
     short: "আনা · গন্ডা · শতাংশ",
     hint: "সিএস, এসএ, আরএস খতিয়ানের হিসাব করুন",
     icon: Calculator,
-    accent: "bg-emerald-600",
+    iconClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
   },
   {
     href: FEATURE_ROUTES.landMeasurement,
-    number: "২",
     title: "জমি পরিমাপ",
     short: "কাঠা · শতক · একর",
     hint: "জমির মাপ লিখে এককে রূপান্তর করুন",
     icon: Ruler,
-    accent: "bg-teal-600",
+    iconClass: "bg-blue-500/10 text-blue-600 dark:text-blue-300",
   },
   {
     href: FEATURE_ROUTES.inheritance,
-    number: "৩",
     title: "ফারায়েজ",
     short: "উত্তরাধিকার বণ্টন",
     hint: "ওয়ারিশদের অংশ সহজে হিসাব করুন",
     icon: Scale,
-    accent: "bg-cyan-700",
+    iconClass: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
   },
   {
     href: FEATURE_ROUTES.landMap,
-    number: "৪",
-    title: "মানচিত্র",
+    title: "রাজউক মানচিত্র",
     short: "RS · MS প্লট",
-    hint: "মানচিত্রে দাগ দেখুন ও ট্যাপ করুন",
+    hint: "মানচিত্রে দাগ ও মৌজা দেখুন",
     icon: Map,
-    accent: "bg-[#006a4e]",
+    iconClass: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
   },
   {
     href: FEATURE_ROUTES.documents,
-    number: "৫",
     title: "পর্চা",
     short: "নথি ও তথ্য",
-    hint: "পর্চা সম্পর্কিত সহায়ক তথ্য",
+    hint: "পর্চা সম্পর্কিত সহায়ক তথ্য দেখুন",
     icon: FileText,
-    accent: "bg-slate-700",
+    iconClass: "bg-rose-500/10 text-rose-600 dark:text-rose-300",
   },
   {
     href: FEATURE_ROUTES.blog,
-    number: "৬",
     title: "ব্লগ ও গাইড",
     short: "সহজ ব্যাখ্যা",
     hint: "ভূমি বিষয়ে সহজ ভাষায় পড়ুন",
     icon: BookOpen,
-    accent: "bg-indigo-700",
+    iconClass: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
   },
 ];
 
 const STEPS = [
-  { n: "১", t: "উপরে একটি বোতাম চাপুন" },
-  { n: "২", t: "প্রয়োজনীয় তথ্য লিখুন" },
+  { n: "১", t: "প্রয়োজনীয় সেবা বেছে নিন" },
+  { n: "২", t: "আপনার তথ্য লিখুন" },
   { n: "৩", t: "ফলাফল দেখুন বা সংরক্ষণ করুন" },
 ];
 
 export default function EasyToolsHub() {
   return (
-    <section className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        {/* Title — large, clear for all ages */}
-        <div className="mb-8 text-center sm:mb-10">
-          <p className="mb-2 text-base font-bold text-[#006a4e] sm:text-lg">
-            {SITE_CONFIG.name}
-          </p>
-          <h1 className="mb-3 text-3xl font-extrabold leading-snug text-slate-900 dark:text-white sm:text-4xl md:text-5xl">
-            আপনি কী করতে চান?
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-700 dark:text-slate-300 sm:text-xl">
-            নিচের বড় বোতামগুলো থেকে বেছে নিন। কোনো অ্যাকাউন্ট লাগবে না।
+    <section id="tools" className="border-b border-[var(--border-color)] bg-[var(--background)]">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <span className="landbd-section-kicker inline-flex px-3 py-1.5 text-xs font-bold">
+              দ্রুত সেবা
+            </span>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-4xl">
+              প্রয়োজনীয় কাজ এক জায়গায়
+            </h2>
+            <p className="mt-2 max-w-2xl text-base leading-7 text-[var(--muted-foreground)]">
+              আপনার প্রয়োজন অনুযায়ী টুল বেছে নিন—সব সেবা মোবাইল ও ডেস্কটপে সহজভাবে ব্যবহার করা যায়।
+            </p>
+          </div>
+          <p className="text-sm font-semibold text-[var(--muted-foreground)]">
+            {SITE_CONFIG.shortName}
           </p>
         </div>
 
-        {/* Big tool grid */}
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((tool) => (
             <Link
               key={tool.href}
               href={tool.href}
-              className="group flex min-h-[7.5rem] items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-4 text-left no-underline shadow-sm transition hover:border-[#006a4e] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006a4e] active:scale-[0.99] dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-500 sm:min-h-[8.5rem] sm:gap-5 sm:p-5"
+              className="group landbd-card flex min-h-[12rem] flex-col p-5 text-left no-underline transition hover:-translate-y-1 hover:border-[color-mix(in_srgb,var(--brand-gold)_35%,var(--border-color))] hover:shadow-[var(--shadow-md)]"
             >
-              <div
-                className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white sm:h-16 sm:w-16 ${tool.accent}`}
-                aria-hidden
-              >
-                <tool.icon className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.25} />
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${tool.iconClass}`} aria-hidden>
+                <tool.icon className="h-6 w-6" strokeWidth={2.1} />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="mb-0.5 flex items-center gap-2">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm font-extrabold text-slate-800 dark:bg-slate-800 dark:text-slate-100">
-                    {tool.number}
-                  </span>
-                  <h2 className="m-0 text-xl font-extrabold text-slate-900 dark:text-white sm:text-2xl">
-                    {tool.title}
-                  </h2>
-                </div>
-                <p className="m-0 text-base font-semibold text-[#006a4e] dark:text-emerald-400">
-                  {tool.short}
-                </p>
-                <p className="m-0 mt-1 text-sm leading-snug text-slate-600 dark:text-slate-400 sm:text-base">
-                  {tool.hint}
-                </p>
+
+              <div className="mt-5 flex-1">
+                <h3 className="text-lg font-extrabold text-[var(--foreground)]">{tool.title}</h3>
+                <p className="mt-1 text-sm font-bold text-[#9a6700] dark:text-[#f7d36f]">{tool.short}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{tool.hint}</p>
               </div>
-              <ChevronRight
-                className="h-7 w-7 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#006a4e] dark:text-slate-500"
-                aria-hidden
-              />
+
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--foreground)]">
+                খুলুন
+                <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </span>
             </Link>
           ))}
         </div>
 
-        {/* 3 easy steps */}
-        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900 sm:p-6">
-          <h2 className="mb-4 text-center text-xl font-extrabold text-slate-900 dark:text-white sm:text-2xl">
-            কীভাবে ব্যবহার করবেন?
-          </h2>
-          <ol className="m-0 grid list-none gap-3 p-0 sm:grid-cols-3">
-            {STEPS.map((s) => (
-              <li
-                key={s.n}
-                className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/80"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#006a4e] text-lg font-extrabold text-white">
-                  {s.n}
+        <div className="landbd-card-elevated mt-10 p-5 sm:p-6">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9a6700] dark:text-[#f7d36f]">
+                ব্যবহার পদ্ধতি
+              </p>
+              <h3 className="mt-1 text-xl font-extrabold text-[var(--foreground)] sm:text-2xl">
+                তিন ধাপে কাজ সম্পন্ন করুন
+              </h3>
+            </div>
+          </div>
+          <ol className="grid list-none gap-3 p-0 sm:grid-cols-3">
+            {STEPS.map((step) => (
+              <li key={step.n} className="flex items-center gap-3 rounded-xl bg-[var(--brand-gold-faint)] px-4 py-3.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-gold)] text-sm font-extrabold text-[var(--primary-foreground)]">
+                  {step.n}
                 </span>
-                <span className="text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg">
-                  {s.t}
-                </span>
+                <span className="text-sm font-bold text-[var(--foreground)] sm:text-base">{step.t}</span>
               </li>
             ))}
           </ol>
         </div>
 
-        {/* Help row */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href={FEATURE_ROUTES.faq}
-            className="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 text-base font-bold text-slate-800 no-underline transition hover:border-[#006a4e] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-5 text-sm font-bold text-[var(--foreground)] no-underline shadow-sm transition hover:border-[color-mix(in_srgb,var(--brand-gold)_40%,var(--border-color))] hover:bg-[var(--brand-gold-faint)]"
           >
-            <HelpCircle className="h-5 w-5 text-[#006a4e]" />
-            সাধারণ প্রশ্ন (FAQ)
+            <HelpCircle className="h-5 w-5 text-[#9a6700] dark:text-[#f7d36f]" />
+            সাধারণ প্রশ্ন
           </Link>
           <Link
             href={FEATURE_ROUTES.contact}
-            className="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 text-base font-bold text-slate-800 no-underline transition hover:border-[#006a4e] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-5 text-sm font-bold text-[var(--foreground)] no-underline shadow-sm transition hover:border-[color-mix(in_srgb,var(--brand-gold)_40%,var(--border-color))] hover:bg-[var(--brand-gold-faint)]"
           >
-            <Phone className="h-5 w-5 text-[#006a4e]" />
+            <Phone className="h-5 w-5 text-[#9a6700] dark:text-[#f7d36f]" />
             যোগাযোগ
           </Link>
         </div>
 
-        <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="mx-auto mt-8 max-w-2xl text-center text-xs leading-6 text-[var(--muted-foreground)]">
           {SITE_CONFIG.legalDisclaimer}
         </p>
       </div>

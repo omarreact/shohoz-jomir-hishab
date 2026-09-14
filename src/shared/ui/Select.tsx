@@ -19,7 +19,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={`mb-4 w-full ${className}`}>
         {label && (
-          <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label htmlFor={selectId} className="mb-1.5 block text-sm font-semibold text-[var(--foreground)]">
             {label}
             {props.required && <span className="ml-1 text-red-500">*</span>}
           </label>
@@ -29,7 +29,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
             ref={ref}
             id={selectId}
-            className={`flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:bg-slate-900 dark:text-white ${loading ? "pr-10" : ""} ${isInvalid ? "border-red-500 focus:ring-red-500/20" : "border-slate-200 focus:border-[#006a4e] focus:ring-[#006a4e]/20 dark:border-slate-800"}`}
+            className={`flex h-11 w-full items-center justify-between rounded-xl border bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--foreground)] shadow-sm transition-[border-color,box-shadow,background-color] focus:outline-none focus:ring-2 focus:ring-offset-0 ${loading ? "pr-10" : ""} ${
+              isInvalid
+                ? "border-red-500 focus:ring-red-500/20"
+                : "border-[var(--border-color)] focus:border-[var(--brand-gold)] focus:ring-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
+            }`}
             aria-invalid={isInvalid}
             aria-busy={loading}
             aria-describedby={error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined}
@@ -40,11 +44,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ))}
           </select>
           {loading && (
-            <Loader2 aria-hidden="true" className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 animate-spin text-[#006a4e] dark:text-emerald-300" size={17} />
+            <Loader2 aria-hidden="true" className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 animate-spin text-[#9a6700] dark:text-[#f7d36f]" size={17} />
           )}
         </div>
         {error && <div id={`${selectId}-error`} className="mt-1.5 text-sm font-medium text-red-500">{error}</div>}
-        {helperText && !error && <div id={`${selectId}-helper`} className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{helperText}</div>}
+        {helperText && !error && <div id={`${selectId}-helper`} className="mt-1.5 text-sm text-[var(--muted-foreground)]">{helperText}</div>}
       </div>
     );
   },

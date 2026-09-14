@@ -8,18 +8,22 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className = "", variant = "default", hoverEffect = false, children, style, ...props }, ref) => {
     const variants = {
-      default: "bg-[var(--card-bg)] text-[var(--foreground)] border border-[var(--border-color)] shadow-sm",
+      default:
+        "bg-[var(--card-bg)] text-[var(--foreground)] border border-[var(--border-color)] shadow-[var(--shadow-sm)]",
       glass:
-        "bg-[color-mix(in_srgb,var(--card-bg)_90%,transparent)] text-[var(--foreground)] border border-[var(--border-color)] shadow-sm backdrop-blur-lg",
-      outline: "bg-[var(--card-bg)] text-[var(--foreground)] border border-[var(--border-color)]",
+        "bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] border border-[var(--border-color)] shadow-[var(--shadow-sm)] backdrop-blur-xl",
+      outline:
+        "bg-[var(--card-bg)] text-[var(--foreground)] border border-[var(--border-color)]",
       flat: "bg-transparent border-0 text-[var(--foreground)]",
     };
 
     return (
       <div
         ref={ref}
-        className={`relative overflow-hidden rounded-[14px] transition-[border-color,box-shadow,transform] duration-200 ${variants[variant]} ${
-          hoverEffect ? "hover:-translate-y-px hover:shadow-md" : ""
+        className={`relative overflow-hidden rounded-2xl transition-[border-color,box-shadow,transform] duration-200 ${variants[variant]} ${
+          hoverEffect
+            ? "hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--brand-gold)_28%,var(--border-color))] hover:shadow-[var(--shadow-md)]"
+            : ""
         } ${className}`}
         style={style}
         {...props}
