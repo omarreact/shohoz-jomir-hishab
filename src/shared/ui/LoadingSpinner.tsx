@@ -1,42 +1,43 @@
+import { LoaderCircle } from "lucide-react";
+
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
-  color?: string;          // Bootstrap color name e.g. "success", "primary"
+  color?: string;
   label?: string;
   fullPage?: boolean;
 }
 
-const sizeMap = { sm: "1.5rem", md: "2.5rem", lg: "4rem" };
+const sizeMap = {
+  sm: "h-5 w-5",
+  md: "h-8 w-8",
+  lg: "h-11 w-11",
+};
 
-/**
- * Consistent loading spinner used across the app.
- * Optionally centres itself in the full viewport when fullPage=true.
- */
+/** Consistent LandBD loading state for inline and full-page use. */
 export default function LoadingSpinner({
   size = "md",
-  color = "success",
   label,
   fullPage = false,
 }: LoadingSpinnerProps) {
   const spinner = (
-    <div className="d-flex flex-column align-items-center gap-3">
-      <div
-        className={`spinner-border text-${color}`}
-        role="status"
-        style={{ width: sizeMap[size], height: sizeMap[size] }}
-      >
-        <span className="visually-hidden">লোড হচ্ছে...</span>
-      </div>
-      {label && <p className="text-secondary fw-bold mb-0">{label}</p>}
+    <div className="flex flex-col items-center justify-center gap-3 text-center" role="status">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]">
+        <LoaderCircle className={`${sizeMap[size]} animate-spin`} aria-hidden />
+      </span>
+      <span className="sr-only">লোড হচ্ছে...</span>
+      {label ? (
+        <p className="m-0 text-sm font-semibold text-[var(--muted-foreground)]">{label}</p>
+      ) : null}
     </div>
   );
 
   if (fullPage) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+      <div className="flex min-h-[70vh] items-center justify-center bg-[var(--background)] px-4 py-16">
         {spinner}
       </div>
     );
   }
 
-  return <div className="d-flex justify-content-center align-items-center p-5">{spinner}</div>;
+  return <div className="flex items-center justify-center px-4 py-10">{spinner}</div>;
 }
