@@ -28,24 +28,16 @@ export const Modal: React.FC<ModalProps> = ({
   size = "md",
   closeOnBackdropClick = true,
 }) => {
-  // Prevent body scrolling when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
 
-  // Handle escape key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isOpen) onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -53,97 +45,75 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && closeOnBackdropClick) {
-      onClose();
-    }
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget && closeOnBackdropClick) onClose();
   };
 
-  // Determine styles based on variant
-  let textColor = "text-slate-900 dark:text-white";
-  let descColor = "text-slate-500 dark:text-slate-400";
-  let borderClass = "border-b border-slate-200 dark:border-slate-800";
-  let iconContainerClass = "bg-[#006a4e]/10 text-[#006a4e]";
-  let customBg = "bg-white dark:bg-slate-900";
+  const maxWidthClass = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-2xl",
+    xl: "max-w-5xl",
+  }[size];
 
-  if (variant === "success") {
-    iconContainerClass = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
-  } else if (variant === "dark") {
-    textColor = "text-white";
-    descColor = "text-slate-300";
-    iconContainerClass = "bg-blue-500/20 text-blue-400";
-    customBg = "bg-slate-900";
-    borderClass = "border-b border-slate-800";
-  }
-
-  // Determine size
-  let maxWidthClass = "max-w-md";
-  if (size === "sm") maxWidthClass = "max-w-sm";
-  if (size === "lg") maxWidthClass = "max-w-2xl";
-  if (size === "xl") maxWidthClass = "max-w-5xl";
+  const iconClass =
+    variant === "success"
+      ? "bg-emerald-50 text-emerald-700"
+      : variant === "dark"
+        ? "bg-slate-100 text-slate-700"
+        : "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]";
 
   const defaultIcon =
     variant === "success" ? (
-      <CheckCircle2 size={24} />
+      <CheckCircle2 size={22} />
     ) : variant === "dark" ? (
-      <AlertCircle size={24} />
+      <AlertCircle size={22} />
     ) : (
-      <Info size={24} />
+      <Info size={22} />
     );
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[1400] flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
+      aria-label={title}
     >
       <div
-        className={`w-full ${maxWidthClass} ${customBg} rounded-3xl shadow-xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200`}
+        className={`flex max-h-[92dvh] w-full ${maxWidthClass} flex-col overflow-hidden rounded-t-3xl border border-[var(--border-color)] bg-white shadow-[var(--shadow-lg)] sm:rounded-3xl`}
       >
-        {/* Header */}
-        <div className={`p-6 flex items-start gap-4 ${borderClass}`}>
-          <div
-            className={`rounded-full flex items-center justify-center p-3 shrink-0 ${iconContainerClass}`}
-          >
+        <div className="flex items-start gap-3 border-b border-[var(--border-color)] px-4 py-4 sm:gap-4 sm:px-6 sm:py-5">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}>
             {icon || defaultIcon}
           </div>
-          <div className="flex-grow pt-1">
-            <h5 className={`font-bold text-xl mb-1 ${textColor}`}>{title}</h5>
-            {description && (
-              <p className={`text-sm m-0 ${descColor}`}>{description}</p>
-            )}
+          <div className="min-w-0 flex-1 pt-0.5">
+            <h2 className="text-lg font-extrabold leading-tight text-[var(--foreground)] sm:text-xl">
+              {title}
+            </h2>
+            {description ? (
+              <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{description}</p>
+            ) : null}
           </div>
           <button
             type="button"
-            className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors shrink-0"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-color)] text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
             onClick={onClose}
-            aria-label="Close"
+            aria-label="বন্ধ করুন"
           >
-            <X size={20} />
+            <X size={19} />
           </button>
         </div>
 
-        {/* Body */}
-        <div
-          className={`p-6 overflow-y-auto ${textColor}`}
-          style={{ flex: "1 1 auto" }}
-        >
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 text-[var(--foreground)] sm:px-6 sm:py-6">
           {children}
         </div>
 
-        {/* Footer */}
-        {footer && (
-          <div
-            className={`p-6 ${
-              variant === "dark"
-                ? "border-t border-slate-800"
-                : "border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
-            } rounded-b-3xl flex justify-end gap-3`}
-          >
+        {footer ? (
+          <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border-color)] bg-[#fafafa] px-4 py-3 sm:gap-3 sm:px-6 sm:py-4">
             {footer}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
