@@ -78,7 +78,7 @@ describe("strict RAJUK RS Dag matching", () => {
 
     expect(result.diagnostics.status).toBe("resolved");
     expect(result.diagnostics.adminCandidateCount).toBe(1);
-    expect(result.feature?.attributes.objectid).toBe(1);
+    expect(result.feature?.attributes?.objectid).toBe(1);
   });
 
   test("returns an explicit zero-match rejection reason", () => {
