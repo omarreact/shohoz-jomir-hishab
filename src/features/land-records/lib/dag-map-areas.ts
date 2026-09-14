@@ -28,6 +28,8 @@ export type DagMapLookupInput = {
   signal?: AbortSignal;
 };
 
+type PlotFeature = { attributes?: Record<string, unknown> };
+
 function normalizeToken(value: string): string {
   return value
     .replace(/\s+/g, " ")
@@ -112,6 +114,49 @@ function mouzaMatches(attrs: Record<string, unknown>, mouza: string): boolean {
   return address.includes(want);
 }
 
+async function fetchPlotFeatures(params: URLSearchParams, signal?: AbortSignal): Promise<PlotFeature[]> {
+  const res = await fetch(`/api/rajuk/query?${params.toString()}`, {
+    method: "GET",
+    signal,
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { features?: PlotFeature[] };
+  return Array.isArray(data.features) ? data.features : [];
+}
+
+function selectUniqueRsFallback(
+  features: PlotFeature[],
+  input: DagMapLookupInput,
+): { feature?: PlotFeature; note?: string } {
+  const jlCandidates = features.filter((feature) => {
+    const attrs = feature.attributes ?? {};
+    return isRsFeature(attrs) && jlMatches(attrs, input.jlNumber) && Boolean(areaFromAttributes(attrs));
+  });
+
+  if (!jlCandidates.length) return {};
+
+  // If the DLRMS and RAJUK Mouza names happen to use the same script/name,
+  // use that evidence first. We intentionally do not transliterate or guess.
+  const mouzaCandidates = jlCandidates.filter((feature) =>
+    mouzaMatches(feature.attributes ?? {}, input.mouzaName),
+  );
+  if (mouzaCandidates.length === 1) {
+    return { feature: mouzaCandidates[0], note: "RS match: plot + JL + mouza" };
+  }
+  if (mouzaCandidates.length > 1) {
+    return { note: "RS area unavailable: multiple plot/JL/mouza matches" };
+  }
+
+  // Bangla DLRMS Mouza names and English RAJUK Mouza names cannot be compared
+  // safely without a verified crosswalk. Exact plot + exact JL is accepted only
+  // when it identifies one and only one RS parcel; otherwise fail closed.
+  if (jlCandidates.length === 1) {
+    return { feature: jlCandidates[0], note: "RS match: unique plot + JL" };
+  }
+  return { note: "RS area unavailable: multiple plot/JL matches" };
+}
+
 async function queryPlotsForDag(
   dagNo: string,
   input: DagMapLookupInput,
@@ -122,6 +167,7 @@ async function queryPlotsForDag(
   msLabel?: string;
   rsId?: string;
   msId?: string;
+  note?: string;
 }> {
   const plotNo = Number(String(dagNo).replace(/[^0-9০-৯]/g, "").replace(/[০-৯]/g, (d) =>
     String("০১২৩৪৫৬৭৮৯".indexOf(d)),
@@ -137,17 +183,7 @@ async function queryPlotsForDag(
   if (input.jlNumber.trim()) params.set("jl", input.jlNumber.trim());
   if (input.upazilaName?.trim()) params.set("upazila", input.upazilaName.trim());
 
-  const res = await fetch(`/api/rajuk/query?${params.toString()}`, {
-    method: "GET",
-    signal: input.signal,
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) return {};
-
-  const data = (await res.json()) as {
-    features?: Array<{ attributes?: Record<string, unknown> }>;
-  };
-  const features = Array.isArray(data.features) ? data.features : [];
+  const features = await fetchPlotFeatures(params, input.signal);
 
   let rsAcre: number | undefined;
   let msAcre: number | undefined;
@@ -155,6 +191,7 @@ async function queryPlotsForDag(
   let msLabel: string | undefined;
   let rsId: string | undefined;
   let msId: string | undefined;
+  let note: string | undefined;
 
   for (const feature of features) {
     const attrs = feature.attributes ?? {};
@@ -174,14 +211,38 @@ async function queryPlotsForDag(
       rsAcre = area.acre;
       rsLabel = area.label;
       rsId = objectId;
-    } else if (rsAcre === undefined && msAcre === undefined) {
-      rsAcre = area.acre;
-      rsLabel = area.label;
-      rsId = objectId;
     }
   }
 
-  return { rs: rsAcre, ms: msAcre, rsLabel, msLabel, rsId, msId };
+  // DLRMS commonly supplies Bangla Mouza/Upazila names while RAJUK publishes
+  // English address_search values (for example পাতিরা vs Patira). A text filter
+  // can therefore return no row even for the correct parcel. Fall back only for
+  // RS, using scalar JSON area and exact numeric JL evidence, and accept a result
+  // only when it is unique. No transliteration and no geometry are involved.
+  if (rsAcre === undefined && input.jlNumber.trim()) {
+    const fallbackParams = new URLSearchParams({
+      action: "plots",
+      plot_no: String(Math.trunc(plotNo)),
+      kind: "rs",
+      limit: "100",
+    });
+    const fallback = selectUniqueRsFallback(
+      await fetchPlotFeatures(fallbackParams, input.signal),
+      input,
+    );
+    note = fallback.note;
+    if (fallback.feature) {
+      const attrs = fallback.feature.attributes ?? {};
+      const area = areaFromAttributes(attrs);
+      if (area) {
+        rsAcre = area.acre;
+        rsLabel = area.label;
+        rsId = attrs.objectid != null ? String(attrs.objectid) : undefined;
+      }
+    }
+  }
+
+  return { rs: rsAcre, ms: msAcre, rsLabel, msLabel, rsId, msId, note };
 }
 
 /**
@@ -209,6 +270,7 @@ export async function resolveDagMapAreas(input: DagMapLookupInput): Promise<DagM
             msAreaLabel: hit.msLabel,
             rsFeatureId: hit.rsId,
             msFeatureId: hit.msId,
+            matchNote: hit.note,
           } satisfies DagMapAreaRow;
         } catch {
           return { dagNo } satisfies DagMapAreaRow;
