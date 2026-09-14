@@ -1,4 +1,5 @@
 import type { KhatianDetails } from "../types";
+import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 
 /** Survey families used for section layout (not cosmetic themes). */
 export type SurveyKind =
@@ -19,7 +20,7 @@ export interface ParsedOwnerRow {
 export interface ParsedDagRow {
   dagNo: string;
   landClass?: string;
-  /** Dag-specific area only when source provides it for this dag. */
+  /** Dag-specific area, normalized for display to Acre only. */
   area?: string;
   totalArea?: string;
   khatianShare?: string;
@@ -130,6 +131,12 @@ function pickString(row: Record<string, unknown>, keys: string[]): string | unde
   return undefined;
 }
 
+function dlrmsAcreLabel(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const acre = acreFromDlrmsValue(value, "acre");
+  return acre == null ? undefined : formatAcre(acre);
+}
+
 /** Structured dag rows when public record exposes per-dag detail objects. */
 export function buildDagRows(
   dagNumbers: string[],
@@ -159,20 +166,23 @@ export function buildDagRows(
         "plotNo",
       ]);
       if (!dagNo) continue;
+      const areaRaw = pickString(row, [
+        "SHARE_AREA",
+        "KHATIAN_AREA",
+        "AREA",
+        "LAND_AMOUNT",
+        "অংশানুযায়ী_জমির_পরিমাণ",
+        "shareArea",
+      ]);
+      const totalAreaRaw = pickString(row, ["TOTAL_AREA", "DAG_TOTAL", "দাগের_মোট_পরিমাণ", "totalArea"]);
+      const shareAreaRaw = pickString(row, ["SHARE_AREA", "অংশানুযায়ী_জমির_পরিমাণ"]);
       byDag.set(dagNo, {
         dagNo,
         landClass: pickString(row, ["LAND_CLASS", "CLASS", "জমির_শ্রেণী", "landClass", "TYPE"]),
-        area: pickString(row, [
-          "SHARE_AREA",
-          "KHATIAN_AREA",
-          "AREA",
-          "LAND_AMOUNT",
-          "অংশানুযায়ী_জমির_পরিমাণ",
-          "shareArea",
-        ]),
-        totalArea: pickString(row, ["TOTAL_AREA", "DAG_TOTAL", "দাগের_মোট_পরিমাণ", "totalArea"]),
+        area: dlrmsAcreLabel(areaRaw),
+        totalArea: dlrmsAcreLabel(totalAreaRaw),
         khatianShare: pickString(row, ["KHATIAN_SHARE", "SHARE", "অংশ", "hissa"]),
-        shareArea: pickString(row, ["SHARE_AREA", "অংশানুযায়ী_জমির_পরিমাণ"]),
+        shareArea: dlrmsAcreLabel(shareAreaRaw),
       });
     }
   }
@@ -241,6 +251,7 @@ export function buildKhatianDisplayModel(
   const shares = extractOwnerShares(publicRecord, ownerNames.length);
   const owners = buildOwnerRows(ownerNames, shares);
   const dags = buildDagRows(dagNumbers, publicRecord);
+  const totalLandAcre = acreFromDlrmsValue(khatian.TOTAL_LAND, "acre");
 
   return {
     kind,
@@ -249,7 +260,7 @@ export function buildKhatianDisplayModel(
     owners,
     dags,
     guardians,
-    totalLand: (khatian.TOTAL_LAND || "").trim(),
+    totalLand: totalLandAcre == null ? "" : formatAcre(totalLandAcre),
     isPartial: isPartialPublicRecord(khatian),
     ownerCount: ownerNames.length,
     dagCount: dagNumbers.length,
