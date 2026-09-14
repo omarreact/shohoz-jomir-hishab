@@ -6,13 +6,12 @@ interface SectionHeaderProps {
   icon?: React.ReactNode;
   centered?: boolean;
   className?: string;
+  titleClassName?: string;
 }
 
-/**
- * Reusable Section Header — eyebrow badge, h2, and optional subtitle.
- * Eliminates repeated markup across all pages.
- */
+/** Shared section heading used across public and admin surfaces. */
 export default function SectionHeader({
+  eyebrow,
   title,
   subtitle,
   badge,
@@ -20,30 +19,39 @@ export default function SectionHeader({
   centered = false,
   className = "",
   titleClassName = "",
-}: SectionHeaderProps & { titleClassName?: string }) {
+}: SectionHeaderProps) {
+  const kicker = badge || eyebrow;
+
   return (
-    <div className={`mb-10 ${centered ? "text-center" : ""} ${className}`}>
-      {badge && (
-        <span className="inline-block bg-[#f6c343]/10 text-[#f6c343] px-3 py-1.5 rounded-full mb-3 text-xs font-semibold uppercase tracking-widest border border-[#f6c343]/20">
-          {badge}
+    <div className={`mb-6 sm:mb-8 ${centered ? "text-center" : ""} ${className}`}>
+      {kicker ? (
+        <span className="landbd-section-kicker inline-flex items-center px-3 py-1.5 text-[11px] font-extrabold tracking-wide sm:text-xs">
+          {kicker}
         </span>
-      )}
+      ) : null}
+
       <h2
-        className={`text-3xl sm:text-4xl font-bold mb-3 flex items-center ${
+        className={`mt-2.5 flex items-center gap-2.5 text-2xl font-extrabold leading-tight tracking-[-0.02em] text-[var(--foreground)] sm:text-3xl ${
           centered ? "justify-center" : ""
-        } ${titleClassName || "text-white"}`}
+        } ${titleClassName}`}
       >
-        {icon && <span className="mr-3 text-[#f6c343]">{icon}</span>}
-        {title}
+        {icon ? (
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]">
+            {icon}
+          </span>
+        ) : null}
+        <span>{title}</span>
       </h2>
-      {subtitle && (
+
+      {subtitle ? (
         <p
-          className={`text-[#b7bdc8] text-lg leading-relaxed ${centered ? "mx-auto" : ""} mb-0`}
-          style={{ maxWidth: "600px" }}
+          className={`mt-2 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)] sm:text-base sm:leading-7 ${
+            centered ? "mx-auto" : ""
+          }`}
         >
           {subtitle}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
