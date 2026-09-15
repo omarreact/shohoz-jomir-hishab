@@ -1,5 +1,6 @@
 import type { KhatianDetails } from "../types";
 import type { FullKhatianDag, FullKhatianOwner, LisfEnrichment } from "../full-khatian";
+import { providers } from "./provider";
 
 export interface LisfLocationContext {
   divisionBbsCode?: string;
@@ -10,7 +11,7 @@ export interface LisfLocationContext {
 export interface LisfProvider {
   enrichKhatian(
     base: KhatianDetails,
-    context?: LisfLocationContext,
+    contextOrSignal?: LisfLocationContext | AbortSignal,
     signal?: AbortSignal,
   ): Promise<LisfEnrichment>;
 }
@@ -38,6 +39,15 @@ function normalizePlace(value: unknown): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLocaleLowerCase("bn-BD");
+}
+
+function isAbortSignal(value: unknown): value is AbortSignal {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "aborted" in value &&
+    typeof (value as AbortSignal).addEventListener === "function",
+  );
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -98,12 +108,44 @@ function configuredCredentials(): { serviceId: string; accessCode: string } | nu
   return serviceId && accessCode ? { serviceId, accessCode } : null;
 }
 
+async function resolveBbsContext(
+  base: KhatianDetails,
+  preset: LisfLocationContext,
+  signal?: AbortSignal,
+): Promise<LisfLocationContext> {
+  let divisionBbsCode = preset.divisionBbsCode;
+  let districtBbsCode = preset.districtBbsCode;
+  let upazilaBbsCode = preset.upazilaBbsCode;
+
+  if (!divisionBbsCode && base.DIVISION_NAME) {
+    const rows = await providers.landRecords.listDivisions(signal);
+    divisionBbsCode = rows.find(
+      (row) => normalizePlace(row.NAME) === normalizePlace(base.DIVISION_NAME),
+    )?.BBS_CODE;
+  }
+
+  if (!districtBbsCode && divisionBbsCode && base.DISTRICT_NAME) {
+    const rows = await providers.landRecords.listDistricts(divisionBbsCode, signal);
+    districtBbsCode = rows.find(
+      (row) => normalizePlace(row.NAME) === normalizePlace(base.DISTRICT_NAME),
+    )?.BBS_CODE;
+  }
+
+  if (!upazilaBbsCode && districtBbsCode && base.UPAZILA_NAME) {
+    const rows = await providers.landRecords.listUpazilas(districtBbsCode, signal);
+    upazilaBbsCode = rows.find(
+      (row) => normalizePlace(row.NAME) === normalizePlace(base.UPAZILA_NAME),
+    )?.BBS_CODE;
+  }
+
+  return { divisionBbsCode, districtBbsCode, upazilaBbsCode };
+}
+
 /**
  * The official LISF integration examples transmit service_id and access_code as
  * HTTPS request headers. They calculate an HMAC in sample code but do not send
- * that calculated value. LandBD therefore follows the documented transmitted
- * fields only and does not invent a signature header/canonicalization contract.
- * Credentials remain server-only.
+ * that calculated value. LandBD follows the documented transmitted fields and
+ * does not invent a signature header/canonicalization contract.
  */
 async function requestLisf(
   path: string,
@@ -162,12 +204,12 @@ export function lisfSurveyType(base: Pick<KhatianDetails, "SURVEY_ID" | "SURVEY_
   }
 
   const name = normalizePlace(base.SURVEY_NAME).replace(/\s+/g, "");
-  if (/(^|[^a-z])brs|বিআরএস/.test(name)) return "1";
-  if (/(^|[^a-z])cs|সিএস/.test(name)) return "2";
-  if (/(^|[^a-z])sa|এসএ/.test(name)) return "3";
+  if (/brs|বিআরএস/.test(name)) return "1";
+  if (/cs|সিএস/.test(name)) return "2";
+  if (/sa|এসএ/.test(name)) return "3";
   if (/city|সিটি/.test(name)) return "4";
   if (/diara|দিয়ারা|দিয়ারা/.test(name)) return "5";
-  if (/(^|[^a-z])rs|আরএস/.test(name)) return "6";
+  if (/rs|আরএস/.test(name)) return "6";
   return null;
 }
 
@@ -196,10 +238,11 @@ function parseMoujaPairs(payload: unknown): Array<{ code: string; name: string }
   })).filter((row) => row.code && row.name);
   if (parallel.length) return parallel;
 
+  const payloadRecord = asRecord(payload);
   const rows = Array.isArray(payload)
     ? payload
-    : Array.isArray(asRecord(payload)?.data)
-      ? asRecord(payload)?.data as unknown[]
+    : Array.isArray(payloadRecord?.data)
+      ? payloadRecord.data as unknown[]
       : [];
   return rows.flatMap((item) => {
     const row = asRecord(item);
@@ -321,7 +364,9 @@ const mockProvider: LisfProvider = {
 };
 
 const authorizedProvider: LisfProvider = {
-  async enrichKhatian(base, context = {}, signal) {
+  async enrichKhatian(base, contextOrSignal, explicitSignal) {
+    const signal = isAbortSignal(contextOrSignal) ? contextOrSignal : explicitSignal;
+    const preset = isAbortSignal(contextOrSignal) ? {} : (contextOrSignal ?? {});
     const credentials = configuredCredentials();
     if (!credentials) {
       return {
@@ -349,9 +394,7 @@ const authorizedProvider: LisfProvider = {
     }
 
     try {
-      // LandBD uses BBS codes because DLRMS already resolves division/district/
-      // upazila BBS identities. Mouja code is resolved from LISF itself by name;
-      // DLRMS MOUZA_ID is never assumed to be a LISF/DLRS/BBS code.
+      const context = await resolveBbsContext(base, preset, signal);
       const moujaCode = await resolveBbsMoujaCode(base, context, credentials, signal);
       if (!moujaCode) {
         return {
