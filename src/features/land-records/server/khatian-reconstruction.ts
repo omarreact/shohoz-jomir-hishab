@@ -25,6 +25,15 @@ function stripTrailingEllipsis(value: string): string {
   return clean(value).replace(TRAILING_ELLIPSIS, "").replace(/,\s*$/u, "").trim();
 }
 
+function splitVisibleItems(value: string): string[] {
+  const visible = stripTrailingEllipsis(value);
+  if (!visible) return [];
+  return visible
+    .split(",")
+    .map((item) => clean(item))
+    .filter((item) => item && item !== "..." && item !== "…");
+}
+
 interface MergedListValue {
   text: string;
   partial: boolean;
@@ -33,10 +42,9 @@ interface MergedListValue {
 }
 
 /**
- * Merge comma-separated public DLRMS fields item-by-item rather than treating
- * an entire compact string as one opaque value. This lets a fuller public
- * variant such as "A, B, C" replace/complete "A,..." without leaking the
- * upstream ellipsis into otherwise complete output.
+ * Merge identity-like sets such as Dag numbers. Duplicate tokens are not useful
+ * for these fields, so they are collapsed while fuller non-truncated variants
+ * are allowed to complete a truncated compact response.
  */
 function mergeListValues(values: Array<string | undefined>, verifiedExactItems: string[] = []): MergedListValue {
   const seen = new Set<string>();
@@ -61,15 +69,11 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
     if (truncated) truncatedInputs += 1;
     else completeInputs += 1;
 
-    const visible = stripTrailingEllipsis(value);
-    for (const item of visible.split(",")) addItem(item);
+    for (const item of splitVisibleItems(value)) addItem(item);
   }
 
   for (const item of verifiedExactItems) addItem(item);
 
-  // A non-truncated public variant for the same khatian is the best public
-  // evidence currently available. If every upstream variant is truncated,
-  // keep an explicit ellipsis so LandBD never presents a partial list as full.
   const partial = truncatedInputs > 0 && completeInputs === 0;
   const joined = output.join(", ");
 
@@ -78,6 +82,49 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
     partial,
     truncatedInputs,
     distinctItems: output.length,
+  };
+}
+
+/**
+ * Owner and guardian lists are ordered record rows, not mathematical sets.
+ * The same visible name may legitimately occur more than once (for example,
+ * two ownership entries named "সিরাজদ্দিন"). When a complete public variant
+ * exists, preserve its order and multiplicity exactly instead of Set-deduping
+ * by name. If every variant is truncated, fall back to conservative merging
+ * and keep the partial marker.
+ */
+function mergeOrderedRecordList(values: Array<string | undefined>): MergedListValue {
+  const prepared = values
+    .map((raw, index) => {
+      const value = clean(raw);
+      return {
+        index,
+        value,
+        truncated: value ? isTruncated(value) : false,
+        items: value ? splitVisibleItems(value) : [],
+      };
+    })
+    .filter((entry) => entry.value && entry.items.length);
+
+  const truncatedInputs = prepared.filter((entry) => entry.truncated).length;
+  const complete = prepared.filter((entry) => !entry.truncated);
+
+  if (!complete.length) return mergeListValues(values);
+
+  const best = complete
+    .slice()
+    .sort((a, b) => {
+      if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+      if (b.value.length !== a.value.length) return b.value.length - a.value.length;
+      return a.index - b.index;
+    })[0];
+
+  const distinct = new Set(best.items.map((item) => normalizeToken(item)).filter(Boolean));
+  return {
+    text: best.items.join(", "),
+    partial: false,
+    truncatedInputs,
+    distinctItems: distinct.size,
   };
 }
 
@@ -98,7 +145,7 @@ function sameKhatian(base: KhatianDetails, row: KhatianIndex): boolean {
  * - an exact khatian-number lookup,
  * - rows returned by the active owner/dag searches,
  * - verified exact dag evidence when DLRMS confirms the same khatian,
- * - truncation-aware item merging that prefers fuller official public variants.
+ * - truncation-aware merging that preserves complete owner/guardian row order.
  *
  * Owner search text is kept as search evidence because users can enter a
  * partial name. It is never promoted into the owner list. An exact dag-number
@@ -113,12 +160,12 @@ export function reconstructKhatian(
   const verifiedOwner = evidence.ownerVerified ? clean(evidence.owner) : "";
   const verifiedDag = evidence.dagVerified ? clean(evidence.dagNumber) : "";
 
-  const owners = mergeListValues([base.OWNERS, ...rows.map((row) => row.OWNERS)]);
+  const owners = mergeOrderedRecordList([base.OWNERS, ...rows.map((row) => row.OWNERS)]);
   const dags = mergeListValues(
     [base.DAGS, ...rows.map((row) => row.DAGS)],
     verifiedDag ? [verifiedDag] : [],
   );
-  const guardians = mergeListValues([base.GUARDIANS, ...rows.map((row) => row.GUARDIANS)]);
+  const guardians = mergeOrderedRecordList([base.GUARDIANS, ...rows.map((row) => row.GUARDIANS)]);
 
   const totalLandCandidates = [base.TOTAL_LAND, ...rows.map((row) => row.TOTAL_LAND)]
     .map((item) => clean(item))
