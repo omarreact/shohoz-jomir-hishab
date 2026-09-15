@@ -119,6 +119,35 @@ describe("khatian reconstruction", () => {
     expect(reconstruction.MERGED_TOTAL_LAND).toBe("2.0412");
   });
 
+  it("preserves repeated owner rows from the fullest complete official variant", () => {
+    const rs56Base: KhatianDetails = {
+      ...base,
+      ID: 3234517,
+      KHATIAN_NO: "56",
+      JL_NUMBER_ID: 237085,
+      MOUZA_ID: 71947,
+      OWNERS: "আস্কর আলী,হাওয়াতোন নেছা,...",
+      GUARDIANS: "পিং ছোমেদ খাঁ,...",
+      DAGS: "597,598",
+      TOTAL_LAND: "4.43",
+    };
+
+    const fullerRow: KhatianIndex = {
+      ID: 3234517,
+      KHATIAN_NO: "56",
+      JL_NUMBER_ID: 237085,
+      MOUZA_ID: 71947,
+      OWNERS: "আস্কর আলী,হাওয়াতোন নেছা,খোদেজা বেগম,সিরাজদ্দিন,সিরাজদ্দিন,ছোবহান",
+      GUARDIANS: "পিং ছোমেদ খাঁ,পিং জোনাবালী,পিং তোরাবালী",
+      DAGS: "597,598",
+      TOTAL_LAND: "4.43",
+    };
+
+    const result = reconstructKhatian(rs56Base, [fullerRow]);
+    expect(result.OWNERS).toBe("আস্কর আলী, হাওয়াতোন নেছা, খোদেজা বেগম, সিরাজদ্দিন, সিরাজদ্দিন, ছোবহান");
+    expect(result.OWNERS.match(/সিরাজদ্দিন/g)).toHaveLength(2);
+  });
+
   it("keeps an explicit partial marker when every official variant is truncated", () => {
     const truncatedBase: KhatianDetails = {
       ...base,
