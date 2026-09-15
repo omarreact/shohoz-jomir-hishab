@@ -13,17 +13,14 @@ import {
   LogOut,
   Map,
   Menu,
-  Moon,
   Ruler,
   Search,
   ShieldCheck,
-  Sun,
   User,
   Users,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import {
@@ -139,7 +136,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
-  const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
   const canSeeMapQa = isAdminRole(user?.role);
 
@@ -167,10 +163,7 @@ export default function Navbar() {
   const [desktopOpenGroup, setDesktopOpenGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [mounted, setMounted] = useState(false);
   const desktopNavRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -238,8 +231,6 @@ export default function Navbar() {
   const shell =
     "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
 
-  const effectiveTheme = resolvedTheme ?? theme;
-
   return (
     <>
       <nav
@@ -255,7 +246,7 @@ export default function Navbar() {
             onClick={() => setSidebarOpen(false)}
             aria-label={`${SITE_CONFIG.name} — হোম`}
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)] shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
               <Calculator size={18} />
             </span>
             <span className="min-w-0">
@@ -289,9 +280,9 @@ export default function Navbar() {
                     aria-haspopup="menu"
                     aria-expanded={open}
                     onClick={() => setDesktopOpenGroup(open ? null : group.id)}
-                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006a4e]/35 2xl:px-3 2xl:text-sm ${
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] 2xl:px-3 2xl:text-sm ${
                       active
-                        ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                        ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                         : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                     }`}
                   >
@@ -329,14 +320,14 @@ export default function Navbar() {
                             onClick={() => setDesktopOpenGroup(null)}
                             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
                               itemActive
-                                ? "bg-[#006a4e] text-white"
+                                ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
                                 : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                             }`}
                           >
                             <span
                               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                                 itemActive
-                                  ? "bg-white/15 text-white"
+                                  ? "bg-[var(--brand-gold)] text-[var(--primary-foreground)]"
                                   : "bg-[var(--secondary)] text-[var(--foreground)]"
                               }`}
                             >
@@ -344,7 +335,7 @@ export default function Navbar() {
                             </span>
                             <span className="min-w-0 flex-1">{item.label}</span>
                             {itemActive ? (
-                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-gold-strong)]" />
                             ) : null}
                           </Link>
                         );
@@ -362,7 +353,7 @@ export default function Navbar() {
               aria-label="সাইডবার মেনু খুলুন"
               aria-expanded={sidebarOpen}
               onClick={openSidebar}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[color-mix(in_srgb,var(--secondary)_75%,var(--foreground)_8%)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006a4e]/35"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--brand-gold-faint)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)]"
             >
               <Menu size={20} />
             </button>
@@ -395,6 +386,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setSearchOpen(false)}
                 aria-label="সার্চ বন্ধ করুন"
+                className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-[var(--secondary)]"
               >
                 <X size={18} />
               </button>
@@ -407,7 +399,7 @@ export default function Navbar() {
                   onClick={() => setSearchOpen(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold no-underline transition-colors ${
                     activePath(pathname, href)
-                      ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                      ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                       : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                   }`}
                 >
@@ -425,7 +417,12 @@ export default function Navbar() {
       )}
 
       {sidebarOpen && (
-        <div className="fixed inset-0 z-[1250]" role="dialog" aria-modal="true" aria-label="সাইডবার মেনু">
+        <div
+          className="fixed inset-0 z-[1250]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="সাইডবার মেনু"
+        >
           <button
             type="button"
             aria-label="সাইডবার বন্ধ করুন"
@@ -442,7 +439,7 @@ export default function Navbar() {
                 className="flex min-w-0 items-center gap-2 no-underline"
                 onClick={() => setSidebarOpen(false)}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--foreground)] text-[var(--primary-foreground)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
                   <Calculator size={19} />
                 </span>
                 <span className="min-w-0">
@@ -471,7 +468,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={openSearchFromSidebar}
-                  className="mt-2 flex w-full items-center gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:text-[var(--foreground)]"
+                  className="mt-2 flex w-full items-center gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:bg-[var(--brand-gold-faint)] hover:text-[var(--foreground)]"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card-bg)]">
                     <Search size={17} />
@@ -486,50 +483,6 @@ export default function Navbar() {
                     Ctrl K
                   </kbd>
                 </button>
-
-                {mounted ? (
-                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--secondary)]">
-                          {effectiveTheme === "dark" ? <Moon size={17} /> : <Sun size={17} />}
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold">থিম</p>
-                          <p className="text-[11px] text-[var(--muted-foreground)]">
-                            লাইট অথবা ডার্ক মোড নির্বাচন করুন
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setTheme("light")}
-                        aria-pressed={effectiveTheme === "light"}
-                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-                          effectiveTheme === "light"
-                            ? "bg-[#006a4e] text-white"
-                            : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                        }`}
-                      >
-                        <Sun size={14} /> লাইট
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTheme("dark")}
-                        aria-pressed={effectiveTheme === "dark"}
-                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-                          effectiveTheme === "dark"
-                            ? "bg-[#006a4e] text-white"
-                            : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                        }`}
-                      >
-                        <Moon size={14} /> ডার্ক
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
               </section>
 
               <section className="mt-4" aria-label="অ্যাকাউন্ট">
@@ -544,7 +497,7 @@ export default function Navbar() {
                 ) : isLoggedIn ? (
                   <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#006a4e] text-white">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
                         <User size={18} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -568,14 +521,14 @@ export default function Navbar() {
                       <Link
                         href={FEATURE_ROUTES.admin}
                         onClick={() => setSidebarOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                        className="flex items-center justify-center gap-2 rounded-xl bg-[var(--brand-gold)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
                       >
                         <ShieldCheck size={15} /> ড্যাশবোর্ড
                       </Link>
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/70 dark:hover:bg-red-950/20"
+                        className="flex items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
                       >
                         <LogOut size={15} /> লগআউট
                       </button>
@@ -597,7 +550,7 @@ export default function Navbar() {
                     <Link
                       href={FEATURE_ROUTES.login}
                       onClick={() => setSidebarOpen(false)}
-                      className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--foreground)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                      className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
                     >
                       <LogIn size={16} /> {FEATURE_LABELS.login.bn}
                     </Link>
@@ -605,7 +558,10 @@ export default function Navbar() {
                 )}
               </section>
 
-              <section className="mt-5 border-t border-[var(--border-color)] pt-4" aria-label="সাইট মেনু">
+              <section
+                className="mt-5 border-t border-[var(--border-color)] pt-4"
+                aria-label="সাইট মেনু"
+              >
                 <p className="px-1 pb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                   সাইট মেনু
                 </p>
@@ -624,11 +580,17 @@ export default function Navbar() {
                           onClick={() => setSidebarGroup(expanded ? null : group.id)}
                           className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
                             groupActive
-                              ? "bg-[var(--secondary)] text-[var(--foreground)]"
+                              ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                               : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                           }`}
                         >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--secondary)] text-[var(--foreground)]">
+                          <span
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                              groupActive
+                                ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
+                                : "bg-[var(--secondary)] text-[var(--foreground)]"
+                            }`}
+                          >
                             <GroupIcon size={16} />
                           </span>
                           <span className="min-w-0 flex-1">{group.label}</span>
@@ -650,7 +612,7 @@ export default function Navbar() {
                                   onClick={() => setSidebarOpen(false)}
                                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
                                     itemActive
-                                      ? "bg-[#006a4e] text-white"
+                                      ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
                                       : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                                   }`}
                                 >
