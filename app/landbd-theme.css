@@ -71,12 +71,6 @@ body {
   color-scheme: light;
 }
 
-/* Legacy theme controls are hidden while old callers are progressively removed. */
-button[aria-label="থিম পরিবর্তন"],
-section[aria-label="দ্রুত নিয়ন্ত্রণ"] > div:has(button[aria-pressed]) {
-  display: none !important;
-}
-
 /* ---------- Layout primitives ---------- */
 .landbd-page {
   width: 100%;
