@@ -12,25 +12,21 @@ import {
   LogOut,
   MapPin,
   Menu,
-  Moon,
   PenTool,
   QrCode,
   Settings,
   ShieldAlert,
   ShieldCheck,
-  Sun,
   Users,
   X,
 } from "lucide-react";
 import { Button } from "@/src/shared/ui/button";
-import { useTheme } from "next-themes";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoggedIn, loading: authChecking, logout } = useAuth();
@@ -161,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </span>
                   {item.name}
                 </div>
-                {isActive && <ChevronRight size={15} className="text-[#9a6700] dark:text-[#f7d36f]" />}
+                {isActive && <ChevronRight size={15} className="text-[var(--brand-gold-text)]" />}
               </Link>
             );
           })}
@@ -170,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="border-t border-[var(--border-color)] p-4">
           <Button
             variant="ghost"
-            className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" /> লগআউট
@@ -189,7 +185,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Menu size={19} />
             </button>
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#9a6700] dark:text-[#f7d36f]">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--brand-gold-text)]">
                 LandBD Admin
               </p>
               <h1 className="truncate text-lg font-extrabold text-[var(--foreground)]">{currentTitle}</h1>
@@ -197,13 +193,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--muted-foreground)] shadow-sm transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-              aria-label="থিম পরিবর্তন"
-            >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <div className="hidden text-right sm:block">
               <p className="max-w-40 truncate text-sm font-bold text-[var(--foreground)]">{userName}</p>
               <p className="text-[11px] text-[var(--muted-foreground)]">{userRole}</p>
