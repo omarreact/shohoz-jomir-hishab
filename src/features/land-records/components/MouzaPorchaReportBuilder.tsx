@@ -237,7 +237,7 @@ export default function MouzaPorchaReportBuilder() {
 
       setRows(collected);
 
-      let resolved: HalSabekReportState = {};
+      const resolved: HalSabekReportState = {};
       if (includeHalSabek) {
         setPhase("hal-sabek");
         const batches = chunk(collected.map((item) => item.KHATIAN_NO), HAL_SABEK_BATCH_SIZE);
