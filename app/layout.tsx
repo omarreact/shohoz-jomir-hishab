@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
+import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
 import "./landbd-theme.css";
+import "./font-system.css";
 import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import VisitTracker from "@/src/shared/components/VisitTracker";
@@ -11,7 +12,15 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
 import { SITE_CONFIG } from "@/src/shared/config";
 
-/** Primary UI Bangla — clear at small sizes, common on BD web apps */
+/** English/Latin UI — used first so English labels, IDs and numbers render cleanly. */
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+/** Primary Bangla UI — clear at small sizes, common on BD web apps. */
 const hindSiliguri = Hind_Siliguri({
   subsets: ["bengali", "latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -19,7 +28,7 @@ const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
-/** Secondary / fallback Bangla coverage */
+/** Stable Bangla fallback/export font, especially useful for printable records. */
 const notoSansBengali = Noto_Sans_Bengali({
   subsets: ["bengali", "latin"],
   weight: ["400", "500", "600", "700"],
@@ -58,11 +67,11 @@ export default function RootLayout({
       lang="bn"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${hindSiliguri.variable} ${notoSansBengali.variable}`}
+      className={`${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable}`}
     >
       <body
         suppressHydrationWarning
-        className={`${hindSiliguri.className} font-sans antialiased`}
+        className="font-sans antialiased"
         style={{
           display: "flex",
           flexDirection: "column",

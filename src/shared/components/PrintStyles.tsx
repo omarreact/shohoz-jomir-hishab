@@ -1,11 +1,14 @@
 const printStyles = `
   body {
-    font-family: var(--font-hind-siliguri), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", sans-serif;
+    font-family: var(--font-ui);
     background-color: #f8f9fa;
     padding-bottom: 80px;
   }
   .print-only { display: none; }
   @media print {
+    body {
+      font-family: var(--font-report);
+    }
     body * { visibility: hidden; }
     #resultSection, #resultSection * { visibility: visible; }
     #resultSection { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; }
