@@ -1,34 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileDown, FileText, Loader2, Printer, RefreshCcw, Square } from "lucide-react";
+import { FileText, Loader2, Printer, RefreshCcw, ShieldCheck, Square } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
-import type { HalSabekEntry } from "../full-khatian";
+import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
+import {
+  buildMouzaReportRows,
+  stableReportPayload,
+  summarizeNumericKhatianGaps,
+  type HalSabekReportEntry,
+  type HalSabekReportState,
+} from "../reports/mouza-porcha-report";
 
 const empty = "-- নির্বাচন করুন --";
 const PAGE_SIZE = 100;
 const HAL_SABEK_BATCH_SIZE = 12;
-
-type HalSabekBatchEntry = {
-  khatianNo: string;
-  mappings: HalSabekEntry[];
-  unavailable?: boolean;
-};
-
-type HalSabekState = Record<string, HalSabekBatchEntry>;
-
-type ReportMeta = {
-  generatedAt: string;
-  reportId: string;
-};
-
-function uniqueJoin(values: string[]): string {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].join(", ");
-}
 
 async function responseJson<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => ({}))) as { error?: string } & T;
@@ -42,6 +32,13 @@ function chunk<T>(items: T[], size: number): T[][] {
     result.push(items.slice(index, index + size));
   }
   return result;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) throw new Error("Web Crypto unavailable");
+  const bytes = new TextEncoder().encode(value);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export default function MouzaPorchaReportBuilder() {
@@ -70,14 +67,17 @@ export default function MouzaPorchaReportBuilder() {
   const [mouzaId, setMouzaId] = useState("");
   const [includeHalSabek, setIncludeHalSabek] = useState(true);
   const [rows, setRows] = useState<KhatianIndex[]>([]);
-  const [halSabek, setHalSabek] = useState<HalSabekState>({});
-  const [reportMeta, setReportMeta] = useState<ReportMeta | null>(null);
+  const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
+  const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "records" | "hal-sabek" | "done">("idle");
+  const [preparingPrint, setPreparingPrint] = useState(false);
+  const [fontReady, setFontReady] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "records" | "hal-sabek" | "verification" | "done">("idle");
   const [loadedRecords, setLoadedRecords] = useState(0);
   const [expectedRecords, setExpectedRecords] = useState<number | null>(null);
   const [mappedRecords, setMappedRecords] = useState(0);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [verificationWarning, setVerificationWarning] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
@@ -90,6 +90,20 @@ export default function MouzaPorchaReportBuilder() {
     () => surveys.map((item) => ({ value: item.SURVEY_ID, label: item.LOCAL_NAME })),
     [surveys],
   );
+
+  useEffect(() => {
+    let active = true;
+    if (typeof document === "undefined" || !document.fonts) {
+      setFontReady(true);
+      return;
+    }
+    void document.fonts.ready.then(() => {
+      if (active) setFontReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (division) void loadDistricts(division);
@@ -126,6 +140,7 @@ export default function MouzaPorchaReportBuilder() {
     setExpectedRecords(null);
     setMappedRecords(0);
     setLocalError(null);
+    setVerificationWarning(null);
   };
 
   const changeDivision = (value: string) => {
@@ -169,7 +184,7 @@ export default function MouzaPorchaReportBuilder() {
   };
 
   const generateReport = async () => {
-    if (!selectedMouza || !selectedDistrict || !selectedUpazila || !surveyKey) {
+    if (!selectedMouza || !selectedDistrict || !selectedUpazila || !selectedSurvey || !surveyKey) {
       setLocalError("প্রথমে বিভাগ, জেলা, উপজেলা, সার্ভে ও মৌজা নির্বাচন করুন।");
       return;
     }
@@ -186,6 +201,7 @@ export default function MouzaPorchaReportBuilder() {
     setExpectedRecords(null);
     setMappedRecords(0);
     setLocalError(null);
+    setVerificationWarning(null);
 
     try {
       const collected: KhatianIndex[] = [];
@@ -221,10 +237,10 @@ export default function MouzaPorchaReportBuilder() {
 
       setRows(collected);
 
+      let resolved: HalSabekReportState = {};
       if (includeHalSabek) {
         setPhase("hal-sabek");
         const batches = chunk(collected.map((item) => item.KHATIAN_NO), HAL_SABEK_BATCH_SIZE);
-        const resolved: HalSabekState = {};
         let completed = 0;
 
         for (const khatianNos of batches) {
@@ -241,7 +257,7 @@ export default function MouzaPorchaReportBuilder() {
             }),
             signal: controller.signal,
           });
-          const data = await responseJson<{ entries: HalSabekBatchEntry[] }>(response);
+          const data = await responseJson<{ entries: HalSabekReportEntry[] }>(response);
           for (const entry of data.entries) resolved[entry.khatianNo] = entry;
           completed += khatianNos.length;
           setMappedRecords(Math.min(completed, collected.length));
@@ -250,10 +266,61 @@ export default function MouzaPorchaReportBuilder() {
         setHalSabek(resolved);
       }
 
-      setReportMeta({
-        generatedAt: new Date().toISOString(),
-        reportId: `LANDBD-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
-      });
+      setPhase("verification");
+      const normalizedRows = buildMouzaReportRows(collected, resolved);
+      const gapSummary = summarizeNumericKhatianGaps(normalizedRows.map((row) => row.khatianNo));
+      const mappedKhatianCount = includeHalSabek
+        ? normalizedRows.filter((row) => row.history.length > 0).length
+        : 0;
+      const generatedAt = new Date().toISOString();
+      const fallbackReportId = `LANDBD-${crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+      let nextMeta: MouzaPorchaReportMeta = {
+        reportId: fallbackReportId,
+        generatedAt,
+        verificationRegistered: false,
+      };
+
+      try {
+        const payloadHash = await sha256Hex(stableReportPayload(normalizedRows));
+        const verificationResponse = await fetch("/api/reports/mouza-porcha/verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            district: selectedDistrict.NAME,
+            upazila: selectedUpazila.NAME,
+            survey: selectedSurvey.LOCAL_NAME,
+            mouza: selectedMouza.MOUZA_NAME,
+            jlNumber: selectedMouza.JL_NUMBER,
+            totalKhatians: collected.length,
+            expectedKhatians: total ?? null,
+            halSabekRequested: includeHalSabek ? collected.length : 0,
+            halSabekMapped: mappedKhatianCount,
+            khatianGapCount: gapSummary.count,
+            payloadHash,
+          }),
+          signal: controller.signal,
+        });
+        const verification = await responseJson<{
+          reportId: string;
+          generatedAt: string;
+          verificationUrl: string;
+        }>(verificationResponse);
+        nextMeta = {
+          reportId: verification.reportId,
+          generatedAt: verification.generatedAt,
+          verificationUrl: verification.verificationUrl,
+          payloadHash,
+          verificationRegistered: true,
+        };
+      } catch (verificationError) {
+        if (verificationError instanceof DOMException && verificationError.name === "AbortError") throw verificationError;
+        console.warn("LandBD report verification registration unavailable", verificationError);
+        setVerificationWarning(
+          "রিপোর্ট তৈরি হয়েছে, তবে QR verification record সংরক্ষণ করা যায়নি। PDF-তে Report ID থাকবে, QR যাচাই দেখানো হবে না।",
+        );
+      }
+
+      setReportMeta(nextMeta);
       setPhase("done");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -275,20 +342,35 @@ export default function MouzaPorchaReportBuilder() {
     setPhase("idle");
   };
 
+  const handlePrint = async () => {
+    if (phase !== "done") return;
+    setPreparingPrint(true);
+    try {
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready;
+      }
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      window.print();
+    } finally {
+      setPreparingPrint(false);
+    }
+  };
+
   const displayedError = localError || locationError;
-  const generatedLabel = reportMeta
-    ? new Intl.DateTimeFormat("bn-BD", { dateStyle: "medium", timeStyle: "short" }).format(
-        new Date(reportMeta.generatedAt),
-      )
-    : "";
   const progressTotal = expectedRecords ?? Math.max(loadedRecords, rows.length);
+  const phaseLabel =
+    phase === "hal-sabek"
+      ? "সাবেক/হাল দাগ সংগ্রহ করা হচ্ছে"
+      : phase === "verification"
+        ? "Report ID ও verification প্রস্তুত করা হচ্ছে"
+        : "খতিয়ান তালিকা সংগ্রহ করা হচ্ছে";
 
   return (
     <>
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও JSON-এ প্রকাশিত জমির পরিমাণ একত্র করে প্রিন্টযোগ্য রিপোর্ট তৈরি করুন। চাইলে সরকারি DLRMS উৎসে পাওয়া সাবেক/হাল দাগও যুক্ত করুন।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে পেশাদার A4 রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
         pattern="grid"
       />
 
@@ -298,7 +380,7 @@ export default function MouzaPorchaReportBuilder() {
             <CardHeader>
               <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
-                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। বড় মৌজার রিপোর্ট ধাপে ধাপে লোড হবে।
+                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। বড় মৌজার রিপোর্ট পেজভিত্তিক সংগ্রহ, যাচাই ও PDF-এর জন্য প্রস্তুত হবে।
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -361,16 +443,29 @@ export default function MouzaPorchaReportBuilder() {
                   className="mt-1 h-4 w-4 accent-[#006a4e]"
                 />
                 <span>
-                  <span className="block text-sm font-semibold text-emerald-950">সাবেক / হাল দাগ যুক্ত করুন</span>
+                  <span className="block text-sm font-semibold text-emerald-950">সাবেক / হাল দাগ যাচাই করুন</span>
                   <span className="mt-1 block text-xs leading-5 text-emerald-800">
-                    সরকারি DLRMS hal-sabek উৎসে mapping পাওয়া গেলে রিপোর্টে আলাদা সাবেক দাগ ও হাল দাগ কলাম দেখাবে। তথ্য না থাকলে “—” থাকবে; কোনো দাগ অনুমান করা হবে না।
+                    DLRMS mapping পাওয়া গেলে PDF-তে “দাগ পরিবর্তন (সাবেক → হাল)” কলাম দেখানো হবে। পুরো রিপোর্টে mapping না থাকলে খালি দুইটি কলাম দেখানোর বদলে কলামটি স্বয়ংক্রিয়ভাবে লুকানো হবে। কোনো দাগ অনুমান করা হবে না।
                   </span>
                 </span>
               </label>
 
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                <ShieldCheck size={16} className="text-[#006a4e]" />
+                <span>Bengali PDF font: <strong>{fontReady ? "Noto Sans Bengali প্রস্তুত" : "লোড হচ্ছে…"}</strong></span>
+                <span className="text-slate-300">•</span>
+                <span>রেকর্ড টেক্সট NFC normalization সহ source wording সংরক্ষণ করবে।</span>
+              </div>
+
               {displayedError ? (
                 <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {displayedError}
+                </div>
+              ) : null}
+
+              {verificationWarning ? (
+                <div role="status" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {verificationWarning}
                 </div>
               ) : null}
 
@@ -407,13 +502,14 @@ export default function MouzaPorchaReportBuilder() {
               {generating ? (
                 <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
                   <div className="flex items-center gap-2 font-semibold">
-                    <Loader2 className="animate-spin" size={16} />
-                    {phase === "hal-sabek" ? "সাবেক/হাল দাগ সংগ্রহ করা হচ্ছে" : "খতিয়ান তালিকা সংগ্রহ করা হচ্ছে"}
+                    <Loader2 className="animate-spin" size={16} /> {phaseLabel}
                   </div>
                   <p className="mt-2 tabular-nums">
                     {phase === "hal-sabek"
                       ? `${mappedRecords} / ${rows.length} খতিয়ান mapping পরীক্ষা হয়েছে`
-                      : `${loadedRecords}${progressTotal ? ` / ${progressTotal}` : ""} খতিয়ান লোড হয়েছে`}
+                      : phase === "verification"
+                        ? `${rows.length}টি খতিয়ানের রিপোর্ট fingerprint ও QR metadata প্রস্তুত হচ্ছে`
+                        : `${loadedRecords}${progressTotal ? ` / ${progressTotal}` : ""} খতিয়ান লোড হয়েছে`}
                   </p>
                 </div>
               ) : null}
@@ -422,157 +518,38 @@ export default function MouzaPorchaReportBuilder() {
         </section>
 
         {rows.length > 0 ? (
-          <section id="mouza-porcha-report" className="mt-7 bg-white text-slate-950">
+          <section className="mt-7">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[var(--muted-foreground)]">
-                {rows.length}টি খতিয়ান {phase === "done" ? "রিপোর্টে প্রস্তুত" : "লোড হয়েছে"}
+                {rows.length}টি খতিয়ান {phase === "done" ? "PDF-এর জন্য প্রস্তুত" : "লোড হয়েছে"}
+                {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <button
                 type="button"
-                onClick={() => window.print()}
-                disabled={generating || phase !== "done"}
+                onClick={() => void handlePrint()}
+                disabled={generating || preparingPrint || phase !== "done"}
                 className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                <Printer size={16} /> PDF / প্রিন্ট
+                {preparingPrint ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
+                {preparingPrint ? "ফন্ট প্রস্তুত হচ্ছে…" : "PDF / প্রিন্ট"}
               </button>
             </div>
 
-            <div className="report-sheet rounded-xl border border-slate-300 bg-white p-4 sm:p-6">
-              <header className="report-header border-b-2 border-slate-800 pb-4 text-center">
-                <div className="flex items-center justify-center gap-2 text-[#006a4e]">
-                  <FileDown size={20} />
-                  <span className="text-sm font-bold uppercase tracking-[0.18em]">LandBD</span>
-                </div>
-                <h1 className="mt-2 text-xl font-bold sm:text-2xl">
-                  {selectedMouza?.JL_NUMBER ? `${selectedMouza.JL_NUMBER} নং ` : ""}{selectedMouza?.MOUZA_NAME ?? ""} মৌজা — {selectedSurvey?.LOCAL_NAME ?? ""} পর্চা রিপোর্ট
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">মোট খতিয়ান: {rows.length}টি</p>
-              </header>
-
-              <div className="report-meta grid grid-cols-2 gap-x-6 gap-y-2 border-b border-slate-300 py-4 text-sm md:grid-cols-5">
-                <p><strong>জেলা:</strong> {selectedDistrict?.NAME ?? "—"}</p>
-                <p><strong>উপজেলা:</strong> {selectedUpazila?.NAME ?? "—"}</p>
-                <p><strong>সার্ভে:</strong> {selectedSurvey?.LOCAL_NAME ?? "—"}</p>
-                <p><strong>মৌজা:</strong> {selectedMouza?.MOUZA_NAME ?? "—"}</p>
-                <p><strong>JL নং:</strong> {selectedMouza?.JL_NUMBER ?? "—"}</p>
-              </div>
-
-              <div className="mt-4 overflow-x-auto">
-                <table className={`report-table w-full border-collapse text-xs ${includeHalSabek ? "min-w-[72rem]" : "min-w-[54rem]"}`}>
-                  <thead>
-                    <tr>
-                      <th>খতিয়ান নং</th>
-                      <th>মালিকের নাম</th>
-                      <th>অভিভাবক / সম্পর্ক</th>
-                      <th>দাগ নং</th>
-                      {includeHalSabek ? <th>সাবেক দাগ</th> : null}
-                      {includeHalSabek ? <th>হাল দাগ</th> : null}
-                      <th>জমির পরিমাণ (একর)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => {
-                      const mapping = halSabek[row.KHATIAN_NO];
-                      const previousDags = mapping ? uniqueJoin(mapping.mappings.map((item) => item.previousDag)) : "";
-                      const currentDags = mapping ? uniqueJoin(mapping.mappings.map((item) => item.currentDag)) : "";
-                      return (
-                        <tr key={`${row.ID}-${row.KHATIAN_NO}`}>
-                          <td className="font-semibold tabular-nums">{row.KHATIAN_NO || "—"}</td>
-                          <td>{row.OWNERS || "—"}</td>
-                          <td>{row.GUARDIANS || "—"}</td>
-                          <td className="tabular-nums">{row.DAGS || "—"}</td>
-                          {includeHalSabek ? <td className="tabular-nums">{previousDags || "—"}</td> : null}
-                          {includeHalSabek ? <td className="tabular-nums">{currentDags || "—"}</td> : null}
-                          <td className="whitespace-nowrap tabular-nums">{row.TOTAL_LAND ? `${row.TOTAL_LAND} একর` : "—"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <footer className="report-footer mt-5 border-t border-slate-300 pt-3 text-xs leading-5 text-slate-600">
-                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
-                  <p><strong>রিপোর্ট ID:</strong> {reportMeta?.reportId ?? "প্রস্তুত হচ্ছে…"}</p>
-                  <p><strong>তৈরির সময়:</strong> {generatedLabel || "প্রস্তুত হচ্ছে…"}</p>
-                </div>
-                <p className="mt-2">
-                  LandBD তথ্যভিত্তিক প্রতিবেদন — সরকারি প্রত্যয়িত পর্চার বিকল্প নয়। জমির পরিমাণ কেবল উৎস JSON/API-তে প্রকাশিত মান থেকে দেখানো হয়েছে; মানচিত্রের polygon/geometry থেকে কোনো জমির পরিমাণ গণনা করা হয়নি। সাবেক/হাল দাগ কেবল DLRMS mapping পাওয়া গেলে দেখানো হয়।
-                </p>
-              </footer>
-            </div>
+            <MouzaPorchaDocument
+              rows={rows}
+              halSabek={halSabek}
+              includeHalSabek={includeHalSabek}
+              expectedRecords={expectedRecords}
+              districtName={selectedDistrict?.NAME ?? ""}
+              upazilaName={selectedUpazila?.NAME ?? ""}
+              surveyName={selectedSurvey?.LOCAL_NAME ?? ""}
+              mouzaName={selectedMouza?.MOUZA_NAME ?? ""}
+              jlNumber={selectedMouza?.JL_NUMBER ?? ""}
+              reportMeta={reportMeta}
+            />
           </section>
         ) : null}
       </main>
-
-      <style jsx global>{`
-        .report-table th,
-        .report-table td {
-          border: 1px solid #cbd5e1;
-          padding: 7px 8px;
-          vertical-align: top;
-          text-align: left;
-          line-height: 1.45;
-          overflow-wrap: anywhere;
-        }
-        .report-table th {
-          background: #f1f5f9;
-          font-weight: 700;
-        }
-        @media print {
-          @page {
-            size: A4 landscape;
-            margin: 10mm;
-          }
-          body {
-            background: #fff !important;
-          }
-          body > * {
-            visibility: hidden !important;
-          }
-          #mouza-porcha-report,
-          #mouza-porcha-report * {
-            visibility: visible !important;
-          }
-          #mouza-porcha-report {
-            position: absolute !important;
-            inset: 0 auto auto 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-          }
-          .report-actions,
-          .report-controls,
-          nav,
-          footer:not(.report-footer) {
-            display: none !important;
-          }
-          .report-sheet {
-            border: 0 !important;
-            border-radius: 0 !important;
-            padding: 0 !important;
-          }
-          .report-table {
-            min-width: 0 !important;
-            width: 100% !important;
-            font-size: 8.5pt !important;
-          }
-          .report-table thead {
-            display: table-header-group;
-          }
-          .report-table tr {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          .report-table th,
-          .report-table td {
-            padding: 4px 5px !important;
-          }
-          .report-header,
-          .report-meta {
-            break-inside: avoid;
-          }
-        }
-      `}</style>
     </>
   );
 }
