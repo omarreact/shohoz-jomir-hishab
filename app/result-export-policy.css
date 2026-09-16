@@ -1,0 +1,52 @@
+/*
+ * LandBD result export policy
+ * ---------------------------
+ * Result/report screens expose one user-facing export action: PDF report
+ * download. Legacy image/print controls that still back older specialized
+ * result implementations are hidden until those implementations are migrated
+ * to the shared ResultDownloadButton.
+ */
+
+/* RAJUK plot result: the PNG action sits immediately before the PDF action. */
+button:has(+ button[title="A4 পিডিএফ তৈরি করুন"]) {
+  display: none !important;
+}
+
+/* Keep the existing direct-jsPDF action, but present it consistently as a
+   download action rather than a print action. */
+button[title="A4 পিডিএফ তৈরি করুন"] {
+  min-height: 40px !important;
+  gap: 0 !important;
+  background: #006a4e !important;
+  color: #ffffff !important;
+  font-size: 0 !important;
+}
+
+button[title="A4 পিডিএফ তৈরি করুন"]:hover {
+  background: #005a42 !important;
+}
+
+button[title="A4 পিডিএফ তৈরি করুন"] > svg:not(.animate-spin) {
+  display: none !important;
+}
+
+button[title="A4 পিডিএফ তৈরি করুন"]::before {
+  content: "↓";
+  margin-right: 8px;
+  font-family: var(--font-inter), Inter, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+button[title="A4 পিডিএফ তৈরি করুন"]::after {
+  content: "রিপোর্ট ডাউনলোড করুন";
+  font-family: var(--font-hind-siliguri), var(--font-noto-bengali), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+button[title="A4 পিডিএফ তৈরি করুন"]:disabled::after {
+  content: "পিডিএফ তৈরি হচ্ছে…";
+}
