@@ -37,26 +37,55 @@ const notoSansBengali = Noto_Sans_Bengali({
   display: "swap",
 });
 
+const siteUrl = new URL("https://landbd.pincodeit.com");
+const socialImage = "/brand/og-default.svg";
+
 export const metadata: Metadata = {
-  title: "সহজ জমির হিসাব | ল্যান্ডবিডি",
+  metadataBase: siteUrl,
+  applicationName: "LandBD",
+  title: "সহজ জমির হিসাব | LandBD",
   description:
-    "বাংলাদেশের ভূমি পরিমাপ, খতিয়ান এবং উত্তরাধিকার হিসাবের আধুনিক ডিজিটাল প্ল্যাটফর্ম।",
+    "বাংলাদেশের ভূমি পরিমাপ, খতিয়ান, মানচিত্র এবং উত্তরাধিকার হিসাবের আধুনিক ডিজিটাল প্ল্যাটফর্ম।",
   keywords: [
     "খতিয়ান ক্যালকুলেটর",
     "ফারায়েজ ক্যালকুলেটর",
     "জমি মাপার ক্যালকুলেটর",
     "উত্তরাধিকার আইন",
     "বাংলাদেশ ভূমি",
+    "LandBD",
   ],
-  authors: [{ name: "অ্যাডমিন" }],
+  authors: [{ name: "LandBD" }],
+  creator: "LandBD",
+  publisher: "LandBD",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
-    title: "সহজ জমির হিসাব - ডিজিটাল ভূমি পরিমাপ ও ফারায়েজ",
+    title: "সহজ জমির হিসাব | LandBD",
     description:
-      "খতিয়ানের হিসাব, জমির পরিমাপ এবং উত্তরাধিকার বন্টনের স্মার্ট সমাধান।",
-    url: "https://landbd.pincodeit.com/",
-    siteName: "ল্যান্ডবিডি",
+      "খতিয়ান, জমির পরিমাপ, উত্তরাধিকার, GIS ও মৌজা তথ্যের স্মার্ট ডিজিটাল প্ল্যাটফর্ম।",
+    url: siteUrl,
+    siteName: "LandBD — সহজ জমির হিসাব",
     locale: "bn_BD",
     type: "website",
+    images: [
+      {
+        url: socialImage,
+        width: 1200,
+        height: 630,
+        alt: "LandBD — সহজ জমির হিসাব",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "সহজ জমির হিসাব | LandBD",
+    description: "বাংলাদেশের ডিজিটাল ভূমি তথ্য, হিসাব ও মানচিত্র প্ল্যাটফর্ম।",
+    images: [socialImage],
   },
 };
 
