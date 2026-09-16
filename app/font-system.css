@@ -1,0 +1,48 @@
+/*
+ * LandBD script-aware font routing.
+ *
+ * App UI:
+ *   Latin/English -> Inter
+ *   Bangla        -> Hind Siliguri (Noto Sans Bengali fallback)
+ *
+ * Legal/print reports:
+ *   Latin/English -> Inter
+ *   Bangla        -> Noto Sans Bengali for stable shaping in PDF/print engines
+ */
+
+/* The Mouza Porcha component intentionally applies !important typography for
+   PDF stability. Use a more specific selector here so the mixed report stack
+   still routes Latin and Bengali glyphs to the correct families. */
+#mouza-porcha-report.landbd-report-font,
+#mouza-porcha-report.landbd-report-font * {
+  font-family: var(--font-report) !important;
+}
+
+/* Explicit Latin-only report fields. */
+#mouza-porcha-report .report-brand-mark,
+#mouza-porcha-report .report-brand-name,
+#mouza-porcha-report .report-latin-id,
+#mouza-porcha-report .report-repeat-id,
+#mouza-porcha-report .report-history-arrow,
+#mouza-porcha-report .report-footer-top strong,
+#mouza-porcha-report .report-qr-unavailable,
+#mouza-porcha-report [lang="en"] {
+  font-family: var(--font-english) !important;
+}
+
+/* Reusable semantic helpers for mixed interfaces and generated documents. */
+[data-font="bn"] {
+  font-family: var(--font-bangla) !important;
+}
+
+[data-font="en"] {
+  font-family: var(--font-english) !important;
+}
+
+[data-font="mixed"] {
+  font-family: var(--font-ui) !important;
+}
+
+[data-font="report"] {
+  font-family: var(--font-report) !important;
+}
