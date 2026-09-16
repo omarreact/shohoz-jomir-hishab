@@ -85,6 +85,23 @@ describe("mouza porcha report helpers", () => {
     expect(pages.flat().every((row) => row.continuation === false)).toBe(true);
   });
 
+  it("packs ordinary Khatians densely so later A4 pages are substantially filled", () => {
+    const sourceRows = Array.from({ length: 30 }, (_, index) => ({
+      ...baseRow,
+      ID: index + 1,
+      KHATIAN_NO: String(index + 1),
+      OWNERS: `মালিক ${index + 1}`,
+      GUARDIANS: `পিং অভিভাবক ${index + 1}`,
+      DAGS: String(1000 + index),
+    }));
+    const segments = segmentMouzaReportRows(buildMouzaReportRows(sourceRows, {}));
+    const pages = paginateMouzaReportRows(segments);
+
+    expect(pages.flat()).toHaveLength(30);
+    expect(pages.length).toBeLessThanOrEqual(3);
+    expect(Math.max(...pages.map((page) => page.length))).toBeGreaterThanOrEqual(15);
+  });
+
   it("labels numeric sequence gaps as a hint rather than treating fractional records as missing", () => {
     const summary = summarizeNumericKhatianGaps(["1", "2", "4", "4/1", "7/2"]);
     expect(summary.count).toBe(1);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Download,
   ExternalLink,
   Eye,
   Info,
@@ -20,7 +19,6 @@ import {
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
-import { exportKhatianImage } from "../lib/khatian-png-export";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
@@ -63,8 +61,6 @@ export default function SurveyKhatianSearch() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"search" | "details">("search");
   const [localError, setLocalError] = useState<string | null>(null);
-  const [downloadingImage, setDownloadingImage] = useState(false);
-  const khatianCaptureRef = useRef<HTMLDivElement>(null);
 
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
@@ -213,45 +209,6 @@ export default function SurveyKhatianSearch() {
     setSelectedKhatian(null);
   };
 
-  const downloadKhatianImage = async () => {
-    if (!selectedKhatian || !khatianCaptureRef.current) return;
-    setDownloadingImage(true);
-    setLocalError(null);
-    try {
-      const surveyTag =
-        selectedSurvey?.LOCAL_NAME?.replace(/\s+/g, "") ||
-        surveyKey ||
-        "Khatian";
-      const safeNo = String(selectedKhatian.KHATIAN_NO || "khatian").replace(
-        /[^\w\u0980-\u09FF-]+/g,
-        "_",
-      );
-      const mouza = String(selectedKhatian.MOUZA_NAME || "")
-        .replace(/[^\w\u0980-\u09FF-]+/g, "_")
-        .slice(0, 40);
-      const fileName = mouza
-        ? `LandBD-${surveyTag}-Khatian-${safeNo}-${mouza}`
-        : `LandBD-${surveyTag}-Khatian-${safeNo}`;
-
-      const result = await exportKhatianImage({
-        source: khatianCaptureRef.current,
-        exportWidthPx: 1200,
-        scales: [2, 1.5, 1.25],
-        jpegQuality: 0.95,
-        fileName,
-      });
-
-      if (!result.ok) {
-        setLocalError(result.error);
-      }
-    } catch (error) {
-      console.error("Khatian image export failed", error);
-      setLocalError("খতিয়ানের ছবি তৈরি করা যায়নি। আবার চেষ্টা করুন।");
-    } finally {
-      setDownloadingImage(false);
-    }
-  };
-
   const displayedError = localError || error;
 
   return (
@@ -275,8 +232,7 @@ export default function SurveyKhatianSearch() {
                       নির্দিষ্ট খতিয়ান / দাগ / মালিক অনুসন্ধান
                     </p>
                     <p className="mt-1 text-xs leading-6 text-emerald-800/90 dark:text-emerald-200/90">
-                      পুরো মৌজার সব খতিয়ান একসাথে bulk দেখানো হয় না। বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা
-                      নির্বাচন করে নির্দিষ্ট খতিয়ান নম্বর, দাগ বা মালিকের নাম দিয়ে খুঁজুন।
+                      পুরো মৌজার সব খতিয়ান একসাথে bulk দেখানো হয় না। বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করে নির্দিষ্ট খতিয়ান নম্বর, দাগ বা মালিকের নাম দিয়ে খুঁজুন।
                     </p>
                   </div>
                 </div>
@@ -423,11 +379,7 @@ export default function SurveyKhatianSearch() {
                     disabled={loading.khatians || !mouzaId}
                     className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading.khatians ? (
-                      <Loader2 className="animate-spin" size={16} />
-                    ) : (
-                      <Search size={16} />
-                    )}
+                    {loading.khatians ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
                     অনুসন্ধান
                   </button>
                   <p className="text-xs text-[var(--muted-foreground)]">
@@ -482,30 +434,18 @@ export default function SurveyKhatianSearch() {
                       </thead>
                       <tbody>
                         {khatians.items.map((item) => (
-                          <tr
-                            key={item.ID}
-                            className="border-b border-[var(--border-color)]/70 last:border-0"
-                          >
-                            <td className="px-3 py-2.5 font-semibold tabular-nums">
-                              {item.KHATIAN_NO || "—"}
-                            </td>
-                            <td className="max-w-[14rem] break-words px-3 py-2.5 text-sm">
-                              {item.OWNERS || "—"}
-                            </td>
-                            <td className="max-w-[10rem] break-words px-3 py-2.5 text-sm tabular-nums">
-                              {item.DAGS || "—"}
-                            </td>
-                            <td className="px-3 py-2.5 text-sm tabular-nums">
-                              {item.TOTAL_LAND || "—"}
-                            </td>
+                          <tr key={item.ID} className="border-b border-[var(--border-color)]/70 last:border-0">
+                            <td className="px-3 py-2.5 font-semibold tabular-nums">{item.KHATIAN_NO || "—"}</td>
+                            <td className="max-w-[14rem] break-words px-3 py-2.5 text-sm">{item.OWNERS || "—"}</td>
+                            <td className="max-w-[10rem] break-words px-3 py-2.5 text-sm tabular-nums">{item.DAGS || "—"}</td>
+                            <td className="px-3 py-2.5 text-sm tabular-nums">{item.TOTAL_LAND || "—"}</td>
                             <td className="px-3 py-2.5 text-right">
                               <button
                                 type="button"
                                 onClick={() => showDetails(item.ID)}
                                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-2.5 py-1.5 text-xs font-semibold text-[#006a4e] transition hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                               >
-                                <Eye size={14} />
-                                বিস্তারিত
+                                <Eye size={14} /> বিস্তারিত
                               </button>
                             </td>
                           </tr>
@@ -514,6 +454,15 @@ export default function SurveyKhatianSearch() {
                     </table>
                   </div>
                 )}
+
+                <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200">
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 shrink-0" size={15} />
+                    <span>
+                      তালিকার “মোট জমি” উৎস API-তে প্রকাশিত মান। বিস্তারিত খুললে পূর্ণ source-driven খতিয়ান ও PDF রিপোর্ট ডাউনলোড করা যাবে।
+                    </span>
+                  </div>
+                </div>
               </section>
             ) : null}
           </>
@@ -525,36 +474,17 @@ export default function SurveyKhatianSearch() {
                 onClick={backToSearch}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold transition hover:bg-[var(--secondary)]"
               >
-                <ArrowLeft size={16} />
-                ফিরে যান
+                <ArrowLeft size={16} /> ফিরে যান
               </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold transition hover:bg-[var(--secondary)]"
+              <a
+                href="/mouza-porcha-report"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold text-[#006a4e] transition hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
               >
-                প্রিন্ট
-              </button>
-              {selectedKhatian ? (
-                <button
-                  type="button"
-                  onClick={() => void downloadKhatianImage()}
-                  disabled={downloadingImage}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#006a4e] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {downloadingImage ? (
-                    <Loader2 className="animate-spin" size={16} />
-                  ) : (
-                    <Download size={16} />
-                  )}
-                  {downloadingImage ? "ছবি তৈরি হচ্ছে…" : "উচ্চ রেজোলিউশন ছবি ডাউনলোড"}
-                </button>
-              ) : null}
+                <ExternalLink size={15} /> মৌজা রিপোর্ট
+              </a>
             </div>
 
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white print:hidden">
-              খতিয়ানের বিস্তারিত তথ্য
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white print:hidden">খতিয়ানের বিস্তারিত তথ্য</h2>
 
             {loading.khatian ? (
               <div className="flex min-h-40 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] py-12 text-sm text-slate-500">
@@ -565,7 +495,6 @@ export default function SurveyKhatianSearch() {
                 khatian={selectedKhatian}
                 fullKhatian={selectedFullKhatian ?? undefined}
                 surveyKey={surveyKey}
-                captureRef={khatianCaptureRef}
               />
             ) : (
               <div className="rounded-xl border border-[var(--border-color)] py-10 text-center text-sm text-slate-500">

@@ -136,15 +136,15 @@ export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
 }
 
 /**
- * Produces deterministic A4-friendly logical pages so each page can render its
- * own table header, watermark and footer before window.print(). A Khatian row
- * is never split by this planner; an unusually tall row is placed on its own
- * logical page and allowed to wrap inside that single row.
+ * Produces dense A4-landscape logical pages for direct PDF download. Each
+ * Khatian stays in one row. The first page reserves room for report metadata;
+ * later pages use most of the available table area instead of leaving a large
+ * unused lower half.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
-  firstPageBudget = 22,
-  laterPageBudget = 40,
+  firstPageBudget = 28,
+  laterPageBudget = 64,
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
 
@@ -167,8 +167,8 @@ export function paginateMouzaReportRows(
     current.push(segment);
     used += units;
 
-    // Very large Khatians should occupy their own logical page rather than
-    // pulling the next Khatian into the same page and creating clipping.
+    // A genuinely huge Khatian is still kept as one row on its own logical
+    // page. The PDF renderer scales that one page rather than clipping data.
     if (estimatedUnits >= budget && current.length === 1) {
       pages.push(current);
       current = [];

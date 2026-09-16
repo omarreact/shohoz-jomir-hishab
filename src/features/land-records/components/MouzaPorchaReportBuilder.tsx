@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Printer, RefreshCcw, ShieldCheck, Square } from "lucide-react";
+import { Download, FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
+import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-report-pdf";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
@@ -32,6 +33,17 @@ function chunk<T>(items: T[], size: number): T[][] {
     result.push(items.slice(index, index + size));
   }
   return result;
+}
+
+function safeFilePart(value: unknown, fallback: string): string {
+  const text = String(value ?? "").trim();
+  return (
+    text
+      .replace(/[^\w\u0980-\u09FF-]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "")
+      .slice(0, 48) || fallback
+  );
 }
 
 async function sha256Hex(value: string): Promise<string> {
@@ -70,7 +82,8 @@ export default function MouzaPorchaReportBuilder() {
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [preparingPrint, setPreparingPrint] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [fontReady, setFontReady] = useState(false);
   const [phase, setPhase] = useState<"idle" | "records" | "hal-sabek" | "verification" | "done">("idle");
   const [loadedRecords, setLoadedRecords] = useState(0);
@@ -135,6 +148,8 @@ export default function MouzaPorchaReportBuilder() {
     setHalSabek({});
     setReportMeta(null);
     setGenerating(false);
+    setDownloadingPdf(false);
+    setDownloadError(null);
     setPhase("idle");
     setLoadedRecords(0);
     setExpectedRecords(null);
@@ -201,6 +216,7 @@ export default function MouzaPorchaReportBuilder() {
     setExpectedRecords(null);
     setMappedRecords(0);
     setLocalError(null);
+    setDownloadError(null);
     setVerificationWarning(null);
 
     try {
@@ -342,17 +358,36 @@ export default function MouzaPorchaReportBuilder() {
     setPhase("idle");
   };
 
-  const handlePrint = async () => {
-    if (phase !== "done") return;
-    setPreparingPrint(true);
+  const handleDownloadReport = async () => {
+    if (phase !== "done" || downloadingPdf) return;
+    const source = document.getElementById("mouza-porcha-report");
+    if (!source) {
+      setDownloadError("ডাউনলোডযোগ্য রিপোর্টটি পাওয়া যাচ্ছে না। রিপোর্ট আবার তৈরি করুন।");
+      return;
+    }
+
+    setDownloadingPdf(true);
+    setDownloadError(null);
     try {
-      if (typeof document !== "undefined" && document.fonts) {
-        await document.fonts.ready;
-      }
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      window.print();
+      const fileName = [
+        "LandBD",
+        safeFilePart(selectedSurvey?.LOCAL_NAME, "Survey"),
+        safeFilePart(selectedMouza?.MOUZA_NAME, "Mouza"),
+        `JL-${safeFilePart(selectedMouza?.JL_NUMBER, "NA")}`,
+        reportMeta?.reportId ?? "Report",
+      ].join("-");
+
+      const result = await generatePagedReportPdf({
+        source,
+        pageSelector: ".report-page",
+        fileName,
+        orientation: "landscape",
+        scale: 1.35,
+        jpegQuality: 0.92,
+      });
+      if (!result.ok) setDownloadError(result.error);
     } finally {
-      setPreparingPrint(false);
+      setDownloadingPdf(false);
     }
   };
 
@@ -370,7 +405,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে পেশাদার A4 রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে পেশাদার A4 PDF রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
         pattern="grid"
       />
 
@@ -380,7 +415,7 @@ export default function MouzaPorchaReportBuilder() {
             <CardHeader>
               <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
-                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। বড় মৌজার রিপোর্ট পেজভিত্তিক সংগ্রহ, যাচাই ও PDF-এর জন্য প্রস্তুত হবে।
+                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। বড় মৌজার রিপোর্ট পেজভিত্তিক সংগ্রহ, যাচাই ও PDF ডাউনলোডের জন্য প্রস্তুত হবে।
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -445,7 +480,7 @@ export default function MouzaPorchaReportBuilder() {
                 <span>
                   <span className="block text-sm font-semibold text-emerald-950">সাবেক / হাল দাগ যাচাই করুন</span>
                   <span className="mt-1 block text-xs leading-5 text-emerald-800">
-                    DLRMS mapping পাওয়া গেলে PDF-তে “দাগ পরিবর্তন (সাবেক → হাল)” কলাম দেখানো হবে। পুরো রিপোর্টে mapping না থাকলে খালি দুইটি কলাম দেখানোর বদলে কলামটি স্বয়ংক্রিয়ভাবে লুকানো হবে। কোনো দাগ অনুমান করা হবে না।
+                    DLRMS mapping পাওয়া গেলে PDF-তে “দাগ পরিবর্তন (সাবেক → হাল)” কলাম দেখানো হবে। পুরো রিপোর্টে mapping না থাকলে কলামটি স্বয়ংক্রিয়ভাবে লুকানো হবে। কোনো দাগ অনুমান করা হবে না।
                   </span>
                 </span>
               </label>
@@ -521,18 +556,21 @@ export default function MouzaPorchaReportBuilder() {
           <section className="mt-7">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[var(--muted-foreground)]">
-                {rows.length}টি খতিয়ান {phase === "done" ? "PDF-এর জন্য প্রস্তুত" : "লোড হয়েছে"}
+                {rows.length}টি খতিয়ান {phase === "done" ? "PDF ডাউনলোডের জন্য প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <button
                 type="button"
-                onClick={() => void handlePrint()}
-                disabled={generating || preparingPrint || phase !== "done"}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                onClick={() => void handleDownloadReport()}
+                disabled={generating || downloadingPdf || phase !== "done"}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {preparingPrint ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
-                {preparingPrint ? "ফন্ট প্রস্তুত হচ্ছে…" : "PDF / প্রিন্ট"}
+                {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "রিপোর্ট ডাউনলোড করুন"}
               </button>
+              {downloadError ? (
+                <p className="w-full text-right text-xs font-semibold text-red-600">{downloadError}</p>
+              ) : null}
             </div>
 
             <MouzaPorchaDocument
