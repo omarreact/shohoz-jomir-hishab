@@ -19,11 +19,16 @@ export type MouzaReportRow = {
   history: Array<{ previousDag: string; currentDag: string }>;
 };
 
+/**
+ * Kept as a report-row view model for compatibility with the document layer.
+ * A Khatian is now always represented by exactly one row: there are no
+ * continuation/"চলমান" fragments.
+ */
 export type MouzaReportRowSegment = MouzaReportRow & {
   segmentKey: string;
-  segmentIndex: number;
-  segmentCount: number;
-  continuation: boolean;
+  segmentIndex: 0;
+  segmentCount: 1;
+  continuation: false;
 };
 
 export type KhatianGapSummary = {
@@ -94,82 +99,52 @@ export function buildMouzaReportRows(
   }));
 }
 
-function chunkArray<T>(items: T[], size: number): T[][] {
-  const output: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    output.push(items.slice(index, index + size));
-  }
-  return output.length ? output : [[]];
-}
-
 /**
- * Very large Khatian rows are split into explicit continuation segments.
- * This prevents one giant owner/Dag cell from overflowing an A4 page while
- * preserving every source value in the PDF.
+ * One Khatian must stay one table row. Long owner/guardian/Dag values are
+ * wrapped inline by CSS instead of being split into synthetic continuation
+ * records. This keeps the visual record faithful to the source Khatian.
  */
 export function segmentMouzaReportRows(rows: MouzaReportRow[]): MouzaReportRowSegment[] {
-  const segments: MouzaReportRowSegment[] = [];
-
-  for (const row of rows) {
-    const ownerChunks = chunkArray(row.owners, 6);
-    const guardianChunks = chunkArray(row.guardians, 6);
-    const dagChunks = chunkArray(row.dags, 12);
-    const historyChunks = chunkArray(row.history, 6);
-    const segmentCount = Math.max(
-      ownerChunks.length,
-      guardianChunks.length,
-      dagChunks.length,
-      historyChunks.length,
-    );
-
-    for (let index = 0; index < segmentCount; index += 1) {
-      segments.push({
-        ...row,
-        owners: ownerChunks[index] ?? [],
-        guardians: guardianChunks[index] ?? [],
-        dags: dagChunks[index] ?? [],
-        history: historyChunks[index] ?? [],
-        totalLandAcre: index === 0 ? row.totalLandAcre : "",
-        segmentKey: `${row.sourceId}-${index}`,
-        segmentIndex: index,
-        segmentCount,
-        continuation: index > 0,
-      });
-    }
-  }
-
-  return segments;
+  return rows.map((row) => ({
+    ...row,
+    segmentKey: String(row.sourceId),
+    segmentIndex: 0,
+    segmentCount: 1,
+    continuation: false,
+  }));
 }
 
-function listLineEstimate(values: string[], charsPerLine: number): number {
+function inlineLineEstimate(values: string[], charsPerLine: number): number {
   if (!values.length) return 1;
-  return values.reduce(
-    (total, value) => total + Math.max(1, Math.ceil(value.length / charsPerLine)),
-    0,
-  );
+  return Math.max(1, Math.ceil(values.join(", ").length / charsPerLine));
 }
 
 export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
   const historyValues = row.history.map(
     (entry) => `সাবেক ${entry.previousDag || "—"} → হাল ${entry.currentDag || "—"}`,
   );
+
+  // Cells are rendered as inline wrapping text, so estimate visual lines from
+  // the full cell text instead of counting every item as its own block line.
   return Math.max(
     2,
-    listLineEstimate(row.owners, 32),
-    listLineEstimate(row.guardians, 28),
-    listLineEstimate(row.dags, 22),
-    listLineEstimate(historyValues, 26),
+    inlineLineEstimate(row.owners, 42),
+    inlineLineEstimate(row.guardians, 38),
+    inlineLineEstimate(row.dags, 54),
+    inlineLineEstimate(historyValues, 40),
   );
 }
 
 /**
  * Produces deterministic A4-friendly logical pages so each page can render its
- * own table header and footer (including Page X of Y) before window.print().
+ * own table header, watermark and footer before window.print(). A Khatian row
+ * is never split by this planner; an unusually tall row is placed on its own
+ * logical page and allowed to wrap inside that single row.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
-  firstPageBudget = 24,
-  laterPageBudget = 44,
+  firstPageBudget = 22,
+  laterPageBudget = 40,
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
 
@@ -179,15 +154,27 @@ export function paginateMouzaReportRows(
   let budget = firstPageBudget;
 
   for (const segment of segments) {
-    const units = Math.min(estimateReportSegmentUnits(segment) + 1, laterPageBudget);
+    const estimatedUnits = estimateReportSegmentUnits(segment) + 1;
+    const units = Math.min(estimatedUnits, laterPageBudget);
+
     if (current.length > 0 && used + units > budget) {
       pages.push(current);
       current = [];
       used = 0;
       budget = laterPageBudget;
     }
+
     current.push(segment);
     used += units;
+
+    // Very large Khatians should occupy their own logical page rather than
+    // pulling the next Khatian into the same page and creating clipping.
+    if (estimatedUnits >= budget && current.length === 1) {
+      pages.push(current);
+      current = [];
+      used = 0;
+      budget = laterPageBudget;
+    }
   }
 
   if (current.length) pages.push(current);
