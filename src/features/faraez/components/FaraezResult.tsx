@@ -2,14 +2,12 @@
 
 import { HeirResult, Religion } from "@/src/modules/faraez/types";
 import { toBn } from "@/src/shared/utils";
-import { downloadTextFile, rowsToCsv } from "@/src/shared/lib/export";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
 import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
-import { Scale, Info, FileSpreadsheet, PieChart as PieChartIcon } from "lucide-react";
+import { Scale, Info, PieChart as PieChartIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/src/shared/ui/Card";
-import { Button } from "@/src/shared/ui/button";
 
 interface Props {
   results: HeirResult[];
@@ -39,35 +37,6 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
       value: Number((result.fraction * 100).toFixed(2)),
     }));
   const today = toBn(new Date().toLocaleDateString("en-GB"));
-
-  const downloadFaraezCsv = () => {
-    try {
-      const rows: unknown[][] = [["ওয়ারিশ", "অংশ (%)", "খতিয়ানি অংশ", "আনা", "গন্ডা", "কড়া", "ক্রান্তি", "তিল", "প্রাপ্ত জমি (শতাংশ)", "প্রাপ্ত স্বর্ণ (ভরি)", "প্রাপ্ত অর্থ (টাকা)", "আইনি ব্যাখ্যা"]];
-      validResults.forEach((result) => {
-        for (let index = 1; index <= result.count; index += 1) {
-          const measurement = result.measurements?.[index - 1];
-          rows.push([
-            result.count > 1 ? `${result.heirType} ${index}` : result.heirType,
-            result.fraction === 0 ? "বঞ্চিত" : `${(result.fraction * 100).toFixed(2)}%`,
-            measurement ? measurementText(measurement) : "—",
-            measurement?.ana.toString() ?? "",
-            measurement?.gonda.toString() ?? "",
-            measurement?.kora.toString() ?? "",
-            measurement?.kranti.toString() ?? "",
-            measurement?.til.toString() ?? "",
-            result.assets.land.toFixed(3),
-            result.assets.gold.toFixed(3),
-            result.assets.cash.toFixed(2),
-            result.reasoning,
-          ]);
-        }
-      });
-      downloadTextFile(rowsToCsv(rows), "Faraez_Result.csv");
-    } catch (error) {
-      console.error("Faraez CSV export failed:", error);
-      alert("CSV তৈরিতে সমস্যা হয়েছে।");
-    }
-  };
 
   return (
     <div id="resultSection" className="container mx-auto mt-4 animate-in fade-in zoom-in-95 pb-8">
@@ -120,12 +89,12 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {validResults.flatMap((result, groupIndex) => {
-                    const rows = [];
+                    const resultRows = [];
                     for (let index = 1; index <= result.count; index += 1) {
                       const isExcluded = result.fraction === 0;
                       const heirName = result.count > 1 ? `${result.heirType} ${toBn(index)}` : result.heirType;
                       const measurement = result.measurements?.[index - 1];
-                      rows.push(
+                      resultRows.push(
                         <tr key={`${groupIndex}-${index}`} className={`text-center ${isExcluded ? "bg-red-50/50 text-slate-500" : "bg-white"}`}>
                           <td className="whitespace-nowrap px-4 py-3 text-left font-bold">{heirName}</td>
                           <td className="py-3">{isExcluded ? <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white">বঞ্চিত</span> : <span className="rounded bg-emerald-700 px-2 py-0.5 text-sm font-medium text-white">{toBn((result.fraction * 100).toFixed(2))}%</span>}</td>
@@ -137,7 +106,7 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
                         </tr>,
                       );
                     }
-                    return rows;
+                    return resultRows;
                   })}
                 </tbody>
               </table>
@@ -153,7 +122,6 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
 
         <CardFooter className="no-print flex flex-wrap justify-center gap-4 rounded-b-xl border-t border-success/30 bg-muted/30 p-6">
           <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
-          <Button onClick={downloadFaraezCsv} variant="outline" className="rounded-full border-success px-6 font-bold text-success shadow-sm hover:bg-success hover:text-success-foreground"><FileSpreadsheet size={18} className="mr-2" /> CSV</Button>
           {pdfError ? <p className="w-full text-center text-xs font-semibold text-destructive">{pdfError}</p> : null}
         </CardFooter>
       </Card>
