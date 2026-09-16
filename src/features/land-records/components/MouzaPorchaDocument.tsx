@@ -35,28 +35,28 @@ type Props = {
 function MultiValueCell({ items }: { items: string[] }) {
   if (!items.length) return <span className="report-empty">—</span>;
   return (
-    <div className="report-cell-list">
+    <span className="report-cell-list">
       {items.map((item, index) => (
-        <div key={`${item}-${index}`} className="report-cell-item">
+        <span key={`${item}-${index}`} className="report-cell-item">
           {item}
-        </div>
+        </span>
       ))}
-    </div>
+    </span>
   );
 }
 
 function DagHistoryCell({ history }: { history: MouzaReportRowSegment["history"] }) {
   if (!history.length) return <span className="report-empty">—</span>;
   return (
-    <div className="report-cell-list report-history-list">
+    <span className="report-history-list">
       {history.map((item, index) => (
-        <div key={`${item.previousDag}-${item.currentDag}-${index}`} className="report-cell-item">
+        <span key={`${item.previousDag}-${item.currentDag}-${index}`} className="report-history-item">
           <span className="report-history-label">সাবেক</span> {item.previousDag || "—"}
           <span className="report-history-arrow">→</span>
           <span className="report-history-label">হাল</span> {item.currentDag || "—"}
-        </div>
+        </span>
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -134,19 +134,13 @@ function ReportTable({
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.segmentKey} className={row.segmentCount > 1 ? "report-row-segmented" : ""}>
-            <td className="report-khatian-number">
-              {row.continuation ? (
-                <span className="report-continuation">↳ {row.khatianNo || "—"}<small>চলমান</small></span>
-              ) : (
-                row.khatianNo || "—"
-              )}
-            </td>
+          <tr key={row.segmentKey}>
+            <td className="report-khatian-number">{row.khatianNo || "—"}</td>
             <td><MultiValueCell items={row.owners} /></td>
             <td><MultiValueCell items={row.guardians} /></td>
             <td className="report-dag-cell"><MultiValueCell items={row.dags} /></td>
             {showHistory ? <td className="report-dag-cell"><DagHistoryCell history={row.history} /></td> : null}
-            <td className="report-land-area">{row.totalLandAcre ? `${row.totalLandAcre} একর` : row.continuation ? "" : "—"}</td>
+            <td className="report-land-area">{row.totalLandAcre ? `${row.totalLandAcre} একর` : "—"}</td>
           </tr>
         ))}
       </tbody>
@@ -206,6 +200,11 @@ export default function MouzaPorchaDocument({
           const firstPage = pageIndex === 0;
           return (
             <article className="report-page" key={`page-${pageIndex + 1}`}>
+              <div className="report-watermark" aria-hidden="true">
+                <span>LandBD</span>
+                <small>তথ্যভিত্তিক প্রতিবেদন</small>
+              </div>
+
               {firstPage ? (
                 <>
                   <header className="report-document-header">
@@ -266,7 +265,7 @@ export default function MouzaPorchaDocument({
                         <span>সংখ্যাগত ধারায় দৃশ্যমান ফাঁক শনাক্ত হয়নি; ভগ্নাংশ/বিশেষ খতিয়ান নম্বর আলাদাভাবে গণ্য।</span>
                       )}
                       {includeHalSabek && !showHistory ? (
-                        <span className="report-history-note">কোনো ব্যবহারযোগ্য হাল/সাবেক mapping না থাকায় খালি দুইটি কলামের পরিবর্তে দাগ পরিবর্তন কলামটি লুকানো হয়েছে।</span>
+                        <span className="report-history-note">কোনো ব্যবহারযোগ্য হাল/সাবেক mapping না থাকায় দাগ পরিবর্তন কলামটি লুকানো হয়েছে।</span>
                       ) : null}
                     </div>
                   </section>
@@ -306,19 +305,22 @@ export default function MouzaPorchaDocument({
           font-synthesis: none !important;
           text-rendering: optimizeLegibility;
         }
+
         .report-page-stack {
           display: flex;
           flex-direction: column;
-          gap: 18px;
           align-items: center;
+          gap: 18px;
           overflow-x: auto;
           padding: 2px 2px 24px;
         }
+
         .report-page {
           position: relative;
           box-sizing: border-box;
           width: 297mm;
           min-height: 210mm;
+          overflow: hidden;
           padding: 8mm 8mm 17mm;
           background: #fff;
           color: #172033;
@@ -327,6 +329,46 @@ export default function MouzaPorchaDocument({
           font-size: 8.2pt;
           line-height: 1.42;
         }
+
+        .report-page > :not(.report-watermark) {
+          position: relative;
+          z-index: 1;
+        }
+
+        .report-watermark {
+          position: absolute;
+          z-index: 0;
+          top: 50%;
+          left: 50%;
+          display: flex;
+          width: 72%;
+          transform: translate(-50%, -50%) rotate(-31deg);
+          transform-origin: center;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          user-select: none;
+          color: rgba(0, 106, 78, 0.055);
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .report-watermark span {
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 58pt;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .report-watermark small {
+          margin-top: 1mm;
+          font-size: 15pt;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+        }
+
         .report-document-header {
           display: flex;
           align-items: flex-start;
@@ -335,12 +377,14 @@ export default function MouzaPorchaDocument({
           padding-bottom: 3mm;
           border-bottom: 1.5pt solid #006a4e;
         }
+
         .report-brand-lockup {
           display: flex;
           min-width: 0;
           align-items: center;
           gap: 4mm;
         }
+
         .report-brand-mark {
           display: flex;
           width: 15mm;
@@ -351,20 +395,30 @@ export default function MouzaPorchaDocument({
           border-radius: 4mm;
           background: #006a4e;
           color: #fff;
-          font-family: Arial, sans-serif !important;
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
           font-size: 16pt;
           font-weight: 800;
           letter-spacing: -0.5pt;
           box-shadow: inset 0 -2mm 0 #f5b400;
         }
+
+        .report-brand-name,
+        .report-latin-id,
+        .report-repeat-id,
+        .report-footer-top strong,
+        .report-qr-unavailable,
+        .report-legal-disclaimer p[lang="en"] {
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+        }
+
         .report-brand-name {
           color: #006a4e;
-          font-family: Arial, sans-serif !important;
           font-size: 9pt;
           font-weight: 800;
           letter-spacing: 0.7pt;
           text-transform: uppercase;
         }
+
         .report-document-header h1 {
           margin: 0.7mm 0 0;
           color: #0f172a;
@@ -372,15 +426,18 @@ export default function MouzaPorchaDocument({
           font-weight: 700;
           line-height: 1.25;
         }
+
         .report-document-header p {
           margin: 1mm 0 0;
           color: #64748b;
           font-size: 8pt;
           font-weight: 600;
         }
+
         .report-header-right {
           flex: 0 0 auto;
         }
+
         .report-qr-box {
           width: 28mm;
           text-align: center;
@@ -388,6 +445,7 @@ export default function MouzaPorchaDocument({
           font-size: 5.8pt;
           line-height: 1.25;
         }
+
         .report-qr-box img {
           display: block;
           width: 22mm;
@@ -395,16 +453,17 @@ export default function MouzaPorchaDocument({
           margin: 0 auto 0.7mm;
           object-fit: contain;
         }
+
         .report-qr-unavailable {
           width: 25mm;
           padding: 3mm 1mm;
           border: 0.6pt dashed #cbd5e1;
           color: #94a3b8;
-          font-family: Arial, sans-serif !important;
           font-size: 6pt;
           line-height: 1.35;
           text-align: center;
         }
+
         .report-meta-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -413,11 +472,13 @@ export default function MouzaPorchaDocument({
           border: 0.6pt solid #cbd5e1;
           background: #cbd5e1;
         }
+
         .report-meta-grid > div {
           min-width: 0;
           padding: 1.8mm 2.4mm;
-          background: #fff;
+          background: rgba(255, 255, 255, 0.92);
         }
+
         .report-meta-grid span {
           display: block;
           margin-bottom: 0.5mm;
@@ -425,6 +486,7 @@ export default function MouzaPorchaDocument({
           font-size: 6.3pt;
           font-weight: 600;
         }
+
         .report-meta-grid strong {
           display: block;
           overflow-wrap: break-word;
@@ -432,32 +494,36 @@ export default function MouzaPorchaDocument({
           font-size: 7.4pt;
           font-weight: 700;
         }
+
         .report-latin-id {
-          font-family: Arial, sans-serif !important;
           letter-spacing: 0.15pt;
         }
+
         .report-legal-disclaimer {
           margin: 3mm 0;
           padding: 2.5mm 3mm;
           border: 1.2pt solid #b91c1c;
           border-radius: 1.5mm;
-          background: #fff1f2;
+          background: rgba(255, 241, 242, 0.94);
           color: #7f1d1d;
           line-height: 1.45;
         }
+
         .report-legal-disclaimer strong {
           display: block;
           margin-bottom: 0.7mm;
           font-size: 8.2pt;
         }
+
         .report-legal-disclaimer p {
           margin: 0.4mm 0;
           font-size: 6.7pt;
         }
+
         .report-legal-disclaimer p[lang="en"] {
-          font-family: Arial, sans-serif !important;
           font-size: 6.2pt;
         }
+
         .report-completeness {
           display: grid;
           grid-template-columns: 0.85fr 1.5fr;
@@ -466,29 +532,34 @@ export default function MouzaPorchaDocument({
           padding: 2.4mm 3mm;
           border: 0.6pt solid #bbd7c9;
           border-left: 2.2pt solid #006a4e;
-          background: #f2fbf7;
+          background: rgba(242, 251, 247, 0.94);
           color: #173b2c;
           font-size: 6.6pt;
         }
+
         .report-completeness.is-warning {
           border-color: #f5d58b;
           border-left-color: #b7791f;
-          background: #fffaf0;
+          background: rgba(255, 250, 240, 0.95);
           color: #6b4612;
         }
+
         .report-completeness-main,
         .report-completeness-details {
           display: flex;
           flex-direction: column;
           gap: 0.7mm;
         }
+
         .report-completeness-main strong {
           font-size: 7.3pt;
         }
+
         .report-history-note {
           color: #475569;
           font-style: italic;
         }
+
         .report-repeat-header {
           display: flex;
           align-items: center;
@@ -498,43 +569,50 @@ export default function MouzaPorchaDocument({
           padding-bottom: 2mm;
           border-bottom: 1.2pt solid #006a4e;
         }
+
         .report-repeat-header > div {
           min-width: 0;
         }
+
         .report-repeat-header strong {
           display: block;
           color: #0f172a;
           font-size: 9pt;
         }
+
         .report-repeat-header span {
           display: block;
           margin-top: 0.5mm;
           color: #64748b;
           font-size: 6.5pt;
         }
+
         .report-repeat-header .report-repeat-id {
           flex: 0 0 auto;
           color: #334155;
-          font-family: Arial, sans-serif !important;
           font-size: 6.4pt;
           font-weight: 700;
         }
+
         .report-table-wrapper {
           width: 100%;
           overflow: visible;
         }
+
         .report-table {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
           font-size: 7.1pt;
-          line-height: 1.4;
+          line-height: 1.38;
         }
+
         .report-table thead {
           display: table-header-group;
         }
+
         .report-table th {
-          padding: 1.8mm 1.6mm;
+          padding: 1.5mm 1.4mm;
           border: 0.45pt solid #b9c5d3;
           background: #006a4e;
           color: #fff;
@@ -542,81 +620,80 @@ export default function MouzaPorchaDocument({
           text-align: left;
           vertical-align: middle;
         }
+
         .report-table td {
-          padding: 1.5mm 1.6mm;
+          padding: 1.35mm 1.4mm;
           border: 0.45pt solid #cbd5e1;
           color: #1e293b;
           text-align: left;
           vertical-align: top;
           white-space: normal;
           word-break: normal;
-          overflow-wrap: break-word;
+          overflow-wrap: anywhere;
+          background: rgba(255, 255, 255, 0.82);
         }
+
         .report-table tbody tr:nth-child(even) td {
-          background: #f8fafc;
+          background: rgba(248, 250, 252, 0.86);
         }
+
         .report-table tr {
           break-inside: avoid;
           page-break-inside: avoid;
         }
-        .report-row-segmented td {
-          border-top-style: dashed;
+
+        .report-cell-list,
+        .report-history-list {
+          display: inline;
         }
-        .report-cell-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.6mm;
+
+        .report-cell-item,
+        .report-history-item {
+          display: inline;
         }
-        .report-cell-item {
-          padding-bottom: 0.35mm;
-          border-bottom: 0.3pt dotted #d7dee8;
+
+        .report-cell-item:not(:last-child)::after,
+        .report-history-item:not(:last-child)::after {
+          content: ", ";
+          color: #94a3b8;
         }
-        .report-cell-item:last-child {
-          padding-bottom: 0;
-          border-bottom: 0;
-        }
+
         .report-empty {
           color: #94a3b8;
         }
+
         .report-khatian-number,
         .report-dag-cell,
         .report-land-area {
           font-variant-numeric: tabular-nums;
         }
+
         .report-khatian-number {
           color: #0f172a !important;
           font-weight: 700;
         }
+
         .report-land-area {
           font-weight: 700;
         }
-        .report-continuation {
-          display: flex;
-          flex-direction: column;
-          gap: 0.3mm;
-          color: #475569;
-        }
-        .report-continuation small {
-          font-size: 5.6pt;
-          font-weight: 600;
-        }
-        .report-history-list {
-          gap: 0.8mm;
-        }
+
         .report-history-label {
           color: #475569;
-          font-size: 6pt;
+          font-size: 0.92em;
           font-weight: 700;
         }
+
         .report-history-arrow {
           display: inline-block;
-          margin: 0 0.8mm;
+          margin: 0 0.65mm;
           color: #006a4e;
-          font-family: Arial, sans-serif !important;
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
           font-weight: 700;
         }
+
         .report-page-footer {
-          position: absolute;
+          position: absolute !important;
+          z-index: 2 !important;
           right: 8mm;
           bottom: 5mm;
           left: 8mm;
@@ -624,6 +701,7 @@ export default function MouzaPorchaDocument({
           font-size: 5.8pt;
           line-height: 1.35;
         }
+
         .report-footer-top {
           display: grid;
           grid-template-columns: 1fr auto 1fr;
@@ -632,14 +710,16 @@ export default function MouzaPorchaDocument({
           padding-top: 1.2mm;
           border-top: 0.45pt solid #cbd5e1;
         }
+
         .report-footer-top > :last-child {
           text-align: right;
         }
+
         .report-footer-top strong {
           color: #334155;
-          font-family: Arial, sans-serif !important;
           font-size: 6pt;
         }
+
         .report-footer-disclaimer {
           margin-top: 0.8mm;
           text-align: center;
@@ -647,6 +727,7 @@ export default function MouzaPorchaDocument({
           font-size: 5.7pt;
           font-weight: 600;
         }
+
         @media (max-width: 900px) {
           .report-page-stack {
             align-items: flex-start;
@@ -655,41 +736,50 @@ export default function MouzaPorchaDocument({
             transform-origin: top left;
           }
         }
+
         @media print {
           @page {
-            size: A4 landscape;
+            size: auto;
             margin: 0;
           }
+
           html,
           body {
             margin: 0 !important;
             padding: 0 !important;
             background: #fff !important;
           }
+
           body > * {
             visibility: hidden !important;
           }
+
           #mouza-porcha-report,
           #mouza-porcha-report * {
             visibility: visible !important;
           }
+
           #mouza-porcha-report {
             position: absolute !important;
             inset: 0 auto auto 0 !important;
-            width: 297mm !important;
+            width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
           }
+
           .report-page-stack {
             display: block !important;
+            width: 100% !important;
             overflow: visible !important;
             padding: 0 !important;
           }
+
           .report-page {
-            width: 297mm !important;
-            height: 210mm !important;
-            min-height: 210mm !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
             margin: 0 !important;
+            overflow: hidden !important;
             border: 0 !important;
             border-radius: 0 !important;
             box-shadow: none !important;
@@ -698,18 +788,185 @@ export default function MouzaPorchaDocument({
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
           }
+
           .report-page:last-child {
             break-after: auto;
             page-break-after: auto;
           }
+
           .report-table-wrapper {
             overflow: visible !important;
           }
+
           nav,
           .report-controls,
           .report-actions,
           footer:not(.report-page-footer) {
             display: none !important;
+          }
+        }
+
+        @media print and (orientation: landscape) {
+          .report-page {
+            padding: 7mm 8mm 16mm !important;
+          }
+
+          .report-table {
+            font-size: 7pt !important;
+            line-height: 1.34 !important;
+          }
+
+          .report-table th {
+            padding: 1.35mm 1.3mm !important;
+          }
+
+          .report-table td {
+            padding: 1.15mm 1.3mm !important;
+          }
+        }
+
+        @media print and (orientation: portrait) {
+          .report-page {
+            padding: 7mm 6.5mm 16mm !important;
+          }
+
+          .report-document-header {
+            gap: 5mm !important;
+            padding-bottom: 2mm !important;
+          }
+
+          .report-brand-mark {
+            width: 12mm !important;
+            height: 12mm !important;
+            flex-basis: 12mm !important;
+            border-radius: 3mm !important;
+            font-size: 12.5pt !important;
+          }
+
+          .report-brand-name {
+            font-size: 7.5pt !important;
+          }
+
+          .report-document-header h1 {
+            margin-top: 0.4mm !important;
+            font-size: 13pt !important;
+          }
+
+          .report-document-header p {
+            margin-top: 0.5mm !important;
+            font-size: 6.8pt !important;
+          }
+
+          .report-qr-box {
+            width: 22mm !important;
+            font-size: 5.2pt !important;
+          }
+
+          .report-qr-box img {
+            width: 18mm !important;
+            height: 18mm !important;
+          }
+
+          .report-meta-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            margin: 2mm 0 !important;
+          }
+
+          .report-meta-grid > div {
+            padding: 1.2mm 1.7mm !important;
+          }
+
+          .report-meta-grid span {
+            margin-bottom: 0.25mm !important;
+            font-size: 5.5pt !important;
+          }
+
+          .report-meta-grid strong {
+            font-size: 6.5pt !important;
+          }
+
+          .report-legal-disclaimer {
+            margin: 2mm 0 !important;
+            padding: 1.7mm 2mm !important;
+            line-height: 1.32 !important;
+          }
+
+          .report-legal-disclaimer strong {
+            margin-bottom: 0.35mm !important;
+            font-size: 7.1pt !important;
+          }
+
+          .report-legal-disclaimer p {
+            margin: 0.2mm 0 !important;
+            font-size: 5.8pt !important;
+          }
+
+          .report-legal-disclaimer p[lang="en"] {
+            font-size: 5.3pt !important;
+          }
+
+          .report-completeness {
+            grid-template-columns: 1fr !important;
+            gap: 1mm !important;
+            margin-bottom: 2mm !important;
+            padding: 1.7mm 2mm !important;
+            font-size: 5.7pt !important;
+          }
+
+          .report-completeness-main strong {
+            font-size: 6.4pt !important;
+          }
+
+          .report-repeat-header {
+            gap: 3mm !important;
+            margin-bottom: 2mm !important;
+            padding-bottom: 1.5mm !important;
+          }
+
+          .report-repeat-header strong {
+            font-size: 7.4pt !important;
+          }
+
+          .report-repeat-header span,
+          .report-repeat-header .report-repeat-id {
+            font-size: 5.5pt !important;
+          }
+
+          .report-table {
+            font-size: 6.05pt !important;
+            line-height: 1.28 !important;
+          }
+
+          .report-table th {
+            padding: 1.05mm 0.8mm !important;
+          }
+
+          .report-table td {
+            padding: 0.9mm 0.8mm !important;
+          }
+
+          .report-page-footer {
+            right: 6.5mm !important;
+            bottom: 4mm !important;
+            left: 6.5mm !important;
+            font-size: 5.1pt !important;
+          }
+
+          .report-footer-top strong {
+            font-size: 5.2pt !important;
+          }
+
+          .report-footer-disclaimer {
+            margin-top: 0.5mm !important;
+            font-size: 5pt !important;
+          }
+
+          .report-watermark span {
+            font-size: 44pt !important;
+          }
+
+          .report-watermark small {
+            font-size: 11pt !important;
           }
         }
       `}</style>

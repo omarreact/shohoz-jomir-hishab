@@ -49,7 +49,7 @@ describe("mouza porcha report helpers", () => {
     expect(row.history).toEqual([{ previousDag: "1209", currentDag: "1265" }]);
   });
 
-  it("splits very large rows into continuation segments and paginates them", () => {
+  it("keeps a very large Khatian as one row without continuation fragments", () => {
     const large = {
       ...baseRow,
       OWNERS: Array.from({ length: 20 }, (_, index) => `মালিক ${index + 1}`).join(", "),
@@ -58,10 +58,31 @@ describe("mouza porcha report helpers", () => {
     };
     const rows = buildMouzaReportRows([large], {});
     const segments = segmentMouzaReportRows(rows);
-    expect(segments.length).toBeGreaterThan(1);
-    expect(segments[1]?.continuation).toBe(true);
-    expect(segments[1]?.totalLandAcre).toBe("");
-    expect(paginateMouzaReportRows(segments, 3, 3).length).toBeGreaterThan(1);
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.continuation).toBe(false);
+    expect(segments[0]?.segmentCount).toBe(1);
+    expect(segments[0]?.owners).toHaveLength(20);
+    expect(segments[0]?.guardians).toHaveLength(20);
+    expect(segments[0]?.dags).toHaveLength(35);
+    expect(segments[0]?.totalLandAcre).toBe("10.8616");
+    expect(paginateMouzaReportRows(segments)).toHaveLength(1);
+  });
+
+  it("never splits one Khatian between logical pages", () => {
+    const rows = buildMouzaReportRows(
+      [
+        baseRow,
+        { ...baseRow, ID: 42, KHATIAN_NO: "42" },
+      ],
+      {},
+    );
+    const segments = segmentMouzaReportRows(rows);
+    const pages = paginateMouzaReportRows(segments, 2, 2);
+
+    expect(pages.flat()).toHaveLength(2);
+    expect(new Set(pages.flat().map((row) => row.khatianNo))).toEqual(new Set(["41", "42"]));
+    expect(pages.flat().every((row) => row.continuation === false)).toBe(true);
   });
 
   it("labels numeric sequence gaps as a hint rather than treating fractional records as missing", () => {
