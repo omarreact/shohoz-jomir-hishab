@@ -50,4 +50,5 @@ export const collections = {
   loginHistory: db.collection("loginHistory"),
   mapVisits: db.collection("mapVisits"),
   mapVisitors: db.collection("mapVisitors"),
+  reportVerifications: db.collection("reportVerifications"),
 };
