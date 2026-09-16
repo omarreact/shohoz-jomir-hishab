@@ -3,6 +3,7 @@ import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
 import "./landbd-theme.css";
+import "./font-system.css";
 import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
 import VisitTracker from "@/src/shared/components/VisitTracker";
