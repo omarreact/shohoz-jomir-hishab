@@ -10,6 +10,7 @@ export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
   dlrmsKhatian: "/dlrms-khatian",
+  mouzaPorchaReport: "/mouza-porcha-report",
   landMeasurement: "/land-measurement",
   inheritance: "/faraez",
   /** Primary interactive RAJUK GIS map */
@@ -34,6 +35,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   home: { en: "Home", bn: "হোম" },
   records: { en: "Land records", bn: "খতিয়ান" },
   dlrmsKhatian: { en: "DLRMS khatian", bn: "ডিএলআরএমএস খতিয়ান" },
+  mouzaPorchaReport: { en: "Mouza porcha report", bn: "মৌজা পর্চা রিপোর্ট" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
   inheritance: { en: "Inheritance", bn: "ফারায়েজ" },
   landMap: { en: "RAJUK GIS map", bn: "রাজউক ম্যাপ" },
@@ -54,6 +56,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
+  "mouzaPorchaReport",
   "documents",
   "history",
   "landMeasurement",
@@ -71,6 +74,7 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
+  "mouzaPorchaReport",
   "inheritance",
   "landMeasurement",
   "landMap",
@@ -90,6 +94,7 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "home",
   "records",
   "dlrmsKhatian",
+  "mouzaPorchaReport",
   "landMeasurement",
   "inheritance",
   "landMap",
