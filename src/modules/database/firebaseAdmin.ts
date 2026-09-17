@@ -11,18 +11,26 @@ function normalizePrivateKey(raw: string | undefined): string | undefined {
   return key.replace(/\\n/g, "\n");
 }
 
+function isPrivateKey(value: string | undefined): value is string {
+  return Boolean(
+    value &&
+      value.includes("-----BEGIN PRIVATE KEY-----") &&
+      value.includes("-----END PRIVATE KEY-----"),
+  );
+}
+
 function initAdmin(): void {
   if (getApps().length) { adminReady = true; return; }
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
   try {
-    if (projectId && clientEmail && privateKey) {
+    if (projectId && clientEmail && isPrivateKey(privateKey)) {
       initializeApp({ projectId, credential: cert({ projectId, clientEmail, privateKey }) });
       adminReady = true;
       return;
     }
-    console.warn("[FirebaseAdmin] Missing service-account credentials. Using project-only fallback (token verify may fail).");
+    console.warn("[FirebaseAdmin] Missing or malformed service-account credentials. Using project-only fallback (token verify may fail).");
     initializeApp({ projectId: projectId || "demo-project" });
     adminReady = false;
   } catch (error: unknown) {
