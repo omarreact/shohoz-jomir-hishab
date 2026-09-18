@@ -6,6 +6,7 @@ import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-report-pdf";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
@@ -77,7 +78,7 @@ export default function MouzaPorchaReportBuilder() {
   const [upazila, setUpazila] = useState("");
   const [surveyId, setSurveyId] = useState("");
   const [mouzaId, setMouzaId] = useState("");
-  const [includeHalSabek, setIncludeHalSabek] = useState(true);
+  const [includeHalSabek, setIncludeHalSabek] = useState(false);
   const [rows, setRows] = useState<KhatianIndex[]>([]);
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
@@ -559,15 +560,18 @@ export default function MouzaPorchaReportBuilder() {
                 {rows.length}টি খতিয়ান {phase === "done" ? "PDF ডাউনলোডের জন্য প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
-              <button
-                type="button"
-                onClick={() => void handleDownloadReport()}
-                disabled={generating || downloadingPdf || phase !== "done"}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "রিপোর্ট ডাউনলোড করুন"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleDownloadReport()}
+                  disabled={generating || downloadingPdf || phase !== "done"}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                  {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "রিপোর্ট ডাউনলোড করুন"}
+                </button>
+                <ResultPrintButton disabled={generating || phase !== "done"} className="rounded-lg" />
+              </div>
               {downloadError ? (
                 <p className="w-full text-right text-xs font-semibold text-red-600">{downloadError}</p>
               ) : null}
