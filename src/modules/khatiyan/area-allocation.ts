@@ -62,8 +62,8 @@ function exactAreaAsNumber(scaledNumerator: bigint): number {
 
 export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): AreaAllocation[] {
   const totalTil = shares.reduce((sum, share) => sum + shareToTilExact(share), 0n);
-  if (totalTil !== TIL_PER_FULL_UNIT_BIGINT) {
-    throw new Error("Plot allocation requires owner shares to total exactly 16 আনা");
+  if (totalTil > TIL_PER_FULL_UNIT_BIGINT) {
+    throw new Error("Total owner shares cannot exceed 16 আনা");
   }
 
   const scaledTotal = toScaledArea(totalArea);
@@ -76,7 +76,9 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
   });
 
   const assigned = rows.reduce((sum, row) => sum + row.base, 0n);
-  let remaining = scaledTotal - assigned;
+  const targetTotalNumerator = scaledTotal * totalTil;
+  const targetTotalAssigned = (targetTotalNumerator + (TIL_PER_FULL_UNIT_BIGINT / 2n)) / TIL_PER_FULL_UNIT_BIGINT;
+  let remainingToDistribute = targetTotalAssigned - assigned;
 
   [...rows]
     .sort((a, b) =>
@@ -87,14 +89,15 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
           : a.index - b.index,
     )
     .forEach((row) => {
-      if (remaining > 0n) {
+      if (remainingToDistribute > 0n) {
         row.base += 1n;
-        remaining -= 1n;
+        remainingToDistribute -= 1n;
       }
     });
 
-  if (remaining !== 0n) {
-    throw new Error("Exact Khatiyan area allocation failed to conserve the scaled plot area");
+  const finalAssigned = rows.reduce((sum, row) => sum + row.base, 0n);
+  if (finalAssigned !== targetTotalAssigned) {
+    throw new Error("Exact Khatiyan area allocation failed to conserve the allocated portion");
   }
 
   return rows
@@ -113,7 +116,8 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
 
 /** Exact conservation check; epsilon is retained only for source compatibility and is ignored. */
 export function allocationsConserved(totalArea: number, allocations: AreaAllocation[], _epsilon = 0): boolean {
-  const roundedTotal = toScaledArea(totalArea);
+  const exactTotalNumerator = allocations.reduce((sum, allocation) => sum + allocation.exactAreaScaled, 0n);
+  const expectedAllocated = (exactTotalNumerator + (TIL_PER_FULL_UNIT_BIGINT / 2n)) / TIL_PER_FULL_UNIT_BIGINT;
   const allocated = allocations.reduce((sum, allocation) => sum + allocation.allocatedAreaScaled, 0n);
-  return allocated === roundedTotal;
+  return allocated === expectedAllocated;
 }
