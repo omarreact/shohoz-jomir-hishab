@@ -6,6 +6,7 @@ import { toBn } from "@/src/shared/utils";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDocument from "@/src/shared/components/ResultDocument";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 
 type Props = {
   result: MeasurementResult;
@@ -20,8 +21,9 @@ export default function MeasurementResultCard({ result }: Props) {
 
   return (
     <section id="landResultSection" className="mt-8 space-y-3">
-      <div className="flex justify-end print:hidden">
+      <div className="flex justify-end gap-2 print:hidden">
         <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
+        <ResultPrintButton />
       </div>
 
       {pdfError ? (

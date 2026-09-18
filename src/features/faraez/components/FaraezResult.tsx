@@ -4,6 +4,7 @@ import { HeirResult, Religion } from "@/src/modules/faraez/types";
 import { toBn } from "@/src/shared/utils";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
 import { Scale, Info, PieChart as PieChartIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -122,6 +123,7 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
 
         <CardFooter className="no-print flex flex-wrap justify-center gap-4 rounded-b-xl border-t border-success/30 bg-muted/30 p-6">
           <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
+          <ResultPrintButton />
           {pdfError ? <p className="w-full text-center text-xs font-semibold text-destructive">{pdfError}</p> : null}
         </CardFooter>
       </Card>

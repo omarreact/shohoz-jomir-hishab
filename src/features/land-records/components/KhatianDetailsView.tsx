@@ -5,6 +5,7 @@ import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
@@ -50,8 +51,9 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
 
   return (
     <>
-      <div className="mb-2 flex justify-end print:hidden" data-exclude-export="1">
+      <div className="mb-2 flex justify-end gap-2 print:hidden" data-exclude-export="1">
         <ResultDownloadButton onClick={() => void handleGeneratePdf()} loading={isGenerating || isPreparingPdf} />
+        <ResultPrintButton />
       </div>
 
       {pdfError ? (

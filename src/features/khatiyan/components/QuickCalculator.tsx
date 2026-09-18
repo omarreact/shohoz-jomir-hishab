@@ -7,6 +7,7 @@ import type { KhatiyanQuickData } from "@/src/shared/types";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDocument from "@/src/shared/components/ResultDocument";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import {
   anaOptions,
   gondaOptions,
@@ -96,8 +97,9 @@ export default function QuickCalculator({
 
         {quickResult ? (
           <div className="border-t border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-900/20">
-            <div className="no-print flex justify-end px-6 pt-5">
+            <div className="no-print flex justify-end gap-2 px-6 pt-5">
               <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
+              <ResultPrintButton />
             </div>
             {pdfError ? <p className="no-print px-6 pt-2 text-right text-xs font-semibold text-red-600">{pdfError}</p> : null}
 

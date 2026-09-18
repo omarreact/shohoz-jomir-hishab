@@ -4,6 +4,7 @@ import { toBn } from "@/src/shared/utils";
 import { KHATIYAN_RECORD_STANDARD } from "@/src/modules/khatiyan/standards";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
+import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
 import type { RefObject } from "react";
 import type { KhatiyanOwnerResult } from "@/src/shared/types";
@@ -92,6 +93,7 @@ export default function ResultSection({ detailedResults, exportRef }: ResultSect
 
         <div className="no-print flex flex-wrap justify-center gap-4 border-t border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-950">
           <ResultDownloadButton onClick={() => void generatePDF()} loading={isGenerating} />
+          <ResultPrintButton />
           {pdfError ? <p className="w-full text-center text-xs font-semibold text-red-600">{pdfError}</p> : null}
         </div>
       </div>
