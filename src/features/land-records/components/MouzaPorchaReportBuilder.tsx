@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
+import { FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
-import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-report-pdf";
 import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
@@ -36,16 +35,7 @@ function chunk<T>(items: T[], size: number): T[][] {
   return result;
 }
 
-function safeFilePart(value: unknown, fallback: string): string {
-  const text = String(value ?? "").trim();
-  return (
-    text
-      .replace(/[^\w\u0980-\u09FF-]+/g, "_")
-      .replace(/_+/g, "_")
-      .replace(/^_|_$/g, "")
-      .slice(0, 48) || fallback
-  );
-}
+
 
 async function sha256Hex(value: string): Promise<string> {
   if (!globalThis.crypto?.subtle) throw new Error("Web Crypto unavailable");
@@ -83,8 +73,6 @@ export default function MouzaPorchaReportBuilder() {
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [fontReady, setFontReady] = useState(false);
   const [phase, setPhase] = useState<"idle" | "records" | "hal-sabek" | "verification" | "done">("idle");
   const [loadedRecords, setLoadedRecords] = useState(0);
@@ -149,8 +137,6 @@ export default function MouzaPorchaReportBuilder() {
     setHalSabek({});
     setReportMeta(null);
     setGenerating(false);
-    setDownloadingPdf(false);
-    setDownloadError(null);
     setPhase("idle");
     setLoadedRecords(0);
     setExpectedRecords(null);
@@ -217,7 +203,6 @@ export default function MouzaPorchaReportBuilder() {
     setExpectedRecords(null);
     setMappedRecords(0);
     setLocalError(null);
-    setDownloadError(null);
     setVerificationWarning(null);
 
     try {
@@ -359,38 +344,7 @@ export default function MouzaPorchaReportBuilder() {
     setPhase("idle");
   };
 
-  const handleDownloadReport = async () => {
-    if (phase !== "done" || downloadingPdf) return;
-    const source = document.getElementById("mouza-porcha-report");
-    if (!source) {
-      setDownloadError("ডাউনলোডযোগ্য রিপোর্টটি পাওয়া যাচ্ছে না। রিপোর্ট আবার তৈরি করুন।");
-      return;
-    }
 
-    setDownloadingPdf(true);
-    setDownloadError(null);
-    try {
-      const fileName = [
-        "LandBD",
-        safeFilePart(selectedSurvey?.LOCAL_NAME, "Survey"),
-        safeFilePart(selectedMouza?.MOUZA_NAME, "Mouza"),
-        `JL-${safeFilePart(selectedMouza?.JL_NUMBER, "NA")}`,
-        reportMeta?.reportId ?? "Report",
-      ].join("-");
-
-      const result = await generatePagedReportPdf({
-        source,
-        pageSelector: ".report-page",
-        fileName,
-        orientation: "landscape",
-        scale: 1.35,
-        jpegQuality: 0.92,
-      });
-      if (!result.ok) setDownloadError(result.error);
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
 
   const displayedError = localError || locationError;
   const progressTotal = expectedRecords ?? Math.max(loadedRecords, rows.length);
@@ -561,20 +515,8 @@ export default function MouzaPorchaReportBuilder() {
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleDownloadReport()}
-                  disabled={generating || downloadingPdf || phase !== "done"}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {downloadingPdf ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                  {downloadingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "রিপোর্ট ডাউনলোড করুন"}
-                </button>
                 <ResultPrintButton disabled={generating || phase !== "done"} className="rounded-lg" />
               </div>
-              {downloadError ? (
-                <p className="w-full text-right text-xs font-semibold text-red-600">{downloadError}</p>
-              ) : null}
             </div>
 
             <MouzaPorchaDocument

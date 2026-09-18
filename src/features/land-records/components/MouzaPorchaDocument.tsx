@@ -613,7 +613,7 @@ export default function MouzaPorchaDocument({
 
         .report-table th {
           padding: 1.5mm 1.4mm;
-          border: 0.45pt solid #b9c5d3;
+          border: 1px solid #b9c5d3;
           background: #006a4e;
           color: #fff;
           font-weight: 700;
@@ -623,7 +623,7 @@ export default function MouzaPorchaDocument({
 
         .report-table td {
           padding: 1.35mm 1.4mm;
-          border: 0.45pt solid #cbd5e1;
+          border: 1px solid #cbd5e1;
           color: #1e293b;
           text-align: left;
           vertical-align: top;
@@ -708,7 +708,7 @@ export default function MouzaPorchaDocument({
           align-items: center;
           gap: 3mm;
           padding-top: 1.2mm;
-          border-top: 0.45pt solid #cbd5e1;
+          border-top: 1px solid #cbd5e1;
         }
 
         .report-footer-top > :last-child {

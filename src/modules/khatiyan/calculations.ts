@@ -20,22 +20,22 @@ type NumberParser = (value: string | number) => number;
 export { ANA_PER_FULL_UNIT, GONDA_PER_ANA, KORA_PER_GONDA, KRANTI_PER_KORA, TIL_PER_ANA, TIL_PER_KRANTI };
 export const KHATIYAN_UNIT_TIL = TIL_PER_ANA * ANA_PER_FULL_UNIT;
 
-function ownerToShare(owner: KhatiyanOwner): KhatiyanShare {
-  return { a: Number(owner.a), g: Number(owner.g), k: Number(owner.k), kr: Number(owner.kr), ti: Number(owner.ti) };
+function ownerToShare(owner: KhatiyanOwner, parser: NumberParser = Number): KhatiyanShare {
+  return { a: parser(owner.a), g: parser(owner.g), k: parser(owner.k), kr: parser(owner.kr), ti: parser(owner.ti) };
 }
 
 /** Authoritative Til count for ledger math — bigint only, never floating-point. */
-function shareToTilExactFromOwner(owner: KhatiyanOwner): bigint {
-  return shareToTilExact(ownerToShare(owner));
+function shareToTilExactFromOwner(owner: KhatiyanOwner, parser: NumberParser = Number): bigint {
+  return shareToTilExact(ownerToShare(owner, parser));
 }
 
-export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number): string[] {
+export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number, parser: NumberParser = Number): string[] {
   const errors: string[] = [];
   if (!Number.isFinite(fullUnitTil) || fullUnitTil <= 0) errors.push("Full Khatiyan unit must be a positive finite number");
 
   let totalOwnerTil = 0n;
   owners.forEach((owner, index) => {
-    const values = [owner.a, owner.g, owner.k, owner.kr, owner.ti].map(Number);
+    const values = [owner.a, owner.g, owner.k, owner.kr, owner.ti].map(parser);
     if (values.some((value) => !Number.isFinite(value))) {
       errors.push(`Owner ${index + 1} contains a non-finite share value`);
       return;
@@ -56,7 +56,7 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
     });
 
     try {
-      const shareTil = shareToTilExactFromOwner(owner);
+      const shareTil = shareToTilExactFromOwner(owner, parser);
       if (shareTil > TIL_PER_FULL_UNIT_BIGINT) errors.push(`Owner ${index + 1} share exceeds the full unit`);
       else totalOwnerTil += shareTil;
     } catch {
@@ -71,20 +71,20 @@ export function validateKhatiyanInputs(owners: KhatiyanOwner[], plots: KhatiyanP
   }
 
   plots.forEach((plot, index) => {
-    const area = Number(plot.a);
+    const area = parser(plot.a);
     if (!Number.isFinite(area) || area <= 0) errors.push(`Plot ${index + 1} must have a positive finite area`);
   });
   return errors;
 }
 
 export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlot[], fullUnitTil: number, toEn: NumberParser, toBn: NumberFormatter) {
-  const validationErrors = validateKhatiyanInputs(owners, plots, fullUnitTil);
+  const validationErrors = validateKhatiyanInputs(owners, plots, fullUnitTil, toEn);
   if (validationErrors.length > 0) throw new Error(`Invalid Khatiyan input: ${validationErrors.join("; ")}`);
   if (fullUnitTil !== TIL_PER_FULL_UNIT) throw new Error("Khatiyan allocation requires the canonical 16-আনা unit");
 
   let hasData = false;
   const computedResults: KhatiyanOwnerResult[] = [];
-  const shareInputs: KhatiyanShare[] = owners.map((owner) => ownerToShare(owner));
+  const shareInputs: KhatiyanShare[] = owners.map((owner) => ownerToShare(owner, toEn));
   const allocationsByPlot = plots.map((plot) => allocatePlotArea(toEn(plot.a), shareInputs));
 
   // Authoritative conservation invariant: every plot's scaled bigint ledger must
@@ -96,7 +96,7 @@ export function buildDetailedResults(owners: KhatiyanOwner[], plots: KhatiyanPlo
   }
 
   owners.forEach((o, ownerIndex) => {
-    const shareTilExact = shareToTilExactFromOwner(o);
+    const shareTilExact = shareToTilExactFromOwner(o, toEn);
     if (shareTilExact <= 0n) return;
     hasData = true;
     let totalLand = 0;
