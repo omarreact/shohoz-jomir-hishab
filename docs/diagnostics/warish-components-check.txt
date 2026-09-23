@@ -1,0 +1,1 @@
+Diagnostic build trigger for warishsanad component layer.
