@@ -143,6 +143,12 @@ export async function proxy(request: NextRequest) {
     "/api/blogs",
     "/api/comments",
     "/api/land-records",
+    // Public, non-sensitive lookup endpoints used by the standalone
+    // /warishsanad development workspace.
+    "/api/ward-data",
+    "/api/wards",
+    "/api/zones",
+    "/api/authorities",
   ];
   const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 
