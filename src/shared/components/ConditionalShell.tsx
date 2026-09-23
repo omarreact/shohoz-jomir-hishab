@@ -31,6 +31,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   }, []);
 
   const isGeospatialMap = pathname === "/geospatial-map" || pathname?.startsWith("/geospatial-map/");
+  const isWarishSanad = pathname === "/warishsanad" || pathname?.startsWith("/warishsanad/");
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
   const isSystemRoute = pathname?.startsWith("/403");
@@ -40,6 +41,16 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   // authenticated advanced controls internally. It also bypasses all app chrome.
   if (isGeospatialMap) {
     return <>{children}</>;
+  }
+
+  // Pixel-calibrated document workspaces keep access/maintenance controls but
+  // deliberately bypass Navbar/Footer/mobile chrome so A4 geometry stays exact.
+  if (isWarishSanad) {
+    return (
+      <MaintenanceGate>
+        <PageAccessGate>{children}</PageAccessGate>
+      </MaintenanceGate>
+    );
   }
 
   const pageContent = isControlPlane ? children : <PageAccessGate>{children}</PageAccessGate>;
