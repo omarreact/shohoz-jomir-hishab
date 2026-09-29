@@ -96,6 +96,10 @@ export default function WarishEditor() {
   const [officialLoading, setOfficialLoading] = useState(false);
   const [officialStatus, setOfficialStatus] = useState("");
   const [officialSourceUrls, setOfficialSourceUrls] = useState<{ councillors?: string; officers?: string }>({});
+  const [officialDetails, setOfficialDetails] = useState<{
+    councillor?: { name?: string; title?: string; office?: string; email?: string; mobile?: string };
+    officer?: { name?: string; title?: string; office?: string; email?: string; mobile?: string };
+  }>({});
 
   useEffect(() => {
     try {
@@ -187,6 +191,13 @@ export default function WarishEditor() {
       setOfficialLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!officialWards.length || !data.ward) return;
+    void loadOfficialWard(data.ward);
+    // Load the current saved/default ward once the official directory is ready.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [officialWards.length]);
 
   const updateWard = (ward: string) => {
     setSaved(false);
@@ -314,9 +325,23 @@ export default function WarishEditor() {
               <button type="button" className="official-refresh" disabled={officialLoading} onClick={() => void loadOfficialWard(data.ward)}>
                 {officialLoading ? "লোড হচ্ছে…" : "DNCC থেকে রিফ্রেশ"}
               </button>
+              {(officialDetails.councillor?.email || officialDetails.councillor?.mobile || officialDetails.officer?.email || officialDetails.officer?.mobile) ? (
+                <div className="official-contact-grid">
+                  <div>
+                    <span>কাউন্সিলর</span>
+                    <strong>{officialDetails.councillor?.name || "—"}</strong>
+                    <small>{officialDetails.councillor?.mobile || officialDetails.councillor?.email || "যোগাযোগ প্রকাশিত নেই"}</small>
+                  </div>
+                  <div>
+                    <span>আঞ্চলিক নির্বাহী কর্মকর্তা</span>
+                    <strong>{officialDetails.officer?.name || "—"}</strong>
+                    <small>{officialDetails.officer?.email || officialDetails.officer?.mobile || "যোগাযোগ প্রকাশিত নেই"}</small>
+                  </div>
+                </div>
+              ) : null}
               <div className="official-links">
-                {officialSourceUrls.councillors ? <a href={officialSourceUrls.councillors} target="_blank" rel="noreferrer">Official councillors</a> : null}
-                {officialSourceUrls.officers ? <a href={officialSourceUrls.officers} target="_blank" rel="noreferrer">Official officers</a> : null}
+                {officialSourceUrls.councillors ? <a href={officialSourceUrls.councillors} target="_blank" rel="noreferrer">DNCC councillor directory ↗</a> : null}
+                {officialSourceUrls.officers ? <a href={officialSourceUrls.officers} target="_blank" rel="noreferrer">DNCC officer directory ↗</a> : null}
               </div>
             </div>
           </section>
