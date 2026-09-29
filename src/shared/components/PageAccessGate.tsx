@@ -116,7 +116,12 @@ export default function PageAccessGate({ children }: { children: React.ReactNode
   }, []);
 
   const page = useMemo(() => resolvePageDefinition(pathname), [pathname]);
-  const requiredAccess = useMemo(() => getPageAccessLevel(pathname, rules), [pathname, rules]);
+  const requiredAccess = useMemo(() => {
+    // /warish is intentionally account-only. Keep a hard minimum of logged_in
+    // even if an older stored admin rule still says "public".
+    if (pathname === "/warish" || pathname.startsWith("/warish/")) return "logged_in";
+    return getPageAccessLevel(pathname, rules);
+  }, [pathname, rules]);
 
   if (isSystemPageAccessBypass(pathname) || !page) return <>{children}</>;
   if (rulesLoading) return <LoadingState />;

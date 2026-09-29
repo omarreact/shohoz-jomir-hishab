@@ -82,9 +82,9 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   {
     id: "/warish",
     name: "ওয়ারিশ সনদপত্র",
-    description: "DNCC ওয়ার্ড/অঞ্চল রেফারেন্সসহ public editable draft certificate workspace.",
+    description: "DNCC ওয়ার্ড/অঞ্চল রেফারেন্সসহ logged-in editable draft certificate workspace.",
     category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
+    defaultAccess: "logged_in",
   },
   {
     id: "/dap-map",
