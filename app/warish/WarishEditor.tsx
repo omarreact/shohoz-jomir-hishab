@@ -293,37 +293,43 @@ export default function WarishEditor() {
       </aside>
 
       <div className="preview-panel">
-        <main className="page-a4" aria-label="Editable draft succession certificate preview">
-          <img className="watermark" src="/warish-assets/dncc.png" alt="" aria-hidden="true" />
-          <div className="draft-watermark" aria-hidden="true">
-            <strong>DRAFT / SAMPLE</strong>
-            <span>অননুমোদিত নমুনা</span>
-          </div>
-
-          <div className="content">
+        <main className="page-a4" aria-label="Editable draft family certificate preview">
+          <div className="sample-pad" aria-hidden="true">
             <header className="header">
               <div className="logo-wrap">
-                <img className="header-logo" src="/warish-assets/dncc.png" alt="ঢাকা উত্তর সিটি কর্পোরেশন লোগো" />
+                <img className="header-logo" src="/brand/landbd-symbol.svg" alt="" />
               </div>
               <div className="header-copy">
-                <div className="header-bn">ঢাকা উত্তর সিটি কর্পোরেশন</div>
-                <div className="header-en">Dhaka North City Corporation</div>
+                <div className="header-bn">LANDBD SAMPLE FAMILY CERTIFICATE</div>
+                <div className="header-en">Editable Draft Template — Not an Official Government Document</div>
                 <div className="header-address">
-                  অঞ্চল-{zoneLabel(data.zone)} / Zone-{String(data.zone).padStart(2, "0")}, {data.officeAddress}.
+                  Zone-{String(data.zone).padStart(2, "0")} · Ward-{data.ward} · {data.officeAddress}
                 </div>
-                <div className="header-website">Website: www.dncc.gov.bd</div>
               </div>
             </header>
 
             <div className="divider" />
 
             <div className="ref-date">
-              <div>সূত্র: {data.referenceNo}</div>
-              <div>তারিখ: {data.issueDate}</div>
+              <div className="ref-field">
+                <span>Ref:</span>
+                <strong>{data.referenceNo}</strong>
+              </div>
+              <div className="date-field">
+                <span>Date:</span>
+                <strong>{data.issueDate}</strong>
+              </div>
             </div>
 
-            <div className="doc-title"><span>ওয়ারিশ সনদপত্র</span></div>
+            <div className="doc-title"><span>FAMILY CERTIFICATE — SAMPLE</span></div>
+          </div>
 
+          <div className="draft-watermark" aria-hidden="true">
+            <strong>DRAFT / SAMPLE</strong>
+            <span>NOT OFFICIAL</span>
+          </div>
+
+          <section className="certificate-body">
             <p className="body-paragraph">{intro}</p>
             <p className="body-paragraph">{data.summary}</p>
             <p className="body-paragraph">
@@ -355,29 +361,29 @@ export default function WarishEditor() {
             </table>
 
             <p className="body-paragraph">{data.closing}</p>
-          </div>
+          </section>
 
           <div className="signatures-area">
             <div className="signature-block">
               <span className="signature-line" />
-              {data.leftAuthorityName ? <strong>{data.leftAuthorityName}</strong> : null}
+              <strong>Recommender — SAMPLE</strong>
+              {data.leftAuthorityName ? <span>{data.leftAuthorityName}</span> : null}
               <span>{data.leftAuthorityTitle}</span>
-              <small>স্বাক্ষর সংযুক্ত নয়</small>
+              <small>কোনো বাস্তব স্বাক্ষর সংযুক্ত নয়</small>
             </div>
             <div className="signature-block">
               <span className="signature-line" />
-              {data.rightAuthorityName ? <strong>{data.rightAuthorityName}</strong> : null}
+              <strong>Authorising Officer — SAMPLE</strong>
+              {data.rightAuthorityName ? <span>{data.rightAuthorityName}</span> : null}
               <span>{data.rightAuthorityTitle}</span>
-              <small>স্বাক্ষর সংযুক্ত নয়</small>
+              <small>কোনো বাস্তব স্বাক্ষর সংযুক্ত নয়</small>
             </div>
           </div>
 
-          <div className="nonofficial-strip">LAND­BD DRAFT · এটি সরকারি ইস্যুকৃত সনদ নয়</div>
-
-          <footer className="pad-footer">
-            <div className="blue">পরিষ্কার শহর, সুন্দর জীবন</div>
-            <div className="red">সমন্বিত উন্নয়নে, বাসযোগ্য ঢাকা</div>
-            <div className="green">নাগরিক সহযোগিতায়, এগিয়ে যাক ঢাকা</div>
+          <footer className="sample-footer">
+            <span>LANDBD DEMO TEMPLATE</span>
+            <strong>NOT AN OFFICIAL GOVERNMENT DOCUMENT</strong>
+            <span>FOR DRAFTING / PREVIEW ONLY</span>
           </footer>
         </main>
       </div>
