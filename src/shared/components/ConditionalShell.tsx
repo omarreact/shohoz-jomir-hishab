@@ -31,7 +31,11 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   }, []);
 
   const isGeospatialMap = pathname === "/geospatial-map" || pathname?.startsWith("/geospatial-map/");
-  const isWarishSanad = pathname === "/warishsanad" || pathname?.startsWith("/warishsanad/");
+  const isWarishSanad =
+    pathname === "/warishsanad" ||
+    pathname?.startsWith("/warishsanad/") ||
+    pathname === "/warish" ||
+    pathname?.startsWith("/warish/");
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
   const isSystemRoute = pathname?.startsWith("/403");

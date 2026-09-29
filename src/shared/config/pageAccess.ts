@@ -80,6 +80,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
+    id: "/warish",
+    name: "ওয়ারিশ সনদপত্র",
+    description: "DNCC A4 final certificate layout.",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
     id: "/dap-map",
     name: "রাজউক ড্যাপ ম্যাপ",
     description: "প্রোডাক্ট প্রাইমারি ম্যাপ — প্লট সার্চ, identify, DAP লেয়ার।",
