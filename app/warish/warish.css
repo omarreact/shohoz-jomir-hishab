@@ -742,6 +742,7 @@ button, input, select, textarea {
   gap: 10px;
   margin-top: 12px;
 }
+.authority-source-card + .authority-source-card { margin-top: 10px; }
 .authority-source-card {
   border: 1px solid #d9e2e8;
   border-radius: 11px;
