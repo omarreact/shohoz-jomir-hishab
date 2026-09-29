@@ -95,10 +95,17 @@ export default function WarishEditor() {
   const [officialWards, setOfficialWards] = useState<Array<{ id: string; label: string; zoneId: string }>>([]);
   const [officialLoading, setOfficialLoading] = useState(false);
   const [officialStatus, setOfficialStatus] = useState("");
+  const [officialMode, setOfficialMode] = useState<"live" | "verified-snapshot" | "">("");
   const [officialSourceUrls, setOfficialSourceUrls] = useState<{ councillors?: string; officers?: string }>({});
   const [officialDetails, setOfficialDetails] = useState<{
-    councillor?: { name?: string; title?: string; office?: string; email?: string; mobile?: string };
-    officer?: { name?: string; title?: string; office?: string; email?: string; mobile?: string };
+    councillor?: {
+      name?: string; title?: string; office?: string; email?: string; officePhone?: string;
+      mobile?: string; fax?: string; wardSecretaryMobile?: string; electoralArea?: string;
+    };
+    officer?: {
+      name?: string; title?: string; office?: string; email?: string; officePhone?: string;
+      intercom?: string; room?: string; mobile?: string; fax?: string;
+    };
   }>({});
 
   useEffect(() => {
@@ -126,7 +133,12 @@ export default function WarishEditor() {
         if (cancelled) return;
         setOfficialWards(Array.isArray(json.data?.wards) ? json.data.wards : []);
         setOfficialSourceUrls(json.sourceUrls ?? {});
-        setOfficialStatus(`DNCC official directory ✓ · ${json.data?.wards?.length ?? 0}টি ওয়ার্ড পাওয়া গেছে`);
+        setOfficialMode(json.sourceMode ?? "");
+        setOfficialStatus(
+          json.sourceMode === "live"
+            ? `DNCC LIVE ✓ · ${json.data?.wards?.length ?? 0}টি ওয়ার্ড`
+            : `DNCC verified snapshot · ${json.data?.wards?.length ?? 0}টি ওয়ার্ড · verified ${json.verifiedAt ?? ""}`
+        );
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -166,10 +178,7 @@ export default function WarishEditor() {
         ...current,
         ward,
         zone: record.zoneId ? String(Number(record.zoneId)) : current.zone,
-        officeAddress:
-          officer.office ||
-          councillor.office ||
-          current.officeAddress,
+        officeAddress: officer.office || current.officeAddress,
         leftAuthorityName: councillor.name || current.leftAuthorityName,
         leftAuthorityTitle:
           councillor.title
@@ -184,7 +193,11 @@ export default function WarishEditor() {
         councillor.name ? `কাউন্সিলর: ${councillor.name}` : "",
         officer.name ? `আঞ্চলিক নির্বাহী কর্মকর্তা: ${officer.name}` : "",
       ].filter(Boolean);
-      setOfficialStatus(bits.length ? `DNCC official ✓ · ${bits.join(" · ")}` : "DNCC official page পাওয়া গেছে, তবে এই ওয়ার্ডের পূর্ণ তথ্য parse হয়নি।");
+      setOfficialStatus(
+        bits.length
+          ? `${json.sourceMode === "live" ? "DNCC LIVE ✓" : "DNCC verified snapshot"} · ${bits.join(" · ")}`
+          : "DNCC source পাওয়া গেছে, তবে এই ওয়ার্ডের পূর্ণ public details নেই।"
+      );
     } catch (error) {
       setOfficialStatus(error instanceof Error ? `DNCC live fetch ব্যর্থ: ${error.message}` : "DNCC live fetch ব্যর্থ");
     } finally {
@@ -281,7 +294,7 @@ export default function WarishEditor() {
           </div>
 
           <section className="form-card">
-            <h2>সনদ ও অবস্থান <span className="live-badge">DNCC LIVE</span></h2>
+            <h2>সনদ ও অবস্থান <span className={officialMode === "live" ? "live-badge" : "snapshot-badge"}>{officialMode === "live" ? "DNCC LIVE" : "DNCC VERIFIED"}</span></h2>
             <div className="form-grid two">
               <label>
                 <span>সূত্র</span>
@@ -325,17 +338,27 @@ export default function WarishEditor() {
               <button type="button" className="official-refresh" disabled={officialLoading} onClick={() => void loadOfficialWard(data.ward)}>
                 {officialLoading ? "লোড হচ্ছে…" : "DNCC থেকে রিফ্রেশ"}
               </button>
-              {(officialDetails.councillor?.email || officialDetails.councillor?.mobile || officialDetails.officer?.email || officialDetails.officer?.mobile) ? (
+              {(officialDetails.councillor || officialDetails.officer) ? (
                 <div className="official-contact-grid">
                   <div>
-                    <span>কাউন্সিলর</span>
+                    <span>ওয়ার্ড কাউন্সিলর</span>
                     <strong>{officialDetails.councillor?.name || "—"}</strong>
-                    <small>{officialDetails.councillor?.mobile || officialDetails.councillor?.email || "যোগাযোগ প্রকাশিত নেই"}</small>
+                    <small>{officialDetails.councillor?.title || "—"}</small>
+                    <small>অফিস: {officialDetails.councillor?.office || "প্রকাশিত নেই"}</small>
+                    <small>মোবাইল: {officialDetails.councillor?.mobile || "প্রকাশিত নেই"}</small>
+                    <small>ই-মেইল: {officialDetails.councillor?.email || "প্রকাশিত নেই"}</small>
+                    <small>ওয়ার্ড সচিব: {officialDetails.councillor?.wardSecretaryMobile || "প্রকাশিত নেই"}</small>
+                    <small>নির্বাচনী এলাকা: {officialDetails.councillor?.electoralArea || "প্রকাশিত নেই"}</small>
                   </div>
                   <div>
                     <span>আঞ্চলিক নির্বাহী কর্মকর্তা</span>
                     <strong>{officialDetails.officer?.name || "—"}</strong>
-                    <small>{officialDetails.officer?.email || officialDetails.officer?.mobile || "যোগাযোগ প্রকাশিত নেই"}</small>
+                    <small>{officialDetails.officer?.title || "—"}</small>
+                    <small>অফিস: {officialDetails.officer?.office || "প্রকাশিত নেই"}</small>
+                    <small>মোবাইল: {officialDetails.officer?.mobile || "প্রকাশিত নেই"}</small>
+                    <small>ই-মেইল: {officialDetails.officer?.email || "প্রকাশিত নেই"}</small>
+                    <small>ফোন: {officialDetails.officer?.officePhone || "প্রকাশিত নেই"}</small>
+                    <small>ইন্টারকম: {officialDetails.officer?.intercom || "প্রকাশিত নেই"}</small>
                   </div>
                 </div>
               ) : null}

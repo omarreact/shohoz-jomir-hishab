@@ -484,6 +484,7 @@ button, input, select, textarea {
 
 
 .live-badge,
+.snapshot-badge,
 .manual-badge {
   display: inline-flex;
   align-items: center;
@@ -499,6 +500,11 @@ button, input, select, textarea {
   background: #e5f7eb;
   color: #116837;
   border: 1px solid #bde4c9;
+}
+.snapshot-badge {
+  background: #eef4ff;
+  color: #315d9a;
+  border: 1px solid #c9d8ef;
 }
 .manual-badge {
   background: #f4f5f7;
