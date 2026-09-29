@@ -92,6 +92,10 @@ const cloneDefaults = (): CertificateData => ({
 export default function WarishEditor() {
   const [data, setData] = useState<CertificateData>(cloneDefaults);
   const [saved, setSaved] = useState(false);
+  const [officialWards, setOfficialWards] = useState<Array<{ id: string; label: string; zoneId: string }>>([]);
+  const [officialLoading, setOfficialLoading] = useState(false);
+  const [officialStatus, setOfficialStatus] = useState("");
+  const [officialSourceUrls, setOfficialSourceUrls] = useState<{ councillors?: string; officers?: string }>({});
 
   useEffect(() => {
     try {
@@ -108,20 +112,86 @@ export default function WarishEditor() {
     }
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setOfficialLoading(true);
+    fetch("/api/dncc-directory", { cache: "no-store" })
+      .then(async (response) => {
+        const json = await response.json();
+        if (!response.ok || !json?.ok) throw new Error(json?.error || "DNCC directory unavailable");
+        if (cancelled) return;
+        setOfficialWards(Array.isArray(json.data?.wards) ? json.data.wards : []);
+        setOfficialSourceUrls(json.sourceUrls ?? {});
+        setOfficialStatus(`DNCC official directory ✓ · ${json.data?.wards?.length ?? 0}টি ওয়ার্ড পাওয়া গেছে`);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setOfficialStatus(error instanceof Error ? `DNCC live fetch ব্যর্থ: ${error.message}` : "DNCC live fetch ব্যর্থ");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setOfficialLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const update = <K extends keyof CertificateData>(key: K, value: CertificateData[K]) => {
     setSaved(false);
     setData((current) => ({ ...current, [key]: value }));
   };
 
+  const loadOfficialWard = async (ward: string) => {
+    if (!ward) return;
+    setOfficialLoading(true);
+    setOfficialStatus("DNCC থেকে তথ্য লোড হচ্ছে…");
+    try {
+      const response = await fetch(`/api/dncc-directory?ward=${encodeURIComponent(ward)}`, {
+        cache: "no-store",
+      });
+      const json = await response.json();
+      if (!response.ok || !json?.ok) throw new Error(json?.error || "DNCC তথ্য পাওয়া যায়নি");
+
+      const record = json.data ?? {};
+      const councillor = record.councillor ?? {};
+      const officer = record.officer ?? {};
+      setOfficialSourceUrls(json.sourceUrls ?? {});
+
+      setData((current) => ({
+        ...current,
+        ward,
+        zone: record.zoneId ? String(Number(record.zoneId)) : current.zone,
+        officeAddress:
+          officer.office ||
+          councillor.office ||
+          current.officeAddress,
+        leftAuthorityName: councillor.name || current.leftAuthorityName,
+        leftAuthorityTitle:
+          councillor.title
+            ? `${councillor.title}, ওয়ার্ড নং ${Number(record.ward || ward)}`
+            : current.leftAuthorityTitle,
+        rightAuthorityName: officer.name || current.rightAuthorityName,
+        rightAuthorityTitle: officer.title || current.rightAuthorityTitle,
+      }));
+
+      const bits = [
+        record.zoneName ? `Zone: ${record.zoneName}` : "",
+        councillor.name ? `কাউন্সিলর: ${councillor.name}` : "",
+        officer.name ? `আঞ্চলিক নির্বাহী কর্মকর্তা: ${officer.name}` : "",
+      ].filter(Boolean);
+      setOfficialStatus(bits.length ? `DNCC official ✓ · ${bits.join(" · ")}` : "DNCC official page পাওয়া গেছে, তবে এই ওয়ার্ডের পূর্ণ তথ্য parse হয়নি।");
+    } catch (error) {
+      setOfficialStatus(error instanceof Error ? `DNCC live fetch ব্যর্থ: ${error.message}` : "DNCC live fetch ব্যর্থ");
+    } finally {
+      setOfficialLoading(false);
+    }
+  };
+
   const updateWard = (ward: string) => {
-    const numericWard = Number(ward);
-    const zone = WARD_TO_ZONE[numericWard];
     setSaved(false);
-    setData((current) => ({
-      ...current,
-      ward,
-      zone: zone ? String(zone) : current.zone,
-    }));
+    setData((current) => ({ ...current, ward }));
+    void loadOfficialWard(ward);
   };
 
   const updateHeir = (id: string, key: keyof Omit<Heir, "id">, value: string) => {
@@ -200,7 +270,7 @@ export default function WarishEditor() {
           </div>
 
           <section className="form-card">
-            <h2>সনদ ও অবস্থান</h2>
+            <h2>সনদ ও অবস্থান <span className="live-badge">DNCC LIVE</span></h2>
             <div className="form-grid two">
               <label>
                 <span>সূত্র</span>
@@ -213,8 +283,14 @@ export default function WarishEditor() {
               <label>
                 <span>ওয়ার্ড</span>
                 <select value={data.ward} onChange={(e) => updateWard(e.target.value)}>
-                  {Array.from({ length: 54 }, (_, index) => String(index + 1)).map((ward) => (
-                    <option key={ward} value={ward}>{banglaDigits(ward)}</option>
+                  {(officialWards.length
+                    ? officialWards.map((item) => ({ value: String(Number(item.id)), label: item.label }))
+                    : Array.from({ length: 54 }, (_, index) => ({
+                        value: String(index + 1),
+                        label: `ওয়ার্ড ${banglaDigits(index + 1)}`,
+                      }))
+                  ).map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
                   ))}
                 </select>
               </label>
@@ -227,14 +303,26 @@ export default function WarishEditor() {
                 <input value={data.officeAddress} onChange={(e) => update("officeAddress", e.target.value)} />
               </label>
             </div>
-            <p className="source-note">
-              DNCC-এর প্রকাশিত ওয়ার্ড/অঞ্চল তালিকা অনুযায়ী ওয়ার্ড বদলালে অঞ্চল স্বয়ংক্রিয়ভাবে সেট হয়।
-              ওয়ার্ড ৪৪ → অঞ্চল ৮।
-            </p>
+            <div className="official-source-box">
+              <div>
+                <strong>{officialStatus || "DNCC official directory সংযোগ প্রস্তুত"}</strong>
+                <p>
+                  ওয়ার্ড বদলালে DNCC-এর official councillor + officer directory থেকে অঞ্চল, কাউন্সিলর,
+                  আঞ্চলিক নির্বাহী কর্মকর্তা ও office field যতটা পাওয়া যায় auto-fill হবে।
+                </p>
+              </div>
+              <button type="button" className="official-refresh" disabled={officialLoading} onClick={() => void loadOfficialWard(data.ward)}>
+                {officialLoading ? "লোড হচ্ছে…" : "DNCC থেকে রিফ্রেশ"}
+              </button>
+              <div className="official-links">
+                {officialSourceUrls.councillors ? <a href={officialSourceUrls.councillors} target="_blank" rel="noreferrer">Official councillors</a> : null}
+                {officialSourceUrls.officers ? <a href={officialSourceUrls.officers} target="_blank" rel="noreferrer">Official officers</a> : null}
+              </div>
+            </div>
           </section>
 
           <section className="form-card">
-            <h2>মৃত ব্যক্তির তথ্য</h2>
+            <h2>মৃত ব্যক্তির তথ্য <span className="manual-badge">ম্যানুয়াল / আবেদনকারীর নথি</span></h2>
             <div className="form-grid two">
               <label><span>নাম</span><input value={data.deceasedName} onChange={(e) => update("deceasedName", e.target.value)} /></label>
               <label><span>পিতা</span><input value={data.fatherName} onChange={(e) => update("fatherName", e.target.value)} /></label>
@@ -249,7 +337,7 @@ export default function WarishEditor() {
 
           <section className="form-card">
             <div className="section-row">
-              <h2>ওয়ারিশদের তালিকা</h2>
+              <h2>ওয়ারিশদের তালিকা <span className="manual-badge">ম্যানুয়াল / আবেদনকারীর নথি</span></h2>
               <button type="button" className="mini-button" onClick={addHeir} disabled={data.heirs.length >= 10}>
                 + ওয়ারিশ
               </button>
