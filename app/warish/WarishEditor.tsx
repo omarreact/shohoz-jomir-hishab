@@ -321,7 +321,7 @@ export default function WarishEditor() {
               </div>
             </div>
 
-            <div className="doc-title"><span>FAMILY CERTIFICATE — SAMPLE</span></div>
+            <div className="doc-title"><span>ওয়ারিশান সনদ</span></div>
           </div>
 
           <div className="draft-watermark" aria-hidden="true">
