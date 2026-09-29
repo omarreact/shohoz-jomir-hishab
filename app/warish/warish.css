@@ -590,7 +590,137 @@ button, input, select, textarea {
 @media (max-width: 520px) {
   .official-contact-grid { grid-template-columns: 1fr; }
 }
-\n@page { size: A4 portrait; margin: 0; }
+\n
+/* ===== TYPOGRAPHY LOCKED TO THE USER-SUPPLIED ZIP (style.css) =====
+   The certificate preview follows the ZIP's font-family, font-size,
+   line-height, weight and letter-spacing values. */
+.page-a4 {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+}
+
+.header-bn {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Sans Bengali", "Nirmala UI", "Nikosh", "SolaimanLipi", serif;
+  font-size: 27pt;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: .10pt;
+}
+
+.header-en {
+  font-family: "Times New Roman", "Liberation Serif", serif;
+  font-size: 24.5pt;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.05pt;
+}
+
+.header-address {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Sans Bengali", "Nirmala UI", Arial, serif;
+  font-size: 12.8pt;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.ref-date {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+  font-size: 10.25pt;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.ref-field strong,
+.date-field strong {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+}
+
+.doc-title span {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+  font-size: 16.5pt;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: .4pt;
+}
+
+.body-paragraph {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+  font-size: 11pt;
+  line-height: 1.38;
+  font-weight: 400;
+  letter-spacing: 0;
+  word-spacing: normal;
+}
+
+.body-paragraph strong {
+  font-weight: 600;
+}
+
+.data-table {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+  font-size: 10.25pt;
+  line-height: 1.25;
+}
+
+.data-table th,
+.data-table td {
+  font-weight: 400;
+}
+
+.data-table th {
+  font-weight: 600;
+}
+
+.data-table.compact {
+  font-size: 10.25pt;
+  line-height: 1.25;
+}
+
+.signatures-area {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Serif Bengali", "Nikosh", "SolaimanLipi", "Nirmala UI", serif;
+  font-size: 9.75pt;
+  line-height: 1.25;
+}
+
+.signature-block small {
+  font-family: inherit;
+  font-size: 8.5pt;
+  line-height: 1.25;
+}
+
+.draft-watermark strong {
+  font-family: Arial, sans-serif;
+  font-size: 25pt;
+  font-weight: 700;
+  letter-spacing: 1pt;
+}
+
+.draft-watermark span {
+  font-family: Arial, sans-serif;
+  font-size: 8pt;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.sample-footer {
+  font-family: var(--font-warish-bangla), "Tiro Bangla", "Noto Sans Bengali", "Nirmala UI", "SolaimanLipi", "Nikosh", serif;
+  font-size: 11.2pt;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.sample-footer strong {
+  font-family: "Times New Roman", "Liberation Serif", serif;
+  font-size: 8pt;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+@page { size: A4 portrait; margin: 0; }
 
 @media print {
   html, body {
