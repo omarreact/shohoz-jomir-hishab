@@ -149,6 +149,7 @@ export async function proxy(request: NextRequest) {
     "/api/wards",
     "/api/zones",
     "/api/authorities",
+    "/api/dncc-directory",
   ];
   const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 
