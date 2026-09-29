@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type AuthoritySource = "councillor" | "officer";
-
 type Heir = {
   id: string;
   name: string;
@@ -85,8 +83,6 @@ export default function WarishEditor() {
   const [officialStatus, setOfficialStatus] = useState("");
   const [officialMode, setOfficialMode] = useState<"live" | "verified-snapshot" | "">("");
   const [officialSourceUrls, setOfficialSourceUrls] = useState<{ councillors?: string; officers?: string }>({});
-  const [leftAuthoritySource, setLeftAuthoritySource] = useState<AuthoritySource>("councillor");
-  const [rightAuthoritySource, setRightAuthoritySource] = useState<AuthoritySource>("officer");
   const [officialDetails, setOfficialDetails] = useState<{
     councillor?: {
       name?: string; title?: string; office?: string; email?: string; officePhone?: string;
@@ -148,52 +144,6 @@ export default function WarishEditor() {
     setData((current) => ({ ...current, [key]: value }));
   };
 
-  const resolveAuthority = (
-    source: AuthoritySource,
-    ward: string,
-    councillor = officialDetails.councillor,
-    officer = officialDetails.officer,
-  ) => {
-    if (source === "councillor") {
-      if (!councillor?.name) return null;
-      return {
-        name: councillor.name,
-        title: councillor.title
-          ? `${councillor.title}, ওয়ার্ড নং ${Number(ward)}`
-          : `ওয়ার্ড নং ${Number(ward)}`,
-      };
-    }
-
-    if (!officer?.name) return null;
-    return {
-      name: officer.name,
-      title: officer.title || "আঞ্চলিক নির্বাহী কর্মকর্তা",
-    };
-  };
-
-  const applyAuthoritySource = (side: "left" | "right", source: AuthoritySource) => {
-    const authority = resolveAuthority(source, data.ward);
-    if (!authority) return;
-
-    setSaved(false);
-    if (side === "left") {
-      setLeftAuthoritySource(source);
-      setData((current) => ({
-        ...current,
-        leftAuthorityName: authority.name,
-        leftAuthorityTitle: authority.title,
-      }));
-      return;
-    }
-
-    setRightAuthoritySource(source);
-    setData((current) => ({
-      ...current,
-      rightAuthorityName: authority.name,
-      rightAuthorityTitle: authority.title,
-    }));
-  };
-
   const loadOfficialWard = async (ward: string) => {
     if (!ward) return;
     setOfficialLoading(true);
@@ -212,35 +162,39 @@ export default function WarishEditor() {
       setOfficialMode(json.sourceMode ?? "");
       setOfficialDetails({ councillor, officer });
 
-      const hasCouncillor = Boolean(councillor.name);
-      const hasOfficer = Boolean(officer.name);
-      const nextLeftSource: AuthoritySource = hasCouncillor ? "councillor" : "officer";
-      const nextRightSource: AuthoritySource = hasOfficer ? "officer" : "councillor";
-      const leftAuthority =
-        resolveAuthority(nextLeftSource, ward, councillor, officer) ??
-        resolveAuthority(nextRightSource, ward, councillor, officer);
-      const rightAuthority =
-        resolveAuthority(nextRightSource, ward, councillor, officer) ??
-        resolveAuthority(nextLeftSource, ward, councillor, officer);
+      const recommender = councillor.name
+        ? {
+            name: councillor.name,
+            title: councillor.title
+              ? `${councillor.title}, ওয়ার্ড নং ${Number(record.ward || ward)}`
+              : `ওয়ার্ড নং ${Number(record.ward || ward)}`,
+          }
+        : null;
 
-      setLeftAuthoritySource(nextLeftSource);
-      setRightAuthoritySource(nextRightSource);
+      const authorisingOfficer = officer.name
+        ? {
+            name: officer.name,
+            title: officer.title || `আঞ্চলিক নির্বাহী কর্মকর্তা, অঞ্চল-${Number(record.zoneId || 0)}`,
+          }
+        : null;
 
       setData((current) => ({
         ...current,
         ward,
         zone: record.zoneId ? String(Number(record.zoneId)) : current.zone,
         officeAddress: officer.office || current.officeAddress,
-        leftAuthorityName: leftAuthority?.name ?? "",
-        leftAuthorityTitle: leftAuthority?.title ?? "",
-        rightAuthorityName: rightAuthority?.name ?? "",
-        rightAuthorityTitle: rightAuthority?.title ?? "",
+        // Recommender and Authorising Officer are distinct roles.
+        // Never copy the ZEO into the recommender field just because a councillor is absent.
+        leftAuthorityName: recommender?.name ?? "",
+        leftAuthorityTitle: recommender?.title ?? "",
+        rightAuthorityName: authorisingOfficer?.name ?? "",
+        rightAuthorityTitle: authorisingOfficer?.title ?? "",
       }));
 
       const bits = [
         record.zoneName ? `Zone: ${record.zoneName}` : "",
-        councillor.name ? `কাউন্সিলর: ${councillor.name}` : "",
-        officer.name ? `আঞ্চলিক নির্বাহী কর্মকর্তা: ${officer.name}` : "",
+        councillor.name ? `Recommender candidate: ${councillor.name}` : "Recommender: councillor record নেই",
+        officer.name ? `Authorising Officer (ZEO): ${officer.name}` : "Authorising Officer: ZEO record নেই",
       ].filter(Boolean);
       setOfficialStatus(
         bits.length
@@ -475,66 +429,56 @@ export default function WarishEditor() {
               <textarea rows={3} value={data.closing} onChange={(e) => update("closing", e.target.value)} />
             </label>
 
-            <div className="authority-source-card">
-              <div className="authority-source-head">
-                <strong>বাম কর্তৃপক্ষের তথ্যসূত্র</strong>
-                <span>{leftAuthoritySource === "councillor" ? "Councillor directory" : "Officer directory"}</span>
+            <div className="authority-role-grid">
+              <div className="authority-source-card">
+                <div className="authority-source-head">
+                  <strong>Recommender / সুপারিশকারী</strong>
+                  <a
+                    href={officialSourceUrls.councillors || "https://dncc.gov.bd/views/councilors/a"}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    DNCC councillor directory ↗
+                  </a>
+                </div>
+                <p className="authority-role-note">
+                  এই role-টি <strong>Authorising Officer নয়</strong>। Ward councillor পাওয়া গেলে শুধু এই field-এ auto-fill হবে।
+                </p>
+                {!officialDetails.councillor?.name ? (
+                  <p className="authority-fallback-note">
+                    এই ওয়ার্ডে DNCC councillor record পাওয়া যায়নি। Recommender field ইচ্ছাকৃতভাবে ফাঁকা রাখা হয়েছে—
+                    Zonal Executive Officer-কে এখানে auto-copy করা হবে না। প্রয়োজন হলে যাচাই করে manually লিখুন।
+                  </p>
+                ) : null}
+                <div className="form-grid two authority-fields">
+                  <label><span>বাম কর্তৃপক্ষের নাম</span><input value={data.leftAuthorityName} onChange={(e) => update("leftAuthorityName", e.target.value)} /></label>
+                  <label><span>বাম পদবি</span><input value={data.leftAuthorityTitle} onChange={(e) => update("leftAuthorityTitle", e.target.value)} /></label>
+                </div>
               </div>
-              <div className="authority-source-options">
-                <button
-                  type="button"
-                  className={leftAuthoritySource === "councillor" ? "active" : ""}
-                  disabled={!officialDetails.councillor?.name}
-                  onClick={() => applyAuthoritySource("left", "councillor")}
-                >
-                  DNCC councillor directory
-                </button>
-                <button
-                  type="button"
-                  className={leftAuthoritySource === "officer" ? "active" : ""}
-                  disabled={!officialDetails.officer?.name}
-                  onClick={() => applyAuthoritySource("left", "officer")}
-                >
-                  DNCC officer directory
-                </button>
-              </div>
-              {!officialDetails.councillor?.name ? (
-                <small className="authority-fallback-note">
-                  এই ওয়ার্ডে কাউন্সিলর পাওয়া যায়নি—Officer directory স্বয়ংক্রিয়ভাবে ব্যবহার করা হয়েছে।
-                </small>
-              ) : null}
-              <div className="form-grid two authority-fields">
-                <label><span>বাম কর্তৃপক্ষের নাম</span><input value={data.leftAuthorityName} onChange={(e) => update("leftAuthorityName", e.target.value)} /></label>
-                <label><span>বাম পদবি</span><input value={data.leftAuthorityTitle} onChange={(e) => update("leftAuthorityTitle", e.target.value)} /></label>
-              </div>
-            </div>
 
-            <div className="authority-source-card">
-              <div className="authority-source-head">
-                <strong>ডান কর্তৃপক্ষের তথ্যসূত্র</strong>
-                <span>{rightAuthoritySource === "councillor" ? "Councillor directory" : "Officer directory"}</span>
-              </div>
-              <div className="authority-source-options">
-                <button
-                  type="button"
-                  className={rightAuthoritySource === "councillor" ? "active" : ""}
-                  disabled={!officialDetails.councillor?.name}
-                  onClick={() => applyAuthoritySource("right", "councillor")}
-                >
-                  DNCC councillor directory
-                </button>
-                <button
-                  type="button"
-                  className={rightAuthoritySource === "officer" ? "active" : ""}
-                  disabled={!officialDetails.officer?.name}
-                  onClick={() => applyAuthoritySource("right", "officer")}
-                >
-                  DNCC officer directory
-                </button>
-              </div>
-              <div className="form-grid two authority-fields">
-                <label><span>ডান কর্তৃপক্ষের নাম</span><input value={data.rightAuthorityName} onChange={(e) => update("rightAuthorityName", e.target.value)} /></label>
-                <label><span>ডান পদবি</span><input value={data.rightAuthorityTitle} onChange={(e) => update("rightAuthorityTitle", e.target.value)} /></label>
+              <div className="authority-source-card">
+                <div className="authority-source-head">
+                  <strong>Authorising Officer / অনুমোদনকারী কর্মকর্তা</strong>
+                  <a
+                    href={officialSourceUrls.officers || "https://dncc.gov.bd/pages/officers"}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    DNCC officer directory ↗
+                  </a>
+                </div>
+                <p className="authority-role-note">
+                  এই field-এ নির্বাচিত Zone-এর <strong>Zonal Executive Officer (ZEO)</strong> auto-fill হবে।
+                </p>
+                {!officialDetails.officer?.name ? (
+                  <p className="authority-fallback-note">
+                    এই Zone-এর ZEO record পাওয়া যায়নি। Authorising Officer field ফাঁকা রাখা হয়েছে—manual verification প্রয়োজন।
+                  </p>
+                ) : null}
+                <div className="form-grid two authority-fields">
+                  <label><span>ডান কর্তৃপক্ষের নাম</span><input value={data.rightAuthorityName} onChange={(e) => update("rightAuthorityName", e.target.value)} /></label>
+                  <label><span>ডান পদবি</span><input value={data.rightAuthorityTitle} onChange={(e) => update("rightAuthorityTitle", e.target.value)} /></label>
+                </div>
               </div>
             </div>
           </section>
