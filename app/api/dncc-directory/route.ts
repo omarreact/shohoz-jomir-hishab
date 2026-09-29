@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 const COUNCILLORS_URL = "https://dncc.gov.bd/views/councilors/a";
 const OFFICERS_URL = "https://dncc.gov.bd/pages/officers";
+const LOCATION_URL = "https://dncc.gov.bd/site/page/c0b6953f-16d3-405b-85e9-dece13bb98de/";
 const VERIFIED_AT = "2026-09-30";
 
 const WARD_ZONE: Record<number, string> = {
@@ -47,22 +48,96 @@ type Officer = {
 };
 
 const VERIFIED_COUNCILLORS: Record<string, Councillor> = {
-  "44": {
-    ward: "44",
-    zoneId: "08",
-    name: "মোঃ শফিকুল (শফিক)",
-    title: "সাধারণ কাউন্সিলর",
-    office: "১৭০/৯, গ্রাম-বেতুলী, উত্তরখান, ডাকঘর-কাচকুড়া-১২৩০, উত্তরখান, ঢাকা।",
-    email: "councilor.w44@dncc.gov.bd",
-    officePhone: "",
-    mobile: "+৮৮০১৭১১-৫৬১১৩৪",
-    fax: "",
-    wardSecretaryMobile: "",
-    electoralArea: "",
-  },
+  // Councillors are intentionally NOT hard-coded here. DNCC's live councillor
+  // directory is used when it is reachable. If it is unavailable or a ward
+  // has no councillor record, the editor falls back to that ward's verified ZEO.
 };
 
 const VERIFIED_OFFICERS: Record<string, Officer> = {
+  "01": {
+    zoneId: "01",
+    name: "নাছিমা খানম",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (যুগ্মসচিব)",
+    office: "অঞ্চল-১, বাড়ি-২০, রোড-১৩/ডি, সেক্টর-৬, উত্তরা, ঢাকা-১২৩০।",
+    email: "zeo-1@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৫৮৯৫১২১৩",
+    intercom: "৮০৩১",
+    room: "",
+    mobile: "+৮৮০১৭১৪৩৫৩০৬৩",
+    fax: "+৮৮ ০২ ৮৯৫৭৫৪৪",
+  },
+  "02": {
+    zoneId: "02",
+    name: "মোহাম্মদ জালাল উদ্দিন",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা, অতিরিক্ত দায়িত্ব (উপসচিব)",
+    office: "অঞ্চল-২, প্লট নং-৩, চিড়িয়াখানা রোড, মিরপুর-১, ঢাকা-১২১৬।",
+    email: "zeo-2@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৯০৩১৫৫৩",
+    intercom: "৮০৩২",
+    room: "",
+    mobile: "+৮৮০১৭১১০৪৪৪৬৫",
+    fax: "+৮৮ ০২ ৯০২১৫৪৯",
+  },
+  "03": {
+    zoneId: "03",
+    name: "মো: জুলকার নায়ন",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "অঞ্চল-৩, বাড়ী-৪৫, শহীদ তাজউদ্দিন আহমেদ সড়ক, মহাখালী, ঢাকা-১২১২।",
+    email: "zeo-3@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৯৮৩০৯৩৬",
+    intercom: "৮০৩৩",
+    room: "",
+    mobile: "+৮৮০১৭২৪৩১৯৯৬৪",
+    fax: "",
+  },
+  "04": {
+    zoneId: "04",
+    name: "মোহাম্মদ জালাল উদ্দিন",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "অঞ্চল-৪, টাউন হল, ১০ নম্বর গোল চত্বর, মিরপুর, ঢাকা-১২১৬।",
+    email: "zeo-4@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৯০১৫৬৩৩",
+    intercom: "৮০৩৪",
+    room: "",
+    mobile: "+৮৮০১৭১১০৪৪৪৬৫",
+    fax: "+৮৮ ০২ ৯০০১৫২",
+  },
+  "05": {
+    zoneId: "05",
+    name: "মোঃ খয়বর রহমান",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "অঞ্চল-৫, মোহাম্মদপুর (শিয়া মসজিদ সংলগ্ন), বাশবাড়ি রোড, ওয়ার্ড নং-৩১, ডিএনসিসি।",
+    email: "zeo-5@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৪১০১০২৬৯",
+    intercom: "৮০৩৫",
+    room: "",
+    mobile: "+৮৮০১৭৩৩ ৫৯৯২৩৪",
+    fax: "+৮৮ ০২ ৪১০১০২৬৩",
+  },
+  "06": {
+    zoneId: "06",
+    name: "মোঃ জিয়াউর রহমান",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "বাড়ী-৫০, রোড-৬/সি, সেক্টর-১২, উত্তরা, ঢাকা-১২৩০।",
+    email: "zeo-6@dncc.gov.bd",
+    officePhone: "+৮৮০২৪৮৯৫৬৬৮৯",
+    intercom: "",
+    room: "",
+    mobile: "+৮৮০১৭২৯৬৫৪১৮৬",
+    fax: "",
+  },
+  "07": {
+    zoneId: "07",
+    name: "মোঃ খয়বর রহমান",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "অঞ্চল-৭, বাড়ি নম্বর-২০, রোড নম্বর-১৩/ডি, সেক্টর-৬, উত্তরা, ঢাকা-১২৩০।",
+    email: "zeo-7@dncc.gov.bd",
+    officePhone: "",
+    intercom: "",
+    room: "",
+    mobile: "+৮৮০১৭৩৩ ৫৯৯২৩৪",
+    fax: "",
+  },
   "08": {
     zoneId: "08",
     name: "আ ন ম বদরুদ্দোজা",
@@ -75,7 +150,58 @@ const VERIFIED_OFFICERS: Record<string, Officer> = {
     mobile: "+৮৮০১৭১১০৩৭৬৫০",
     fax: "",
   },
+  "09": {
+    zoneId: "09",
+    name: "মোহাম্মদ সাইফুল ইসলাম",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব)",
+    office: "অঞ্চল-৯, বাড়ী-৪৫, শহীদ তাজউদ্দিন আহমেদ সড়ক, মহাখালী, ঢাকা-১২১২।",
+    email: "zeo-9@dncc.gov.bd",
+    officePhone: "",
+    intercom: "",
+    room: "",
+    mobile: "+৮৮০১৭১০৮৩৪৪৪৩",
+    fax: "",
+  },
+  "10": {
+    zoneId: "10",
+    name: "আ ন ম বদরুদ্দোজা",
+    title: "আঞ্চলিক নির্বাহী কর্মকর্তা (উপসচিব), অতিরিক্ত দায়িত্ব",
+    office: "অঞ্চল-১০, ঢাকা উত্তর সিটি কর্পোরেশন।",
+    email: "zeo-10@dncc.gov.bd",
+    officePhone: "",
+    intercom: "",
+    room: "",
+    mobile: "+৮৮০১৭১১০৩৭৬৫০",
+    fax: "",
+  },
 };
+
+const CENTRAL_FALLBACKS = [
+  {
+    id: "ceo",
+    name: "মুহাম্মদ আসাদুজ্জামান",
+    title: "প্রধান নির্বাহী কর্মকর্তা (উপসচিব), অতিরিক্ত দায়িত্ব",
+    office: "নগর ভবন, গুলশান সেন্টার পয়েন্ট, প্লট# ২৩-২৬, রোড# ৪৬, লেভেল-০৮, ডিএনসিসি গুলশান-২, ঢাকা-১২১২।",
+    email: "ceo@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৪৮৮১১৩৩৩",
+    intercom: "৮০০২",
+    room: "৮১৬",
+    mobile: "+৮৮০১৭১২৬৪৬১৪৬",
+    fax: "+৮৮ ০২ ৮৮৩৪৮৯৩",
+  },
+  {
+    id: "administrator",
+    name: "মোঃ শফিকুল ইসলাম খান",
+    title: "প্রশাসক",
+    office: "নগর ভবন, গুলশান সেন্টার পয়েন্ট, প্লট# ২৩-২৬, রোড# ৪৬, লেভেল-০৮, ডিএনসিসি গুলশান-২, ঢাকা-১২১২।",
+    email: "administrator@dncc.gov.bd",
+    officePhone: "+৮৮ ০২ ৪৮৮১১৩৭২",
+    intercom: "৮০০১",
+    room: "৮০১",
+    mobile: "",
+    fax: "+৮৮ ০২ ৯৮৯৪৩৯১",
+  },
+] as const;
 
 const LABELS = [
   "নাম","পদবি","অফিস","ইমেইল","ই-মেইল","ওয়ার্ড নং","ওয়ার্ড নং","অঞ্চল",
@@ -289,8 +415,8 @@ export async function GET(request: NextRequest) {
       verifiedAt: VERIFIED_AT,
       fetchedAt: new Date().toISOString(),
       liveError: live ? liveError : liveError || "DNCC live page unavailable; verified official snapshot used.",
-      sourceUrls: { councillors: COUNCILLORS_URL, officers: OFFICERS_URL },
-      data: { wards },
+      sourceUrls: { councillors: COUNCILLORS_URL, officers: OFFICERS_URL, wardZones: LOCATION_URL },
+      data: { wards, verifiedZoneOfficers: VERIFIED_OFFICERS, centralFallbacks: CENTRAL_FALLBACKS },
     }, {
       headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400" },
     });
@@ -311,13 +437,23 @@ export async function GET(request: NextRequest) {
     verifiedAt: VERIFIED_AT,
     fetchedAt: new Date().toISOString(),
     liveError,
-    sourceUrls: { councillors: COUNCILLORS_URL, officers: OFFICERS_URL },
+    sourceUrls: { councillors: COUNCILLORS_URL, officers: OFFICERS_URL, wardZones: LOCATION_URL },
     data: {
       ward: normalizedWard,
       zoneId,
       zoneName: zoneId ? `অঞ্চল-${Number(zoneId)}` : "",
       councillor,
       officer,
+      authorityResolution: {
+        leftPreferred: councillor ? "councillor" : officer ? "officer" : null,
+        rightPreferred: officer ? "officer" : councillor ? "councillor" : null,
+        reason: councillor
+          ? "Ward councillor found in the official DNCC directory; zonal officer remains available as the alternate source."
+          : officer
+            ? "No ward councillor record was available, so the verified zonal executive officer is used."
+            : "No ward or zonal record was available from the current directory snapshot.",
+      },
+      centralFallbacks: CENTRAL_FALLBACKS,
     },
   }, {
     headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400" },
