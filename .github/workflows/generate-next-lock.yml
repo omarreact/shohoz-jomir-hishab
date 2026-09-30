@@ -6,20 +6,27 @@ on:
       - chore/next-security-16.3.7
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lockfile:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: chore/next-security-16.3.7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm install --package-lock-only --no-audit --no-fund
-      - uses: actions/upload-artifact@v4
-        with:
-          name: next-16.3.7-package-lock
-          path: package-lock.json
-          retention-days: 1
+      - name: Commit generated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh lockfile for Next.js 16.3.7"
+            git push origin HEAD:chore/next-security-16.3.7
+          fi
