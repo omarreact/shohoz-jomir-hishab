@@ -2,15 +2,15 @@ import { NextRequest } from "next/server";
 
 import { getDefaultPageAccessRules } from "@/src/shared/config/pageAccess";
 
-const getSiteAccessPolicy = jest.fn();
-const verifyServerAuth = jest.fn();
+const mockGetSiteAccessPolicy = jest.fn();
+const mockVerifyServerAuth = jest.fn();
 
 jest.mock("@/src/modules/access/server/siteAccessPolicy", () => ({
-  getSiteAccessPolicy: (...args: unknown[]) => getSiteAccessPolicy(...args),
+  mockGetSiteAccessPolicy: (...args: unknown[]) => mockGetSiteAccessPolicy(...args),
 }));
 
 jest.mock("@/src/modules/auth/serverAuth", () => ({
-  verifyServerAuth: (...args: unknown[]) => verifyServerAuth(...args),
+  mockVerifyServerAuth: (...args: unknown[]) => mockVerifyServerAuth(...args),
 }));
 
 import { proxy } from "./proxy";
@@ -37,12 +37,12 @@ function policy(
 
 describe("LandBD request-boundary access policy", () => {
   beforeEach(() => {
-    getSiteAccessPolicy.mockReset();
-    verifyServerAuth.mockReset();
+    mockGetSiteAccessPolicy.mockReset();
+    mockVerifyServerAuth.mockReset();
   });
 
   it("returns a 503 maintenance rewrite for an anonymous page", async () => {
-    getSiteAccessPolicy.mockResolvedValue(policy(true));
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(true));
 
     const response = await proxy(request("/"));
 
@@ -52,7 +52,7 @@ describe("LandBD request-boundary access policy", () => {
   });
 
   it("returns 503 JSON for anonymous public APIs during maintenance", async () => {
-    getSiteAccessPolicy.mockResolvedValue(policy(true));
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(true));
 
     const response = await proxy(
       request("/api/rajuk/query?action=districts&kind=rs"),
@@ -70,11 +70,11 @@ describe("LandBD request-boundary access policy", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-middleware-next")).toBe("1");
-    expect(getSiteAccessPolicy).not.toHaveBeenCalled();
+    expect(mockGetSiteAccessPolicy).not.toHaveBeenCalled();
   });
 
   it("uses Firestore-backed page access instead of hard-coded mouza access", async () => {
-    getSiteAccessPolicy.mockResolvedValue(
+    mockGetSiteAccessPolicy.mockResolvedValue(
       policy(false, { "/mouza-map": "public" }),
     );
 
@@ -85,7 +85,7 @@ describe("LandBD request-boundary access policy", () => {
   });
 
   it("redirects anonymous users when a page rule is logged_in", async () => {
-    getSiteAccessPolicy.mockResolvedValue(
+    mockGetSiteAccessPolicy.mockResolvedValue(
       policy(false, { "/mouza-map": "logged_in" }),
     );
 
@@ -100,7 +100,7 @@ describe("LandBD request-boundary access policy", () => {
   });
 
   it("returns a non-indexable not-found response for hidden pages", async () => {
-    getSiteAccessPolicy.mockResolvedValue(
+    mockGetSiteAccessPolicy.mockResolvedValue(
       policy(false, { "/porcha": "hidden" }),
     );
 
