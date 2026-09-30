@@ -116,4 +116,33 @@ describe("public structured khatian record helpers", () => {
     expect(record?.ID).toBe(123);
     expect(record?.OWNER_DETAILS).toEqual([{ NAME: "সঠিক রেকর্ড" }]);
   });
+
+  it("passes dag filters to the strict public mirror lookup", async () => {
+    const fetchMock = jest.fn(async () => Response.json({
+      data: {
+        items: [
+          {
+            ID: 34901,
+            KHATIAN_NO: "349",
+            DAG_DETAILS: [{ DAG_NUMBER: "1974", LAND_CLASS: "চালা" }],
+          },
+        ],
+      },
+    }));
+    global.fetch = fetchMock as typeof fetch;
+
+    const record = await fetchStrictPublicMirrorRecord({
+      surveyKey: "BRS",
+      jlNumberId: 382911,
+      khatianNo: "349",
+      id: 34901,
+      dagNumber: "1974",
+    });
+
+    expect(record?.ID).toBe(34901);
+    const requested = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(requested.searchParams.get("JL_NUMBER_ID")).toBe("382911");
+    expect(requested.searchParams.get("KHATIAN_NO")).toBe("349");
+    expect(requested.searchParams.get("DAG_NUMBER")).toBe("1974");
+  });
 });
