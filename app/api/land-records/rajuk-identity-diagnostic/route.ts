@@ -50,12 +50,20 @@ export async function GET(_request: NextRequest) {
       }
 
       const identities = [...grouped.values()]
-        .sort((a, b) => a.jl.localeCompare(b.jl) || a.mouza.localeCompare(b.mouza))
-        .slice(0, 250);
+        .sort((a, b) => a.jl.localeCompare(b.jl) || a.mouza.localeCompare(b.mouza));
+
+      const relevant = identities.filter((item) => {
+        const jl = item.jl.replace(/^0+/, "") || item.jl;
+        return /patira|পাতিরা/i.test(item.mouza)
+          || /gulshan|গুলশান/i.test(item.admin)
+          || jl === "5"
+          || jl === "23";
+      });
 
       result[dag] = {
         rawCandidateCount: collection.features?.length ?? 0,
-        identities,
+        relevantCandidateCount: relevant.length,
+        relevant,
       };
     }
 
