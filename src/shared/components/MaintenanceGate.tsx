@@ -28,5 +28,9 @@ export default function MaintenanceGate({
     };
   }, []);
 
-  return maintenance ? <MaintenanceAuthGate /> : <>{children}</>;
+  return maintenance ? (
+    <MaintenanceAuthGate>{children}</MaintenanceAuthGate>
+  ) : (
+    <>{children}</>
+  );
 }
