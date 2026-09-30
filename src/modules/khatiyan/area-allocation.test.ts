@@ -36,8 +36,10 @@ describe("Khatiyan area allocation", () => {
     expect(allocationsConserved(100, allocations)).toBe(true);
   });
 
-  it("rejects shares that do not total 16 ana", () => {
-    expect(() => allocatePlotArea(100, [half])).toThrow(/16 আনা/);
+  it("allocates only the represented ownership portion when shares total less than 16 ana", () => {
+    const allocations = allocatePlotArea(100, [half]);
+    expect(allocations.map((x) => x.allocatedArea)).toEqual([50]);
+    expect(allocationsConserved(100, allocations)).toBe(true);
   });
 
   it("rejects invalid areas", () => {
