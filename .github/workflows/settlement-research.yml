@@ -1,4 +1,4 @@
-name: DLRMS BRS 349 raw public payload probe
+name: Public mirror BRS 349 probe
 
 on:
   push:
@@ -12,75 +12,56 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Capture raw public index and Hal-Sabek payloads
+      - name: Probe configured public DLRMS mirror
         run: |
           mkdir -p research-output
           python3 - <<'PY'
-          import http.cookiejar, json, ssl, urllib.parse, urllib.request, urllib.error
+          import json, ssl, urllib.parse, urllib.request, urllib.error
 
-          HOME="https://dlrms.land.gov.bd/"
-          BASE="https://gateway.dlrms.land.gov.bd/core-api/api/public"
-          UA="Mozilla/5.0 (compatible; LandBDResearch/1.0)"
+          BASE="https://eporcha.tech/api/dlrms"
           ctx=ssl.create_default_context()
-          jar=http.cookiejar.CookieJar()
-          opener=urllib.request.build_opener(
-              urllib.request.HTTPCookieProcessor(jar),
-              urllib.request.HTTPSHandler(context=ctx),
-          )
-          with opener.open(urllib.request.Request(HOME,headers={"User-Agent":UA,"Accept":"text/html"}),timeout=25) as r:
-              r.read()
-          token=next((c.value for c in jar if c.name=="dlrms_app_token"),None)
-          if not token: raise RuntimeError("no public app token")
-          headers={"User-Agent":UA,"Accept":"application/json","Authorization":"Bearer "+token,"Origin":"https://dlrms.land.gov.bd","Referer":HOME}
+          headers={"User-Agent":"Mozilla/5.0 (compatible; LandBDResearch/1.0)","Accept":"application/json"}
 
-          def get(path, params=None):
+          def get(path,params=None):
               url=BASE+path
-              if params: url += "?" + urllib.parse.urlencode(params)
+              if params: url+="?"+urllib.parse.urlencode(params)
               req=urllib.request.Request(url,headers=headers,method="GET")
               try:
                   with urllib.request.urlopen(req,timeout=20,context=ctx) as r:
                       raw=r.read(1000000).decode("utf-8","replace")
-                      try: data=json.loads(raw)
-                      except: data=raw
-                      return {"status":r.status,"path":path,"params":params or {},"data":data}
+                      try:data=json.loads(raw)
+                      except:data=raw
+                      return {"url":url,"status":r.status,"contentType":r.headers.get("content-type"),"data":data}
               except urllib.error.HTTPError as e:
                   raw=e.read(200000).decode("utf-8","replace")
-                  try: data=json.loads(raw)
-                  except: data=raw
-                  return {"status":e.code,"path":path,"params":params or {},"data":data}
+                  try:data=json.loads(raw)
+                  except:data=raw
+                  return {"url":url,"status":e.code,"data":data}
+              except Exception as e:
+                  return {"url":url,"error":repr(e)}
 
-          baseq={"SURVEY":"BRS","JL_NUMBER_ID":"382911","PAGE_NO":"1","PAGE_SIZE":"100"}
-          probes=[]
-          probes.append(("khatian349",get("/index-khatian/BRS",{**baseq,"KHATIAN_NO":"349"})))
-          for dag in ["1974","1977","1990","2006"]:
-              probes.append(("dag-"+dag,get("/index-khatian/BRS",{**baseq,"DAG_NUMBER":dag})))
-
-          common={"DIVISION_BBS_CODE":"30","DISTRICT_BBS_CODE":"26","UPAZILA_BBS_CODE":"26","JL_NUMBER_ID":"382911","KHATIAN_NO":"349"}
-          variants=[
-              {**common,"SURVEY_TYPE":"BRS"},
-              {**common,"SURVEY_ID":"7"},
-              {**common,"SURVEY":"BRS"},
-              {**common,"SURVEY_TYPE":"7"},
-              {**common,"SURVEY_TYPE_ID":"7"},
+          q={"SURVEY":"BRS","JL_NUMBER_ID":"382911","KHATIAN_NO":"349","PAGE_NO":"1","PAGE_SIZE":"100"}
+          probes=[
+              ("list",get("/index-khatian/BRS",q)),
+              ("detail",get("/index-khatian/BRS/7940305")),
           ]
-          for i,v in enumerate(variants,1):
-              probes.append((f"hal-sabek-{i}",get("/hal-sabeks/khatian",v)))
+          for dag in ["1974","1977","1990","2006"]:
+              probes.append(("dag-"+dag,get("/index-khatian/BRS",{"SURVEY":"BRS","JL_NUMBER_ID":"382911","DAG_NUMBER":dag,"PAGE_NO":"1","PAGE_SIZE":"100"})))
 
-          with open("research-output/raw-public.json","w",encoding="utf-8") as f:
+          with open("research-output/eporcha-349.json","w",encoding="utf-8") as f:
               json.dump(probes,f,ensure_ascii=False,indent=2)
-
           for name,res in probes:
-              print("\n===== "+name+" STATUS "+str(res["status"])+" =====")
-              print("PARAMS",json.dumps(res["params"],ensure_ascii=False))
-              print(json.dumps(res["data"],ensure_ascii=False)[:80000])
+              print("\n====",name,"====")
+              safe={k:v for k,v in res.items() if k!="url"}
+              print(json.dumps(safe,ensure_ascii=False)[:80000])
           PY
-      - name: Upload raw public payload artifact
+      - name: Upload mirror artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dlrms-brs-349-raw-public
+          name: eporcha-public-mirror-349
           path: research-output/
           retention-days: 3
