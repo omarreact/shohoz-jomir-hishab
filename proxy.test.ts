@@ -11,11 +11,11 @@ jest.mock("jose", () => ({
 }));
 
 jest.mock("@/src/modules/access/server/siteAccessPolicy", () => ({
-  mockGetSiteAccessPolicy: (...args: unknown[]) => mockGetSiteAccessPolicy(...args),
+  getSiteAccessPolicy: (...args: unknown[]) => mockGetSiteAccessPolicy(...args),
 }));
 
 jest.mock("@/src/modules/auth/serverAuth", () => ({
-  mockVerifyServerAuth: (...args: unknown[]) => mockVerifyServerAuth(...args),
+  verifyServerAuth: (...args: unknown[]) => mockVerifyServerAuth(...args),
 }));
 
 import { proxy } from "./proxy";
