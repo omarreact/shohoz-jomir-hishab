@@ -1,0 +1,97 @@
+name: BRS 349 RAJUK public area probe
+
+on:
+  push:
+    branches: [research/brs349-rajuk-areas]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe public RAJUK RS parcel attributes for Patira target dags
+        run: |
+          mkdir -p research-output
+          python3 - <<'PY'
+          import json, ssl, urllib.parse, urllib.request, urllib.error
+
+          BASE = "https://masterplan.rajuk.gov.bd/server/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer"
+          UA = "Mozilla/5.0 (compatible; LandBDResearch/1.0)"
+          ctx = ssl.create_default_context()
+
+          def query(layer, params):
+              q = dict(params)
+              q["f"] = "json"
+              url = f"{BASE}/{layer}/query?" + urllib.parse.urlencode(q)
+              req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=25, context=ctx) as r:
+                      raw = r.read(4_000_000).decode("utf-8", "replace")
+                      try: data = json.loads(raw)
+                      except: data = raw
+                      return {"url": url, "status": r.status, "data": data}
+              except urllib.error.HTTPError as e:
+                  raw = e.read(500_000).decode("utf-8", "replace")
+                  try: data = json.loads(raw)
+                  except: data = raw
+                  return {"url": url, "status": e.code, "data": data}
+              except Exception as e:
+                  return {"url": url, "error": repr(e)}
+
+          out = {"mouza": None, "dags": {}}
+
+          out["mouza"] = query(1, {
+              "where": "UPPER(mauza) LIKE UPPER('%Patira%')",
+              "outFields": "*",
+              "returnGeometry": "false",
+              "resultRecordCount": 500
+          })
+
+          for dag in ["1974", "1977", "1990", "2006"]:
+              where = f"(plot_no={int(dag)} OR rs_plot_no='{dag}' OR rs_plot_no='RS-{dag}')"
+              out["dags"][dag] = query(0, {
+                  "where": where,
+                  "outFields": "*",
+                  "returnGeometry": "false",
+                  "resultRecordCount": 2000,
+                  "orderByFields": "plot_no ASC"
+              })
+
+          with open("research-output/rajuk-brs349.json", "w", encoding="utf-8") as f:
+              json.dump(out, f, ensure_ascii=False, indent=2)
+
+          def attrs(resp):
+              data = resp.get("data") if isinstance(resp, dict) else None
+              if not isinstance(data, dict): return []
+              return [x.get("attributes", {}) for x in data.get("features", []) if isinstance(x, dict)]
+
+          print("MOUZA_STATUS", out["mouza"].get("status"), "ROWS", len(attrs(out["mouza"])))
+          for a in attrs(out["mouza"])[:40]:
+              print("MOUZA", json.dumps(a, ensure_ascii=False))
+
+          for dag, resp in out["dags"].items():
+              rows = attrs(resp)
+              print("\nDAG", dag, "STATUS", resp.get("status"), "ROWS", len(rows))
+              matches = []
+              for a in rows:
+                  s = json.dumps(a, ensure_ascii=False)
+                  low = s.lower()
+                  jl = str(a.get("jl_no") or a.get("rs_jl_no") or "")
+                  if "patira" in low or "পাতিরা" in s or jl.lstrip("0") == "23":
+                      matches.append(a)
+              print("CANDIDATE_MATCHES", len(matches))
+              for a in matches[:50]:
+                  print(json.dumps(a, ensure_ascii=False))
+          PY
+      - name: Upload RAJUK probe artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brs349-rajuk-public-probe
+          path: research-output/
+          retention-days: 3
