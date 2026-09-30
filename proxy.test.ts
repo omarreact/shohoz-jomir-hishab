@@ -5,6 +5,11 @@ import { getDefaultPageAccessRules } from "@/src/shared/config/pageAccess";
 const mockGetSiteAccessPolicy = jest.fn();
 const mockVerifyServerAuth = jest.fn();
 
+jest.mock("jose", () => ({
+  importX509: jest.fn(),
+  jwtVerify: jest.fn(),
+}));
+
 jest.mock("@/src/modules/access/server/siteAccessPolicy", () => ({
   mockGetSiteAccessPolicy: (...args: unknown[]) => mockGetSiteAccessPolicy(...args),
 }));
