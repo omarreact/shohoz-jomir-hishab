@@ -32,6 +32,9 @@ interface BbsLocationCodes {
   upazilaBbsCode?: string;
 }
 
+const MAX_FILTERED_DAG_LOOKUPS = 24;
+const FILTERED_DAG_CONCURRENCY = 4;
+
 function splitList(value: string | undefined): string[] {
   return (value ?? "")
     .replace(/(?:,\s*)?(?:\.{3,}|…)+\s*$/u, "")
@@ -156,6 +159,100 @@ async function safeSearch(
   }
 }
 
+async function collectFilteredDagRows(
+  base: KhatianDetails,
+  surveyKey: string,
+  warnings: string[],
+  signal?: AbortSignal,
+): Promise<KhatianPage["items"]> {
+  if (!base.JL_NUMBER_ID) return [];
+
+  const allDagNumbers = unique(splitList(base.DAGS));
+  if (!allDagNumbers.length) return [];
+
+  const dagNumbers = allDagNumbers.slice(0, MAX_FILTERED_DAG_LOOKUPS);
+  if (allDagNumbers.length > dagNumbers.length) {
+    warnings.push(
+      `DLRMS per-dag reconstruction was limited to the first ${MAX_FILTERED_DAG_LOOKUPS} of ${allDagNumbers.length} published dags.`,
+    );
+  }
+
+  const output: KhatianPage["items"] = [];
+  for (let offset = 0; offset < dagNumbers.length; offset += FILTERED_DAG_CONCURRENCY) {
+    const chunk = dagNumbers.slice(offset, offset + FILTERED_DAG_CONCURRENCY);
+    const pages = await Promise.all(
+      chunk.map((dagNumber) =>
+        safeSearch(
+          {
+            surveyKey,
+            jlNumberId: base.JL_NUMBER_ID,
+            page: 1,
+            pageSize: 100,
+            khatianNo: base.KHATIAN_NO,
+            dagNumber,
+          },
+          warnings,
+          signal,
+        ),
+      ),
+    );
+
+    for (const page of pages) {
+      if (!page) continue;
+      for (const row of page.items) {
+        if (row.ID === base.ID && row.KHATIAN_NO.trim() === base.KHATIAN_NO.trim()) {
+          output.push(row);
+        }
+      }
+    }
+  }
+
+  return output;
+}
+
+async function fetchFilteredMirrorRecords(
+  base: KhatianDetails,
+  surveyKey: string,
+  warnings: string[],
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>[]> {
+  if (!base.JL_NUMBER_ID) return [];
+
+  const allDagNumbers = unique(splitList(base.DAGS));
+  if (!allDagNumbers.length) return [];
+
+  const dagNumbers = allDagNumbers.slice(0, MAX_FILTERED_DAG_LOOKUPS);
+  if (allDagNumbers.length > dagNumbers.length) {
+    warnings.push(
+      `Public mirror per-dag enrichment was limited to the first ${MAX_FILTERED_DAG_LOOKUPS} of ${allDagNumbers.length} published dags.`,
+    );
+  }
+
+  const output: Record<string, unknown>[] = [];
+  for (let offset = 0; offset < dagNumbers.length; offset += FILTERED_DAG_CONCURRENCY) {
+    const chunk = dagNumbers.slice(offset, offset + FILTERED_DAG_CONCURRENCY);
+    const records = await Promise.all(
+      chunk.map((dagNumber) =>
+        fetchStrictPublicMirrorRecord(
+          {
+            surveyKey,
+            jlNumberId: base.JL_NUMBER_ID,
+            khatianNo: base.KHATIAN_NO,
+            id: base.ID,
+            dagNumber,
+          },
+          signal,
+        ),
+      ),
+    );
+    for (const record of records) {
+      if (record) output.push(record);
+    }
+  }
+
+  return output;
+}
+
 function enrichBaseFromTracking(base: KhatianDetails, tracking: KhatianTracking | undefined): KhatianDetails {
   if (!tracking?.matchesBaseRecord) return base;
   const owners = unique([...splitList(base.OWNERS), ...splitList(tracking.owners)]).join(", ");
@@ -258,6 +355,13 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       ownerVerified: Boolean(input.owner && ownerRows.length),
       dagVerified: Boolean(input.dagNumber && dagRows.length),
     });
+
+    // Once the exact khatian exposes its published dag list, re-query each dag.
+    // DLRMS sometimes returns a fuller compact variant for a filtered search.
+    const filteredDagRows = await collectFilteredDagRows(rebuilt, input.surveyKey, warnings, signal);
+    if (filteredDagRows.length) {
+      rebuilt = reconstructKhatian(rebuilt, filteredDagRows);
+    }
   }
 
   let tracking: KhatianTracking | undefined = input.tracking;
@@ -287,7 +391,17 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
         id: rebuilt.ID,
       }, signal)
     : null;
-  const mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
+  const mirrorDagRecords = rebuilt.JL_NUMBER_ID
+    ? await fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
+    : [];
+  let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
+  for (const record of mirrorDagRecords) {
+    const filtered = extractStructuredPublicRecord(record, "DLRMS_PUBLIC");
+    mirrorStructured = {
+      owners: mergeStructuredOwners(mirrorStructured.owners, filtered.owners),
+      dags: mergeStructuredDags(mirrorStructured.dags, filtered.dags),
+    };
+  }
   const structuredPublicOwners = mergeStructuredOwners(officialStructured.owners, mirrorStructured.owners);
   const structuredPublicDags = mergeStructuredDags(officialStructured.dags, mirrorStructured.dags);
   rebuilt = enrichBaseFromStructuredPublic(rebuilt, structuredPublicOwners, structuredPublicDags);
@@ -358,9 +472,9 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       fetchedAt,
     },
   ];
-  if (mirrorRecord) {
+  if (mirrorRecord || mirrorDagRecords.length) {
     evidence.push({
-      field: "strict-ID public mirror expansion and structured owner/dag details",
+      field: "strict-ID public mirror expansion and filtered structured owner/dag details",
       source: "DLRMS_PUBLIC",
       endpoint: `${publicMirrorBaseUrl()}/index-khatian/${input.surveyKey}`,
       official: false,

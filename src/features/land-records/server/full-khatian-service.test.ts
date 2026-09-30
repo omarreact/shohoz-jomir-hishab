@@ -122,6 +122,96 @@ describe("FullKhatian service", () => {
     expect(listUpazilas).not.toHaveBeenCalled();
   });
 
+  it("requeries every published dag for fuller DLRMS variants", async () => {
+    const getKhatian = jest.fn(async () => ({
+      ...baseRecord,
+      ID: 900349,
+      KHATIAN_NO: "349",
+      DAGS: "1974,...",
+      JL_NUMBER_ID: 382911,
+      MOUZA_ID: 71947,
+      TOTAL_LAND: "0.338",
+      MOUZA_NAME: "পাতিরা",
+      PUBLIC_RECORD: {
+        ID: 900349,
+        KHATIAN_NO: "349",
+        DAGS: "1974,...",
+        OWNERS: "দং মোহাম্মদ ইসলাম,...",
+        TOTAL_LAND: "0.338",
+      },
+    }));
+
+    const listKhatians = jest.fn(async () => ({
+      items: [{
+        ID: 900349,
+        KHATIAN_NO: "349",
+        OWNERS: "দং মোহাম্মদ ইসলাম,মাহামুদ,আহাম্মদ,মোহাম্মদ মোস্তফা,মোহাম্মদ মুহসিন,ফুলমতি,মাজেদা খাতুন,হাজেরা খাতুন",
+        DAGS: "1974,1977,1990,2006",
+        GUARDIANS: "পিং আবদুল ছোবহান,জং আঃ ছোবহান,জং ছায়েদুল হক,জং আব্দুল হামিদ",
+        JL_NUMBER_ID: 382911,
+        MOUZA_ID: 71947,
+        TOTAL_LAND: "0.338",
+      }],
+      page: 1,
+      pageSize: 100,
+      total: 1,
+      hasNextPage: false,
+    }));
+
+    jest.doMock("./provider", () => ({
+      providers: {
+        landRecords: {
+          getKhatian,
+          listKhatians,
+          listDivisions: jest.fn(),
+          listDistricts: jest.fn(),
+          listUpazilas: jest.fn(),
+        },
+      },
+    }));
+
+    jest.doMock("./dlrms-public-extras", () => ({
+      DLRMS_PUBLIC_EXTRA_ENDPOINTS: {
+        tracking: "tracking/{displayCode}",
+        halSabek: "hal-sabek",
+      },
+      fetchPublicHalSabek: jest.fn(async () => []),
+      fetchPublicKhatianTracking: jest.fn(),
+    }));
+
+    jest.doMock("./lisf-provider", () => ({
+      getLisfProvider: () => ({
+        enrichKhatian: async () => ({
+          status: "disabled" as const,
+          owners: [],
+          dags: [],
+          referenceKhatians: [],
+          referenceDags: [],
+          deeds: [],
+        }),
+      }),
+    }));
+
+    const { getFullKhatian } = await import("./full-khatian-service");
+    const result = await getFullKhatian({
+      surveyKey: "BRS",
+      id: 900349,
+      jlNumberId: 382911,
+      mouzaId: 71947,
+      divisionBbsCode: "30",
+      districtBbsCode: "26",
+      upazilaBbsCode: "26",
+    });
+
+    const filteredDags = (listKhatians.mock.calls as unknown as Array<[{ dagNumber?: string }]>)
+      .map(([input]) => input.dagNumber)
+      .filter(Boolean);
+
+    expect(filteredDags).toEqual(["1974", "1977", "1990", "2006"]);
+    expect(result.dags.map((item) => item.dagNo)).toEqual(["1974", "1977", "1990", "2006"]);
+    expect(result.base.TOTAL_LAND).toBe("0.338");
+  });
+
   it("never merges tracking data when the verified UUID belongs to a different khatian", async () => {
     const getKhatian = jest.fn(async () => ({ ...baseRecord, OWNERS: "মূল মালিক", DAGS: "1" }));
     const listKhatians = jest.fn(async () => ({
