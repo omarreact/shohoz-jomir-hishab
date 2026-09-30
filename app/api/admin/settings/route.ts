@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
 
 // Keys we persist in SiteSetting
 const ALLOWED_KEYS = [
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       );
 
     await Promise.all(ops);
+    invalidateSiteAccessPolicyCache();
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {

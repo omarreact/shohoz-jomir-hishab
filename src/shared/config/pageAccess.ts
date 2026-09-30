@@ -59,6 +59,20 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
+    id: "/survey-khatian",
+    name: "সার্ভে খতিয়ান (পুরনো লিংক)",
+    description: "/dlrms-khatian-এ রিডাইরেক্ট হওয়া পুরনো সার্ভে খতিয়ান রুট।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
+    id: "/mouza-porcha-report",
+    name: "মৌজা পর্চা রিপোর্ট",
+    description: "মৌজাভিত্তিক খতিয়ান, মালিক, দাগ ও জমির তথ্যসহ রিপোর্ট তৈরি।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
     id: "/settlement-khatian",
     name: "সেটেলমেন্ট খতিয়ান",
     description: "সেটেলমেন্ট খতিয়ান অনুসন্ধান ও তথ্য।",
@@ -85,6 +99,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     description: "DNCC ওয়ার্ড/অঞ্চল রেফারেন্সসহ logged-in editable draft certificate workspace.",
     category: "খতিয়ান ও রেকর্ড",
     defaultAccess: "logged_in",
+  },
+  {
+    id: "/verify/report/[reportId]",
+    name: "রিপোর্ট যাচাই",
+    description: "LandBD-generated মৌজা পর্চা রিপোর্টের Report ID যাচাই।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
   },
   {
     id: "/dap-map",

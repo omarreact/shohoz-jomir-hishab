@@ -4,12 +4,10 @@ import Image from "next/image";
 import { useState } from "react";
 import {
   Construction,
-  LoaderCircle,
   MapPin,
   MousePointer2,
   Sparkles,
 } from "lucide-react";
-import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 
 const plotMessages = [
   "মৌজা স্তর সাজানো হচ্ছে…",
@@ -22,42 +20,10 @@ const plotMessages = [
 
 const plotLabels = ["মৌজা", "দাগ", "খতিয়ান", "নকশা", "RS", "BRS"];
 
-export default function MaintenanceAuthGate({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { isLoggedIn, loading } = useAuth();
+export default function MaintenanceScreen() {
   const [activePlot, setActivePlot] = useState(0);
   const [tapCount, setTapCount] = useState(0);
   const [glow, setGlow] = useState({ x: 50, y: 45 });
-
-  if (loading) {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f3faf6] px-4">
-        <div className="absolute inset-0 opacity-[0.07] [background-image:url('/brand/brand-pattern.svg')] [background-size:420px]" />
-        <div className="relative flex flex-col items-center gap-5" role="status" aria-live="polite">
-          <div className="rounded-3xl border border-emerald-900/10 bg-white/90 p-5 shadow-xl shadow-emerald-950/10 backdrop-blur">
-            <Image
-              src="/brand/landbd-symbol.svg"
-              alt="LandBD"
-              width={72}
-              height={72}
-              priority
-              className="h-16 w-16 motion-safe:animate-[maintenanceFloat_3s_ease-in-out_infinite]"
-            />
-          </div>
-          <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-600">
-            <LoaderCircle className="h-5 w-5 animate-spin text-[#006A3D]" />
-            অ্যাকাউন্ট যাচাই হচ্ছে…
-          </div>
-        </div>
-        <MaintenanceStyles />
-      </div>
-    );
-  }
-
-  if (isLoggedIn) return <>{children}</>;
 
   return (
     <main
@@ -184,96 +150,41 @@ export default function MaintenanceAuthGate({
         </p>
       </section>
 
-      <MaintenanceStyles />
+      <style jsx global>{`
+        @keyframes maintenanceFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-7px); }
+        }
+        @keyframes maintenanceSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes maintenanceSlide {
+          0% { transform: translateX(-140%); }
+          100% { transform: translateX(420%); }
+        }
+        @keyframes maintenanceOrb {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(24px, 18px, 0) scale(1.08); }
+        }
+        @keyframes maintenancePlotPulse {
+          0% { opacity: 0; transform: scale(0.75); }
+          45% { opacity: 0.65; }
+          100% { opacity: 0; transform: scale(1.28); }
+        }
+        .maintenance-ring { animation: maintenanceSpin 12s linear infinite; }
+        .maintenance-progress { animation: maintenanceSlide 2.4s ease-in-out infinite; }
+        .maintenance-orb { animation: maintenanceOrb 7s ease-in-out infinite; }
+        .maintenance-orb-two { animation-delay: -3.5s; }
+        .maintenance-plot-ripple { animation: maintenancePlotPulse 0.75s ease-out; }
+        @media (prefers-reduced-motion: reduce) {
+          .maintenance-ring,
+          .maintenance-progress,
+          .maintenance-orb,
+          .maintenance-plot-ripple {
+            animation: none !important;
+          }
+        }
+      `}</style>
     </main>
-  );
-}
-
-function MaintenanceStyles() {
-  return (
-    <style jsx global>{`
-      @keyframes maintenanceFloat {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-7px);
-        }
-      }
-
-      @keyframes maintenanceSpin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @keyframes maintenanceSlide {
-        0% {
-          transform: translateX(-140%);
-        }
-        100% {
-          transform: translateX(420%);
-        }
-      }
-
-      @keyframes maintenanceOrb {
-        0%,
-        100% {
-          transform: translate3d(0, 0, 0) scale(1);
-        }
-        50% {
-          transform: translate3d(24px, 18px, 0) scale(1.08);
-        }
-      }
-
-      @keyframes maintenancePlotPulse {
-        0% {
-          opacity: 0;
-          transform: scale(0.75);
-        }
-        45% {
-          opacity: 0.65;
-        }
-        100% {
-          opacity: 0;
-          transform: scale(1.28);
-        }
-      }
-
-      .maintenance-ring {
-        animation: maintenanceSpin 12s linear infinite;
-      }
-
-      .maintenance-progress {
-        animation: maintenanceSlide 2.4s ease-in-out infinite;
-      }
-
-      .maintenance-orb {
-        animation: maintenanceOrb 7s ease-in-out infinite;
-      }
-
-      .maintenance-orb-two {
-        animation-delay: -3.5s;
-      }
-
-      .maintenance-plot:nth-child(2),
-      .maintenance-plot:nth-child(5) {
-        transform-origin: center;
-      }
-
-      .maintenance-plot-ripple {
-        animation: maintenancePlotPulse 0.75s ease-out;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .maintenance-ring,
-        .maintenance-progress,
-        .maintenance-orb,
-        .maintenance-plot-ripple {
-          animation: none !important;
-        }
-      }
-    `}</style>
   );
 }

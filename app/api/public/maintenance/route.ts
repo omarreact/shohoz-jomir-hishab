@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
-import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 
-/**
- * Public endpoint — no auth required.
- * Returns the maintenance mode flag stored in the DB.
- * Falls back to false if the setting doesn't exist yet.
- */
+import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET() {
-  if (!isFirebaseAdminReady()) {
-    return NextResponse.json({ maintenanceMode: false }, { status: 200 });
-  }
+  const policy = await getSiteAccessPolicy({ fresh: true });
 
-  try {
-    const settingDoc = await collections.settings.doc("maintenanceMode").get();
-    const setting = settingDoc.data();
-
-    const isMaintenanceMode = setting?.value === "true";
-    return NextResponse.json(
-      { maintenanceMode: isMaintenanceMode },
-      { status: 200 },
-    );
-  } catch {
-    // Collection doesn't exist yet — site is live
-    return NextResponse.json({ maintenanceMode: false }, { status: 200 });
-  }
+  return NextResponse.json(
+    {
+      maintenanceMode: policy.maintenanceMode,
+      degraded: policy.degraded,
+      ...(policy.degraded && policy.reason ? { reason: policy.reason } : {}),
+    },
+    {
+      status: policy.degraded ? 503 : 200,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    },
+  );
 }
