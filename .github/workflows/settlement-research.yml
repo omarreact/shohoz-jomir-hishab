@@ -1,4 +1,4 @@
-name: Settlement BRS 349 research
+name: DLRMS public frontend research
 
 on:
   push:
@@ -12,56 +12,168 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inspect MapSearch JavaScript request contracts
+      - name: Discover official DLRMS public frontend API contracts
         run: |
           mkdir -p research-output
           python3 - <<'PY'
-          import json, ssl, urllib.request
+          import http.cookiejar, json, re, ssl, urllib.request
+          from urllib.parse import urljoin, urlparse
 
-          url = "https://settlement.gov.bd/js/MapSearch.js"
-          req = urllib.request.Request(url, headers={
-              "User-Agent":"Mozilla/5.0 (compatible; LandBDResearch/1.0)",
-              "Referer":"https://settlement.gov.bd/Map/MapSearch",
-          })
-          with urllib.request.urlopen(req, timeout=30, context=ssl.create_default_context()) as r:
-              js = r.read().decode("utf-8", "replace")
+          ORIGIN = "https://dlrms.land.gov.bd"
+          UA = "Mozilla/5.0 (compatible; LandBDResearch/1.0)"
+          ctx = ssl.create_default_context()
+          jar = http.cookiejar.CookieJar()
+          opener = urllib.request.build_opener(
+              urllib.request.HTTPCookieProcessor(jar),
+              urllib.request.HTTPSHandler(context=ctx),
+          )
 
-          with open("research-output/MapSearch.js", "w", encoding="utf-8") as f:
-              f.write(js)
+          def get(url, accept="*/*"):
+              req = urllib.request.Request(url, headers={
+                  "User-Agent": UA,
+                  "Accept": accept,
+                  "Referer": ORIGIN + "/",
+              })
+              with opener.open(req, timeout=30) as r:
+                  return r.status, r.headers.get("content-type"), r.read()
 
-          targets = [
-              "GetKhatianDataList_MapSearch",
-              "GetSheetListBySurveyMap",
-              "GetMouzaListBySurveyMapForshet",
-              "GetSheetJsonBySurvey",
+          status, ctype, raw = get(ORIGIN + "/", "text/html,application/xhtml+xml")
+          html = raw.decode("utf-8", "replace")
+          print("HOMEPAGE_STATUS", status)
+          print("COOKIE_NAMES", sorted({c.name for c in jar}))
+
+          # Never persist cookie values.
+          with open("research-output/home-meta.json", "w", encoding="utf-8") as f:
+              json.dump({
+                  "status": status,
+                  "contentType": ctype,
+                  "cookieNames": sorted({c.name for c in jar}),
+                  "htmlLength": len(html),
+              }, f, ensure_ascii=False, indent=2)
+
+          srcs = set()
+          for m in re.finditer(r'<script[^>]+src=["\']([^"\']+)["\']', html, re.I):
+              u = urljoin(ORIGIN, m.group(1))
+              if urlparse(u).hostname == "dlrms.land.gov.bd":
+                  srcs.add(u)
+          for m in re.finditer(r'<link[^>]+href=["\']([^"\']+\.js(?:\?[^"\']*)?)["\']', html, re.I):
+              u = urljoin(ORIGIN, m.group(1))
+              if urlparse(u).hostname == "dlrms.land.gov.bd":
+                  srcs.add(u)
+
+          # Next.js build manifests sometimes expose additional chunks.
+          manifests = [
+              "/_next/static/chunks/webpack.js",
+              "/_next/static/development/_buildManifest.js",
+              "/_next/static/development/_ssgManifest.js",
           ]
-          out = {}
-          for t in targets:
-              contexts = []
-              start = 0
-              while True:
-                  i = js.find(t, start)
-                  if i < 0: break
-                  contexts.append(js[max(0,i-3500):min(len(js),i+5000)])
-                  start = i + len(t)
-              out[t] = contexts
+          for rel in manifests:
+              try:
+                  s, ct, b = get(ORIGIN + rel)
+                  txt = b.decode("utf-8", "replace")
+                  for m in re.finditer(r'["\']([^"\']+\.js)["\']', txt):
+                      u = urljoin(ORIGIN, m.group(1))
+                      if urlparse(u).hostname == "dlrms.land.gov.bd":
+                          srcs.add(u)
+              except Exception:
+                  pass
 
-          with open("research-output/endpoint-contexts.json","w",encoding="utf-8") as f:
-              json.dump(out,f,ensure_ascii=False,indent=2)
+          keyword_re = re.compile(
+              r'(?:khatian|khatiyan|dag|owner|porcha|print|pdf|download|report|application|tracking|hal-sabek|map|survey|mouza)',
+              re.I,
+          )
+          endpoint_patterns = [
+              re.compile(r'https://gateway\.dlrms\.land\.gov\.bd[^"\'\s<>\\]{1,300}', re.I),
+              re.compile(r'https://api\.land\.gov\.bd[^"\'\s<>\\]{1,300}', re.I),
+              re.compile(r'/(?:core-api/)?api/(?:public/)?[A-Za-z0-9_?&=./{}:\-]{2,300}', re.I),
+              re.compile(r'/[A-Za-z0-9_\-/{}/.]{0,120}(?:khatian|khatiyan|dag|owner|porcha|print|pdf|download|report|application|tracking|hal-sabek)[A-Za-z0-9_?&=./{}:\-]{0,180}', re.I),
+          ]
 
-          for k,v in out.items():
-              print("\n===== ENDPOINT", k, "OCCURRENCES", len(v), "=====")
-              for idx,c in enumerate(v):
-                  print("\n---", idx+1, "---\n", c)
+          endpoints = set()
+          evidence = []
+          fetched = 0
+          failures = []
+
+          for u in sorted(srcs)[:120]:
+              try:
+                  s, ct, b = get(u)
+                  if not b:
+                      continue
+                  if len(b) > 12_000_000:
+                      failures.append({"url":u,"error":"too-large"})
+                      continue
+                  js = b.decode("utf-8", "replace")
+                  fetched += 1
+
+                  local_eps = set()
+                  for pat in endpoint_patterns:
+                      for m in pat.finditer(js):
+                          val = m.group(0).rstrip("),;]")
+                          if keyword_re.search(val):
+                              local_eps.add(val)
+                              endpoints.add(val)
+
+                  # Also capture quoted strings likely to be API route fragments.
+                  for m in re.finditer(r'["\']([^"\']{3,260})["\']', js):
+                      val = m.group(1)
+                      if keyword_re.search(val) and ("/" in val or "gateway.dlrms" in val or "api.land" in val):
+                          if any(x in val.lower() for x in ["khatian","dag","owner","porcha","print","pdf","download","report","application","tracking","hal-sabek"]):
+                              local_eps.add(val)
+                              endpoints.add(val)
+
+                  contexts = []
+                  needles = sorted(
+                      {e for e in local_eps if len(e) <= 260},
+                      key=lambda x: (0 if "gateway.dlrms" in x else 1, len(x))
+                  )[:80]
+                  for needle in needles:
+                      i = js.find(needle)
+                      if i >= 0:
+                          snippet = js[max(0, i-650):min(len(js), i+len(needle)+900)]
+                          # Defensive redaction if a literal token-like string ever appears.
+                          snippet = re.sub(r'(?i)(authorization|access[_-]?token|refresh[_-]?token)(["\'\s:=]+)[A-Za-z0-9._~+/-]{20,}', r'\1\2[REDACTED]', snippet)
+                          contexts.append({"needle":needle, "snippet":snippet})
+                  if contexts:
+                      evidence.append({"script":u, "contexts":contexts})
+              except Exception as e:
+                  failures.append({"url":u,"error":repr(e)})
+
+          result = {
+              "homepageStatus": status,
+              "cookieNames": sorted({c.name for c in jar}),
+              "scriptCountFound": len(srcs),
+              "scriptCountFetched": fetched,
+              "scripts": sorted(srcs),
+              "endpoints": sorted(endpoints),
+              "evidence": evidence,
+              "failures": failures,
+          }
+          with open("research-output/dlrms-js-discovery.json", "w", encoding="utf-8") as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+
+          print("SCRIPT_COUNT_FOUND", len(srcs))
+          print("SCRIPT_COUNT_FETCHED", fetched)
+          print("ENDPOINTS_BEGIN")
+          for e in sorted(endpoints):
+              print(e)
+          print("ENDPOINTS_END")
+          print("EVIDENCE_BEGIN")
+          for block in evidence:
+              print("\nSCRIPT", block["script"])
+              for c in block["contexts"][:80]:
+                  print("\nNEEDLE", c["needle"])
+                  print(c["snippet"])
+          print("EVIDENCE_END")
           PY
 
-      - name: Upload JS contract artifact
+      - name: Upload DLRMS discovery artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: settlement-mapsearch-js-contract
+          name: dlrms-public-js-discovery
           path: research-output/
           retention-days: 3
