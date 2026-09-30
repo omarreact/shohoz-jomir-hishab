@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
+import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
 import {
   PAGE_ACCESS_PAGES,
   isPageAccessLevel,
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
       },
       { merge: false },
     );
+    invalidateSiteAccessPolicyCache();
 
     return NextResponse.json(
       { success: true, access: rules, updatedAt, updatedBy },
