@@ -16,7 +16,20 @@ export interface SiteAccessPolicy {
 }
 
 const POLICY_TTL_MS = 5_000;
-const POLICY_TIMEOUT_MS = 1_500;
+
+/**
+ * Firebase Admin + Firestore can exceed 1.5s on a cold Vercel function.
+ * Production smoke tests showed the previous 1.5s hard limit consistently
+ * forcing LandBD into degraded fail-closed mode. Keep the limit configurable
+ * while allowing enough time for a legitimate cold-start policy read.
+ */
+const POLICY_TIMEOUT_MS = Math.min(
+  Math.max(
+    Number.parseInt(process.env.SITE_ACCESS_POLICY_TIMEOUT_MS || "5000", 10) || 5_000,
+    1_500,
+  ),
+  10_000,
+);
 
 let cachedPolicy:
   | {
