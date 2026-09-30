@@ -44,6 +44,7 @@ async function verifyFirebaseToken(token: string) {
 const MEMBER_ONLY_PAGE_PREFIXES = [
   "/mouza-map",
   "/porcha",
+  "/nid_dob",
   "/admin",
 ] as const;
 
