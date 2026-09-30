@@ -217,7 +217,14 @@ export function publicMirrorBaseUrl(): string {
 }
 
 export async function fetchStrictPublicMirrorRecord(
-  input: { surveyKey: string; jlNumberId: number; khatianNo: string; id: number },
+  input: {
+    surveyKey: string;
+    jlNumberId: number;
+    khatianNo: string;
+    id: number;
+    dagNumber?: string;
+    owner?: string;
+  },
   signal?: AbortSignal,
 ): Promise<JsonRecord | null> {
   if (!mirrorEnabled()) return null;
@@ -226,6 +233,8 @@ export async function fetchStrictPublicMirrorRecord(
   url.searchParams.set("SURVEY", input.surveyKey);
   url.searchParams.set("JL_NUMBER_ID", String(input.jlNumberId));
   url.searchParams.set("KHATIAN_NO", input.khatianNo);
+  if (input.dagNumber) url.searchParams.set("DAG_NUMBER", input.dagNumber);
+  if (input.owner) url.searchParams.set("OWNER", input.owner);
   url.searchParams.set("PAGE_NO", "1");
   url.searchParams.set("PAGE_SIZE", "100");
 
