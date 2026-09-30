@@ -140,7 +140,8 @@ describe("public structured khatian record helpers", () => {
     });
 
     expect(record?.ID).toBe(34901);
-    const requested = new URL(String(fetchMock.mock.calls[0][0]));
+    const calls = fetchMock.mock.calls as unknown as Array<[string | URL | Request]>;
+    const requested = new URL(String(calls[0][0]));
     expect(requested.searchParams.get("JL_NUMBER_ID")).toBe("382911");
     expect(requested.searchParams.get("KHATIAN_NO")).toBe("349");
     expect(requested.searchParams.get("DAG_NUMBER")).toBe("1974");
