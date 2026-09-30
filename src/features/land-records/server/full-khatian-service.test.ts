@@ -203,7 +203,7 @@ describe("FullKhatian service", () => {
       upazilaBbsCode: "26",
     });
 
-    const filteredDags = listKhatians.mock.calls
+    const filteredDags = (listKhatians.mock.calls as unknown as Array<[{ dagNumber?: string }]>)
       .map(([input]) => input.dagNumber)
       .filter(Boolean);
 
