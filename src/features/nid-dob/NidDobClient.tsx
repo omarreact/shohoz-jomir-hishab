@@ -273,7 +273,7 @@ export function NidDobClient() {
                   <p className="text-xs font-black text-emerald-700">
                     VERIFIED VIA {result?.provider || "PROVIDER"}
                   </p>
-                  <p className="mt-1 text-[11px] text-clate-500">
+                  <p className="mt-1 text-[11px] text-slate-500">
                     {result?.verifiedAt
                       ? new Date(result.verifiedAt).toLocaleString("en-GB")
                       : ""}
