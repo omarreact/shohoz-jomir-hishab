@@ -325,7 +325,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   let lisf;
   try {
-    lisf = await getLisfProvider().enrichKhatian(rebuilt, signal);
+    lisf = await getLisfProvider().enrichKhatian(rebuilt, locationCodes, signal);
   } catch (error) {
     lisf = {
       status: "error" as const,
