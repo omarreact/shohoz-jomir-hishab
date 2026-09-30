@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSelectedLayoutSegments } from "next/navigation";
 
 import Navbar from "@/src/shared/components/Navbar";
 import Footer from "@/src/shared/components/Footer";
@@ -14,6 +14,7 @@ export default function ConditionalShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const selectedSegments = useSelectedLayoutSegments();
 
   // Keep the existing service-worker cleanup until the dedicated PWA cleanup
   // PR so access-control changes remain isolated and easy to regression-test.
@@ -44,8 +45,15 @@ export default function ConditionalShell({
     pathname === "/warish" ||
     pathname?.startsWith("/warish/");
 
+  // Proxy rewrites preserve the browser URL, so usePathname() can still expose
+  // the original requested path (for example "/") while the App Router is
+  // actually rendering the /maintenance segment. The selected layout segments
+  // reflect the rendered route tree and let us suppress the normal app shell
+  // before hydration, eliminating the maintenance-mode UI flash.
   const isMaintenanceRoute =
-    pathname === "/maintenance" || pathname?.startsWith("/maintenance/");
+    selectedSegments.includes("maintenance") ||
+    pathname === "/maintenance" ||
+    pathname?.startsWith("/maintenance/");
 
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
