@@ -1,4 +1,4 @@
-name: DLRMS and ePorcha map contract discovery
+name: Map page exact contract probe
 
 on:
   push:
@@ -12,12 +12,11 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect public map contracts
+      - name: Extract DLRMS/ePorcha map page contracts
         run: |
-          mkdir -p research-output
           python3 - <<'PY'
           import concurrent.futures, json, re, ssl, urllib.request
           from urllib.parse import urljoin, urlparse
@@ -25,103 +24,80 @@ jobs:
           ctx=ssl.create_default_context()
           UA="Mozilla/5.0 (compatible; LandBDResearch/1.0)"
 
-          def fetch(url, referer=None, timeout=12):
+          def get(url, referer=None):
               h={"User-Agent":UA,"Accept":"*/*"}
-              if referer: h["Referer"]=referer
+              if referer:h["Referer"]=referer
               req=urllib.request.Request(url,headers=h)
-              with urllib.request.urlopen(req,timeout=timeout,context=ctx) as r:
-                  return r.status,r.headers.get("content-type"),r.read()
+              with urllib.request.urlopen(req,timeout=15,context=ctx) as r:
+                  return r.read().decode("utf-8","replace")
 
-          def scripts_for(page):
-              st,ct,b=fetch(page)
-              html=b.decode("utf-8","replace")
-              srcs=set()
-              for pat in [
-                  r'<script[^>]+src=["\']([^"\']+)["\']',
-                  r'<link[^>]+href=["\']([^"\']+\.js(?:\?[^"\']*)?)["\']',
-              ]:
+          def page_scripts(page):
+              html=get(page)
+              src=set()
+              for pat in [r'<script[^>]+src=["\']([^"\']+)["\']',r'<link[^>]+href=["\']([^"\']+\.js(?:\?[^"\']*)?)["\']']:
                   for m in re.finditer(pat,html,re.I):
                       u=urljoin(page,m.group(1))
-                      if urlparse(u).hostname==urlparse(page).hostname:
-                          srcs.add(u)
-              return html,sorted(srcs)
+                      if urlparse(u).hostname==urlparse(page).hostname:src.add(u)
+              return html,sorted(src)
 
-          # DLRMS scan
-          dlrms_page="https://dlrms.land.gov.bd/"
-          dl_html,dl_scripts=scripts_for(dlrms_page)
-          targets=[
-              "API_PUBLIC_MAP_MOUZA_JL_NUMBERS",
-              "API_PUBLIC_MOUZA_MAP",
-              "/public/map-mouzas/jl-numbers",
-              "/public/maps",
-              "image-view-file",
-          ]
+          def scan(page, terms):
+              html,scripts=page_scripts(page)
+              def one(u):
+                  try:
+                      js=get(u,page)
+                      hits=[]
+                      for t in terms:
+                          p=0
+                          while True:
+                              i=js.find(t,p)
+                              if i<0:break
+                              hits.append({"term":t,"snippet":js[max(0,i-2200):min(len(js),i+3200)]})
+                              p=i+len(t)
+                      return {"script":u,"hits":hits}
+                  except Exception as e:
+                      return {"script":u,"error":repr(e),"hits":[]}
+              with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
+                  rows=list(ex.map(one,scripts))
+              return {"scripts":len(scripts),"rows":[r for r in rows if r["hits"]]}
 
-          def scan_script(u, page, terms):
-              try:
-                  _,_,b=fetch(u,page)
-                  txt=b.decode("utf-8","replace")
-                  found=[]
-                  for term in terms:
-                      start=0
-                      while True:
-                          i=txt.find(term,start)
-                          if i<0: break
-                          found.append({"term":term,"context":txt[max(0,i-3500):min(len(txt),i+5500)]})
-                          start=i+len(term)
-                  return {"url":u,"found":found}
-              except Exception as e:
-                  return {"url":u,"error":repr(e),"found":[]}
+          dl=scan("https://dlrms.land.gov.bd/mouza-map-application",[
+              "useFetchPublicMapMouzaJlNumbers","API_PUBLIC_MAP_MOUZA_JL_NUMBERS",
+              "API_PUBLIC_MOUZA_MAP","API_MAP_PUBLIC_IMAGE_FILE_VIEW",
+              "map-mouzas/jl-numbers","image-view-file","map-mouza"
+          ])
+          ep=scan("https://eporcha.tech/mouza-map",[
+              "/api/","mouza-map","map-mouza","map-survey","map-district",
+              "geojson","pdf","download","survey"
+          ])
 
-          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
-              dl_results=list(ex.map(lambda u: scan_script(u,dlrms_page,targets),dl_scripts))
+          def candidates(result):
+              vals=set()
+              for r in result["rows"]:
+                  for h in r["hits"]:
+                      for m in re.finditer(r'["\']([^"\']{3,220})["\']',h["snippet"]):
+                          v=m.group(1)
+                          if "/api/" in v or v.startswith("/api") or "map" in v.lower():
+                              if len(v)<220:vals.add(v)
+              return sorted(vals)
 
-          # ePorcha scan
-          ep_page="https://eporcha.tech/mouza-map"
-          ep_html,ep_scripts=scripts_for(ep_page)
-          ep_terms=["/api/","mouza-map","map-mouza","maps","geojson","GeoJSON","download","pdf","PDF","image-view-file"]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
-              ep_results=list(ex.map(lambda u: scan_script(u,ep_page,ep_terms),ep_scripts))
+          out={"dlrms":dl,"eporcha":ep,"eporchaCandidates":candidates(ep)}
+          with open("/tmp/map-page-contracts.json","w",encoding="utf-8") as f:json.dump(out,f,ensure_ascii=False,indent=2)
 
-          # Extract compact candidate API-like strings from ePorcha scripts.
-          ep_candidates=set()
-          for r in ep_results:
-              for x in r.get("found",[]):
-                  c=x["context"]
-                  for m in re.finditer(r'["\']([^"\']{3,260})["\']',c):
-                      v=m.group(1)
-                      if ("/api/" in v or "api/" in v) and any(k in v.lower() for k in ["map","mouza","survey","district","upazila","download","file"]):
-                          ep_candidates.add(v)
+          print("DLRMS_SCRIPT_COUNT",dl["scripts"])
+          for r in dl["rows"]:
+              print("\nDLRMS_SCRIPT",r["script"])
+              for h in r["hits"]:
+                  print("\nTERM",h["term"])
+                  print(h["snippet"])
 
-          out={
-              "dlrms":{"scriptCount":len(dl_scripts),"results":[r for r in dl_results if r.get("found")]},
-              "eporcha":{"scriptCount":len(ep_scripts),"candidates":sorted(ep_candidates),"results":[r for r in ep_results if r.get("found")]},
-          }
-          with open("research-output/map-contracts.json","w",encoding="utf-8") as f:
-              json.dump(out,f,ensure_ascii=False,indent=2)
-
-          print("DLRMS_MATCHES_BEGIN")
-          for r in out["dlrms"]["results"]:
-              print("\nSCRIPT",r["url"])
-              for x in r["found"]:
-                  print("\nTERM",x["term"])
-                  print(x["context"])
-          print("DLRMS_MATCHES_END")
-
-          print("\nEPORCHA_CANDIDATES")
-          for c in out["eporcha"]["candidates"]: print(c)
-          print("\nEPORCHA_MATCHES_BEGIN")
-          for r in out["eporcha"]["results"]:
-              print("\nSCRIPT",r["url"])
-              for x in r["found"][:30]:
-                  print("\nTERM",x["term"])
-                  print(x["context"])
-          print("EPORCHA_MATCHES_END")
+          print("\nEPORCHA_CANDIDATES_BEGIN")
+          for v in out["eporchaCandidates"]:print(v)
+          print("EPORCHA_CANDIDATES_END")
+          print("EPORCHA_SCRIPT_COUNT",ep["scripts"])
+          for r in ep["rows"]:
+              print("\nEP_SCRIPT",r["script"])
+              for h in r["hits"]:
+                  # Keep ePorcha logs compact.
+                  print("\nTERM",h["term"])
+                  print(h["snippet"][:4500])
           PY
-      - name: Upload map contract artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dlrms-eporcha-map-contracts
-          path: research-output/
-          retention-days: 3
