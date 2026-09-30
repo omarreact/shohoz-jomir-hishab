@@ -1,4 +1,4 @@
-name: DLRMS public frontend research
+name: DLRMS BRS 349 read-only boundary probe
 
 on:
   push:
@@ -16,107 +16,91 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parallel-scan DLRMS public frontend chunks
+      - name: Probe known DLRMS read-only BRS routes with public app session
         run: |
           mkdir -p research-output
           python3 - <<'PY'
-          import concurrent.futures, http.cookiejar, json, re, ssl, urllib.request
-          from urllib.parse import urljoin, urlparse
+          import http.cookiejar, json, ssl, urllib.parse, urllib.request, urllib.error
 
-          ORIGIN = "https://dlrms.land.gov.bd"
-          UA = "Mozilla/5.0 (compatible; LandBDResearch/1.0)"
-          ctx = ssl.create_default_context()
-          jar = http.cookiejar.CookieJar()
-          opener = urllib.request.build_opener(
+          HOME="https://dlrms.land.gov.bd/"
+          GATE="https://gateway.dlrms.land.gov.bd"
+          UA="Mozilla/5.0 (compatible; LandBDResearch/1.0)"
+          ctx=ssl.create_default_context()
+          jar=http.cookiejar.CookieJar()
+          opener=urllib.request.build_opener(
               urllib.request.HTTPCookieProcessor(jar),
               urllib.request.HTTPSHandler(context=ctx),
           )
 
-          def fetch_with(op, url, accept="*/*", timeout=10):
-              req = urllib.request.Request(url, headers={
-                  "User-Agent": UA, "Accept": accept, "Referer": ORIGIN + "/",
-              })
-              with op.open(req, timeout=timeout) as r:
-                  return r.status, r.headers.get("content-type"), r.read()
+          req=urllib.request.Request(HOME,headers={"User-Agent":UA,"Accept":"text/html"})
+          with opener.open(req,timeout=25) as r:
+              r.read()
 
-          status, ctype, raw = fetch_with(opener, ORIGIN + "/", "text/html,application/xhtml+xml", 20)
-          html = raw.decode("utf-8", "replace")
-          cookie_names = sorted({c.name for c in jar})
-          print("HOME", status, "COOKIES", cookie_names)
+          token=None
+          for c in jar:
+              if c.name=="dlrms_app_token":
+                  token=c.value
+          if not token:
+              raise RuntimeError("Public app token cookie was not issued")
+          print("PUBLIC_APP_SESSION_READY", True)
+          print("COOKIE_NAMES", sorted({c.name for c in jar}))
 
-          srcs = set()
-          for pat in [
-              r'<script[^>]+src=["\']([^"\']+)["\']',
-              r'<link[^>]+href=["\']([^"\']+\.js(?:\?[^"\']*)?)["\']',
-          ]:
-              for m in re.finditer(pat, html, re.I):
-                  u = urljoin(ORIGIN, m.group(1))
-                  if urlparse(u).hostname == "dlrms.land.gov.bd":
-                      srcs.add(u)
+          headers={
+              "User-Agent":UA,
+              "Accept":"application/json, text/plain, */*",
+              "Authorization":"Bearer "+token,
+              "Origin":"https://dlrms.land.gov.bd",
+              "Referer":"https://dlrms.land.gov.bd/",
+          }
 
-          # Reuse only cookie NAMES conceptually; each worker doesn't need authenticated cookie
-          # for public static chunks. Homepage token values are never printed or stored.
-          def scan(u):
-              try:
-                  worker = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
-                  s, ct, b = fetch_with(worker, u, "*/*", 9)
-                  if len(b) > 10_000_000: return {"url":u,"error":"too-large"}
-                  js = b.decode("utf-8", "replace")
-                  vals = set()
-                  pats = [
-                      r'https://gateway\.dlrms\.land\.gov\.bd[^"\'\s<>\\]{1,300}',
-                      r'https://api\.land\.gov\.bd[^"\'\s<>\\]{1,300}',
-                      r'/(?:core-api/)?api/(?:public/)?[A-Za-z0-9_?&=./{}:\-]{2,300}',
-                      r'/[A-Za-z0-9_\-/{}/.]{0,120}(?:khatian|khatiyan|dag|owner|porcha|print|pdf|download|report|application|tracking|hal-sabek)[A-Za-z0-9_?&=./{}:\-]{0,180}',
-                  ]
-                  for p in pats:
-                      for m in re.finditer(p, js, re.I):
-                          v=m.group(0).rstrip("),;]")
-                          if len(v) < 320: vals.add(v)
-                  contexts=[]
-                  for v in sorted(vals)[:120]:
-                      i=js.find(v)
-                      if i>=0:
-                          snip=js[max(0,i-500):min(len(js),i+len(v)+700)]
-                          snip=re.sub(r'(?i)(authorization|access[_-]?token|refresh[_-]?token)(["\'\s:=]+)[A-Za-z0-9._~+/-]{20,}',r'\1\2[REDACTED]',snip)
-                          contexts.append({"endpoint":v,"snippet":snip})
-                  return {"url":u,"status":s,"contexts":contexts}
-              except Exception as e:
-                  return {"url":u,"error":repr(e)}
+          candidates=[
+              ("baseline-public","/core-api/api/public/index-khatian/BRS/7940305"),
+              ("brs-khatian-by-record-id","/core-api/api/brs-khatians/7940305"),
+              ("brs-khatian-by-entry-id","/core-api/api/brs-khatians/3197289"),
+              ("dags-q-khatian-id","/core-api/api/brs-khatian-dags?KHATIAN_ID=7940305"),
+              ("dags-q-entry-id","/core-api/api/brs-khatian-dags?KHATIAN_ENTRY_ID=3197289"),
+              ("dags-q-camel-khatian","/core-api/api/brs-khatian-dags?khatianId=7940305"),
+              ("dags-q-camel-entry","/core-api/api/brs-khatian-dags?khatianEntryId=3197289"),
+              ("dags-path-record","/core-api/api/brs-khatian-dags/7940305"),
+              ("dags-path-entry","/core-api/api/brs-khatian-dags/3197289"),
+              ("owners-path-record","/core-api/api/brs-khatian-owners/7940305"),
+              ("owners-path-entry","/core-api/api/brs-khatian-owners/3197289"),
+              ("owners-q-khatian-id","/core-api/api/brs-khatian-owners?KHATIAN_ID=7940305"),
+              ("owners-q-entry-id","/core-api/api/brs-khatian-owners?KHATIAN_ENTRY_ID=3197289"),
+          ]
 
           results=[]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
-              for item in ex.map(scan, sorted(srcs)):
-                  results.append(item)
+          for name,path in candidates:
+              url=GATE+path
+              req=urllib.request.Request(url,headers=headers,method="GET")
+              try:
+                  with urllib.request.urlopen(req,timeout=20,context=ctx) as r:
+                      raw=r.read(500000)
+                      txt=raw.decode("utf-8","replace")
+                      try: data=json.loads(txt)
+                      except: data=txt[:12000]
+                      results.append({"name":name,"path":path,"status":r.status,"contentType":r.headers.get("content-type"),"data":data})
+                      print("\nPROBE",name,"STATUS",r.status)
+                      print(json.dumps(data,ensure_ascii=False)[:30000])
+              except urllib.error.HTTPError as e:
+                  raw=e.read(100000).decode("utf-8","replace")
+                  try: data=json.loads(raw)
+                  except: data=raw[:3000]
+                  results.append({"name":name,"path":path,"status":e.code,"data":data})
+                  print("\nPROBE",name,"STATUS",e.code)
+                  print(json.dumps(data,ensure_ascii=False)[:6000])
+              except Exception as e:
+                  results.append({"name":name,"path":path,"error":repr(e)})
+                  print("\nPROBE",name,"ERROR",repr(e))
 
-          endpoints=sorted({c["endpoint"] for r in results for c in r.get("contexts",[])})
-          result={
-              "homeStatus":status,
-              "cookieNames":cookie_names,
-              "scriptCount":len(srcs),
-              "scripts":sorted(srcs),
-              "endpoints":endpoints,
-              "results":results,
-          }
-          with open("research-output/dlrms-fast.json","w",encoding="utf-8") as f:
-              json.dump(result,f,ensure_ascii=False,indent=2)
-
-          print("SCRIPTS",len(srcs))
-          print("ENDPOINTS_BEGIN")
-          for e in endpoints: print(e)
-          print("ENDPOINTS_END")
-          for r in results:
-              if r.get("contexts"):
-                  print("\nSCRIPT",r["url"])
-                  for c in r["contexts"]:
-                      print("\nEP",c["endpoint"])
-                      print(c["snippet"])
+          with open("research-output/dlrms-brs-boundary.json","w",encoding="utf-8") as f:
+              json.dump(results,f,ensure_ascii=False,indent=2)
           PY
 
-      - name: Upload DLRMS fast artifact
+      - name: Upload read-only probe artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dlrms-public-js-fast
+          name: dlrms-brs-349-boundary
           path: research-output/
           retention-days: 3
