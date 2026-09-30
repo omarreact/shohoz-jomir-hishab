@@ -41,10 +41,10 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
   const isSystemRoute = pathname?.startsWith("/403");
   const isControlPlane = isAdminRoute || isLoginRoute || isSystemRoute;
 
-  // The primary GIS viewport is intentionally public and manages its own
-  // authenticated advanced controls internally. It also bypasses all app chrome.
+  // The primary GIS viewport bypasses app chrome, but still participates in
+  // maintenance mode so unauthenticated visitors cannot bypass the site gate.
   if (isGeospatialMap) {
-    return <>{children}</>;
+    return <MaintenanceGate>{children}</MaintenanceGate>;
   }
 
   // Pixel-calibrated document workspaces keep access/maintenance controls but
