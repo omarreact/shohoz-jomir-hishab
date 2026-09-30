@@ -1,4 +1,4 @@
-name: DLRMS BRS 349 read-only boundary probe
+name: DLRMS BRS 349 raw public payload probe
 
 on:
   push:
@@ -15,15 +15,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-
-      - name: Probe known DLRMS read-only BRS routes with public app session
+      - name: Capture raw public index and Hal-Sabek payloads
         run: |
           mkdir -p research-output
           python3 - <<'PY'
           import http.cookiejar, json, ssl, urllib.parse, urllib.request, urllib.error
 
           HOME="https://dlrms.land.gov.bd/"
-          GATE="https://gateway.dlrms.land.gov.bd"
+          BASE="https://gateway.dlrms.land.gov.bd/core-api/api/public"
           UA="Mozilla/5.0 (compatible; LandBDResearch/1.0)"
           ctx=ssl.create_default_context()
           jar=http.cookiejar.CookieJar()
@@ -31,76 +30,57 @@ jobs:
               urllib.request.HTTPCookieProcessor(jar),
               urllib.request.HTTPSHandler(context=ctx),
           )
-
-          req=urllib.request.Request(HOME,headers={"User-Agent":UA,"Accept":"text/html"})
-          with opener.open(req,timeout=25) as r:
+          with opener.open(urllib.request.Request(HOME,headers={"User-Agent":UA,"Accept":"text/html"}),timeout=25) as r:
               r.read()
+          token=next((c.value for c in jar if c.name=="dlrms_app_token"),None)
+          if not token: raise RuntimeError("no public app token")
+          headers={"User-Agent":UA,"Accept":"application/json","Authorization":"Bearer "+token,"Origin":"https://dlrms.land.gov.bd","Referer":HOME}
 
-          token=None
-          for c in jar:
-              if c.name=="dlrms_app_token":
-                  token=c.value
-          if not token:
-              raise RuntimeError("Public app token cookie was not issued")
-          print("PUBLIC_APP_SESSION_READY", True)
-          print("COOKIE_NAMES", sorted({c.name for c in jar}))
-
-          headers={
-              "User-Agent":UA,
-              "Accept":"application/json, text/plain, */*",
-              "Authorization":"Bearer "+token,
-              "Origin":"https://dlrms.land.gov.bd",
-              "Referer":"https://dlrms.land.gov.bd/",
-          }
-
-          candidates=[
-              ("baseline-public","/core-api/api/public/index-khatian/BRS/7940305"),
-              ("brs-khatian-by-record-id","/core-api/api/brs-khatians/7940305"),
-              ("brs-khatian-by-entry-id","/core-api/api/brs-khatians/3197289"),
-              ("dags-q-khatian-id","/core-api/api/brs-khatian-dags?KHATIAN_ID=7940305"),
-              ("dags-q-entry-id","/core-api/api/brs-khatian-dags?KHATIAN_ENTRY_ID=3197289"),
-              ("dags-q-camel-khatian","/core-api/api/brs-khatian-dags?khatianId=7940305"),
-              ("dags-q-camel-entry","/core-api/api/brs-khatian-dags?khatianEntryId=3197289"),
-              ("dags-path-record","/core-api/api/brs-khatian-dags/7940305"),
-              ("dags-path-entry","/core-api/api/brs-khatian-dags/3197289"),
-              ("owners-path-record","/core-api/api/brs-khatian-owners/7940305"),
-              ("owners-path-entry","/core-api/api/brs-khatian-owners/3197289"),
-              ("owners-q-khatian-id","/core-api/api/brs-khatian-owners?KHATIAN_ID=7940305"),
-              ("owners-q-entry-id","/core-api/api/brs-khatian-owners?KHATIAN_ENTRY_ID=3197289"),
-          ]
-
-          results=[]
-          for name,path in candidates:
-              url=GATE+path
+          def get(path, params=None):
+              url=BASE+path
+              if params: url += "?" + urllib.parse.urlencode(params)
               req=urllib.request.Request(url,headers=headers,method="GET")
               try:
                   with urllib.request.urlopen(req,timeout=20,context=ctx) as r:
-                      raw=r.read(500000)
-                      txt=raw.decode("utf-8","replace")
-                      try: data=json.loads(txt)
-                      except: data=txt[:12000]
-                      results.append({"name":name,"path":path,"status":r.status,"contentType":r.headers.get("content-type"),"data":data})
-                      print("\nPROBE",name,"STATUS",r.status)
-                      print(json.dumps(data,ensure_ascii=False)[:30000])
+                      raw=r.read(1000000).decode("utf-8","replace")
+                      try: data=json.loads(raw)
+                      except: data=raw
+                      return {"status":r.status,"path":path,"params":params or {},"data":data}
               except urllib.error.HTTPError as e:
-                  raw=e.read(100000).decode("utf-8","replace")
+                  raw=e.read(200000).decode("utf-8","replace")
                   try: data=json.loads(raw)
-                  except: data=raw[:3000]
-                  results.append({"name":name,"path":path,"status":e.code,"data":data})
-                  print("\nPROBE",name,"STATUS",e.code)
-                  print(json.dumps(data,ensure_ascii=False)[:6000])
-              except Exception as e:
-                  results.append({"name":name,"path":path,"error":repr(e)})
-                  print("\nPROBE",name,"ERROR",repr(e))
+                  except: data=raw
+                  return {"status":e.code,"path":path,"params":params or {},"data":data}
 
-          with open("research-output/dlrms-brs-boundary.json","w",encoding="utf-8") as f:
-              json.dump(results,f,ensure_ascii=False,indent=2)
+          baseq={"SURVEY":"BRS","JL_NUMBER_ID":"382911","PAGE_NO":"1","PAGE_SIZE":"100"}
+          probes=[]
+          probes.append(("khatian349",get("/index-khatian/BRS",{**baseq,"KHATIAN_NO":"349"})))
+          for dag in ["1974","1977","1990","2006"]:
+              probes.append(("dag-"+dag,get("/index-khatian/BRS",{**baseq,"DAG_NUMBER":dag})))
+
+          common={"DIVISION_BBS_CODE":"30","DISTRICT_BBS_CODE":"26","UPAZILA_BBS_CODE":"26","JL_NUMBER_ID":"382911","KHATIAN_NO":"349"}
+          variants=[
+              {**common,"SURVEY_TYPE":"BRS"},
+              {**common,"SURVEY_ID":"7"},
+              {**common,"SURVEY":"BRS"},
+              {**common,"SURVEY_TYPE":"7"},
+              {**common,"SURVEY_TYPE_ID":"7"},
+          ]
+          for i,v in enumerate(variants,1):
+              probes.append((f"hal-sabek-{i}",get("/hal-sabeks/khatian",v)))
+
+          with open("research-output/raw-public.json","w",encoding="utf-8") as f:
+              json.dump(probes,f,ensure_ascii=False,indent=2)
+
+          for name,res in probes:
+              print("\n===== "+name+" STATUS "+str(res["status"])+" =====")
+              print("PARAMS",json.dumps(res["params"],ensure_ascii=False))
+              print(json.dumps(res["data"],ensure_ascii=False)[:80000])
           PY
-
-      - name: Upload read-only probe artifact
+      - name: Upload raw public payload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dlrms-brs-349-boundary
+          name: dlrms-brs-349-raw-public
           path: research-output/
           retention-days: 3
