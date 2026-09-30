@@ -2,16 +2,21 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+
 import Navbar from "@/src/shared/components/Navbar";
 import Footer from "@/src/shared/components/Footer";
-import MaintenanceGate from "@/src/shared/components/MaintenanceGate";
 import MobileFloatingNav from "@/src/shared/components/MobileFloatingNav";
 import HistoryShortcut from "@/src/shared/components/HistoryShortcut";
-import PageAccessGate from "@/src/shared/components/PageAccessGate";
 
-export default function ConditionalShell({ children }: { children: React.ReactNode }) {
+export default function ConditionalShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
 
+  // Keep the existing service-worker cleanup until the dedicated PWA cleanup
+  // PR so access-control changes remain isolated and easy to regression-test.
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
@@ -30,47 +35,36 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
     }
   }, []);
 
-  const isGeospatialMap = pathname === "/geospatial-map" || pathname?.startsWith("/geospatial-map/");
+  const isGeospatialMap =
+    pathname === "/geospatial-map" || pathname?.startsWith("/geospatial-map/");
+
   const isWarishSanad =
     pathname === "/warishsanad" ||
     pathname?.startsWith("/warishsanad/") ||
     pathname === "/warish" ||
     pathname?.startsWith("/warish/");
+
+  const isMaintenanceRoute =
+    pathname === "/maintenance" || pathname?.startsWith("/maintenance/");
+
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
   const isSystemRoute = pathname?.startsWith("/403");
   const isControlPlane = isAdminRoute || isLoginRoute || isSystemRoute;
 
-  // The primary GIS viewport bypasses app chrome, but still participates in
-  // maintenance mode so unauthenticated visitors cannot bypass the site gate.
-  if (isGeospatialMap) {
-    return <MaintenanceGate>{children}</MaintenanceGate>;
+  // Access has already been decided by proxy.ts. These routes bypass normal
+  // application chrome only for layout/geometry reasons.
+  if (isGeospatialMap || isWarishSanad || isMaintenanceRoute) {
+    return <>{children}</>;
   }
 
-  // Pixel-calibrated document workspaces keep access/maintenance controls but
-  // deliberately bypass Navbar/Footer/mobile chrome so A4 geometry stays exact.
-  if (isWarishSanad) {
-    return (
-      <MaintenanceGate>
-        <PageAccessGate>{children}</PageAccessGate>
-      </MaintenanceGate>
-    );
-  }
-
-  const pageContent = isControlPlane ? children : <PageAccessGate>{children}</PageAccessGate>;
-  const shell = (
+  return (
     <div className="flex min-h-screen flex-1 flex-col">
       <Navbar />
-      <main className="flex-grow-1">{pageContent}</main>
+      <main className="flex-grow-1">{children}</main>
       {!isControlPlane ? <HistoryShortcut /> : null}
       <Footer />
       {!isControlPlane ? <MobileFloatingNav /> : null}
     </div>
   );
-
-  // Admin/login/system routes keep their own availability semantics, but still
-  // receive the global Navbar/Footer required by the application shell.
-  if (isControlPlane) return shell;
-
-  return <MaintenanceGate>{shell}</MaintenanceGate>;
 }
