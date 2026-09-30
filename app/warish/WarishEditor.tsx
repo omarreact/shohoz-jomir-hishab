@@ -35,6 +35,73 @@ type CertificateData = {
 
 const STORAGE_KEY = "landbd-warish-draft-v2";
 
+const RELATION_OPTIONS = [
+  "পুত্র",
+  "কন্যা",
+  "স্বামী",
+  "স্ত্রী",
+  "পিতা",
+  "মাতা",
+  "ভাই",
+  "বোন",
+  "নাতি",
+  "নাতনি",
+  "দাদা",
+  "দাদি",
+  "নানা",
+  "নানি",
+  "অন্যান্য",
+] as const;
+
+const BANGLA_MONTHS: Record<string, string> = {
+  জানুয়ারি: "01",
+  জানুয়ারি: "01",
+  ফেব্রুয়ারি: "02",
+  ফেব্রুয়ারি: "02",
+  মার্চ: "03",
+  এপ্রিল: "04",
+  মে: "05",
+  জুন: "06",
+  জুলাই: "07",
+  আগস্ট: "08",
+  সেপ্টেম্বর: "09",
+  অক্টোবর: "10",
+  নভেম্বর: "11",
+  ডিসেম্বর: "12",
+};
+
+const englishDigits = (value: string) =>
+  value.replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)));
+
+const toIsoDate = (value: string) => {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const normalized = englishDigits(value).trim();
+  const match = normalized.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/);
+  if (!match) return "";
+
+  const [, day, monthName, year] = match;
+  const month = BANGLA_MONTHS[monthName];
+  if (!month) return "";
+
+  return `${year}-${month}-${day.padStart(2, "0")}`;
+};
+
+const formatBanglaDate = (value: string) => {
+  if (!value) return "—";
+  const iso = toIsoDate(value);
+  if (!iso) return value;
+
+  const [year, month, day] = iso.split("-");
+  const monthNames = [
+    "", "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন",
+    "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর",
+  ];
+  const monthName = monthNames[Number(month)] || "";
+  return `${banglaDigits(day)} ${monthName} ${banglaDigits(year)}`;
+};
+
 const DEFAULT_DATA: CertificateData = {
   referenceNo: "৪৬.১০.০০০০.১৮১.৯৯.০০১.২৫-২৪৩",
   issueDate: "০১.০৯.২৫",
@@ -397,10 +464,35 @@ export default function WarishEditor() {
               {data.heirs.map((heir, index) => (
                 <div className="heir-editor-row" key={heir.id}>
                   <strong>{banglaDigits(index + 1)}</strong>
-                  <input aria-label="নাম" placeholder="নাম" value={heir.name} onChange={(e) => updateHeir(heir.id, "name", e.target.value)} />
-                  <input aria-label="জন্মতারিখ" placeholder="জন্মতারিখ" value={heir.birthDate} onChange={(e) => updateHeir(heir.id, "birthDate", e.target.value)} />
-                  <input aria-label="এনআইডি বা জন্ম নিবন্ধন" placeholder="এনআইডি/জন্ম নিবন্ধন" value={heir.idNumber} onChange={(e) => updateHeir(heir.id, "idNumber", e.target.value)} />
-                  <input aria-label="সম্পর্ক" placeholder="সম্পর্ক" value={heir.relation} onChange={(e) => updateHeir(heir.id, "relation", e.target.value)} />
+                  <input
+                    aria-label="নাম"
+                    placeholder="নাম"
+                    value={heir.name}
+                    onChange={(e) => updateHeir(heir.id, "name", e.target.value)}
+                  />
+                  <input
+                    aria-label="জন্মতারিখ"
+                    title="ক্যালেন্ডার থেকে জন্মতারিখ নির্বাচন করুন"
+                    type="date"
+                    value={toIsoDate(heir.birthDate)}
+                    onChange={(e) => updateHeir(heir.id, "birthDate", e.target.value)}
+                  />
+                  <input
+                    aria-label="এনআইডি বা জন্ম নিবন্ধন"
+                    placeholder="এনআইডি/জন্ম নিবন্ধন"
+                    value={heir.idNumber}
+                    onChange={(e) => updateHeir(heir.id, "idNumber", e.target.value)}
+                  />
+                  <select
+                    aria-label="সম্পর্ক"
+                    value={heir.relation}
+                    onChange={(e) => updateHeir(heir.id, "relation", e.target.value)}
+                  >
+                    <option value="">সম্পর্ক নির্বাচন করুন</option>
+                    {RELATION_OPTIONS.map((relation) => (
+                      <option key={relation} value={relation}>{relation}</option>
+                    ))}
+                  </select>
                   <button type="button" className="remove-button" onClick={() => removeHeir(heir.id)} disabled={data.heirs.length === 1}>×</button>
                 </div>
               ))}
@@ -549,7 +641,7 @@ export default function WarishEditor() {
                   <tr key={heir.id}>
                     <td>{banglaDigits(index + 1)}</td>
                     <td>{heir.name || "—"}</td>
-                    <td>{heir.birthDate || "—"}</td>
+                    <td>{formatBanglaDate(heir.birthDate)}</td>
                     <td>{heir.idNumber || "—"}</td>
                     <td>{heir.relation || "—"}</td>
                   </tr>

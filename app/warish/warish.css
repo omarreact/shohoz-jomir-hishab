@@ -161,7 +161,8 @@ button, input, select, textarea {
 .form-card input,
 .form-card select,
 .form-card textarea,
-.heir-editor-row input {
+.heir-editor-row input,
+.heir-editor-row select {
   width: 100%;
   min-width: 0;
   border: 1px solid #cbd3db;
@@ -174,7 +175,8 @@ button, input, select, textarea {
 .form-card input:focus,
 .form-card select:focus,
 .form-card textarea:focus,
-.heir-editor-row input:focus {
+.heir-editor-row input:focus,
+.heir-editor-row select:focus {
   border-color: #17663a;
   box-shadow: 0 0 0 3px rgba(23, 102, 58, .10);
 }
@@ -200,9 +202,17 @@ button, input, select, textarea {
   text-align: center;
   color: #17663a;
 }
-.heir-editor-row input {
+.heir-editor-row input,
+.heir-editor-row select {
   padding: 7px 8px;
   font-size: 12px;
+}
+.heir-editor-row input[type="date"] {
+  min-height: 34px;
+  cursor: pointer;
+}
+.heir-editor-row select {
+  cursor: pointer;
 }
 .remove-button {
   width: 32px;
@@ -469,7 +479,8 @@ button, input, select, textarea {
   .heir-editor-row {
     grid-template-columns: 24px 1fr 32px;
   }
-  .heir-editor-row input {
+  .heir-editor-row input,
+  .heir-editor-row select {
     grid-column: 2;
   }
   .heir-editor-row .remove-button {
