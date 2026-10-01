@@ -316,6 +316,14 @@ export default function MouzaPorchaReportBuilder() {
 
       setReportMeta(nextMeta);
       setPhase("done");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.getElementById("mouza-porcha-report-preview")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
+      });
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setPhase("idle");
@@ -350,8 +358,8 @@ export default function MouzaPorchaReportBuilder() {
       const result = await generatePagedReportPdf({
         source: reportRef.current,
         pageSelector: ".report-page",
-        fileName: `Mouza-${mouzaPart}-${surveyPart}-Porcha-Report-${reportPart}-A4-Landscape`,
-        orientation: "landscape",
+        fileName: `Mouza-${mouzaPart}-${surveyPart}-Porcha-Report-${reportPart}-A4-Portrait`,
+        orientation: "portrait",
         scale: 1.55,
         jpegQuality: 0.94,
       });
@@ -379,7 +387,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের সাদা-কালো A4 টেবিল রিপোর্ট তৈরি করুন। DLRMS mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের সাদা-কালো A4 Portrait রিপোর্ট তৈরি করুন। রিপোর্টটি পেজেই দেখা যাবে; DLRMS mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
         pattern="grid"
       />
 
@@ -389,7 +397,7 @@ export default function MouzaPorchaReportBuilder() {
             <CardHeader>
               <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
-                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। বড় মৌজার রিপোর্ট পেজভিত্তিক সংগ্রহ, যাচাই ও PDF ডাউনলোডের জন্য প্রস্তুত হবে।
+                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। রিপোর্ট তৈরি হলে নিচেই A4 Portrait preview দেখা যাবে এবং একই layout PDF/Print-এ ব্যবহার হবে।
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -527,10 +535,10 @@ export default function MouzaPorchaReportBuilder() {
         </section>
 
         {rows.length > 0 ? (
-          <section className="mt-7">
+          <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[var(--muted-foreground)]">
-                {rows.length}টি খতিয়ান {phase === "done" ? "PDF ডাউনলোডের জন্য প্রস্তুত" : "লোড হয়েছে"}
+                {rows.length}টি খতিয়ান {phase === "done" ? "A4 Portrait রিপোর্ট হিসেবে প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -542,6 +550,13 @@ export default function MouzaPorchaReportBuilder() {
                 />
                 <ResultPrintButton disabled={generating || phase !== "done" || pdfGenerating} className="rounded-[12px]" />
               </div>
+            </div>
+
+            <div className="mb-3 print:hidden">
+              <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
+              <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
+                নিচের preview-টাই A4 Portrait PDF ও Print layout হিসেবে ব্যবহার হবে।
+              </p>
             </div>
 
             <div ref={reportRef}>
