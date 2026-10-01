@@ -90,8 +90,8 @@ export default function LandBdPrintRibbon({ className = "" }: Props) {
 
         @media print {
           .landbd-print-ribbon svg {
-            height: 7.5mm;
-            min-height: 7.5mm;
+            height: auto;
+            min-height: 0;
           }
         }
       `}</style>
