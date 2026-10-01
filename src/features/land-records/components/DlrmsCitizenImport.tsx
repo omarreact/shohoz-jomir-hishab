@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -146,7 +146,7 @@ function CitizenPrintReport({
   captureRef,
 }: {
   result: DlrmsCitizenPrint;
-  captureRef: React.RefObject<HTMLDivElement | null>;
+  captureRef: RefObject<HTMLDivElement | null>;
 }) {
   const summary = result.summary;
   const generated = new Intl.DateTimeFormat("bn-BD", {
