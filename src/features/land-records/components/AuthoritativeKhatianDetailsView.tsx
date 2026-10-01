@@ -2,8 +2,6 @@
 
 import { useMemo, useState, type ReactNode, type RefObject } from "react";
 import {
-  AlertTriangle,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -14,7 +12,7 @@ import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian, FullKhatianDag } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import { buildKhatianDisplayModel, type ParsedDagRow, type SurveyKind } from "../lib/khatian-display";
+import { buildKhatianDisplayModel, type ParsedDagRow } from "../lib/khatian-display";
 
 type Props = {
   khatian: KhatianDetails;
@@ -50,23 +48,6 @@ function MetaChip({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{label}</p>
       <p className="mt-0.5 break-words text-sm font-semibold text-slate-900">{value}</p>
     </div>
-  );
-}
-
-function SurveyArchitectureNote({ kind }: { kind: SurveyKind }) {
-  const notes: Record<SurveyKind, string> = {
-    CS: "সি এস খতিয়ানে স্বত্ব, দখল, দাগ, সীমানা, জমির রকম ও রাজস্ব-সংক্রান্ত যে তথ্য সরকারি রেকর্ড উৎসে পাওয়া যায়, তা দেখানো হয়।",
-    SA: "এস এ খতিয়ানের সাবেক/হাল রেকর্ড, মালিক, দাগ, শ্রেণী ও জমির তথ্য উৎসে যতটুকু পাওয়া যায় ততটুকুই দেখানো হয়।",
-    RS: "আর এস খতিয়ানের মালিকানা, দাগ, জমির শ্রেণী ও সরকারি রেকর্ডে থাকা জমির পরিমাণ দেখানো হয়।",
-    BRS: "বি আর এস রেকর্ডের মালিক, দাগ, জমির শ্রেণী ও সরকারি রেকর্ডে থাকা দাগভিত্তিক জমির পরিমাণ পাওয়া গেলে দেখানো হয়।",
-    BS: "বি এস খতিয়ানের সরকারি রেকর্ড উৎসে পাওয়া তথ্য দেখানো হয়।",
-    MUTATION: "নামজারি রেকর্ডের আবেদন, মামলা, দলিল, আগত খতিয়ান ও জমির তথ্য উৎসে পাওয়া অনুযায়ী দেখানো হয়।",
-    OTHER: "এই খতিয়ানের সরকারি রেকর্ড উৎসে পাওয়া তথ্য দেখানো হয়।",
-  };
-  return (
-    <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-      {notes[kind]}
-    </p>
   );
 }
 
@@ -241,36 +222,6 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           ) : null}
         </div>
       </div>
-
-      {model.isPartial ? (
-        <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <AlertTriangle className="mt-0.5 shrink-0" size={18} />
-          <div>
-            <p className="font-bold">পাবলিক API-তে আংশিক তথ্য</p>
-            <p className="mt-1 text-xs leading-5">সরকারি পাবলিক API কিছু ক্ষেত্র সংক্ষিপ্ত করেছে। LandBD অনুপস্থিত নাম, দাগ, শ্রেণী বা জমির পরিমাণ অনুমান করে যোগ করে না।</p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-950">
-          <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
-          <div>
-            <p className="font-bold">উপলব্ধ সরকারি রেকর্ড তথ্য</p>
-            <p className="mt-1 text-xs leading-5">এই প্রদর্শন উৎসে পাওয়া ক্ষেত্রের উপর ভিত্তি করে। এটি LandBD কর্তৃক জারি করা সার্টিফাইড কপি নয়।</p>
-          </div>
-        </div>
-      )}
-
-      <SurveyArchitectureNote kind={model.kind} />
-
-      {showDagCol && !hasOfficialPerDagArea && totalLandDisplay ? (
-        <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900">
-          <Info className="mt-0.5 shrink-0" size={18} />
-          <div>
-            <p className="font-bold">দাগভিত্তিক সরকারি জমির পরিমাণ পাওয়া যায়নি</p>
-            <p className="mt-1 text-xs leading-5">এই রেকর্ডের TOTAL_LAND পাওয়া গেছে, কিন্তু বর্তমান সরকারি/অনুমোদিত JSON উৎসে প্রতিটি দাগের area field নেই। LandBD মোট জমি ভাগ করে বা RAJUK GIS Shape__Area ব্যবহার করে দাগভিত্তিক খতিয়ান area বানায় না।</p>
-          </div>
-        </div>
-      ) : null}
 
       {rowCount > 0 ? (
         <Section id="record-table" title={model.kind === "CS" ? "সমন্বিত স্বত্ব ও দাগ সারণি" : "সমন্বিত খতিয়ান তথ্য"} icon={<FileText size={16} className="text-[var(--brand-gold-text)]" />}>
