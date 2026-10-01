@@ -1,6 +1,232 @@
-/* LandBD single light-theme design system */
-:root,.light,.dark,[data-theme="light"],[data-theme="dark"]{color-scheme:light;--background:#f7f9f8;--foreground:#17211c;--card-bg:#fff;--border-color:#e1e9e4;--primary:#006A3D;--primary-foreground:#fff;--secondary:#edf7f1;--muted:#f1f5f3;--muted-foreground:#66736c;--accent:#22A35A;--destructive:#E10600;--brand-gold:#006A3D;--brand-gold-strong:#005532;--brand-gold-soft:#D9F2E3;--brand-gold-faint:#F1FAF5;--brand-gold-text:#006A3D;--brand-ink:#17211c;--brand-ink-soft:#34423a;--brand-success:#22A35A;--brand-info:#2878b8;--brand-purple:#7c5bb7;--brand-coral:#E10600;--shadow-xs:0 1px 2px rgba(0,60,34,.035);--shadow-sm:0 1px 2px rgba(0,60,34,.04),0 2px 8px rgba(0,60,34,.04);--shadow-md:0 10px 30px rgba(0,60,34,.075);--shadow-lg:0 20px 54px rgba(0,60,34,.11);--radius-2xl:1.25rem;--radius-xl:1rem;--radius-lg:.875rem;--radius-md:.75rem;--radius-sm:.625rem;--page-max:80rem;--page-gutter:clamp(.875rem,2.5vw,2rem);--section-space:clamp(2.25rem,5vw,4.5rem)}
-html,body{color-scheme:light!important;background-color:var(--background)}body{background:radial-gradient(circle at 8% -8%,rgba(34,163,90,.09),transparent 27rem),linear-gradient(180deg,#fbfdfc 0%,var(--background) 28rem);color:var(--foreground)}.dark,.dark *,[data-theme="dark"],[data-theme="dark"] *{color-scheme:light}.landbd-page{width:100%;min-width:0}.landbd-page-inner{width:min(100%,var(--page-max));margin-inline:auto;padding-inline:var(--page-gutter)}.landbd-section{padding-block:var(--section-space)}.landbd-stack{display:flex;flex-direction:column;gap:1rem}.app-surface,.landbd-surface,.landbd-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm)}.app-panel,.landbd-panel,.map-panel-card,.landbd-card-elevated{background:var(--card-bg);border:1px solid color-mix(in srgb,var(--primary) 14%,var(--border-color));border-radius:var(--radius-xl);box-shadow:var(--shadow-md)}.nav-blur{background:rgba(255,255,255,.95);border:1px solid rgba(225,233,228,.96);box-shadow:0 8px 30px rgba(0,60,34,.065);backdrop-filter:blur(22px) saturate(155%)}.landbd-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.625rem;padding:.625rem;border:1px solid var(--border-color);border-radius:var(--radius-xl);background:rgba(255,255,255,.96);box-shadow:var(--shadow-sm)}.landbd-icon-tile{display:inline-flex;align-items:center;justify-content:center;border-radius:.9rem;color:var(--primary);background:var(--brand-gold-soft);border:1px solid color-mix(in srgb,var(--primary) 20%,transparent)}.landbd-section-kicker{color:var(--primary);background:var(--brand-gold-soft);border:1px solid color-mix(in srgb,var(--primary) 20%,transparent);border-radius:999px}.landbd-primary-button{color:#fff;background:linear-gradient(135deg,#22A35A 0%,#006A3D 65%,#005532 100%);border:1px solid #005532;border-radius:.8rem;box-shadow:0 8px 20px rgba(0,106,61,.18);transition:transform 160ms ease,box-shadow 160ms ease,filter 160ms ease}.landbd-primary-button:hover{transform:translateY(-1px);box-shadow:0 11px 26px rgba(0,106,61,.24)}.landbd-input{color:var(--foreground);background:#fff;border:1px solid var(--border-color);border-radius:.75rem}.landbd-input:focus,.landbd-input:focus-visible{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,106,61,.16)}input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea{border-radius:.75rem}select{background-color:#fff}input::placeholder,textarea::placeholder{color:#949e98}:where(a,button,input,select,textarea):focus-visible{outline:none;box-shadow:0 0 0 3px rgba(0,106,61,.18)}table{border-color:var(--border-color)}thead{background:#f3f7f5}tbody tr{transition:background-color 140ms ease}tbody tr:hover{background:#f1faf5}.landbd-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-inline:contain;border:1px solid var(--border-color);border-radius:var(--radius-xl);background:#fff;box-shadow:var(--shadow-xs)}
-/* Primary navigation brand tile: keep the existing accessible link/text while replacing the generic calculator glyph with the LandBD mark. */
-nav[aria-label="প্রধান নেভিগেশন"] a[aria-label$="— হোম"]>span:first-child{background:#F1FAF5 url('/brand/logo-square.svg') center/cover no-repeat!important;color:transparent!important;border:1px solid rgba(0,106,61,.12)}nav[aria-label="প্রধান নেভিগেশন"] a[aria-label$="— হোম"]>span:first-child>svg{opacity:0}
-@media(max-width:767px){:root{--page-gutter:.875rem;--section-space:2.25rem;--radius-xl:.95rem}body{background:var(--background)}.landbd-card,.landbd-card-elevated,.landbd-panel,.app-panel,.map-panel-card,.app-surface,.landbd-surface{border-radius:.95rem}input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select{min-height:3rem;font-size:16px}textarea{font-size:16px}button,[role="button"]{min-height:44px}.landbd-toolbar{padding:.5rem;gap:.5rem}.landbd-table-wrap{margin-inline:-.125rem;border-radius:.875rem}}@media(max-width:420px){:root{--page-gutter:.75rem}}@media(prefers-reduced-motion:reduce){.landbd-primary-button{transition:none}}
+/* LandBD 2026 — unified, interactive light-theme design system */
+:root,.light,.dark,[data-theme="light"],[data-theme="dark"]{
+  color-scheme:light;
+  --background:#F5F8F6;
+  --canvas:#F5F8F6;
+  --foreground:#12221A;
+  --card-bg:#FFFFFF;
+  --border-color:#DDE7E1;
+  --primary:#0B5D3B;
+  --primary-foreground:#FFFFFF;
+  --field-green:#18A363;
+  --survey-teal:#0C7F7A;
+  --survey-gold:#D6A124;
+  --secondary:#EEF5F1;
+  --muted:#E7EFEA;
+  --muted-foreground:#607068;
+  --accent:#18A363;
+  --destructive:#C83A3A;
+  --brand-green-faint:#F0F8F3;
+  --brand-green-soft:#DDEFE4;
+  --brand-gold:#0B5D3B;
+  --brand-gold-strong:#084A30;
+  --brand-gold-soft:#DDEFE4;
+  --brand-gold-faint:#F0F8F3;
+  --brand-gold-text:#0B5D3B;
+  --brand-ink:#12221A;
+  --brand-ink-soft:#32453B;
+  --brand-success:#18A363;
+  --brand-info:#0C7F7A;
+  --brand-purple:#7157A4;
+  --brand-coral:#C83A3A;
+  --shadow-xs:0 1px 2px rgba(11,45,30,.04);
+  --shadow-sm:0 1px 2px rgba(11,45,30,.04),0 5px 16px rgba(11,45,30,.045);
+  --shadow-md:0 14px 36px rgba(11,45,30,.08);
+  --shadow-lg:0 24px 70px rgba(11,45,30,.13);
+  --radius-2xl:1rem;
+  --radius-xl:.875rem;
+  --radius-lg:.75rem;
+  --radius-md:.625rem;
+  --radius-sm:.5rem;
+  --page-max:90rem;
+  --page-gutter:clamp(.875rem,2.5vw,2rem);
+  --section-space:clamp(2.5rem,5vw,5rem)
+}
+
+html,body{color-scheme:light!important;background-color:var(--background)}
+body{
+  background:
+    radial-gradient(circle at 8% -8%,rgba(24,163,99,.07),transparent 27rem),
+    linear-gradient(180deg,#FCFEFD 0%,var(--background) 30rem);
+  color:var(--foreground)
+}
+.dark,.dark *,[data-theme="dark"],[data-theme="dark"] *{color-scheme:light}
+
+.landbd-page{width:100%;min-width:0}
+.landbd-page-inner{width:min(100%,var(--page-max));margin-inline:auto;padding-inline:var(--page-gutter)}
+.landbd-section{padding-block:var(--section-space)}
+.landbd-stack{display:flex;flex-direction:column;gap:1rem}
+
+.app-surface,.landbd-surface,.landbd-card{
+  background:var(--card-bg);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-xs)
+}
+.app-panel,.landbd-panel,.map-panel-card,.landbd-card-elevated{
+  background:var(--card-bg);
+  border:1px solid color-mix(in srgb,var(--primary) 14%,var(--border-color));
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-md)
+}
+.nav-blur{
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(221,231,225,.96);
+  box-shadow:0 10px 30px rgba(11,45,30,.065);
+  backdrop-filter:blur(22px) saturate(155%)
+}
+
+.landbd-cadastral-grid{
+  background-image:
+    linear-gradient(rgba(11,93,59,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(11,93,59,.035) 1px,transparent 1px),
+    linear-gradient(32deg,transparent 46%,rgba(12,127,122,.045) 47%,rgba(12,127,122,.045) 48%,transparent 49%);
+  background-size:44px 44px,44px 44px,180px 180px;
+  mask-image:linear-gradient(to bottom,black 0%,rgba(0,0,0,.7) 60%,transparent 100%)
+}
+
+.landbd-toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:.625rem;padding:.625rem;
+  border:1px solid var(--border-color);border-radius:var(--radius-xl);
+  background:rgba(255,255,255,.96);box-shadow:var(--shadow-xs)
+}
+.landbd-icon-tile,.landbd-tool-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:.75rem;color:var(--primary);background:var(--brand-green-soft);
+  border:1px solid color-mix(in srgb,var(--primary) 18%,transparent)
+}
+.landbd-tool-icon{width:2.75rem;height:2.75rem;flex:0 0 auto;background:#fff}
+
+.landbd-section-kicker{
+  color:var(--primary);background:var(--brand-green-faint);
+  border:1px solid color-mix(in srgb,var(--primary) 20%,transparent);
+  border-radius:.65rem
+}
+
+.landbd-primary-button{
+  color:#fff;background:linear-gradient(135deg,#18A363 0%,#0B5D3B 68%,#084A30 100%);
+  border:1px solid #084A30;border-radius:.75rem;
+  box-shadow:0 8px 20px rgba(11,93,59,.17);
+  transition:transform 160ms ease,box-shadow 160ms ease,filter 160ms ease
+}
+.landbd-secondary-button{
+  color:var(--foreground);background:#fff;border:1px solid var(--border-color);
+  border-radius:.75rem;box-shadow:var(--shadow-xs);
+  transition:transform 160ms ease,border-color 160ms ease,background-color 160ms ease
+}
+.landbd-input{
+  color:var(--foreground);background:#fff;border:1px solid var(--border-color);border-radius:.75rem
+}
+.landbd-input:focus,.landbd-input:focus-visible{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(11,93,59,.14)
+}
+
+.landbd-command-panel{
+  position:relative;
+  background:rgba(255,255,255,.96);
+  border:1px solid color-mix(in srgb,var(--primary) 16%,var(--border-color));
+  border-radius:1rem;
+  box-shadow:var(--shadow-md);
+  backdrop-filter:blur(18px)
+}
+.landbd-action-chip{
+  display:inline-flex;min-height:2.55rem;align-items:center;gap:.45rem;
+  padding:.55rem .75rem;border:1px solid var(--border-color);border-radius:.7rem;
+  background:#fff;color:var(--foreground);font-size:.75rem;font-weight:800;text-decoration:none;
+  box-shadow:var(--shadow-xs);transition:transform 150ms ease,border-color 150ms ease,background-color 150ms ease
+}
+.landbd-status-chip{
+  align-items:center;gap:.25rem;border:1px solid color-mix(in srgb,var(--survey-teal) 18%,var(--border-color));
+  border-radius:.55rem;background:color-mix(in srgb,var(--survey-teal) 7%,white);
+  padding:.2rem .45rem;color:var(--survey-teal);font-size:.62rem;font-weight:800;line-height:1.25
+}
+.landbd-trust-note{
+  display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--border-color);
+  border-radius:.75rem;background:var(--brand-green-faint);padding:.65rem .85rem;
+  color:var(--primary);font-size:.78rem;font-weight:800
+}
+
+.landbd-step-card{
+  display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.65rem;row-gap:.1rem;
+  align-items:start;border-top:1px solid var(--border-color);padding-top:.8rem
+}
+.landbd-step-card>span{
+  grid-row:1/3;display:flex;width:2rem;height:2rem;align-items:center;justify-content:center;
+  border-radius:.6rem;background:var(--brand-green-faint);color:var(--primary);font-size:.7rem;font-weight:900
+}
+.landbd-step-card>strong{font-size:.78rem;color:var(--foreground)}
+.landbd-step-card>small{font-size:.68rem;line-height:1.45;color:var(--muted-foreground)}
+
+.landbd-domain-tab{
+  display:inline-flex;min-height:2.75rem;white-space:nowrap;align-items:center;gap:.5rem;
+  padding:.6rem .85rem;border:1px solid var(--border-color);border-radius:.7rem;background:#fff;
+  color:var(--muted-foreground);font-size:.82rem;font-weight:800;transition:all 150ms ease
+}
+.landbd-domain-tab-active{
+  border-color:color-mix(in srgb,var(--primary) 28%,var(--border-color));
+  background:var(--brand-green-faint);color:var(--primary);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 10%,transparent)
+}
+.landbd-tool-card{
+  display:flex;min-width:0;align-items:flex-start;gap:.85rem;padding:1rem;
+  border:1px solid var(--border-color);border-radius:.85rem;background:#fff;
+  color:inherit;text-decoration:none;box-shadow:var(--shadow-xs);
+  transition:transform 160ms ease,border-color 160ms ease,box-shadow 160ms ease
+}
+.landbd-compact-link{
+  display:flex;min-height:2.75rem;align-items:center;justify-content:space-between;gap:.75rem;
+  border:1px solid var(--border-color);border-radius:.7rem;background:#fff;padding:.7rem .8rem;
+  color:var(--foreground);font-size:.8rem;font-weight:800;text-decoration:none;transition:background-color 150ms ease,border-color 150ms ease
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea{border-radius:.75rem}
+select{background-color:#fff}
+input::placeholder,textarea::placeholder{color:#8A9891}
+:where(a,button,input,select,textarea):focus-visible{
+  outline:none;box-shadow:0 0 0 3px rgba(11,93,59,.16)
+}
+table{border-color:var(--border-color)}
+thead{background:#F1F6F3}
+tbody tr{transition:background-color 140ms ease}
+tbody tr:hover{background:#F0F8F3}
+.landbd-table-wrap{
+  width:100%;overflow-x:auto;overscroll-behavior-inline:contain;
+  border:1px solid var(--border-color);border-radius:var(--radius-xl);background:#fff;box-shadow:var(--shadow-xs)
+}
+.landbd-skeleton{
+  border-radius:.55rem;background:linear-gradient(90deg,#EDF3EF 20%,#F8FBF9 40%,#EDF3EF 60%);
+  background-size:220% 100%;animation:landbdSkeleton 1.3s ease-in-out infinite
+}
+@keyframes landbdSkeleton{0%{background-position:100% 0}100%{background-position:-120% 0}}
+
+/* Primary navigation brand tile: preserve accessible text while using the LandBD mark. */
+nav[aria-label="প্রধান নেভিগেশন"] a[aria-label$="— হোম"]>span:first-child{
+  background:#F0F8F3 url('/brand/logo-square.svg') center/cover no-repeat!important;
+  color:transparent!important;border:1px solid rgba(11,93,59,.12)
+}
+nav[aria-label="প্রধান নেভিগেশন"] a[aria-label$="— হোম"]>span:first-child>svg{opacity:0}
+
+@media (hover:hover) and (pointer:fine){
+  .landbd-primary-button:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(11,93,59,.23)}
+  .landbd-secondary-button:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--primary) 30%,var(--border-color));background:var(--brand-green-faint)}
+  .landbd-action-chip:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--primary) 25%,var(--border-color));background:var(--brand-green-faint)}
+  .landbd-domain-tab:hover{border-color:color-mix(in srgb,var(--primary) 22%,var(--border-color));color:var(--foreground)}
+  .landbd-tool-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--primary) 22%,var(--border-color));box-shadow:var(--shadow-sm)}
+  .landbd-compact-link:hover{border-color:color-mix(in srgb,var(--primary) 22%,var(--border-color));background:var(--brand-green-faint)}
+}
+
+@media(max-width:767px){
+  :root{--page-gutter:.875rem;--section-space:2.25rem;--radius-xl:.85rem}
+  body{background:var(--background)}
+  .landbd-card,.landbd-card-elevated,.landbd-panel,.app-panel,.map-panel-card,.app-surface,.landbd-surface{border-radius:.85rem}
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select{min-height:3rem;font-size:16px}
+  textarea{font-size:16px}
+  button,[role="button"]{min-height:44px}
+  .landbd-toolbar{padding:.5rem;gap:.5rem}
+  .landbd-table-wrap{margin-inline:-.125rem;border-radius:.8rem}
+}
+@media(max-width:420px){:root{--page-gutter:.75rem}}
+@media(prefers-reduced-motion:reduce){
+  .landbd-primary-button,.landbd-secondary-button,.landbd-action-chip,.landbd-domain-tab,.landbd-tool-card,.landbd-compact-link{transition:none}
+  .landbd-skeleton{animation:none;background:#EDF3EF}
+}
