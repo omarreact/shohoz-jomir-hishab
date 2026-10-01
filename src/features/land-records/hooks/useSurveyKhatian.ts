@@ -27,6 +27,8 @@ export function useSurveyKhatian() {
   const requestIds = useRef<Record<string, number>>({});
   const lastKhatianSearch = useRef<KhatianSearchInput | null>(null);
   const lastKhatianContext = useRef<FullKhatianRequestContext | null>(null);
+  const fullKhatianCache = useRef(new Map<string, FullKhatian>());
+  const fullKhatianInflight = useRef(new Map<string, Promise<FullKhatian>>());
   const nextId = (key: string) => (requestIds.current[key] = (requestIds.current[key] ?? 0) + 1);
   const isLatest = (key: string, id: number) => requestIds.current[key] === id;
   const run = useCallback(async <T,>(key: string, task: () => Promise<T>, onData: (value: T) => void) => {
@@ -69,11 +71,47 @@ export function useSurveyKhatian() {
     const rememberedContext = search && search.surveyKey === surveyKey
       ? lastKhatianContext.current ?? { owner: search.owner, dagNumber: search.dagNumber, jlNumberId: search.jlNumberId }
       : undefined;
+    const resolvedContext = context ?? rememberedContext;
+    const cacheKey = [
+      surveyKey,
+      id,
+      resolvedContext?.jlNumberId ?? "",
+      resolvedContext?.owner ?? "",
+      resolvedContext?.dagNumber ?? "",
+      resolvedContext?.verificationUuid ?? "",
+    ].join("|");
 
     setSelectedFullKhatian(null);
+
+    const fetchFull = () => {
+      const cached = fullKhatianCache.current.get(cacheKey);
+      if (cached) return Promise.resolve(cached);
+
+      const existing = fullKhatianInflight.current.get(cacheKey);
+      if (existing) return existing;
+
+      const request = landRecordsApi.fullKhatian(surveyKey, id, resolvedContext)
+        .then((full) => {
+          fullKhatianCache.current.set(cacheKey, full);
+          // Keep a small hot cache for back/forward and repeated opens.
+          while (fullKhatianCache.current.size > 24) {
+            const oldest = fullKhatianCache.current.keys().next().value;
+            if (oldest === undefined) break;
+            fullKhatianCache.current.delete(oldest);
+          }
+          return full;
+        })
+        .finally(() => {
+          fullKhatianInflight.current.delete(cacheKey);
+        });
+
+      fullKhatianInflight.current.set(cacheKey, request);
+      return request;
+    };
+
     return run(
       "khatian",
-      () => landRecordsApi.fullKhatian(surveyKey, id, context ?? rememberedContext),
+      fetchFull,
       (full) => {
         setSelectedFullKhatian(full);
         setSelectedKhatian({
