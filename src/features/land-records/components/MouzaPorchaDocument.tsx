@@ -411,7 +411,7 @@ export default function MouzaPorchaDocument({
           width: 210mm;
           min-height: 297mm;
           overflow: hidden;
-          padding: 8mm 7mm 19mm;
+          padding: 8mm 7mm 29mm;
           background: #fff;
           color: var(--report-ink);
           border: 1px solid var(--report-border);
@@ -1147,7 +1147,7 @@ export default function MouzaPorchaDocument({
 
         @media print and (orientation: portrait) {
           .report-page {
-            padding: 8mm 7mm 19mm !important;
+            padding: 8mm 7mm 29mm !important;
           }
 
           .report-table {
