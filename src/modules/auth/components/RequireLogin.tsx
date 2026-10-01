@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Lock, Loader2 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 
 type RequireLoginProps = {
   children: React.ReactNode;
@@ -34,7 +35,7 @@ export default function RequireLogin({
   }
 
   if (!isLoggedIn) {
-    const next = encodeURIComponent(pathname || "/");
+    const loginHref = buildLoginHref(pathname || "/");
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 py-16">
         <div className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-8 text-center shadow-sm">
@@ -52,7 +53,7 @@ export default function RequireLogin({
             স্টাফ/ইউজার অ্যাকাউন্ট দিয়ে লগইন করুন।
           </p>
           <Link
-            href={`/login?from=${next}`}
+            href={loginHref}
             className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#006a4e] px-8 text-sm font-bold text-white no-underline transition hover:opacity-90"
           >
             লগইন করুন
