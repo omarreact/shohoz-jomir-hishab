@@ -1,5 +1,4 @@
 import type { FullKhatianDag, FullKhatianOwner, LandRecordSource } from "../full-khatian";
-import type { KhatianDetails } from "../types";
 
 type JsonRecord = Record<string, unknown>;
 
