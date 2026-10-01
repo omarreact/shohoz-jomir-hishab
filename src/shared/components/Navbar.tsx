@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
+import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import {
   FEATURE_LABELS,
   FEATURE_ROUTES,
@@ -579,7 +580,7 @@ export default function Navbar() {
                       </div>
                     </div>
                     <Link
-                      href={FEATURE_ROUTES.login}
+                      href={buildLoginHref(pathname || "/")}
                       onClick={() => setSidebarOpen(false)}
                       className="mt-3 flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
                     >
