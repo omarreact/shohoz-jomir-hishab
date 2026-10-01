@@ -210,6 +210,9 @@ export default function SurveyKhatianSearch() {
   };
 
   const displayedError = localError || error;
+  const locationReady = Boolean(division && district && upazila && surveyId && mouzaId);
+  const searchReady = locationReady && hasSearchTerm;
+  const resultReady = Boolean(khatians || viewMode === "details");
 
   return (
     <>
@@ -223,30 +226,55 @@ export default function SurveyKhatianSearch() {
       <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8">
         {viewMode === "search" ? (
           <>
+            <div className="mb-5 grid gap-2 sm:grid-cols-3" aria-label="DLRMS অনুসন্ধানের ধাপ">
+              {[
+                ["১", "এলাকা ও সার্ভে", locationReady],
+                ["২", "অনুসন্ধান তথ্য", searchReady],
+                ["৩", "ফলাফল", resultReady],
+              ].map(([number, label, complete]) => (
+                <div
+                  key={String(label)}
+                  className={`flex items-center gap-3 rounded-[12px] border px-3 py-2.5 ${
+                    complete
+                      ? "border-[color-mix(in_srgb,var(--primary)_20%,var(--border-color))] bg-[var(--brand-green-faint)]"
+                      : "border-[var(--border-color)] bg-white"
+                  }`}
+                >
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${
+                    complete ? "bg-[var(--primary)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                  }`}>{number}</span>
+                  <span>
+                    <span className="block text-[10px] font-extrabold uppercase tracking-[.12em] text-[var(--muted-foreground)]">ধাপ {number}</span>
+                    <strong className="block text-sm text-[var(--foreground)]">{label}</strong>
+                  </span>
+                </div>
+              ))}
+            </div>
+
             <div className="mb-6 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+              <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--primary)_18%,var(--border-color))] bg-[var(--brand-green-faint)] p-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 shrink-0 text-[#006a4e]" size={20} />
+                  <ShieldCheck className="mt-0.5 shrink-0 text-[var(--primary)]" size={20} />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                    <p className="text-sm font-black text-[var(--foreground)]">
                       নির্দিষ্ট খতিয়ান / দাগ / মালিক অনুসন্ধান
                     </p>
-                    <p className="mt-1 text-xs leading-6 text-emerald-800/90 dark:text-emerald-200/90">
+                    <p className="mt-1 text-xs leading-6 text-[var(--muted-foreground)]">
                       পুরো মৌজার সব খতিয়ান একসাথে bulk দেখানো হয় না। বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করে নির্দিষ্ট খতিয়ান নম্বর, দাগ বা মালিকের নাম দিয়ে খুঁজুন।
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
+              <div className="rounded-[14px] border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
                 <p className="text-xs font-semibold text-[var(--muted-foreground)]">অনুসন্ধান মোড</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => handleModeChange("khatian")}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    className={`rounded-[10px] px-3 py-2 text-sm font-bold transition ${
                       mode === "khatian"
-                        ? "bg-[#006a4e] text-white"
-                        : "bg-[var(--secondary)] text-slate-700 dark:text-slate-200"
+                        ? "bg-[var(--primary)] text-white"
+                        : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                     }`}
                   >
                     খতিয়ান নম্বর
@@ -254,10 +282,10 @@ export default function SurveyKhatianSearch() {
                   <button
                     type="button"
                     onClick={() => handleModeChange("advanced")}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    className={`rounded-[10px] px-3 py-2 text-sm font-bold transition ${
                       mode === "advanced"
-                        ? "bg-[#006a4e] text-white"
-                        : "bg-[var(--secondary)] text-slate-700 dark:text-slate-200"
+                        ? "bg-[var(--primary)] text-white"
+                        : "bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                     }`}
                   >
                     দাগ / মালিক
@@ -366,7 +394,7 @@ export default function SurveyKhatianSearch() {
                 {displayedError ? (
                   <div
                     role="alert"
-                    className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+                    className="mt-4 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
                   >
                     {displayedError}
                   </div>
@@ -377,7 +405,7 @@ export default function SurveyKhatianSearch() {
                     type="button"
                     onClick={() => runSearch(1)}
                     disabled={loading.khatians || !mouzaId}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="landbd-primary-button inline-flex min-h-11 items-center gap-2 px-5 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading.khatians ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
                     অনুসন্ধান
@@ -392,13 +420,13 @@ export default function SurveyKhatianSearch() {
             {khatians ? (
               <section className="mt-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">অনুসন্ধান ফলাফল</h2>
+                  <h2 className="text-lg font-black text-[var(--foreground)]">অনুসন্ধান ফলাফল</h2>
                   <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
                     <button
                       type="button"
                       onClick={() => goPage(page - 1)}
                       disabled={page <= 1 || loading.khatians}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-40"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--border-color)] bg-white disabled:opacity-40"
                       aria-label="আগের পেজ"
                     >
                       <ChevronLeft size={16} />
@@ -408,7 +436,7 @@ export default function SurveyKhatianSearch() {
                       type="button"
                       onClick={() => goPage(page + 1)}
                       disabled={!khatians.hasNextPage || loading.khatians}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-40"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--border-color)] bg-white disabled:opacity-40"
                       aria-label="পরের পেজ"
                     >
                       <ChevronRight size={16} />
@@ -417,11 +445,11 @@ export default function SurveyKhatianSearch() {
                 </div>
 
                 {khatians.items.length === 0 ? (
-                  <div className="rounded-xl border border-[var(--border-color)] py-10 text-center text-sm text-slate-500">
+                  <div className="rounded-[14px] border border-dashed border-[var(--border-color)] bg-[var(--canvas)] py-10 text-center text-sm text-[var(--muted-foreground)]">
                     কোনো খতিয়ান পাওয়া যায়নি।
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
+                  <div className="landbd-table-wrap">
                     <table className="w-full min-w-[36rem] border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-[var(--border-color)] bg-[var(--secondary)]/40 text-left text-xs text-[var(--muted-foreground)]">
@@ -443,7 +471,7 @@ export default function SurveyKhatianSearch() {
                               <button
                                 type="button"
                                 onClick={() => showDetails(item.ID)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-2.5 py-1.5 text-xs font-semibold text-[#006a4e] transition hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-color)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:bg-[var(--brand-green-faint)]"
                               >
                                 <Eye size={14} /> বিস্তারিত
                               </button>
@@ -455,7 +483,7 @@ export default function SurveyKhatianSearch() {
                   </div>
                 )}
 
-                <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200">
+                <div className="rounded-[12px] border border-[color-mix(in_srgb,var(--survey-teal)_20%,var(--border-color))] bg-[color-mix(in_srgb,var(--survey-teal)_6%,white)] px-4 py-3 text-xs leading-5 text-[var(--muted-foreground)]">
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 shrink-0" size={15} />
                     <span>
@@ -472,22 +500,22 @@ export default function SurveyKhatianSearch() {
               <button
                 type="button"
                 onClick={backToSearch}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold transition hover:bg-[var(--secondary)]"
+                className="landbd-secondary-button inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold"
               >
                 <ArrowLeft size={16} /> ফিরে যান
               </button>
               <a
                 href="/mouza-porcha-report"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-sm font-semibold text-[#006a4e] transition hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                className="landbd-secondary-button inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-[var(--primary)]"
               >
                 <ExternalLink size={15} /> মৌজা রিপোর্ট
               </a>
             </div>
 
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white print:hidden">খতিয়ানের বিস্তারিত তথ্য</h2>
+            <h2 className="text-lg font-black text-[var(--foreground)] print:hidden">খতিয়ানের বিস্তারিত তথ্য</h2>
 
             {loading.khatian ? (
-              <div className="flex min-h-40 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] py-12 text-sm text-slate-500">
+              <div className="flex min-h-40 items-center justify-center gap-2 rounded-[14px] border border-[var(--border-color)] bg-[var(--canvas)] py-12 text-sm font-semibold text-[var(--muted-foreground)]">
                 <Loader2 className="animate-spin" size={18} /> বিস্তারিত লোড হচ্ছে…
               </div>
             ) : selectedKhatian ? (
