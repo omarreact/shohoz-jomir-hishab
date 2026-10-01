@@ -123,7 +123,7 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
 
       {structuredDags.length ? (
         <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক পূর্ণ তথ্য</h3>
+          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক উৎস তথ্য</h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] text-sm">
               <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">দাগ</th><th className="py-2 pr-3">শ্রেণী</th><th className="py-2 pr-3">মোট আয়তন (একর)</th><th className="py-2 pr-3">খতিয়ান অংশ (একর)</th><th className="py-2">GIS/ব্যবহার</th></tr></thead>
