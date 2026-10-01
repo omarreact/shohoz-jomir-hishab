@@ -92,7 +92,7 @@ function LegalDisclaimer() {
       <div>
         <strong>এটি সরকারি প্রত্যয়িত পর্চা, খতিয়ান বা মালিকানা সনদ নয়।</strong>
         <p>
-          LandBD এই তথ্যগুলোকে অনুসন্ধান, তুলনা ও রেফারেন্সের সুবিধার জন্য সাজায়। আইনি, নিবন্ধন,
+          এই তথ্যগুলো অনুসন্ধান, তুলনা ও রেফারেন্সের সুবিধার জন্য সাজানো হয়েছে। আইনি, নিবন্ধন,
           নামজারি, আদালত বা অন্য কোনো দাপ্তরিক কাজে ব্যবহারের আগে সংশ্লিষ্ট সরকারি রেকর্ড ও
           প্রত্যয়িত কপির সাথে তথ্য যাচাই করা আবশ্যক।
         </p>
@@ -225,17 +225,6 @@ export default function MouzaPorchaDocument({
           const pageStartIndex = pages.slice(0, pageIndex).reduce((sum, item) => sum + item.length, 0);
           return (
             <article className="report-page" key={`page-${pageIndex + 1}`}>
-              <div className="report-watermark" aria-hidden="true">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand/landbd-symbol-2026.svg" alt="" />
-                <span>LandBD</span>
-                <small>তথ্যভিত্তিক ভূমি প্রতিবেদন</small>
-              </div>
-
-              <div className="report-top-accent" aria-hidden="true">
-                <i /><i /><i />
-              </div>
-
               {firstPage ? (
                 <>
                   <header className="report-document-header">
