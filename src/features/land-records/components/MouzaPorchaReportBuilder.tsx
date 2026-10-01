@@ -19,7 +19,10 @@ import {
 
 const empty = "-- নির্বাচন করুন --";
 const PAGE_SIZE = 100;
+const REPORT_PAGE_CONCURRENCY = 4;
 const HAL_SABEK_BATCH_SIZE = 12;
+const HAL_SABEK_BATCH_CONCURRENCY = 2;
+const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 
 async function responseJson<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => ({}))) as { error?: string } & T;
@@ -35,7 +38,41 @@ function chunk<T>(items: T[], size: number): T[][] {
   return result;
 }
 
+async function retryDelay(attempt: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  await new Promise((resolve) => setTimeout(resolve, 180 * attempt));
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+}
 
+async function fetchJsonWithRetry<T>(
+  input: string,
+  init: RequestInit,
+  attempts = 3,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(input, init);
+      if (
+        !response.ok &&
+        RETRYABLE_STATUS.has(response.status) &&
+        attempt < attempts
+      ) {
+        await retryDelay(attempt, init.signal instanceof AbortSignal ? init.signal : undefined);
+        continue;
+      }
+      return await responseJson<T>(response);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      lastError = error;
+      if (attempt >= attempts) break;
+      await retryDelay(attempt, init.signal instanceof AbortSignal ? init.signal : undefined);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("রিপোর্টের তথ্য লোড করা যায়নি।");
+}
 
 async function sha256Hex(value: string): Promise<string> {
   if (!globalThis.crypto?.subtle) throw new Error("Web Crypto unavailable");
@@ -191,33 +228,63 @@ export default function MouzaPorchaReportBuilder() {
     setVerificationWarning(null);
 
     try {
-      const collected: KhatianIndex[] = [];
-      let page = 1;
-      let hasNextPage = true;
+      const collectedById = new Map<number, KhatianIndex>();
       let total: number | undefined;
 
-      while (hasNextPage) {
+      const appendPage = (data: KhatianPage) => {
+        for (const item of data.items) {
+          // DLRMS can occasionally overlap rows between adjacent pages while
+          // its index is updating. ID de-duplication prevents duplicate khatians.
+          if (!collectedById.has(item.ID)) collectedById.set(item.ID, item);
+        }
+        total = data.total ?? total;
+        setExpectedRecords(total ?? null);
+        setLoadedRecords(collectedById.size);
+      };
+
+      const loadPage = async (page: number): Promise<KhatianPage> => {
         const params = new URLSearchParams({
           surveyKey,
           jlNumberId: String(selectedMouza.ID),
           page: String(page),
           pageSize: String(PAGE_SIZE),
         });
-        const response = await fetch(`/api/land-records/mouza-porcha-report?${params}`, {
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        const data = await responseJson<KhatianPage>(response);
-        collected.push(...data.items);
-        total = data.total ?? total;
-        setExpectedRecords(total ?? null);
-        setLoadedRecords(collected.length);
-        hasNextPage = data.hasNextPage;
-        page += 1;
+        return fetchJsonWithRetry<KhatianPage>(
+          `/api/land-records/mouza-porcha-report?${params}`,
+          {
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
+      };
 
-        if (page > 1000) throw new Error("রিপোর্টের পেজ সীমা অতিক্রম করেছে।");
+      // Fetch page 1 first so we know the authoritative total, then fan out
+      // subsequent pages in a small bounded pool instead of waiting serially.
+      const firstPage = await loadPage(1);
+      appendPage(firstPage);
+
+      if (firstPage.total != null && firstPage.total >= 0) {
+        const totalPages = Math.max(1, Math.ceil(firstPage.total / PAGE_SIZE));
+        if (totalPages > 1000) throw new Error("রিপোর্টের পেজ সীমা অতিক্রম করেছে।");
+
+        const remainingPages = Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => index + 2);
+        for (const pageGroup of chunk(remainingPages, REPORT_PAGE_CONCURRENCY)) {
+          const pageResults = await Promise.all(pageGroup.map((page) => loadPage(page)));
+          for (const data of pageResults) appendPage(data);
+        }
+      } else {
+        let page = 2;
+        let hasNextPage = firstPage.hasNextPage;
+        while (hasNextPage) {
+          const data = await loadPage(page);
+          appendPage(data);
+          hasNextPage = data.hasNextPage;
+          page += 1;
+          if (page > 1000) throw new Error("রিপোর্টের পেজ সীমা অতিক্রম করেছে।");
+        }
       }
 
+      const collected = [...collectedById.values()];
       if (collected.length === 0) {
         throw new Error("নির্বাচিত মৌজায় কোনো খতিয়ান পাওয়া যায়নি।");
       }
@@ -230,23 +297,32 @@ export default function MouzaPorchaReportBuilder() {
         const batches = chunk(collected.map((item) => item.KHATIAN_NO), HAL_SABEK_BATCH_SIZE);
         let completed = 0;
 
-        for (const khatianNos of batches) {
-          const response = await fetch("/api/land-records/mouza-porcha-report/hal-sabek", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              surveyKey,
-              divisionBbsCode: division,
-              districtBbsCode: district,
-              upazilaBbsCode: upazila,
-              jlNumberId: selectedMouza.ID,
-              khatianNos,
-            }),
-            signal: controller.signal,
-          });
-          const data = await responseJson<{ entries: HalSabekReportEntry[] }>(response);
-          for (const entry of data.entries) resolved[entry.khatianNo] = entry;
-          completed += khatianNos.length;
+        for (const batchGroup of chunk(batches, HAL_SABEK_BATCH_CONCURRENCY)) {
+          const results = await Promise.all(
+            batchGroup.map((khatianNos) =>
+              fetchJsonWithRetry<{ entries: HalSabekReportEntry[] }>(
+                "/api/land-records/mouza-porcha-report/hal-sabek",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Accept: "application/json" },
+                  body: JSON.stringify({
+                    surveyKey,
+                    divisionBbsCode: division,
+                    districtBbsCode: district,
+                    upazilaBbsCode: upazila,
+                    jlNumberId: selectedMouza.ID,
+                    khatianNos,
+                  }),
+                  signal: controller.signal,
+                },
+              ),
+            ),
+          );
+
+          for (const data of results) {
+            for (const entry of data.entries) resolved[entry.khatianNo] = entry;
+          }
+          completed += batchGroup.reduce((sum, item) => sum + item.length, 0);
           setMappedRecords(Math.min(completed, collected.length));
         }
 
