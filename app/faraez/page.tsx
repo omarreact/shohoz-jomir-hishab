@@ -14,8 +14,8 @@ const FaraezResult = dynamic(() => import("@/src/features/faraez/components/Fara
   ssr: false,
   loading: () => (
     <div className="mt-4 p-5 text-center">
-      <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#006a4e] border-t-transparent" />
-      <p className="mt-4 font-bold text-slate-500 dark:text-slate-400">বন্টননামা প্রস্তুত করা হচ্ছে...</p>
+      <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent" />
+      <p className="mt-4 font-bold text-[var(--muted-foreground)]">বন্টননামা প্রস্তুত করা হচ্ছে...</p>
     </div>
   ),
 });
@@ -50,6 +50,31 @@ export default function FaraezPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 fade-in visible">
         <div className="mx-auto max-w-4xl">
+          <div className="mb-5 grid gap-2 sm:grid-cols-3" aria-label="ফারায়েজ হিসাবের ধাপ">
+            {[
+              ["১", "মূল তথ্য", true],
+              ["২", "ওয়ারিশ", true],
+              ["৩", "বণ্টন", results.length > 0],
+            ].map(([number, label, complete]) => (
+              <div
+                key={String(label)}
+                className={`flex items-center gap-3 rounded-[12px] border px-3 py-2.5 ${
+                  complete
+                    ? "border-[color-mix(in_srgb,var(--primary)_20%,var(--border-color))] bg-[var(--brand-green-faint)]"
+                    : "border-[var(--border-color)] bg-white"
+                }`}
+              >
+                <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${
+                  complete ? "bg-[var(--primary)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                }`}>{number}</span>
+                <span>
+                  <span className="block text-[10px] font-extrabold uppercase tracking-[.12em] text-[var(--muted-foreground)]">ধাপ {number}</span>
+                  <strong className="block text-sm text-[var(--foreground)]">{label}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+
           <Card className="mb-8 overflow-hidden">
             <button
               type="button"
@@ -95,16 +120,16 @@ export default function FaraezPage() {
             <CardContent className="flex flex-col justify-between gap-6 p-6 md:flex-row">
               <div className="flex-1">
                 <label className="mb-3 block text-sm font-bold uppercase tracking-wider text-muted-foreground">ধর্ম (আইন)</label>
-                <div className="flex rounded-xl border border-border bg-muted/50 p-1">
-                  <button type="button" onClick={() => setReligion("muslim")} className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold ${religion === "muslim" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground"}`}>মুসলিম</button>
-                  <button type="button" onClick={() => setReligion("hindu")} className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold ${religion === "hindu" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground"}`}>হিন্দু (দায়ভাগ)</button>
+                <div className="flex rounded-[12px] border border-border bg-[var(--canvas)] p-1">
+                  <button type="button" onClick={() => setReligion("muslim")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${religion === "muslim" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মুসলিম</button>
+                  <button type="button" onClick={() => setReligion("hindu")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${religion === "hindu" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>হিন্দু (দায়ভাগ)</button>
                 </div>
               </div>
               <div className="flex-1">
                 <label className="mb-3 block text-sm font-bold uppercase tracking-wider text-muted-foreground">মৃত ব্যক্তির লিঙ্গ</label>
-                <div className="flex rounded-xl border border-border bg-muted/50 p-1">
-                  <button type="button" onClick={() => { setGender("male"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold ${gender === "male" ? "bg-foreground text-background shadow-md" : "text-muted-foreground"}`}>পুরুষ</button>
-                  <button type="button" onClick={() => { setGender("female"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold ${gender === "female" ? "bg-foreground text-background shadow-md" : "text-muted-foreground"}`}>মহিলা</button>
+                <div className="flex rounded-[12px] border border-border bg-[var(--canvas)] p-1">
+                  <button type="button" onClick={() => { setGender("male"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${gender === "male" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>পুরুষ</button>
+                  <button type="button" onClick={() => { setGender("female"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${gender === "female" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মহিলা</button>
                 </div>
               </div>
             </CardContent>
@@ -116,8 +141,8 @@ export default function FaraezPage() {
           </div>
 
           <div className="mb-8 mt-12 flex flex-col justify-center gap-3 text-center sm:flex-row">
-            <button type="button" onClick={calculate} className="cta-gradient flex items-center justify-center rounded-full px-8 py-4 text-lg font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl"><Calculator size={24} className="mr-3" /> সম্পত্তি বন্টন করুন</button>
-            <button type="button" onClick={clearCalculation} className="flex items-center justify-center rounded-full border border-border px-6 py-4 font-bold text-muted-foreground transition-colors hover:bg-muted"><Trash2 size={20} className="mr-2" /> হিসাব পরিষ্কার করুন</button>
+            <button type="button" onClick={calculate} className="landbd-primary-button flex min-h-12 items-center justify-center px-8 py-3.5 text-base font-black"><Calculator size={24} className="mr-3" /> সম্পত্তি বন্টন করুন</button>
+            <button type="button" onClick={clearCalculation} className="landbd-secondary-button flex min-h-12 items-center justify-center px-6 py-3.5 font-bold text-[var(--muted-foreground)]"><Trash2 size={20} className="mr-2" /> হিসাব পরিষ্কার করুন</button>
           </div>
 
           {results.length > 0 ? (
