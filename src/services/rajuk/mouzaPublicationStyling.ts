@@ -44,12 +44,41 @@ export function drawHaloText(doc: jsPDF, value: string, x: number, y: number, si
   doc.text(value, x, y, { align: options?.align ?? "left" });
 }
 
-export function drawThreeColumnFooter(doc: jsPDF, details: string[], center: string[], legend: Array<{label:string;color:readonly[number,number,number];dash?:readonly[number,number]}>, y = 277): void {
-  const left = 14, mid = 168, right = 302;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(6.2); doc.setTextColor(20,30,40);
-  doc.text("Mouza Details", left, y); doc.text("Map Reference", mid, y); doc.text("Legend", right, y);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(5.4);
-  details.forEach((v,i)=>doc.text(v,left,y+5+i*3.5));
-  center.forEach((v,i)=>doc.text(v,mid,y+5+i*3.5));
-  legend.forEach((item,i)=>{const yy=y+5+i*5; if(item.dash)doc.setLineDashPattern([...item.dash],0); doc.setDrawColor(...item.color);doc.setLineWidth(1.1);doc.line(right,yy-1,right+12,yy-1);if(item.dash)doc.setLineDashPattern([],0);doc.setTextColor(20,30,40);doc.text(item.label,right+15,yy);});
+export function drawThreeColumnFooter(
+  doc: jsPDF,
+  details: string[],
+  center: string[],
+  legend: Array<{label:string;color:readonly[number,number,number];dash?:readonly[number,number]}>,
+  y?: number,
+): void {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 10;
+  const usable = pageWidth - margin * 2;
+  const top = y ?? pageHeight - 30;
+  const left = margin;
+  const mid = margin + usable * 0.36;
+  const right = margin + usable * 0.68;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(5.8);
+  doc.setTextColor(20,30,40);
+  doc.text("Mouza Details", left, top);
+  doc.text("Map Reference", mid, top);
+  doc.text("Legend", right, top);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(4.8);
+  details.slice(0, 3).forEach((v,i)=>doc.text(v,left,top+4+i*3.2));
+  center.slice(0, 3).forEach((v,i)=>doc.text(v,mid,top+4+i*3.2));
+  legend.slice(0, 3).forEach((item,i)=>{
+    const yy=top+4+i*4;
+    if(item.dash)doc.setLineDashPattern([...item.dash],0);
+    doc.setDrawColor(...item.color);
+    doc.setLineWidth(.8);
+    doc.line(right,yy-1,right+8,yy-1);
+    if(item.dash)doc.setLineDashPattern([],0);
+    doc.setTextColor(20,30,40);
+    doc.text(item.label,right+10,yy);
+  });
 }
