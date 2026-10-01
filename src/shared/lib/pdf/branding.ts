@@ -69,6 +69,12 @@ export function drawLandBdPdfChrome(
   const left = LANDBD_PDF.sideMarginMm;
   const right = width - LANDBD_PDF.sideMarginMm;
 
+  // Clear the reserved masthead/footer bands so legacy exporters cannot
+  // accidentally paint map/data content underneath the canonical branding.
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, width, 18, "F");
+  doc.rect(0, height - 14, width, 14, "F");
+
   doc.setFillColor(...LANDBD_PDF.primary);
   doc.rect(left, LANDBD_PDF.headerTopMm, 8, 8, "F");
 
