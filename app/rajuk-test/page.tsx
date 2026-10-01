@@ -21,6 +21,7 @@ import type {
 } from "@/src/types/rajuk-runtime";
 import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { generateResultPdf } from "@/src/shared/lib/pdf/generate-result-pdf";
 
 const PlotMap = dynamic(() => import("@/src/shared/components/PlotMap"), { ssr: false });
 const MsAwarePlotMap = dynamic(() => import("@/src/shared/components/MsAwarePlotMap"), { ssr: false });
@@ -437,56 +438,23 @@ export default function RajukTestPage() {
 
   const handlePdfPrint = async () => {
     if (!exportRef.current || !selected) return;
-    const element = exportRef.current;
-    const originalWidth = element.style.width;
-    const originalOverflow = element.style.overflow;
     setPrintingPdf(true);
     setSearchError("");
 
     try {
-      if (document.fonts?.ready) await document.fonts.ready;
-      element.style.width = "800px";
-      element.style.overflow = "visible";
-
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: Math.max(800, element.scrollWidth),
+      const number = normalizePlotInput(plotNo(selected, mode), mode) || "plot";
+      const result = await generateResultPdf({
+        source: exportRef.current,
+        fileName: `LandBD-${mode.toUpperCase()}-${number}-Plot-Report-A4-Portrait`,
       });
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-      const margin = 10;
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const pdfWidth = pageWidth - margin * 2;
-      const innerPageHeight = pageHeight - margin * 2;
-      const imageHeight = (canvas.height * pdfWidth) / canvas.width;
-      const imageData = canvas.toDataURL("image/jpeg", 0.97);
-
-      let heightLeft = imageHeight;
-      let position = margin;
-      pdf.addImage(imageData, "JPEG", margin, position, pdfWidth, imageHeight);
-      heightLeft -= innerPageHeight;
-
-      while (heightLeft > 0) {
-        position = margin - (imageHeight - heightLeft);
-        pdf.addPage();
-        pdf.addImage(imageData, "JPEG", margin, position, pdfWidth, imageHeight);
-        heightLeft -= innerPageHeight;
+      if (!result.ok) {
+        setSearchError(result.error);
       }
-
-      const number = normalizePlotInput(plotNo(selected, mode), mode) || "plot";
-      pdf.save(`${mode.toUpperCase()}-${number}-LandBD.pdf`);
     } catch (reason) {
       console.error("Plot PDF export failed", reason);
       setSearchError("পিডিএফ তৈরিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
     } finally {
-      element.style.width = originalWidth;
-      element.style.overflow = originalOverflow;
       setPrintingPdf(false);
     }
   };
