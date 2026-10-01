@@ -125,8 +125,8 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
 
       {structuredOwners.length ? (
         <Panel title="Structured মালিকানা তথ্য">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] border-collapse border border-black">
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full min-w-[42rem] border-collapse border border-black print:min-w-0">
               <thead>
                 <tr>
                   <th className="border border-black px-2 py-1.5 text-left font-normal">মালিক</th>
@@ -152,8 +152,8 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
 
       {structuredDags.length ? (
         <Panel title="দাগভিত্তিক পূর্ণ তথ্য">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[52rem] border-collapse border border-black">
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full min-w-[52rem] border-collapse border border-black print:min-w-0">
               <thead>
                 <tr>
                   <th className="border border-black px-2 py-1.5 text-left font-normal">দাগ</th>
