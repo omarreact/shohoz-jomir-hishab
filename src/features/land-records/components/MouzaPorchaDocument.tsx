@@ -219,6 +219,7 @@ export default function MouzaPorchaDocument({
       translate="no"
       aria-label="মৌজা পর্চা রিপোর্ট"
     >
+      <style>{`@import url("https://fonts.maateen.me/kalpurush/font.css");`}</style>
       <div className="report-page-stack">
         {pages.map((pageRows, pageIndex) => {
           const firstPage = pageIndex === 0;
@@ -335,8 +336,6 @@ export default function MouzaPorchaDocument({
       </div>
 
       <style jsx global>{`
-        @import url("https://fonts.maateen.me/kalpurush/font.css");
-
         .landbd-report-font,
         .landbd-report-font * {
           font-family: "Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif !important;
