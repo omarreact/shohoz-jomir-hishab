@@ -3,7 +3,7 @@ import "server-only";
 import { jsPDF } from "jspdf";
 import { getPlots } from "./rajukQuery.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
-import { applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
+import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
 import {
   drawAdaptivePlotLabels,
   drawCoordinateGrid,
@@ -33,8 +33,8 @@ export type MouzaVectorPdfResult = {
   };
 };
 
-const PAGE_W = 297;
-const PAGE_H = 210;
+const PAGE_W = LANDBD_PDF.a4Landscape.widthMm;
+const PAGE_H = LANDBD_PDF.a4Landscape.heightMm;
 const MARGIN = 10;
 const MAP_TOP = 20;
 const MAP_BOTTOM = 35;
