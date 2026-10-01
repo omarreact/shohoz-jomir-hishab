@@ -270,10 +270,14 @@ export default function MouzaPorchaDocument({
                       <div className="report-qr-box">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={"/api/reports/mouza-porcha/qr?id=" + encodeURIComponent(reportId)}
-                          alt="LandBD report QR"
+                          src={
+                            reportMeta?.verificationRegistered
+                              ? "/api/reports/mouza-porcha/qr?id=" + encodeURIComponent(reportId)
+                              : "/api/reports/mouza-porcha/qr?target=mouza-porcha-report"
+                          }
+                          alt={reportMeta?.verificationRegistered ? "LandBD verification QR" : "LandBD report QR"}
                         />
-                        <span>Verify via LandBD</span>
+                        <span>{reportMeta?.verificationRegistered ? "Verify via LandBD" : "Open in LandBD"}</span>
                       </div>
                       <div>
                         <p>Report ID: <b className="report-latin-id">{reportId}</b></p>
@@ -1197,7 +1201,7 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-official-left,
         #mouza-porcha-report .report-official-right {
-          font-size: 7pt;
+          font-size: 10pt;
           line-height: 1.45;
         }
 
@@ -1256,7 +1260,7 @@ export default function MouzaPorchaDocument({
           gap: 4mm;
           margin: 2.8mm 0 2mm;
           text-align: center;
-          font-size: 8pt;
+          font-size: 11pt;
         }
 
         #mouza-porcha-report .report-location-row strong {
@@ -1294,7 +1298,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-collection-note {
           margin: 1mm 0;
           color: #000;
-          font-size: 5.8pt;
+          font-size: 8.8pt;
           line-height: 1.35;
         }
 
@@ -1326,7 +1330,7 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-legal-disclaimer p {
           margin: 0.5mm 0 0;
-          font-size: 5.4pt;
+          font-size: 8.4pt;
         }
 
         #mouza-porcha-report .report-repeat-header {
@@ -1342,7 +1346,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-repeat-title {
           display: block;
           color: #000 !important;
-          font-size: 10pt;
+          font-size: 13pt;
           font-weight: 400;
         }
 
@@ -1350,7 +1354,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-repeat-meta span,
         #mouza-porcha-report .report-repeat-id {
           color: #000;
-          font-size: 6pt;
+          font-size: 9pt;
           font-weight: 400;
         }
 
@@ -1461,6 +1465,12 @@ export default function MouzaPorchaDocument({
           font-size: 7.7pt;
           font-weight: 400;
           text-align: center;
+        }
+
+        #mouza-porcha-report .report-footer-brand-strip span {
+          color: #fff !important;
+          font-size: 7.2pt;
+          font-weight: 800;
         }
       `}</style>
     </section>
