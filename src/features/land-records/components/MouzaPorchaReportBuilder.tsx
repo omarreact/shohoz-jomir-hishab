@@ -59,7 +59,7 @@ async function fetchJsonWithRetry<T>(
         RETRYABLE_STATUS.has(response.status) &&
         attempt < attempts
       ) {
-        await retryDelay(attempt, init.signal instanceof AbortSignal ? init.signal : undefined);
+        await retryDelay(attempt, init.signal ?? undefined);
         continue;
       }
       return await responseJson<T>(response);
@@ -67,7 +67,7 @@ async function fetchJsonWithRetry<T>(
       if (error instanceof DOMException && error.name === "AbortError") throw error;
       lastError = error;
       if (attempt >= attempts) break;
-      await retryDelay(attempt, init.signal instanceof AbortSignal ? init.signal : undefined);
+      await retryDelay(attempt, init.signal ?? undefined);
     }
   }
 
