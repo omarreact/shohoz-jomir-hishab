@@ -158,7 +158,7 @@ describe("DLRMS citizen authenticated provider", () => {
     );
     expect(result.pages[0]?.fields).not.toHaveProperty("BODY");
     expect(result.summary.dagText).toContain("৪৫৭");
-    expect(result.summary.landTypeText).toContain("বাড়ী");
+    expect(result.summary.landTypeText).toContain("বাড়ী");
     expect(result.summary.areaText).toContain("১৩");
     expect(result.summary.remarks).toContain("টিন ২ ঘর ১");
   });
