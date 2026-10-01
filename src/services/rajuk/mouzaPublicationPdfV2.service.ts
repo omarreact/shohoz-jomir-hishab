@@ -4,7 +4,7 @@ import { getPlots } from "./rajukQuery.service";
 import { RAJUK_DB } from "./rajukLayers.service";
 import { getValidToken } from "./rajukAuth.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
-import { applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
+import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
 import { drawNorthArrow, drawScaleBar, drawScaleText, drawCoordinateGrid, drawPublicationFooter, type GeoExtent } from "./mouzaCartography";
 
 export type MouzaPublicationRequest = { mouza: string; jl?: string; layers: "rs" | "ms" | "combined"; satellite?: boolean };
@@ -14,7 +14,7 @@ type Polygon = { rings: Ring[] };
 type Row = { attributes: Record<string, unknown>; geometry?: Polygon };
 type Tile = { bytes: Buffer; format: "PNG" | "JPEG"; x: number; y: number; z: number };
 
-const W = 297, H = 210, M = 10, TOP = 20, BOTTOM = 35, DW = W - M * 2, DH = H - TOP - BOTTOM;
+const W = LANDBD_PDF.a4Landscape.widthMm, H = LANDBD_PDF.a4Landscape.heightMm, M = 10, TOP = 20, BOTTOM = 35, DW = W - M * 2, DH = H - TOP - BOTTOM;
 const TIMEOUT = 15_000;
 const SAT_ZOOM = 20;
 const TILE_SIZE = 256;
