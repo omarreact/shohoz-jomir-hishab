@@ -1,3 +1,4 @@
+import { applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox } from "@/src/shared/lib/pdf/branding";
 import {
   PDF_EXPORT_WIDTH_PX,
   PDF_MARGIN_MM,
@@ -326,11 +327,15 @@ async function buildPdfAtScale(
   }
 
   const pdf = new JsPdf({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  applyLandBdPdfMetadata(pdf, {
+    title: fileName,
+    subject: "LandBD branded A4 khatian report",
+    keywords: ["LandBD", "khatian", "Bangladesh", "A4"],
+  });
   const content = portraitContentSizeMm(PDF_MARGIN_MM);
-  const contentWidth = Math.min(content.width, pageWidth - PDF_MARGIN_MM * 2);
-  const contentHeight = Math.min(content.height, pageHeight - PDF_MARGIN_MM * 2);
+  const contentBox = getLandBdA4ContentBox("portrait", PDF_MARGIN_MM);
+  const contentWidth = content.width;
+  const contentHeight = content.height;
 
   for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
     const slice = slices[pageIndex];
@@ -384,13 +389,21 @@ async function buildPdfAtScale(
     pdf.addImage(
       imageBytes,
       "JPEG",
-      PDF_MARGIN_MM,
-      PDF_MARGIN_MM,
+      contentBox.x,
+      contentBox.y,
       contentWidth,
       renderedHeight,
       undefined,
       "FAST",
     );
+
+    drawLandBdPdfChrome(pdf, {
+      title: fileName,
+      subtitle: "Khatian / land-record report",
+      source: "DLRMS / LandBD data workspace",
+      pageNumber: pageIndex + 1,
+      pageCount: slices.length,
+    });
 
     await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
   }
