@@ -365,15 +365,15 @@ export default function MouzaPorchaDocument({
           --report-mist: #e7efea;
           position: relative;
           box-sizing: border-box;
-          width: 297mm;
-          min-height: 210mm;
+          width: 210mm;
+          min-height: 297mm;
           overflow: hidden;
-          padding: 7mm 8mm 19mm;
+          padding: 8mm 7mm 19mm;
           background: #fff;
           color: var(--report-ink);
           border: 1px solid var(--report-border);
           box-shadow: 0 10px 30px rgba(11, 45, 30, 0.08);
-          font-size: 8pt;
+          font-size: 7.6pt;
           line-height: 1.38;
           print-color-adjust: exact;
           -webkit-print-color-adjust: exact;
@@ -823,8 +823,8 @@ export default function MouzaPorchaDocument({
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 6.85pt;
-          line-height: 1.32;
+          font-size: 6.35pt;
+          line-height: 1.3;
         }
 
         .report-table thead {
@@ -923,9 +923,9 @@ export default function MouzaPorchaDocument({
         .report-page-footer {
           position: absolute !important;
           z-index: 3 !important;
-          right: 8mm;
+          right: 7mm;
           bottom: 4mm;
-          left: 8mm;
+          left: 7mm;
           display: grid;
           grid-template-columns: 1fr auto 1.4fr;
           align-items: end;
@@ -1008,7 +1008,7 @@ export default function MouzaPorchaDocument({
 
         @media print {
           @page {
-            size: A4 landscape;
+            size: A4 portrait;
             margin: 0;
           }
 
@@ -1042,9 +1042,9 @@ export default function MouzaPorchaDocument({
           }
 
           .report-page {
-            width: 100vw !important;
-            height: 100vh !important;
-            min-height: 100vh !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
             margin: 0 !important;
             overflow: hidden !important;
             border: 0 !important;
@@ -1069,22 +1069,22 @@ export default function MouzaPorchaDocument({
           }
         }
 
-        @media print and (orientation: landscape) {
+        @media print and (orientation: portrait) {
           .report-page {
-            padding: 7mm 8mm 19mm !important;
+            padding: 8mm 7mm 19mm !important;
           }
 
           .report-table {
-            font-size: 6.8pt !important;
-            line-height: 1.3 !important;
+            font-size: 6.25pt !important;
+            line-height: 1.28 !important;
           }
 
           .report-table th {
-            padding: 1.25mm 1.2mm !important;
+            padding: 1.15mm 1mm !important;
           }
 
           .report-table td {
-            padding: 1mm 1.2mm !important;
+            padding: 1mm 1mm !important;
           }
         }
 
@@ -1144,7 +1144,7 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-official-center {
-          min-width: 70mm;
+          min-width: 52mm;
           text-align: center;
         }
 
@@ -1345,9 +1345,9 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-page-footer {
-          right: 8mm;
+          right: 7mm;
           bottom: 4mm;
-          left: 8mm;
+          left: 7mm;
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           gap: 4mm;
