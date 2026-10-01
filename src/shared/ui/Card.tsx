@@ -20,9 +20,9 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`relative overflow-hidden rounded-2xl transition-[border-color,box-shadow,transform] duration-200 ${variants[variant]} ${
+        className={`relative overflow-hidden rounded-[14px] transition-[border-color,box-shadow,transform] duration-200 ${variants[variant]} ${
           hoverEffect
-            ? "hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--brand-gold)_28%,var(--border-color))] hover:shadow-[var(--shadow-md)]"
+            ? "hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--brand-gold)_28%,var(--border-color))] hover:shadow-[var(--shadow-md)]"
             : ""
         } ${className}`}
         style={style}

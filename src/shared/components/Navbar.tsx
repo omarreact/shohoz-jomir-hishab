@@ -7,6 +7,7 @@ import {
   BookOpen,
   Calculator,
   ChevronDown,
+  FileSearch,
   FileText,
   Home,
   LogIn,
@@ -49,12 +50,16 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   home: Home,
   records: Calculator,
   dlrmsKhatian: Search,
+  settlementKhatian: FileText,
+  mouzaPorchaReport: FileText,
   landMeasurement: Ruler,
   inheritance: Users,
   landMap: Map,
   mouzaDownload: Map,
   mapQa: Map,
   documents: FileText,
+  warish: Users,
+  warishSanad: FileText,
   history: BookOpen,
   blog: BookOpen,
   faq: BookOpen,
@@ -78,24 +83,24 @@ function navItem(key: FeatureRouteKey, options?: { adminOnly?: boolean }): NavIt
 const NAV_GROUPS: NavGroup[] = [
   {
     id: "records",
-    label: "খতিয়ান ও রেকর্ড",
-    icon: FileText,
+    label: "রেকর্ড",
+    icon: FileSearch,
     items: [
       navItem("records"),
       navItem("dlrmsKhatian"),
-      navItem("documents"),
+      navItem("settlementKhatian"),
       navItem("history"),
     ],
   },
   {
     id: "calculations",
-    label: "হিসাব ও উত্তরাধিকার",
+    label: "হিসাব",
     icon: Calculator,
     items: [navItem("landMeasurement"), navItem("inheritance")],
   },
   {
     id: "maps",
-    label: "মানচিত্র ও প্লট",
+    label: "মানচিত্র",
     icon: Map,
     items: [
       navItem("landMap"),
@@ -104,18 +109,29 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "help",
-    label: "সহায়তা",
-    icon: BookOpen,
-    items: [navItem("blog"), navItem("faq"), navItem("contact")],
+    id: "documents",
+    label: "ডকুমেন্ট",
+    icon: FileText,
+    items: [
+      navItem("documents"),
+      navItem("mouzaPorchaReport"),
+      navItem("warish"),
+      navItem("warishSanad"),
+    ],
   },
   {
-    id: "policies",
-    label: "তথ্য ও নীতিমালা",
-    icon: ShieldCheck,
-    items: [navItem("terms"), navItem("privacy")],
+    id: "guides",
+    label: "গাইড",
+    icon: BookOpen,
+    items: [
+      navItem("blog"),
+      navItem("faq"),
+      navItem("contact"),
+      navItem("terms"),
+      navItem("privacy"),
+    ],
   },
-];
+]
 
 function normalizePath(value: string) {
   if (!value || value === "/") return "/";
@@ -238,7 +254,7 @@ export default function Navbar() {
         aria-label="প্রধান নেভিগেশন"
       >
         <div
-          className={`mx-auto flex h-14 max-w-[1440px] items-center gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}
+          className={`mx-auto flex h-14 max-w-[1440px] items-center gap-3 rounded-[14px] px-3 sm:px-4 ${shell}`}
         >
           <Link
             href={FEATURE_ROUTES.home}
@@ -246,7 +262,7 @@ export default function Navbar() {
             onClick={() => setSidebarOpen(false)}
             aria-label={`${SITE_CONFIG.name} — হোম`}
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
               <Calculator size={18} />
             </span>
             <span className="min-w-0">
@@ -280,7 +296,7 @@ export default function Navbar() {
                     aria-haspopup="menu"
                     aria-expanded={open}
                     onClick={() => setDesktopOpenGroup(open ? null : group.id)}
-                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] 2xl:px-3 2xl:text-sm ${
+                    className={`flex items-center gap-1.5 rounded-[12px] px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] 2xl:px-3 2xl:text-sm ${
                       active
                         ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                         : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -302,7 +318,7 @@ export default function Navbar() {
                     }`}
                   >
                     <div
-                      className={`rounded-2xl p-1.5 shadow-xl shadow-black/10 ${shell}`}
+                      className={`rounded-[14px] p-1.5 shadow-xl shadow-black/10 ${shell}`}
                       role="menu"
                       aria-label={group.label}
                     >
@@ -318,7 +334,7 @@ export default function Navbar() {
                             href={item.href}
                             role="menuitem"
                             onClick={() => setDesktopOpenGroup(null)}
-                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
+                            className={`flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
                               itemActive
                                 ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
                                 : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -347,13 +363,28 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSidebarOpen(false);
+                setSearchOpen(true);
+              }}
+              className="hidden min-h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-3 text-xs font-bold text-[var(--muted-foreground)] shadow-[var(--shadow-xs)] transition hover:border-[color-mix(in_srgb,var(--primary)_24%,var(--border-color))] hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] sm:flex"
+              aria-label="LandBD কমান্ড সার্চ খুলুন"
+            >
+              <Search size={16} />
+              <span className="hidden lg:inline">সার্চ</span>
+              <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--canvas)] px-1.5 py-0.5 text-[9px] font-extrabold text-[var(--muted-foreground)]">
+                Ctrl K
+              </kbd>
+            </button>
             <button
               type="button"
               aria-label="সাইডবার মেনু খুলুন"
               aria-expanded={sidebarOpen}
               onClick={openSidebar}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--brand-gold-faint)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)]"
+              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--brand-gold-faint)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)]"
             >
               <Menu size={20} />
             </button>
@@ -367,7 +398,7 @@ export default function Navbar() {
           onMouseDown={() => setSearchOpen(false)}
         >
           <div
-            className={`w-full max-w-xl overflow-hidden rounded-2xl ${shell}`}
+            className={`w-full max-w-xl overflow-hidden rounded-[14px] ${shell}`}
             onMouseDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -386,7 +417,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setSearchOpen(false)}
                 aria-label="সার্চ বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-[var(--secondary)]"
+                className="flex h-9 w-9 items-center justify-center rounded-[12px] hover:bg-[var(--secondary)]"
               >
                 <X size={18} />
               </button>
@@ -397,7 +428,7 @@ export default function Navbar() {
                   key={href}
                   href={href}
                   onClick={() => setSearchOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold no-underline transition-colors ${
+                  className={`flex items-center gap-3 rounded-[12px] px-3 py-3 text-sm font-semibold no-underline transition-colors ${
                     activePath(pathname, href)
                       ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                       : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -439,7 +470,7 @@ export default function Navbar() {
                 className="flex min-w-0 items-center gap-2 no-underline"
                 onClick={() => setSidebarOpen(false)}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
                   <Calculator size={19} />
                 </span>
                 <span className="min-w-0">
@@ -453,7 +484,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setSidebarOpen(false)}
                 aria-label="সাইডবার বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)]"
+                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)]"
               >
                 <X size={19} />
               </button>
@@ -468,7 +499,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={openSearchFromSidebar}
-                  className="mt-2 flex w-full items-center gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:bg-[var(--brand-gold-faint)] hover:text-[var(--foreground)]"
+                  className="mt-2 flex w-full items-center gap-3 rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:bg-[var(--brand-gold-faint)] hover:text-[var(--foreground)]"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card-bg)]">
                     <Search size={17} />
@@ -491,13 +522,13 @@ export default function Navbar() {
                 </p>
 
                 {authLoading ? (
-                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-4 text-sm text-[var(--muted-foreground)]">
+                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-4 text-sm text-[var(--muted-foreground)]">
                     লগইন তথ্য যাচাই হচ্ছে…
                   </div>
                 ) : isLoggedIn ? (
-                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
+                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
                         <User size={18} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -521,23 +552,23 @@ export default function Navbar() {
                       <Link
                         href={FEATURE_ROUTES.admin}
                         onClick={() => setSidebarOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-[var(--brand-gold)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                        className="flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
                       >
                         <ShieldCheck size={15} /> ড্যাশবোর্ড
                       </Link>
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+                        className="flex items-center justify-center gap-2 rounded-[12px] border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
                       >
                         <LogOut size={15} /> লগআউট
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-2 rounded-xl border border-[var(--border-color)] p-3">
+                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--secondary)]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--secondary)]">
                         <LogIn size={18} />
                       </span>
                       <div>
@@ -550,7 +581,7 @@ export default function Navbar() {
                     <Link
                       href={FEATURE_ROUTES.login}
                       onClick={() => setSidebarOpen(false)}
-                      className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
+                      className="mt-3 flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
                     >
                       <LogIn size={16} /> {FEATURE_LABELS.login.bn}
                     </Link>
@@ -573,12 +604,12 @@ export default function Navbar() {
                     const expanded = sidebarGroup === group.id;
 
                     return (
-                      <div key={group.id} className="rounded-xl">
+                      <div key={group.id} className="rounded-[12px]">
                         <button
                           type="button"
                           aria-expanded={expanded}
                           onClick={() => setSidebarGroup(expanded ? null : group.id)}
-                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
+                          className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-3 text-left text-sm font-bold transition-colors ${
                             groupActive
                               ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                               : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -610,7 +641,7 @@ export default function Navbar() {
                                   key={item.href}
                                   href={item.href}
                                   onClick={() => setSidebarOpen(false)}
-                                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
+                                  className={`flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
                                     itemActive
                                       ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
                                       : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
