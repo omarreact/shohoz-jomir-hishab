@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, FileText, Search, X } from "lucide-react";
 import { toBn } from "@/src/shared/utils";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDocument from "@/src/shared/components/ResultDocument";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
@@ -119,7 +120,7 @@ export default function PorchaPage() {
               </div>
               <h3 className="mb-4 text-2xl font-bold text-slate-900 dark:text-white">অ্যাক্সেস সীমাবদ্ধ</h3>
               <p className="mb-8 text-slate-500 dark:text-slate-400">পর্চা খুঁজতে অনুগ্রহ করে লগইন করুন।</p>
-              <a href="/login" className="cta-gradient block w-full rounded-full px-8 py-3 font-bold text-white shadow-lg">
+              <a href={buildLoginHref("/porcha")} className="cta-gradient block w-full rounded-full px-8 py-3 font-bold text-white shadow-lg">
                 লগইন করুন
               </a>
             </div>
