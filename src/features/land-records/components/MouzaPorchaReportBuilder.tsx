@@ -394,7 +394,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে পেশাদার A4 PDF রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে LandBD 2026 ব্র্যান্ডেড A4 PDF রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
         pattern="grid"
       />
 
@@ -464,7 +464,7 @@ export default function MouzaPorchaReportBuilder() {
                     clearReport();
                     setIncludeHalSabek(event.target.checked);
                   }}
-                  className="mt-1 h-4 w-4 accent-[#006a4e]"
+                  className="mt-1 h-4 w-4 accent-[var(--primary)]"
                 />
                 <span>
                   <span className="block text-sm font-semibold text-emerald-950">সাবেক / হাল দাগ যাচাই করুন</span>
@@ -475,7 +475,7 @@ export default function MouzaPorchaReportBuilder() {
               </label>
 
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                <ShieldCheck size={16} className="text-[#006a4e]" />
+                <ShieldCheck size={16} className="text-[var(--primary)]" />
                 <span>Bengali PDF font: <strong>{fontReady ? "Noto Sans Bengali প্রস্তুত" : "লোড হচ্ছে…"}</strong></span>
                 <span className="text-slate-300">•</span>
                 <span>রেকর্ড টেক্সট NFC normalization সহ source wording সংরক্ষণ করবে।</span>
@@ -498,7 +498,7 @@ export default function MouzaPorchaReportBuilder() {
                   type="button"
                   onClick={() => void generateReport()}
                   disabled={generating || !mouzaId}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#006a4e] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="landbd-primary-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {generating ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
                   রিপোর্ট তৈরি করুন
