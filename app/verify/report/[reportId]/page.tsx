@@ -3,8 +3,8 @@ import Link from "next/link";
 import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 
 export const metadata: Metadata = {
-  title: "রিপোর্ট যাচাই | LandBD",
-  description: "LandBD তথ্যভিত্তিক মৌজা পর্চা রিপোর্টের Report ID যাচাই করুন।",
+  title: "ডকুমেন্ট যাচাই | LandBD",
+  description: "LandBD-তে তৈরি খতিয়ান ভিউ বা তথ্যভিত্তিক রিপোর্টের generation record যাচাই করুন।",
 };
 
 export const dynamic = "force-dynamic";
