@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,15 +16,26 @@ import {
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
+import { resolveLoginTarget } from "@/src/modules/auth/loginRedirect";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { login, loading, isLoggedIn } = useAuth();
+  const redirectingRef = useRef(false);
+  const target = resolveLoginTarget(searchParams.get("from"));
+
+  const redirectToTarget = useCallback(() => {
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
+
+    // Use a full navigation after authentication so the first request to the
+    // protected destination definitely includes the freshly-written auth cookie.
+    window.location.replace(target);
+  }, [target]);
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -37,10 +48,9 @@ function LoginForm() {
 
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      const from = searchParams.get("from") || "/admin";
-      router.replace(from);
+      redirectToTarget();
     }
-  }, [loading, isLoggedIn, router, searchParams]);
+  }, [loading, isLoggedIn, redirectToTarget]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -53,8 +63,7 @@ function LoginForm() {
 
     try {
       await login(emailToUse, password);
-      const from = searchParams.get("from") || "/admin";
-      router.push(from);
+      redirectToTarget();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("লক")) {
