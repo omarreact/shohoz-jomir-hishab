@@ -43,12 +43,12 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
   );
 
   return (
-    <section className="mt-4 space-y-3 print:break-before-page" aria-label="খতিয়ান উৎস ও সরাসরি তথ্য">
+    <section className="mt-4 space-y-3 print:break-before-page" aria-label="সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 shrink-0 text-[#006a4e]" size={19} />
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-100">ডেটা উৎস ও উপলব্ধতা</h3>
+            <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-100">ডেটা উৎস ও পূর্ণতা</h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {evidence.map((item, index) => (
                 <span
@@ -61,7 +61,7 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
               ))}
             </div>
             <p className="mt-2 text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/90">
-              পাবলিক DLRMS তথ্য কোনো mirror, repeated lookup বা cross-response merge দিয়ে পূরণ করা হয় না। সরকারি পাবলিক endpoint যতটুকু সরাসরি দেয়, LandBD ততটুকুই দেখায়।
+              কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। জমির পরিমাণ শুধু উৎস JSON-এর area value থেকে Acre-এ দেখানো হয়; geometry থেকে area গণনা করা হয় না।
             </p>
           </div>
         </div>
@@ -123,7 +123,7 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
 
       {structuredDags.length ? (
         <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক উৎস তথ্য</h3>
+          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক পূর্ণ তথ্য</h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[52rem] text-sm">
               <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">দাগ</th><th className="py-2 pr-3">শ্রেণী</th><th className="py-2 pr-3">মোট আয়তন (একর)</th><th className="py-2 pr-3">খতিয়ান অংশ (একর)</th><th className="py-2">GIS/ব্যবহার</th></tr></thead>
