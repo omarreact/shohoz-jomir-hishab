@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import LandBdPrintRibbon, { LANDBD_TAGLINES } from "@/src/shared/components/LandBdPrintRibbon";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian, FullKhatianDag, FullKhatianOwner } from "../full-khatian";
 import type { KhatianDetails } from "../types";
@@ -571,31 +572,6 @@ export default function AuthoritativeKhatianDetailsView({
           line-height: 1.15;
         }
 
-        .dlrms-landbd-record .record-footer-brand-strip {
-          display: grid;
-          grid-template-columns: 55% 27% 18%;
-          min-height: 22px;
-          margin-top: 8px;
-          overflow: hidden;
-          border-radius: 3px;
-          color: #fff;
-          font-size: 10px;
-          font-weight: 700;
-          line-height: 1.2;
-          text-align: center;
-        }
-
-        .dlrms-landbd-record .record-footer-brand-strip span {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 4px 6px;
-        }
-
-        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(1) { background: var(--landbd-green); }
-        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(2) { background: var(--landbd-red); }
-        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(3) { background: var(--landbd-magenta); }
-
         @page dlrmsPortrait {
           size: A4 portrait;
           margin: 0;
@@ -682,10 +658,6 @@ export default function AuthoritativeKhatianDetailsView({
             color: rgba(11,93,59,.04);
           }
 
-          .dlrms-landbd-record .record-footer-brand-strip {
-            min-height: 6mm;
-            font-size: 7.5pt;
-          }
         }
       `}</style>
 
@@ -703,7 +675,7 @@ export default function AuthoritativeKhatianDetailsView({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/landbd-symbol-2026.svg" alt="" />
             <strong>LANDBD</strong>
-            <span>সহজ জমির হিসাব</span>
+            <span>{LANDBD_TAGLINES[0]}</span>
           </div>
 
           <div className="record-content">
@@ -864,11 +836,7 @@ export default function AuthoritativeKhatianDetailsView({
                   {khatian.JL_NUMBER ? ` · জে.এল নং: ${toBanglaDigits(khatian.JL_NUMBER)}` : ""}
                 </span>
               </div>
-              <div className="record-footer-brand-strip" aria-label="LandBD brand principles">
-                <span>সহজ জমির হিসাব</span>
-                <span>ডিজিটাল ভূমি তথ্য</span>
-                <span>যাচাই করে ব্যবহার</span>
-              </div>
+              <LandBdPrintRibbon className="mt-2 rounded-[3px]" />
             </footer>
           </div>
         </article>
