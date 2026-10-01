@@ -128,10 +128,10 @@ export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
   // the full cell text instead of counting every item as its own block line.
   return Math.max(
     2,
-    inlineLineEstimate(row.owners, 30),
-    inlineLineEstimate(row.guardians, 28),
-    inlineLineEstimate(row.dags, 38),
-    inlineLineEstimate(historyValues, 30),
+    inlineLineEstimate(row.owners, 22),
+    inlineLineEstimate(row.guardians, 20),
+    inlineLineEstimate(row.dags, 29),
+    inlineLineEstimate(historyValues, 22),
   );
 }
 
