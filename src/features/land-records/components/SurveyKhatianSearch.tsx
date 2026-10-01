@@ -490,7 +490,7 @@ export default function SurveyKhatianSearch() {
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 shrink-0" size={15} />
                     <span>
-                      তালিকার “মোট জমি” সরকারি public API-তে প্রকাশিত মান। বিস্তারিত খুললে public endpoint যতটুকু সরাসরি দেয়, LandBD ঠিক ততটুকুই দেখাবে; কোনো reconstruction বা mirror expansion হবে না। পূর্ণ Citizen print record-এর জন্য নিচের authenticated import ব্যবহার করুন।
+                      তালিকার “মোট জমি” উৎস API-তে প্রকাশিত মান। বিস্তারিত খুললে পূর্ণ source-driven খতিয়ান ও PDF রিপোর্ট ডাউনলোড করা যাবে।
                     </span>
                   </div>
                 </div>
