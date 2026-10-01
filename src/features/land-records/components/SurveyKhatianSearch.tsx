@@ -19,7 +19,6 @@ import {
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
-import DlrmsCitizenImport from "./DlrmsCitizenImport";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
@@ -417,8 +416,6 @@ export default function SurveyKhatianSearch() {
                 </div>
               </CardBody>
             </Card>
-
-            <DlrmsCitizenImport />
 
             {khatians ? (
               <section className="mt-6 space-y-4">
