@@ -17,16 +17,13 @@
   font-family: "Kalpurush", var(--font-report), "Nirmala UI", serif !important;
 }
 
-/* Explicit Latin-only report fields. */
-#mouza-porcha-report .report-brand-mark,
-#mouza-porcha-report .report-brand-name,
+/* Keep every visible Mouza Porcha field in Kalpurush, including IDs and
+   English helper text, so the document has one consistent khatian typeface. */
 #mouza-porcha-report .report-latin-id,
 #mouza-porcha-report .report-repeat-id,
 #mouza-porcha-report .report-history-arrow,
-#mouza-porcha-report .report-footer-top strong,
-#mouza-porcha-report .report-qr-unavailable,
 #mouza-porcha-report [lang="en"] {
-  font-family: var(--font-english) !important;
+  font-family: "Kalpurush", var(--font-report), "Nirmala UI", serif !important;
 }
 
 /* Reusable semantic helpers for mixed interfaces and generated documents. */
