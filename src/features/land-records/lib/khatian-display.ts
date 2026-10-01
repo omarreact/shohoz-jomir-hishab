@@ -43,7 +43,6 @@ export interface KhatianDisplayModel {
   ownerCount: number;
   dagCount: number;
   publicRecord: Record<string, unknown>;
-  reconstruction: Record<string, unknown> | null;
   /** True when at least one owner row has a share value. */
   hasOwnerShares: boolean;
   /** True when at least one dag row has a verified area field. */
@@ -222,14 +221,6 @@ export function extractOwnerShares(publicRecord: Record<string, unknown>, ownerC
 }
 
 export function isPartialPublicRecord(khatian: KhatianDetails | null | undefined): boolean {
-  const reconstruction = khatian?.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
-  if (
-    reconstruction &&
-    typeof reconstruction === "object" &&
-    (reconstruction as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true
-  ) {
-    return true;
-  }
   const fields = [khatian?.OWNERS, khatian?.DAGS, khatian?.GUARDIANS];
   return fields.some((v) => Boolean(v && TRAILING_PARTIAL.test(v)));
 }
@@ -243,11 +234,6 @@ export function buildKhatianDisplayModel(
   const dagNumbers = splitPublicList(khatian.DAGS);
   const guardians = splitPublicList(khatian.GUARDIANS);
   const publicRecord = (khatian.PUBLIC_RECORD ?? {}) as Record<string, unknown>;
-  const reconstruction =
-    publicRecord.LANDBD_RECONSTRUCTION && typeof publicRecord.LANDBD_RECONSTRUCTION === "object"
-      ? (publicRecord.LANDBD_RECONSTRUCTION as Record<string, unknown>)
-      : null;
-
   const shares = extractOwnerShares(publicRecord, ownerNames.length);
   const owners = buildOwnerRows(ownerNames, shares);
   const dags = buildDagRows(dagNumbers, publicRecord);
@@ -265,7 +251,6 @@ export function buildKhatianDisplayModel(
     ownerCount: ownerNames.length,
     dagCount: dagNumbers.length,
     publicRecord,
-    reconstruction,
     hasOwnerShares: owners.some((o) => Boolean(o.share)),
     hasDagAreas: dags.some((d) => Boolean(d.area || d.shareArea || d.totalArea)),
     hasLandClass: dags.some((d) => Boolean(d.landClass)),

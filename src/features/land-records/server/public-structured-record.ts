@@ -1,5 +1,4 @@
 import type { FullKhatianDag, FullKhatianOwner, LandRecordSource } from "../full-khatian";
-import type { KhatianDetails } from "../types";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -169,93 +168,4 @@ export function extractStructuredPublicRecord(
   }
 
   return { owners: dedupeOwners(owners), dags: dedupeDags(dags) };
-}
-
-/**
- * The provider may enrich compact list fields after fetching the official detail
- * record. Before reconstructing a FullKhatian, reset those compact fields to the
- * exact official detail payload kept in PUBLIC_RECORD. This prevents a different
- * record with the same khatian number from contaminating the selected ID.
- */
-export function restoreOfficialDetailBase(base: KhatianDetails): KhatianDetails {
-  const record = base.PUBLIC_RECORD;
-  if (!record) return base;
-  return {
-    ...base,
-    OWNERS: primitiveString(record, "OWNERS", "owners") ?? base.OWNERS,
-    DAGS: primitiveString(record, "DAGS", "dags") ?? base.DAGS,
-    GUARDIANS: primitiveString(record, "GUARDIANS", "guardians") ?? base.GUARDIANS,
-    TOTAL_LAND: primitiveString(record, "TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount") ?? base.TOTAL_LAND,
-  };
-}
-
-function records(payload: unknown): JsonRecord[] {
-  if (Array.isArray(payload)) return payload.map(asRecord).filter((item): item is JsonRecord => Boolean(item));
-  const record = asRecord(payload);
-  if (!record) return [];
-  for (const key of ["data", "content", "items", "results", "rows"]) {
-    const nested = record[key];
-    if (Array.isArray(nested)) return nested.map(asRecord).filter((item): item is JsonRecord => Boolean(item));
-    const nestedRecord = asRecord(nested);
-    if (nestedRecord) {
-      const found = records(nestedRecord);
-      if (found.length) return found;
-    }
-  }
-  return [];
-}
-
-function mirrorEnabled(): boolean {
-  const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
-  if (process.env.NODE_ENV === "test" && raw === undefined) return false;
-  return raw !== "0" && raw !== "false" && raw !== "off";
-}
-
-export function publicMirrorBaseUrl(): string {
-  const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
-  return (configured || "https://eporcha.tech/api/dlrms").replace(/\/$/, "");
-}
-
-export async function fetchStrictPublicMirrorRecord(
-  input: {
-    surveyKey: string;
-    jlNumberId: number;
-    khatianNo: string;
-    id: number;
-    dagNumber?: string;
-    owner?: string;
-  },
-  signal?: AbortSignal,
-): Promise<JsonRecord | null> {
-  if (!mirrorEnabled()) return null;
-
-  const url = new URL(`${publicMirrorBaseUrl()}/index-khatian/${encodeURIComponent(input.surveyKey)}`);
-  url.searchParams.set("SURVEY", input.surveyKey);
-  url.searchParams.set("JL_NUMBER_ID", String(input.jlNumberId));
-  url.searchParams.set("KHATIAN_NO", input.khatianNo);
-  if (input.dagNumber) url.searchParams.set("DAG_NUMBER", input.dagNumber);
-  if (input.owner) url.searchParams.set("OWNER", input.owner);
-  url.searchParams.set("PAGE_NO", "1");
-  url.searchParams.set("PAGE_SIZE", "100");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12_000);
-  const onAbort = () => controller.abort();
-  signal?.addEventListener("abort", onAbort, { once: true });
-
-  try {
-    const response = await fetch(url.toString(), {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    });
-    if (!response.ok) return null;
-    const payload = await response.json();
-    return records(payload).find((row) => Number(row.ID ?? row.id) === input.id) ?? null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-    signal?.removeEventListener("abort", onAbort);
-  }
 }
