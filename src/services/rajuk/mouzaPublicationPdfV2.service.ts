@@ -4,6 +4,7 @@ import { getPlots } from "./rajukQuery.service";
 import { RAJUK_DB } from "./rajukLayers.service";
 import { getValidToken } from "./rajukAuth.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
 import { drawNorthArrow, drawScaleBar, drawScaleText, drawCoordinateGrid, drawPublicationFooter, type GeoExtent } from "./mouzaCartography";
 
 export type MouzaPublicationRequest = { mouza: string; jl?: string; layers: "rs" | "ms" | "combined"; satellite?: boolean };
@@ -13,7 +14,7 @@ type Polygon = { rings: Ring[] };
 type Row = { attributes: Record<string, unknown>; geometry?: Polygon };
 type Tile = { bytes: Buffer; format: "PNG" | "JPEG"; x: number; y: number; z: number };
 
-const W = 420, H = 297, M = 14, TOP = 26, BOTTOM = 25, DW = W - M * 2, DH = H - TOP - BOTTOM;
+const W = 297, H = 210, M = 10, TOP = 20, BOTTOM = 35, DW = W - M * 2, DH = H - TOP - BOTTOM;
 const TIMEOUT = 15_000;
 const SAT_ZOOM = 20;
 const TILE_SIZE = 256;
@@ -168,8 +169,12 @@ export async function exportMouzaPublicationPdf(input: MouzaPublicationRequest):
   const features = all.filter(f => input.layers === "combined" ? true : input.layers === "ms" ? isMs(f) : !isMs(f)); if (!features.length) throw new Error(`No plots found for ${mouza}`);
   const raw = extent(features); if (!raw) throw new Error("No valid plot geometry found"); const e = fit(raw);
   const ctx = await context(mouza, input.jl).catch(error => { console.warn("[LandBD][mouza-pdf] context metadata unavailable", { mouza, error }); return { geometry: null, neighbors: [] as Row[], attributes: {} as Record<string, unknown> }; });
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: [W, H], compress: false, putOnlyUsedFonts: true });
-  doc.setProperties({ title: `LandBD — ${mouza} Mouza Map`, subject: "Maximum-fidelity RS/MS cadastral publication map", creator: "LandBD" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: false, putOnlyUsedFonts: true });
+  applyLandBdPdfMetadata(doc, {
+    title: `LandBD — ${mouza} Mouza Map`,
+    subject: "A4 RS/MS cadastral publication map",
+    keywords: ["LandBD", "mouza", "RS", "MS", "A4"],
+  });
   doc.setFillColor(248, 249, 250); doc.rect(M, TOP, DW, DH, "F");
   let sat = false, tileCount = 0;
   if (input.satellite) { tileCount = await drawMaximumResolutionSatellite(doc, e); sat = true; }
@@ -185,8 +190,15 @@ export async function exportMouzaPublicationPdf(input: MouzaPublicationRequest):
   const district = txt(ctx.attributes, ["m_district", "district", "district_name"]) !== "N/A" ? txt(ctx.attributes, ["m_district", "district", "district_name"]) : txt(sample, ["m_district", "district", "district_name"]);
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(20, 30, 40); doc.text(`LandBD — ${mouza}`, M, 9);
   doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.text(`JL: ${jl || "N/A"}    District: ${district || "N/A"}    Upazila: ${upazila || "N/A"}    Plots: ${features.length}`, M, 14); doc.setFontSize(6); doc.text(`Layers: ${input.layers.toUpperCase()}    CRS: EPSG:4326    Output: ${sat ? "Satellite + Vector" : "Vector"}`, M, 19);
-  drawScaleText(doc, e, 8); drawNorthArrow(doc, W - 24, M + 8); drawScaleBar(doc, e, M, H - 5);
+  drawScaleText(doc, e, 15); drawNorthArrow(doc, W - 20, TOP + 7); drawScaleBar(doc, e, M, TOP + DH - 3);
   drawPublicationFooter(doc, { mouza, jl: jl || "N/A", upazila: upazila || "N/A", district: district || "N/A", plots: features.length, layers: input.layers.toUpperCase(), satellite: sat, scale: scale(e) });
+  drawLandBdPdfChrome(doc, {
+    title: `${mouza} Mouza Map`,
+    subtitle: `JL ${jl || "N/A"} · ${input.layers.toUpperCase()} · A4 landscape`,
+    source: "RAJUK GIS / LandBD",
+    pageNumber: 1,
+    pageCount: 1,
+  });
   const body = Buffer.from(doc.output("arraybuffer"));
   return { filename: `landbd-${safe(mouza)}-${input.layers}${sat ? "-satellite" : ""}-publication.pdf`, contentType: "application/pdf", body, meta: { mouza, width: W, height: H, zoom: SAT_ZOOM, resolution: sat ? SAT_ZOOM : 0, crs: "EPSG:4326 source / EPSG:3857 display", extent: e, tileCount, plotCount: features.length, satellite: sat } };
 }
