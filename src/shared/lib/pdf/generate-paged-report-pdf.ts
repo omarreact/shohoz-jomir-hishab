@@ -1,3 +1,5 @@
+import { applyLandBdPdfMetadata } from "@/src/shared/lib/pdf/branding";
+
 export type PagedPdfOrientation = "portrait" | "landscape";
 
 export type GeneratePagedReportPdfOptions = {
@@ -114,6 +116,10 @@ export async function generatePagedReportPdf({
     ]);
 
     const pdf = new jsPDF({ orientation, unit: "mm", format: "a4", compress: true });
+    applyLandBdPdfMetadata(pdf, {
+      title: fileName,
+      subject: "LandBD branded A4 paged report",
+    });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
