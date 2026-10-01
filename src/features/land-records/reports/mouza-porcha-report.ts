@@ -138,13 +138,15 @@ export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
 /**
  * Produces dense A4-landscape logical pages for direct PDF download. Each
  * Khatian stays in one row. The first page reserves room for report metadata;
- * later pages use most of the available table area instead of leaving a large
- * unused lower half.
+ * later pages use most of the available A4 table area instead of leaving a large
+ * unused lower half. The 2026 branded layout reserves fixed header/footer space,
+ * so these budgets intentionally pack ordinary rows more densely while still
+ * keeping every Khatian on a single logical page.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
-  firstPageBudget = 28,
-  laterPageBudget = 64,
+  firstPageBudget = 36,
+  laterPageBudget = 82,
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
 
