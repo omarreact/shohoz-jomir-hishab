@@ -6,8 +6,6 @@ import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
-import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
-import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-report-pdf";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
@@ -81,10 +79,7 @@ export default function MouzaPorchaReportBuilder() {
   const [mappedRecords, setMappedRecords] = useState(0);
   const [localError, setLocalError] = useState<string | null>(null);
   const [verificationWarning, setVerificationWarning] = useState<string | null>(null);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const reportRef = useRef<HTMLDivElement | null>(null);
 
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
@@ -133,8 +128,6 @@ export default function MouzaPorchaReportBuilder() {
     setMappedRecords(0);
     setLocalError(null);
     setVerificationWarning(null);
-    setPdfGenerating(false);
-    setPdfError(null);
   };
 
   const changeDivision = (value: string) => {
@@ -345,35 +338,7 @@ export default function MouzaPorchaReportBuilder() {
   };
 
 
-
-  const downloadPdf = async () => {
-    if (!reportRef.current || phase !== "done" || !rows.length) return;
-
-    setPdfGenerating(true);
-    setPdfError(null);
-    try {
-      const mouzaPart = selectedMouza?.MOUZA_NAME || "Mouza";
-      const surveyPart = selectedSurvey?.LOCAL_NAME || "Survey";
-      const reportPart = reportMeta?.reportId || "Report";
-      const result = await generatePagedReportPdf({
-        source: reportRef.current,
-        pageSelector: ".report-page",
-        fileName: `Mouza-${mouzaPart}-${surveyPart}-Porcha-Report-${reportPart}-A4-Portrait`,
-        orientation: "portrait",
-        scale: 1.55,
-        jpegQuality: 0.94,
-      });
-
-      if (!result.ok) setPdfError(result.error);
-    } catch (error) {
-      console.error("Mouza Porcha PDF generation failed", error);
-      setPdfError("PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।");
-    } finally {
-      setPdfGenerating(false);
-    }
-  };
-
-  const displayedError = localError || pdfError || locationError;
+  const displayedError = localError || locationError;
   const progressTotal = expectedRecords ?? Math.max(loadedRecords, rows.length);
   const phaseLabel =
     phase === "hal-sabek"
@@ -469,7 +434,7 @@ export default function MouzaPorchaReportBuilder() {
 
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                 <ShieldCheck size={16} className="text-[var(--primary)]" />
-                <span>Bengali PDF font: <strong>Kalpurush</strong></span>
+                <span>Print font: <strong>Kalpurush</strong></span>
                 <span className="text-slate-300">•</span>
                 <span>রেকর্ড টেক্সট NFC normalization সহ source wording সংরক্ষণ করবে।</span>
               </div>
@@ -542,24 +507,18 @@ export default function MouzaPorchaReportBuilder() {
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <ResultDownloadButton
-                  onClick={() => void downloadPdf()}
-                  loading={pdfGenerating}
-                  disabled={generating || phase !== "done"}
-                  className="rounded-[12px]"
-                />
-                <ResultPrintButton disabled={generating || phase !== "done" || pdfGenerating} className="rounded-[12px]" />
+                <ResultPrintButton disabled={generating || phase !== "done"} className="rounded-[12px]" />
               </div>
             </div>
 
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের preview-টাই A4 Portrait PDF ও Print layout হিসেবে ব্যবহার হবে।
+                নিচের preview-টাই A4 Portrait Print layout হিসেবে ব্যবহার হবে।
               </p>
             </div>
 
-            <div ref={reportRef}>
+            <div>
               <MouzaPorchaDocument
                 rows={rows}
                 halSabek={halSabek}
