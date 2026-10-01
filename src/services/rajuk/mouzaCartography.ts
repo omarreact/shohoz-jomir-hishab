@@ -1,12 +1,13 @@
 import type { jsPDF } from "jspdf";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { LANDBD_PDF } from "@/src/shared/lib/pdf/branding";
 
 export type GeoExtent = { xmin: number; ymin: number; xmax: number; ymax: number };
 export type PdfProject = (lng: number, lat: number, extent: GeoExtent) => readonly [number, number];
 
 const MARGIN = 10;
-const PAGE_W = 297;
-const PAGE_H = 210;
+const PAGE_W = LANDBD_PDF.a4Landscape.widthMm;
+const PAGE_H = LANDBD_PDF.a4Landscape.heightMm;
 const MAP_TOP = 20;
 const DRAW_W = PAGE_W - MARGIN * 2;
 const DRAW_H = 155;
