@@ -354,7 +354,6 @@ export default function CompactKhatianDetailsView({ khatian, surveyKey, captureR
               <p>JL_NUMBER_ID: {khatian.JL_NUMBER_ID}</p>
               {khatian.SURVEY_ID != null ? <p>SURVEY_ID: {khatian.SURVEY_ID}</p> : null}
               {mapAreas.length ? <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-950/5 p-2 text-[10px] dark:bg-white/5">{JSON.stringify(mapAreas, null, 2)}</pre> : null}
-              {model.reconstruction ? <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-slate-950/5 p-2 text-[10px] dark:bg-white/5">{JSON.stringify(model.reconstruction, null, 2)}</pre> : null}
             </div>
           ) : null}
         </div>
