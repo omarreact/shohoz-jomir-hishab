@@ -6,7 +6,8 @@ const DLRMS_GATEWAY_URL = "https://gateway.dlrms.land.gov.bd";
 const DLRMS_API_URL = `${DLRMS_GATEWAY_URL}/core-api/api/public`;
 const REQUEST_TIMEOUT_MS = 25_000;
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
-const ENRICH_TIMEOUT_MS = 12_000;
+const ENRICH_TIMEOUT_MS = 7_000;
+const TRANSIENT_STATUS = new Set([429, 502, 503, 504]);
 const SENSITIVE_PUBLIC_FIELD = /(authorization|cookie|password|passwd|secret|token|refresh[_-]?token|access[_-]?token)/i;
 const TRAILING_ELLIPSIS = /(?:,\s*)?(?:\.{3,}|…)+\s*$/u;
 
@@ -227,7 +228,13 @@ function query(path: string, params: Record<string, string | number | undefined>
   return url.toString();
 }
 
-async function requestJson(url: string, stage: Stage, signal?: AbortSignal, retry = true): Promise<unknown> {
+async function requestJson(
+  url: string,
+  stage: Stage,
+  signal?: AbortSignal,
+  authRetry = true,
+  transientRetry = true,
+): Promise<unknown> {
   const activeSession = await publicSession();
   const response = await fetch(url, {
     cache: "no-store",
@@ -240,10 +247,19 @@ async function requestJson(url: string, stage: Stage, signal?: AbortSignal, retr
     signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
-  if (response.status === 401 && retry) {
+  if (response.status === 401 && authRetry) {
     await refreshSession(activeSession);
-    return requestJson(url, stage, signal, false);
+    return requestJson(url, stage, signal, false, transientRetry);
   }
+
+  // The public gateway occasionally returns short-lived 429/5xx responses.
+  // One small retry fixes those blips without turning a slow upstream into a
+  // long retry loop.
+  if (TRANSIENT_STATUS.has(response.status) && transientRetry && !signal?.aborted) {
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    return requestJson(url, stage, signal, authRetry, false);
+  }
+
   if (!response.ok) {
     const body = (await response.text()).slice(0, 300);
     throw new DlrmsProviderError(`DLRMS request failed (${response.status})${body ? `: ${body}` : ""}`, stage, response.status);
@@ -487,9 +503,9 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
           },
           signal,
         );
-        const match = listPage.items.find(
-          (item) => item.ID === base.ID || item.KHATIAN_NO.trim() === base.KHATIAN_NO.trim(),
-        );
+        const match =
+          listPage.items.find((item) => item.ID === base.ID) ??
+          listPage.items.find((item) => item.KHATIAN_NO.trim() === base.KHATIAN_NO.trim());
         if (match) {
           base = {
             ...base,
@@ -498,6 +514,12 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
             GUARDIANS: preferFullerField(base.GUARDIANS, match.GUARDIANS),
             TOTAL_LAND:
               preferFullerField(base.TOTAL_LAND ?? "", match.TOTAL_LAND ?? "") || base.TOTAL_LAND,
+            PUBLIC_RECORD: {
+              ...(base.PUBLIC_RECORD ?? {}),
+              // Reuse the already validated list expansion inside FullKhatian
+              // instead of immediately issuing the same exact-list request.
+              LANDBD_LIST_EXPANSION: match,
+            },
           };
         }
       } catch {

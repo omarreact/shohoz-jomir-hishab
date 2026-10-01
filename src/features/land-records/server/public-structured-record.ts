@@ -239,7 +239,7 @@ export async function fetchStrictPublicMirrorRecord(
   url.searchParams.set("PAGE_SIZE", "100");
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12_000);
+  const timer = setTimeout(() => controller.abort(), 7_000);
   const onAbort = () => controller.abort();
   signal?.addEventListener("abort", onAbort, { once: true });
 

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
+import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 
 type Props = {
@@ -242,6 +243,10 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
           </ol>
         </Panel>
       ) : null}
+
+      <footer className="pt-2">
+        <LandBdPrintRibbon />
+      </footer>
     </section>
   );
 }

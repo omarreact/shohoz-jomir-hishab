@@ -17,7 +17,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
-import { SURVEY_KEY_BY_ID } from "../types";
+import { SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
 
 const empty = "-- নির্বাচন করুন --";
@@ -62,6 +62,7 @@ export default function SurveyKhatianSearch() {
   const [viewMode, setViewMode] = useState<"search" | "details">("search");
   const [localError, setLocalError] = useState<string | null>(null);
 
+  const selectedDivision = divisions.find((item) => item.BBS_CODE === division);
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
   const selectedSurvey = surveys.find((item) => String(item.SURVEY_ID) === surveyId);
@@ -194,11 +195,41 @@ export default function SurveyKhatianSearch() {
     runSearch(next);
   };
 
-  const showDetails = (id: number) => {
-    if (!surveyKey) return;
-    setSelectedKhatian(null);
+  const showDetails = (item: KhatianIndex) => {
+    if (!surveyKey || !selectedMouza || !selectedSurvey) return;
+
+    const fastRecord: KhatianDetails = {
+      ...item,
+      KHATIAN_ENTRY_ID: undefined,
+      IS_LOCKED: 0,
+      DIVISION_NAME: selectedDivision?.NAME || "",
+      DISTRICT_NAME: selectedDistrict?.NAME || selectedMouza.DISTRICT_NAME || "",
+      UPAZILA_NAME: selectedUpazila?.NAME || selectedMouza.UPAZILA_NAME || "",
+      JL_NUMBER: selectedMouza.JL_NUMBER || "",
+      MOUZA_NAME: selectedMouza.MOUZA_NAME || "",
+      SURVEY_ID: selectedSurvey.SURVEY_ID,
+      SURVEY_NAME: selectedSurvey.LOCAL_NAME || surveyKey,
+      TOTAL_LAND: item.TOTAL_LAND || "",
+      PUBLIC_RECORD: {
+        LANDBD_FAST_PREVIEW: true,
+      },
+    };
+
+    // Show the official list-row record immediately. Full enrichment continues
+    // in the background; if an optional upstream source fails, the khatian is
+    // still viewable and printable instead of collapsing to an empty result.
+    setSelectedKhatian(fastRecord);
     setViewMode("details");
-    void loadKhatian(surveyKey, id);
+    void loadKhatian(surveyKey, item.ID, {
+      jlNumberId: selectedMouza.ID,
+      mouzaId: selectedMouza.MOUZA_ID,
+      divisionBbsCode: selectedDistrict?.DIVISION_BBS_CODE,
+      districtBbsCode: selectedDistrict?.BBS_CODE,
+      upazilaBbsCode: selectedUpazila?.BBS_CODE,
+      owner: searchFilters.owner,
+      dagNumber: searchFilters.dagNumber,
+    });
+
     requestAnimationFrame(() => {
       document.getElementById("khatian-details-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -470,7 +501,7 @@ export default function SurveyKhatianSearch() {
                             <td className="px-3 py-2.5 text-right">
                               <button
                                 type="button"
-                                onClick={() => showDetails(item.ID)}
+                                onClick={() => showDetails(item)}
                                 className="inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--border-color)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--primary)] transition hover:bg-[var(--brand-green-faint)]"
                               >
                                 <Eye size={14} /> বিস্তারিত
@@ -487,7 +518,7 @@ export default function SurveyKhatianSearch() {
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 shrink-0" size={15} />
                     <span>
-                      তালিকার “মোট জমি” উৎস API-তে প্রকাশিত মান। বিস্তারিত খুললে পূর্ণ source-driven খতিয়ান ও PDF রিপোর্ট ডাউনলোড করা যাবে।
+                      তালিকার “মোট জমি” উৎস API-তে প্রকাশিত মান। বিস্তারিত খুললেই দ্রুত preview দেখা যাবে; পূর্ণ source-driven enrichment পটভূমিতে যুক্ত হবে এবং একই record print করা যাবে।
                     </span>
                   </div>
                 </div>
@@ -514,16 +545,35 @@ export default function SurveyKhatianSearch() {
 
             <h2 className="text-lg font-black text-[var(--foreground)] print:hidden">খতিয়ানের বিস্তারিত তথ্য</h2>
 
-            {loading.khatian ? (
+            {selectedKhatian ? (
+              <>
+                {loading.khatian ? (
+                  <div
+                    className="mb-3 flex items-center gap-2 rounded-[12px] border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800 print:hidden"
+                    role="status"
+                  >
+                    <Loader2 className="animate-spin" size={15} />
+                    দ্রুত preview প্রস্তুত। পূর্ণ মালিক/দাগ/উৎস তথ্য পটভূমিতে যাচাই হচ্ছে…
+                  </div>
+                ) : null}
+                {!loading.khatian && error ? (
+                  <div
+                    className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-800 print:hidden"
+                    role="status"
+                  >
+                    পূর্ণ enrichment সাময়িকভাবে পাওয়া যায়নি। নিচে সরকারি search-result record দেখানো হচ্ছে; এটি এখনও print করা যাবে।
+                  </div>
+                ) : null}
+                <KhatianDetailsView
+                  khatian={selectedKhatian}
+                  fullKhatian={selectedFullKhatian ?? undefined}
+                  surveyKey={surveyKey}
+                />
+              </>
+            ) : loading.khatian ? (
               <div className="flex min-h-40 items-center justify-center gap-2 rounded-[14px] border border-[var(--border-color)] bg-[var(--canvas)] py-12 text-sm font-semibold text-[var(--muted-foreground)]">
                 <Loader2 className="animate-spin" size={18} /> বিস্তারিত লোড হচ্ছে…
               </div>
-            ) : selectedKhatian ? (
-              <KhatianDetailsView
-                khatian={selectedKhatian}
-                fullKhatian={selectedFullKhatian ?? undefined}
-                surveyKey={surveyKey}
-              />
             ) : (
               <div className="rounded-xl border border-[var(--border-color)] py-10 text-center text-sm text-slate-500">
                 বিস্তারিত তথ্য পাওয়া যায়নি।

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import LandBdPrintRibbon, { LANDBD_TAGLINES } from "@/src/shared/components/LandBdPrintRibbon";
 import type { KhatianIndex } from "../types";
 import {
   buildMouzaReportRows,
@@ -249,7 +250,7 @@ export default function MouzaPorchaDocument({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/brand/landbd-symbol-2026.svg" alt="" />
                 <span>LANDBD</span>
-                <small>সহজ জমির হিসাব</small>
+                <small>{LANDBD_TAGLINES[0]}</small>
               </div>
               {firstPage ? (
                 <>
@@ -367,11 +368,7 @@ export default function MouzaPorchaDocument({
                 <div className="report-footer-disclaimer">
                   এটি সরকারি প্রত্যয়িত পর্চা নয়। দাপ্তরিক বা আইনি ব্যবহারের আগে সরকারি মূল নথির সাথে যাচাই করুন।
                 </div>
-                <div className="report-footer-brand-strip" aria-label="LandBD brand principles">
-                  <span>সহজ জমির হিসাব</span>
-                  <span>ডিজিটাল ভূমি তথ্য</span>
-                  <span>যাচাই করে ব্যবহার</span>
-                </div>
+                <LandBdPrintRibbon className="report-footer-ribbon" />
               </footer>
             </article>
           );
@@ -1052,30 +1049,11 @@ export default function MouzaPorchaDocument({
           text-align: center;
         }
 
-        .report-footer-brand-strip {
+        .report-footer-ribbon {
           grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: 55% 27% 18%;
-          min-height: 5.5mm;
           margin-top: 0.8mm;
-          overflow: hidden;
-          color: #fff;
-          font-size: 7.2pt;
-          font-weight: 800;
-          line-height: 1.1;
-          text-align: center;
+          border-radius: 0.6mm;
         }
-
-        .report-footer-brand-strip span {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.8mm 1mm;
-        }
-
-        .report-footer-brand-strip span:nth-child(1) { background: var(--report-primary); }
-        .report-footer-brand-strip span:nth-child(2) { background: var(--report-alert); }
-        .report-footer-brand-strip span:nth-child(3) { background: #b3237b; }
 
         @media (max-width: 900px) {
           .report-page-stack { align-items: flex-start; }
@@ -1467,11 +1445,6 @@ export default function MouzaPorchaDocument({
           text-align: center;
         }
 
-        #mouza-porcha-report .report-footer-brand-strip span {
-          color: #fff !important;
-          font-size: 7.2pt;
-          font-weight: 800;
-        }
       `}</style>
     </section>
   );
