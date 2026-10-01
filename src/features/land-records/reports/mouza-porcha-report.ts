@@ -128,20 +128,19 @@ export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
   // the full cell text instead of counting every item as its own block line.
   return Math.max(
     2,
-    inlineLineEstimate(row.owners, 42),
-    inlineLineEstimate(row.guardians, 38),
-    inlineLineEstimate(row.dags, 54),
-    inlineLineEstimate(historyValues, 40),
+    inlineLineEstimate(row.owners, 30),
+    inlineLineEstimate(row.guardians, 28),
+    inlineLineEstimate(row.dags, 38),
+    inlineLineEstimate(historyValues, 30),
   );
 }
 
 /**
- * Produces dense A4-landscape logical pages for direct PDF download. Each
- * Khatian stays in one row. The first page reserves room for report metadata;
- * later pages use most of the available A4 table area instead of leaving a large
- * unused lower half. The 2026 branded layout reserves fixed header/footer space,
- * so these budgets intentionally pack ordinary rows more densely while still
- * keeping every Khatian on a single logical page.
+ * Produces dense A4-portrait logical pages for inline preview, print and PDF.
+ * Each Khatian stays in one row. The first page reserves room for report
+ * metadata; later pages use the taller portrait table area. Line estimates are
+ * intentionally narrower than the old landscape layout so long Bangla owner,
+ * guardian and Dag values paginate before they can be clipped.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
