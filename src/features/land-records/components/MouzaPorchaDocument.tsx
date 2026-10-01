@@ -107,64 +107,78 @@ function LegalDisclaimer() {
 function ReportTable({
   rows,
   showHistory,
+  showOwners,
+  showGuardians,
+  showDags,
+  showLandArea,
   startIndex,
 }: {
   rows: MouzaReportRowSegment[];
   showHistory: boolean;
+  showOwners: boolean;
+  showGuardians: boolean;
+  showDags: boolean;
+  showLandArea: boolean;
   startIndex: number;
 }) {
-  const columnNumbers = showHistory
-    ? ["১", "২", "৩", "৪", "৫", "৬", "৭"]
-    : ["১", "২", "৩", "৪", "৫", "৬"];
+  const numberLabels = ["১", "২", "৩", "৪", "৫", "৬", "৭"];
+  const columns = [
+    { key: "serial", label: "ক্রম", weight: 6, visible: true },
+    { key: "khatian", label: "খতিয়ান নং", weight: 11, visible: true },
+    { key: "owners", label: "মালিকের নাম", weight: 24, visible: showOwners },
+    { key: "guardians", label: "অভিভাবক / সম্পর্ক", weight: 20, visible: showGuardians },
+    { key: "dags", label: "দাগ নং", weight: 14, visible: showDags },
+    { key: "history", label: "দাগ পরিবর্তন (সাবেক → হাল)", weight: 19, visible: showHistory },
+    { key: "landArea", label: "জমির পরিমাণ (একর)", weight: 10, visible: showLandArea },
+  ].filter((column) => column.visible);
+  const totalWeight = columns.reduce((sum, column) => sum + column.weight, 0);
 
   return (
     <table className={showHistory ? "report-table report-table-history" : "report-table"}>
       <colgroup>
-        {showHistory ? (
-          <>
-            <col style={{ width: "6%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "23%" }} />
-            <col style={{ width: "19%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "8%" }} />
-          </>
-        ) : (
-          <>
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "28%" }} />
-            <col style={{ width: "23%" }} />
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "10%" }} />
-          </>
-        )}
+        {columns.map((column) => (
+          <col
+            key={column.key}
+            style={{ width: `${((column.weight / totalWeight) * 100).toFixed(2)}%` }}
+          />
+        ))}
       </colgroup>
       <thead>
         <tr>
-          <th>ক্রম</th>
-          <th>খতিয়ান নং</th>
-          <th>মালিকের নাম</th>
-          <th>অভিভাবক / সম্পর্ক</th>
-          <th>দাগ নং</th>
-          {showHistory ? <th>দাগ পরিবর্তন (সাবেক → হাল)</th> : null}
-          <th>জমির পরিমাণ (একর)</th>
+          {columns.map((column) => <th key={column.key}>{column.label}</th>)}
         </tr>
         <tr className="report-column-numbers">
-          {columnNumbers.map((number) => <th key={number}>{number}</th>)}
+          {columns.map((column, index) => <th key={column.key}>{numberLabels[index]}</th>)}
         </tr>
       </thead>
       <tbody>
         {rows.map((row, index) => (
           <tr key={row.segmentKey}>
-            <td className="report-serial-number">{startIndex + index + 1}</td>
-            <td className="report-khatian-number">{row.khatianNo || "—"}</td>
-            <td><MultiValueCell items={row.owners} /></td>
-            <td><MultiValueCell items={row.guardians} /></td>
-            <td className="report-dag-cell"><MultiValueCell items={row.dags} /></td>
-            {showHistory ? <td className="report-dag-cell"><DagHistoryCell history={row.history} /></td> : null}
-            <td className="report-land-area">{row.totalLandAcre ? row.totalLandAcre + " একর" : "—"}</td>
+            {columns.map((column) => {
+              if (column.key === "serial") {
+                return <td key={column.key} className="report-serial-number">{startIndex + index + 1}</td>;
+              }
+              if (column.key === "khatian") {
+                return <td key={column.key} className="report-khatian-number">{row.khatianNo || "—"}</td>;
+              }
+              if (column.key === "owners") {
+                return <td key={column.key}><MultiValueCell items={row.owners} /></td>;
+              }
+              if (column.key === "guardians") {
+                return <td key={column.key}><MultiValueCell items={row.guardians} /></td>;
+              }
+              if (column.key === "dags") {
+                return <td key={column.key} className="report-dag-cell"><MultiValueCell items={row.dags} /></td>;
+              }
+              if (column.key === "history") {
+                return <td key={column.key} className="report-dag-cell"><DagHistoryCell history={row.history} /></td>;
+              }
+              return (
+                <td key={column.key} className="report-land-area">
+                  {row.totalLandAcre ? row.totalLandAcre + " একর" : "—"}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>
@@ -193,6 +207,10 @@ export default function MouzaPorchaDocument({
   );
 
   const showHistory = includeHalSabek && reportRows.some((row) => row.history.length > 0);
+  const showOwners = reportRows.some((row) => row.owners.length > 0);
+  const showGuardians = reportRows.some((row) => row.guardians.length > 0);
+  const showDags = reportRows.some((row) => row.dags.length > 0);
+  const showLandArea = reportRows.some((row) => Boolean(row.totalLandAcre));
   const mappedKhatianCount = includeHalSabek
     ? reportRows.filter((row) => row.history.length > 0).length
     : 0;
@@ -226,10 +244,19 @@ export default function MouzaPorchaDocument({
           const pageStartIndex = pages.slice(0, pageIndex).reduce((sum, item) => sum + item.length, 0);
           return (
             <article className="report-page" key={`page-${pageIndex + 1}`}>
+              <div className="report-top-accent" aria-hidden="true"><i /><i /><i /></div>
+              <div className="report-watermark" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand/landbd-symbol-2026.svg" alt="" />
+                <span>LANDBD</span>
+                <small>সহজ জমির হিসাব</small>
+              </div>
               {firstPage ? (
                 <>
                   <header className="report-document-header">
                     <div className="report-official-left">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="report-official-logo" src="/brand/landbd-logo-horizontal.svg" alt="LandBD" />
                       <p>তথ্যসূত্র : DLRMS ভূমি রেকর্ড</p>
                       <p>সার্ভে : {surveyName || "—"}</p>
                     </div>
@@ -240,15 +267,14 @@ export default function MouzaPorchaDocument({
                     </div>
 
                     <div className="report-official-right">
-                      {reportMeta?.verificationRegistered ? (
-                        <div className="report-qr-box">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={"/api/reports/mouza-porcha/qr?id=" + encodeURIComponent(reportId)}
-                            alt="রিপোর্ট যাচাই QR"
-                          />
-                        </div>
-                      ) : null}
+                      <div className="report-qr-box">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={"/api/reports/mouza-porcha/qr?id=" + encodeURIComponent(reportId)}
+                          alt="LandBD report QR"
+                        />
+                        <span>Verify via LandBD</span>
+                      </div>
                       <div>
                         <p>Report ID: <b className="report-latin-id">{reportId}</b></p>
                         <p>{reportMeta?.verificationRegistered ? "QR যাচাই সক্রিয়" : "তথ্যভিত্তিক রিপোর্ট"}</p>
@@ -310,7 +336,15 @@ export default function MouzaPorchaDocument({
               )}
 
               <div className="report-table-wrapper">
-                <ReportTable rows={pageRows} showHistory={showHistory} startIndex={pageStartIndex} />
+                <ReportTable
+                  rows={pageRows}
+                  showHistory={showHistory}
+                  showOwners={showOwners}
+                  showGuardians={showGuardians}
+                  showDags={showDags}
+                  showLandArea={showLandArea}
+                  startIndex={pageStartIndex}
+                />
               </div>
 
               <footer className="report-page-footer">
@@ -328,6 +362,11 @@ export default function MouzaPorchaDocument({
                 </div>
                 <div className="report-footer-disclaimer">
                   এটি সরকারি প্রত্যয়িত পর্চা নয়। দাপ্তরিক বা আইনি ব্যবহারের আগে সরকারি মূল নথির সাথে যাচাই করুন।
+                </div>
+                <div className="report-footer-brand-strip" aria-label="LandBD brand principles">
+                  <span>সহজ জমির হিসাব</span>
+                  <span>ডিজিটাল ভূমি তথ্য</span>
+                  <span>যাচাই করে ব্যবহার</span>
                 </div>
               </footer>
             </article>
@@ -434,6 +473,14 @@ export default function MouzaPorchaDocument({
           font-size: 11pt;
           font-weight: 750;
           letter-spacing: 0.03em;
+        }
+
+        .report-official-logo {
+          display: block;
+          width: 34mm;
+          max-width: 100%;
+          height: auto;
+          margin-bottom: 1.2mm;
         }
 
         .report-document-header {
@@ -642,7 +689,7 @@ export default function MouzaPorchaDocument({
           display: block;
           margin-bottom: 0.35mm;
           color: var(--report-muted);
-          font-size: 5.8pt;
+          font-size: 8.8pt;
           font-weight: 650;
         }
 
@@ -684,7 +731,7 @@ export default function MouzaPorchaDocument({
           border-radius: 1.2mm;
           background: var(--report-alert);
           color: #fff;
-          font-size: 5.4pt;
+          font-size: 8.4pt;
           font-weight: 800;
           white-space: nowrap;
         }
@@ -1001,6 +1048,31 @@ export default function MouzaPorchaDocument({
           text-align: center;
         }
 
+        .report-footer-brand-strip {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: 55% 27% 18%;
+          min-height: 5.5mm;
+          margin-top: 0.8mm;
+          overflow: hidden;
+          color: #fff;
+          font-size: 7.2pt;
+          font-weight: 800;
+          line-height: 1.1;
+          text-align: center;
+        }
+
+        .report-footer-brand-strip span {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.8mm 1mm;
+        }
+
+        .report-footer-brand-strip span:nth-child(1) { background: var(--report-primary); }
+        .report-footer-brand-strip span:nth-child(2) { background: var(--report-alert); }
+        .report-footer-brand-strip span:nth-child(3) { background: #b3237b; }
+
         @media (max-width: 900px) {
           .report-page-stack { align-items: flex-start; }
           .report-page { transform-origin: top left; }
@@ -1106,9 +1178,12 @@ export default function MouzaPorchaDocument({
           background: #fff;
         }
 
-        #mouza-porcha-report .report-watermark,
+        #mouza-porcha-report .report-watermark {
+          display: flex !important;
+        }
+
         #mouza-porcha-report .report-top-accent {
-          display: none !important;
+          display: grid !important;
         }
 
         #mouza-porcha-report .report-document-header {
@@ -1158,7 +1233,7 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-official-center p {
           margin-top: 1.2mm;
-          font-size: 8pt;
+          font-size: 11pt;
         }
 
         #mouza-porcha-report .report-qr-box {
@@ -1193,7 +1268,7 @@ export default function MouzaPorchaDocument({
           margin-bottom: 2mm;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 6.5pt;
+          font-size: 9.5pt;
         }
 
         #mouza-porcha-report .report-summary-table td {
@@ -1245,7 +1320,7 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-legal-disclaimer strong {
-          font-size: 6.8pt;
+          font-size: 9.8pt;
           font-weight: 400;
         }
 
@@ -1284,8 +1359,8 @@ export default function MouzaPorchaDocument({
           border-collapse: collapse;
           table-layout: fixed;
           border: 0.28mm solid #000;
-          font-size: 7.1pt;
-          line-height: 1.32;
+          font-size: 10.1pt;
+          line-height: 1.34;
         }
 
         #mouza-porcha-report .report-table th,
@@ -1306,7 +1381,7 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-table .report-column-numbers th {
           padding: 0.65mm 0.7mm;
-          font-size: 6.2pt;
+          font-size: 9.2pt;
         }
 
         #mouza-porcha-report .report-table td,
@@ -1355,7 +1430,7 @@ export default function MouzaPorchaDocument({
           border-top: 0.2mm solid #000;
           background: #fff;
           color: #000;
-          font-size: 5.1pt;
+          font-size: 8.1pt;
         }
 
         #mouza-porcha-report .report-page-footer > div:first-child strong,
@@ -1363,14 +1438,14 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-footer-source strong {
           display: block;
           color: #000;
-          font-size: 5.4pt;
+          font-size: 8.4pt;
           font-weight: 400;
         }
 
         #mouza-porcha-report .report-page-footer span,
         #mouza-porcha-report .report-latin-id {
           color: #000;
-          font-size: 4.8pt;
+          font-size: 7.8pt;
           font-weight: 400;
         }
 
@@ -1383,7 +1458,7 @@ export default function MouzaPorchaDocument({
           padding-top: 0.6mm;
           border-top: 0.15mm solid #000;
           color: #000;
-          font-size: 4.7pt;
+          font-size: 7.7pt;
           font-weight: 400;
           text-align: center;
         }
