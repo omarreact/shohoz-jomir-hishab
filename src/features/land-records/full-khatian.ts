@@ -2,9 +2,9 @@ import { z } from "zod";
 import { KhatianDetailsSchema } from "./schemas";
 
 /**
- * Every enriched field in a FullKhatian response keeps its origin explicit.
- * This prevents reconstructed or mock values from being mistaken for an
- * authoritative government field.
+ * Every non-base field in a FullKhatian response keeps its origin explicit.
+ * Public DLRMS values remain source-faithful: LandBD does not reconstruct
+ * truncated public fields from mirrors, repeated searches, or cross-response merges.
  */
 export const LandRecordSourceSchema = z.enum([
   "DLRMS_PUBLIC",
