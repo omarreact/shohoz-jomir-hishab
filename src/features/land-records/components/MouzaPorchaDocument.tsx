@@ -739,7 +739,7 @@ export default function MouzaPorchaDocument({
 
         @media print {
           @page {
-            size: auto;
+            size: A4 landscape;
             margin: 0;
           }
 
