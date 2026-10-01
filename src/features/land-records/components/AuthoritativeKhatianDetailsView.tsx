@@ -359,6 +359,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
               <p>JL_NUMBER_ID: {khatian.JL_NUMBER_ID}</p>
               {khatian.SURVEY_ID != null ? <p>SURVEY_ID: {khatian.SURVEY_ID}</p> : null}
               {fullKhatian ? <p>LISF status: {fullKhatian.lisf.status}</p> : null}
+              {model.reconstruction ? <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-slate-950/5 p-2 text-[10px]">{JSON.stringify(model.reconstruction, null, 2)}</pre> : null}
             </div>
           ) : null}
         </div>
