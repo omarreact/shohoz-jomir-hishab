@@ -10,12 +10,11 @@
  *   Bangla        -> Noto Sans Bengali for stable shaping in PDF/print engines
  */
 
-/* The Mouza Porcha component intentionally applies !important typography for
-   PDF stability. Use a more specific selector here so the mixed report stack
-   still routes Latin and Bengali glyphs to the correct families. */
+/* The Mouza Porcha report intentionally uses Kalpurush to mirror the
+   government-style khatian table presentation in screen, print and PDF. */
 #mouza-porcha-report.landbd-report-font,
 #mouza-porcha-report.landbd-report-font * {
-  font-family: var(--font-report) !important;
+  font-family: "Kalpurush", var(--font-report), "Nirmala UI", serif !important;
 }
 
 /* Explicit Latin-only report fields. */
