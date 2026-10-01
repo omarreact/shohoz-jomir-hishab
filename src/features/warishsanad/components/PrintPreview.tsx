@@ -156,7 +156,7 @@ export default function PrintPreview({ values }: Props) {
         <footer className="v8-locked-footer">
           <div className="v8-footer-rule"><i /><i /><i /></div>
           <div>
-            <span>ঢাকা উত্তর সিটি কর্পোরেশন · নাগরিক সেবা</span>
+            <span>LandBD · landbd.pincodeit.com · DNCC sample workspace</span>
             <b>SAMPLE — অফিসিয়াল নয়</b>
           </div>
         </footer>
