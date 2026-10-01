@@ -30,13 +30,13 @@ export default function HeroBanner({
     <section className="hero-gradient relative overflow-hidden border-b border-[var(--border-color)] bg-white print:hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-[var(--brand-gold-soft)] opacity-60 blur-3xl sm:h-96 sm:w-96"
+        className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-[10px] bg-[color-mix(in_srgb,var(--survey-teal)_12%,transparent)] opacity-80 blur-3xl sm:h-96 sm:w-96"
       />
       {pattern === "dots" ? (
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.035]"
           style={{
-            backgroundImage: "radial-gradient(circle at 2px 2px, #946200 1px, transparent 0)",
+            backgroundImage: "radial-gradient(circle at 2px 2px, rgba(11,93,59,.55) 1px, transparent 0)",
             backgroundSize: "28px 28px",
           }}
         />
@@ -53,7 +53,7 @@ export default function HeroBanner({
         />
       ) : null}
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <div
           className={`flex flex-col items-stretch gap-7 lg:flex-row lg:items-center lg:gap-12 ${
             isCenter ? "justify-center text-center" : ""
@@ -72,7 +72,7 @@ export default function HeroBanner({
               </div>
             ) : null}
 
-            <h1 className="text-[clamp(1.85rem,7vw,3.25rem)] font-extrabold leading-[1.12] tracking-[-0.025em] text-[var(--foreground)]">
+            <h1 className="text-[clamp(1.85rem,7vw,3.25rem)] font-black leading-[1.08] tracking-[-0.035em] text-[var(--foreground)]">
               {title}
             </h1>
 
