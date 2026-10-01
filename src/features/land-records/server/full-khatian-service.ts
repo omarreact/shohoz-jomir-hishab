@@ -33,7 +33,7 @@ interface BbsLocationCodes {
 }
 
 const MAX_FILTERED_DAG_LOOKUPS = 24;
-const FILTERED_DAG_CONCURRENCY = 4;
+const FILTERED_DAG_CONCURRENCY = 8;
 
 function splitList(value: string | undefined): string[] {
   return (value ?? "")
@@ -302,6 +302,19 @@ function reconstructionStillPartial(base: KhatianDetails): boolean {
   return (value as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true;
 }
 
+function cachedListExpansion(base: KhatianDetails): KhatianPage["items"][number] | null {
+  const value = base.PUBLIC_RECORD?.LANDBD_LIST_EXPANSION;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as KhatianPage["items"][number];
+  if (
+    Number(row.ID) !== base.ID ||
+    String(row.KHATIAN_NO ?? "").trim() !== base.KHATIAN_NO.trim()
+  ) {
+    return null;
+  }
+  return row;
+}
+
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
   const warnings: string[] = [];
   const fetchedAt = new Date().toISOString();
@@ -315,13 +328,22 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   let rebuilt = baseDetail;
   if (jlNumberId) {
-    const exactLookup = safeSearch({
-      surveyKey: input.surveyKey,
-      jlNumberId,
-      page: 1,
-      pageSize: 100,
-      khatianNo: baseDetail.KHATIAN_NO,
-    }, warnings, signal);
+    const cachedExact = cachedListExpansion(baseDetail);
+    const exactLookup = cachedExact
+      ? Promise.resolve({
+          items: [cachedExact],
+          page: 1,
+          pageSize: 1,
+          total: 1,
+          hasNextPage: false,
+        } satisfies KhatianPage)
+      : safeSearch({
+          surveyKey: input.surveyKey,
+          jlNumberId,
+          page: 1,
+          pageSize: 100,
+          khatianNo: baseDetail.KHATIAN_NO,
+        }, warnings, signal);
     const ownerLookup = input.owner
       ? safeSearch({
           surveyKey: input.surveyKey,
@@ -355,23 +377,29 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       ownerVerified: Boolean(input.owner && ownerRows.length),
       dagVerified: Boolean(input.dagNumber && dagRows.length),
     });
-
-    // Once the exact khatian exposes its published dag list, re-query each dag.
-    // DLRMS sometimes returns a fuller compact variant for a filtered search.
-    const filteredDagRows = await collectFilteredDagRows(rebuilt, input.surveyKey, warnings, signal);
-    if (filteredDagRows.length) {
-      rebuilt = reconstructKhatian(rebuilt, filteredDagRows);
-    }
   }
 
-  let tracking: KhatianTracking | undefined = input.tracking;
-  if (!tracking && input.verificationUuid) {
-    try {
-      tracking = await fetchPublicKhatianTracking(input.verificationUuid, rebuilt, signal);
-    } catch (error) {
-      warnings.push(`DLRMS verification lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
-    }
+  // Per-dag reconstruction and optional verification are independent after the
+  // exact row is known. Run them together to avoid serial network latency.
+  const filteredDagPromise = rebuilt.JL_NUMBER_ID
+    ? collectFilteredDagRows(rebuilt, input.surveyKey, warnings, signal)
+    : Promise.resolve([]);
+  const trackingPromise: Promise<KhatianTracking | undefined> = input.tracking
+    ? Promise.resolve(input.tracking)
+    : input.verificationUuid
+      ? fetchPublicKhatianTracking(input.verificationUuid, rebuilt, signal)
+          .catch((error) => {
+            warnings.push(`DLRMS verification lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
+            return undefined;
+          })
+      : Promise.resolve(undefined);
+
+  const [filteredDagRows, resolvedTracking] = await Promise.all([filteredDagPromise, trackingPromise]);
+  if (filteredDagRows.length) {
+    rebuilt = reconstructKhatian(rebuilt, filteredDagRows);
   }
+
+  let tracking: KhatianTracking | undefined = resolvedTracking;
 
   if (tracking) {
     tracking = { ...tracking, matchesBaseRecord: trackingMatchesBase(rebuilt, tracking) };
@@ -383,17 +411,19 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
 
   const officialStructured = extractStructuredPublicRecord(rebuilt.PUBLIC_RECORD, "DLRMS_PUBLIC");
-  const mirrorRecord = rebuilt.JL_NUMBER_ID
-    ? await fetchStrictPublicMirrorRecord({
-        surveyKey: input.surveyKey,
-        jlNumberId: rebuilt.JL_NUMBER_ID,
-        khatianNo: rebuilt.KHATIAN_NO,
-        id: rebuilt.ID,
-      }, signal)
-    : null;
-  const mirrorDagRecords = rebuilt.JL_NUMBER_ID
-    ? await fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
-    : [];
+  const [mirrorRecord, mirrorDagRecords] = await Promise.all([
+    rebuilt.JL_NUMBER_ID
+      ? fetchStrictPublicMirrorRecord({
+          surveyKey: input.surveyKey,
+          jlNumberId: rebuilt.JL_NUMBER_ID,
+          khatianNo: rebuilt.KHATIAN_NO,
+          id: rebuilt.ID,
+        }, signal)
+      : Promise.resolve(null),
+    rebuilt.JL_NUMBER_ID
+      ? fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
+      : Promise.resolve([]),
+  ]);
   let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
   for (const record of mirrorDagRecords) {
     const filtered = extractStructuredPublicRecord(record, "DLRMS_PUBLIC");
@@ -410,38 +440,24 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     warnings.push("DLRMS-এর upstream compact তালিকার কিছু অংশ এখনো truncated/আংশিক। LandBD কেবল উৎসে পাওয়া তথ্যই দেখাচ্ছে; অনুপস্থিত তথ্য অনুমান করে যোগ করা হয়নি।");
   }
 
-  const locationCodes = await resolveBbsCodesFromPublicLocation(rebuilt, {
+  const locationPreset = {
     divisionBbsCode: input.divisionBbsCode || (tracking?.matchesBaseRecord ? tracking.divisionBbsCode : undefined),
     districtBbsCode: input.districtBbsCode || (tracking?.matchesBaseRecord ? tracking.districtBbsCode : undefined),
     upazilaBbsCode: input.upazilaBbsCode || (tracking?.matchesBaseRecord ? tracking.upazilaBbsCode : undefined),
-  }, warnings, signal);
+  };
 
-  let halSabek: FullKhatian["halSabek"] = [];
-  if (
-    locationCodes.divisionBbsCode &&
-    locationCodes.districtBbsCode &&
-    locationCodes.upazilaBbsCode &&
-    rebuilt.JL_NUMBER_ID
-  ) {
-    try {
-      halSabek = await fetchPublicHalSabek({
-        surveyKey: input.surveyKey,
-        divisionBbsCode: locationCodes.divisionBbsCode,
-        districtBbsCode: locationCodes.districtBbsCode,
-        upazilaBbsCode: locationCodes.upazilaBbsCode,
-        jlNumberId: rebuilt.JL_NUMBER_ID,
-        khatianNo: rebuilt.KHATIAN_NO,
-      }, signal);
-    } catch (error) {
-      warnings.push(`DLRMS hal-sabek lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
-    }
-  }
+  const locationPromise = resolveBbsCodesFromPublicLocation(
+    rebuilt,
+    locationPreset,
+    warnings,
+    signal,
+  );
 
-  let lisf;
-  try {
-    lisf = await getLisfProvider().enrichKhatian(rebuilt, signal);
-  } catch (error) {
-    lisf = {
+  // LISF is optional enrichment, so start it while DLRMS location/hal-sabek
+  // work is progressing instead of waiting for those requests serially.
+  const lisfPromise = getLisfProvider()
+    .enrichKhatian(rebuilt, locationPreset, signal)
+    .catch((error) => ({
       status: "error" as const,
       message: error instanceof Error ? error.message : "LISF enrichment failed",
       owners: [],
@@ -449,8 +465,29 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       referenceKhatians: [],
       referenceDags: [],
       deeds: [],
-    };
-  }
+    }));
+
+  const locationCodes = await locationPromise;
+  const halSabekPromise: Promise<FullKhatian["halSabek"]> = (
+    locationCodes.divisionBbsCode &&
+    locationCodes.districtBbsCode &&
+    locationCodes.upazilaBbsCode &&
+    rebuilt.JL_NUMBER_ID
+  )
+    ? fetchPublicHalSabek({
+        surveyKey: input.surveyKey,
+        divisionBbsCode: locationCodes.divisionBbsCode,
+        districtBbsCode: locationCodes.districtBbsCode,
+        upazilaBbsCode: locationCodes.upazilaBbsCode,
+        jlNumberId: rebuilt.JL_NUMBER_ID,
+        khatianNo: rebuilt.KHATIAN_NO,
+      }, signal).catch((error) => {
+        warnings.push(`DLRMS hal-sabek lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
+        return [];
+      })
+    : Promise.resolve([]);
+
+  const [halSabek, lisf] = await Promise.all([halSabekPromise, lisfPromise]);
 
   const useAuthorizedLisf = lisf.status === "ready";
   const structuredOwners = useAuthorizedLisf
