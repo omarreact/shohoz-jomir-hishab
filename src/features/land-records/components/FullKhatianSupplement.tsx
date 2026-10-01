@@ -47,6 +47,19 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
     lisf.deeds.length > 0 || lisf.formattedRecord !== undefined
   );
 
+  const showOwnerFather = structuredOwners.some((owner) => Boolean(owner.fatherOrHusband?.trim()));
+  const showOwnerAddress = structuredOwners.some((owner) => Boolean(owner.address?.trim()));
+  const showOwnerShare = structuredOwners.some((owner) => Boolean(owner.shareRaw?.trim()));
+  const showDagClass = structuredDags.some((dag) => Boolean(dag.landType?.trim() || dag.agriculturalType?.trim()));
+  const showDagTotalArea = structuredDags.some((dag) => Boolean(dag.totalAreaRaw?.trim()));
+  const showDagKhatianArea = structuredDags.some((dag) => Boolean(dag.khatianAreaRaw?.trim()));
+  const showDagUsage = structuredDags.some((dag) =>
+    Boolean(
+      dag.isGovernmentOwned || dag.isRoad || dag.isWetland || dag.isForest ||
+      dag.isReligiousType || dag.remarks?.trim()
+    ),
+  );
+
   return (
     <section
       className="dlrms-official-record mt-4 space-y-4 bg-white text-[14px] leading-6 text-black print:break-before-page"
@@ -117,18 +130,18 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
               <thead>
                 <tr>
                   <th className="border border-black px-2 py-1.5 text-left font-normal">মালিক</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">পিতা/স্বামী</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">ঠিকানা</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">অংশ</th>
+                  {showOwnerFather ? <th className="border border-black px-2 py-1.5 text-left font-normal">পিতা/স্বামী</th> : null}
+                  {showOwnerAddress ? <th className="border border-black px-2 py-1.5 text-left font-normal">ঠিকানা</th> : null}
+                  {showOwnerShare ? <th className="border border-black px-2 py-1.5 text-left font-normal">অংশ</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {structuredOwners.map((owner, index) => (
                   <tr key={`${owner.name}-${index}`}>
                     <td className="border border-black px-2 py-1.5">{owner.name}</td>
-                    <td className="border border-black px-2 py-1.5">{owner.fatherOrHusband || "—"}</td>
-                    <td className="border border-black px-2 py-1.5">{owner.address || "—"}</td>
-                    <td className="border border-black px-2 py-1.5">{owner.shareRaw || "—"}</td>
+                    {showOwnerFather ? <td className="border border-black px-2 py-1.5">{owner.fatherOrHusband || "—"}</td> : null}
+                    {showOwnerAddress ? <td className="border border-black px-2 py-1.5">{owner.address || "—"}</td> : null}
+                    {showOwnerShare ? <td className="border border-black px-2 py-1.5">{owner.shareRaw || "—"}</td> : null}
                   </tr>
                 ))}
               </tbody>
@@ -144,10 +157,10 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
               <thead>
                 <tr>
                   <th className="border border-black px-2 py-1.5 text-left font-normal">দাগ</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">শ্রেণী</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">মোট আয়তন (একর)</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">খতিয়ান অংশ (একর)</th>
-                  <th className="border border-black px-2 py-1.5 text-left font-normal">ব্যবহার / মন্তব্য</th>
+                  {showDagClass ? <th className="border border-black px-2 py-1.5 text-left font-normal">শ্রেণী</th> : null}
+                  {showDagTotalArea ? <th className="border border-black px-2 py-1.5 text-left font-normal">মোট আয়তন (একর)</th> : null}
+                  {showDagKhatianArea ? <th className="border border-black px-2 py-1.5 text-left font-normal">খতিয়ান অংশ (একর)</th> : null}
+                  {showDagUsage ? <th className="border border-black px-2 py-1.5 text-left font-normal">ব্যবহার / মন্তব্য</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -163,10 +176,10 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
                   return (
                     <tr key={`${dag.dagNo}-${index}`}>
                       <td className="border border-black px-2 py-1.5">{dag.dagNo}</td>
-                      <td className="border border-black px-2 py-1.5">{dag.landType || dag.agriculturalType || "—"}</td>
-                      <td className="border border-black px-2 py-1.5">{dag.totalAreaRaw ? dlrmsAreaLabel(dag.totalAreaRaw) : "—"}</td>
-                      <td className="border border-black px-2 py-1.5">{dag.khatianAreaRaw ? dlrmsAreaLabel(dag.khatianAreaRaw) : "—"}</td>
-                      <td className="border border-black px-2 py-1.5">{flags || dag.remarks || "—"}</td>
+                      {showDagClass ? <td className="border border-black px-2 py-1.5">{dag.landType || dag.agriculturalType || "—"}</td> : null}
+                      {showDagTotalArea ? <td className="border border-black px-2 py-1.5">{dag.totalAreaRaw ? dlrmsAreaLabel(dag.totalAreaRaw) : "—"}</td> : null}
+                      {showDagKhatianArea ? <td className="border border-black px-2 py-1.5">{dag.khatianAreaRaw ? dlrmsAreaLabel(dag.khatianAreaRaw) : "—"}</td> : null}
+                      {showDagUsage ? <td className="border border-black px-2 py-1.5">{flags || dag.remarks || "—"}</td> : null}
                     </tr>
                   );
                 })}
