@@ -32,7 +32,7 @@ export type LandBdPdfContentBox = {
 
 export function getLandBdA4ContentBox(
   orientation: LandBdPdfOrientation,
-  sideMarginMm = LANDBD_PDF.sideMarginMm,
+  sideMarginMm: number = LANDBD_PDF.sideMarginMm,
 ): LandBdPdfContentBox {
   const page =
     orientation === "landscape"
