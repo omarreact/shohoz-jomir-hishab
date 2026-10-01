@@ -60,6 +60,15 @@ function DagHistoryCell({ history }: { history: MouzaReportRowSegment["history"]
   );
 }
 
+function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className={compact ? "report-logo-shell is-compact" : "report-logo-shell"}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/landbd-symbol-2026.svg" alt="" aria-hidden="true" />
+    </span>
+  );
+}
+
 function CompactHeader({
   mouzaName,
   jlNumber,
@@ -72,23 +81,40 @@ function CompactHeader({
   reportId: string;
 }) {
   return (
-    <div className="report-repeat-header">
-      <div>
-        <strong>LandBD — মৌজা পর্চা রিপোর্ট</strong>
-        <span>{mouzaName} · JL {jlNumber} · {surveyName}</span>
+    <header className="report-repeat-header">
+      <div className="report-repeat-brand">
+        <BrandMark compact />
+        <div>
+          <div className="report-repeat-title">
+            <strong>LandBD</strong>
+            <span>মৌজা পর্চা রিপোর্ট</span>
+          </div>
+          <small>{mouzaName} · JL {jlNumber} · {surveyName}</small>
+        </div>
       </div>
-      <span className="report-repeat-id">{reportId}</span>
-    </div>
+      <div className="report-repeat-meta">
+        <span>তথ্যভিত্তিক ভূমি প্রতিবেদন</span>
+        <b className="report-repeat-id">{reportId}</b>
+      </div>
+    </header>
   );
 }
 
 function LegalDisclaimer() {
   return (
     <aside className="report-legal-disclaimer">
-      <strong>LandBD তথ্যভিত্তিক প্রতিবেদন</strong>
-      <p>এটি সরকারি প্রত্যয়িত পর্চা, খতিয়ান বা মালিকানা সনদ নয়। শুধুমাত্র তথ্যসূত্র হিসেবে ব্যবহার করুন।</p>
-      <p>আইনি, নিবন্ধন, নামজারি, আদালত বা অন্য কোনো দাপ্তরিক কাজে ব্যবহারের আগে সংশ্লিষ্ট সরকারি রেকর্ড ও প্রত্যয়িত কপির সাথে তথ্য যাচাই করা আবশ্যক।</p>
-      <p lang="en">LandBD is not responsible for any legal use of this document without verification against the relevant official government record.</p>
+      <div className="report-disclaimer-badge">গুরুত্বপূর্ণ</div>
+      <div>
+        <strong>এটি সরকারি প্রত্যয়িত পর্চা, খতিয়ান বা মালিকানা সনদ নয়।</strong>
+        <p>
+          LandBD এই তথ্যগুলোকে অনুসন্ধান, তুলনা ও রেফারেন্সের সুবিধার জন্য সাজায়। আইনি, নিবন্ধন,
+          নামজারি, আদালত বা অন্য কোনো দাপ্তরিক কাজে ব্যবহারের আগে সংশ্লিষ্ট সরকারি রেকর্ড ও
+          প্রত্যয়িত কপির সাথে তথ্য যাচাই করা আবশ্যক।
+        </p>
+        <p lang="en">
+          Informational report only. Verify against the relevant official government record before legal or official use.
+        </p>
+      </div>
     </aside>
   );
 }
@@ -201,22 +227,37 @@ export default function MouzaPorchaDocument({
           return (
             <article className="report-page" key={`page-${pageIndex + 1}`}>
               <div className="report-watermark" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand/landbd-symbol-2026.svg" alt="" />
                 <span>LandBD</span>
-                <small>তথ্যভিত্তিক প্রতিবেদন</small>
+                <small>তথ্যভিত্তিক ভূমি প্রতিবেদন</small>
+              </div>
+
+              <div className="report-top-accent" aria-hidden="true">
+                <i /><i /><i />
               </div>
 
               {firstPage ? (
                 <>
                   <header className="report-document-header">
                     <div className="report-brand-lockup">
-                      <div className="report-brand-mark" aria-label="LandBD logo">LB</div>
-                      <div>
-                        <div className="report-brand-name">LandBD</div>
+                      <BrandMark />
+                      <div className="report-brand-copy">
+                        <div className="report-brand-row">
+                          <strong>LandBD</strong>
+                          <span>RECORD INTELLIGENCE</span>
+                        </div>
+                        <div className="report-brand-tagline">ভূমি তথ্য · হিসাব · মানচিত্র · ডকুমেন্ট</div>
                         <h1>মৌজা-ভিত্তিক পর্চা / খতিয়ান প্রতিবেদন</h1>
-                        <p>{mouzaName} মৌজা · {surveyName}</p>
+                        <p>{mouzaName} মৌজা · {surveyName} · JL {jlNumber || "—"}</p>
                       </div>
                     </div>
+
                     <div className="report-header-right">
+                      <div className={reportMeta?.verificationRegistered ? "report-verification-chip is-verified" : "report-verification-chip"}>
+                        <span className="report-verification-dot" />
+                        {reportMeta?.verificationRegistered ? "QR যাচাই সক্রিয়" : "লোকাল রিপোর্ট আইডি"}
+                      </div>
                       {reportMeta?.verificationRegistered ? (
                         <div className="report-qr-box">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -224,7 +265,7 @@ export default function MouzaPorchaDocument({
                             src={`/api/reports/mouza-porcha/qr?id=${encodeURIComponent(reportId)}`}
                             alt="LandBD রিপোর্ট যাচাই QR"
                           />
-                          <span>QR স্ক্যান করে যাচাই করুন</span>
+                          <span>স্ক্যান করে রিপোর্ট যাচাই করুন</span>
                         </div>
                       ) : (
                         <div className="report-qr-unavailable">QR verification<br />unavailable</div>
@@ -232,27 +273,35 @@ export default function MouzaPorchaDocument({
                     </div>
                   </header>
 
+                  <div className="report-document-strip">
+                    <span>LANDBD / LAND RECORD REPORT</span>
+                    <span>A4 LANDSCAPE</span>
+                    <span>সূত্রনির্ভর · অনুমানবিহীন</span>
+                    <span>Report ID: <b className="report-latin-id">{reportId}</b></span>
+                  </div>
+
                   <div className="report-meta-grid">
                     <div><span>জেলা</span><strong>{districtName || "—"}</strong></div>
-                    <div><span>উপজেলা</span><strong>{upazilaName || "—"}</strong></div>
+                    <div><span>উপজেলা / রাজস্ব সার্কেল</span><strong>{upazilaName || "—"}</strong></div>
                     <div><span>সার্ভে</span><strong>{surveyName || "—"}</strong></div>
                     <div><span>মৌজা</span><strong>{mouzaName || "—"}</strong></div>
                     <div><span>JL নং</span><strong>{jlNumber || "—"}</strong></div>
                     <div><span>মোট খতিয়ান</span><strong>{completeCount}</strong></div>
-                    <div><span>Report ID</span><strong className="report-latin-id">{reportId}</strong></div>
                     <div><span>তৈরির সময়</span><strong>{generatedLabel}</strong></div>
+                    <div><span>রিপোর্ট অবস্থা</span><strong>{reportMeta?.verificationRegistered ? "যাচাইযোগ্য" : "তথ্যভিত্তিক"}</strong></div>
                   </div>
 
                   <LegalDisclaimer />
 
                   <section className={`report-completeness ${isCountComplete ? "is-complete" : "is-warning"}`}>
                     <div className="report-completeness-main">
+                      <span className="report-status-kicker">COLLECTION STATUS</span>
                       <strong>ডেটা সংগ্রহের অবস্থা</strong>
-                      <span>সফলভাবে সংগৃহীত: <b>{completeCount} / {targetCount}</b> | কিছু খতিয়ান নম্বর অনুপস্থিত থাকতে পারে</span>
+                      <span>সফলভাবে সংগৃহীত <b>{completeCount} / {targetCount}</b> খতিয়ান</span>
                     </div>
                     <div className="report-completeness-details">
                       {includeHalSabek ? (
-                        <span>হাল/সাবেক mapping পাওয়া গেছে: <b>{mappedKhatianCount} / {completeCount}</b>{unavailableMappingCount ? ` · ${unavailableMappingCount}টিতে mapping প্রকাশিত/পাওয়া যায়নি` : ""}</span>
+                        <span>হাল/সাবেক mapping: <b>{mappedKhatianCount} / {completeCount}</b>{unavailableMappingCount ? ` · ${unavailableMappingCount}টিতে mapping প্রকাশিত/পাওয়া যায়নি` : ""}</span>
                       ) : (
                         <span>হাল/সাবেক mapping এই রিপোর্টে অন্তর্ভুক্ত করা হয়নি।</span>
                       )}
@@ -265,7 +314,7 @@ export default function MouzaPorchaDocument({
                         <span>সংখ্যাগত ধারায় দৃশ্যমান ফাঁক শনাক্ত হয়নি; ভগ্নাংশ/বিশেষ খতিয়ান নম্বর আলাদাভাবে গণ্য।</span>
                       )}
                       {includeHalSabek && !showHistory ? (
-                        <span className="report-history-note">কোনো ব্যবহারযোগ্য হাল/সাবেক mapping না থাকায় দাগ পরিবর্তন কলামটি লুকানো হয়েছে।</span>
+                        <span className="report-history-note">ব্যবহারযোগ্য হাল/সাবেক mapping না থাকায় দাগ পরিবর্তন কলামটি লুকানো হয়েছে।</span>
                       ) : null}
                     </div>
                   </section>
@@ -284,13 +333,23 @@ export default function MouzaPorchaDocument({
               </div>
 
               <footer className="report-page-footer">
-                <div className="report-footer-top">
-                  <span className="report-latin-id">{reportId}</span>
+                <div className="report-footer-brand">
+                  <BrandMark compact />
+                  <div>
+                    <strong>LandBD</strong>
+                    <span>landbd.pincodeit.com</span>
+                  </div>
+                </div>
+                <div className="report-footer-center">
                   <strong>Page {pageIndex + 1} of {pages.length}</strong>
-                  <span>{generatedLabel}</span>
+                  <span className="report-latin-id">{reportId}</span>
+                </div>
+                <div className="report-footer-source">
+                  <strong>Source / provenance</strong>
+                  <span>DLRMS / LandBD record workspace · {generatedLabel}</span>
                 </div>
                 <div className="report-footer-disclaimer">
-                  এটি সরকারি প্রত্যয়িত পর্চা নয় — LandBD তথ্যভিত্তিক প্রতিবেদন। সরকারি রেকর্ডের সাথে যাচাই করুন।
+                  সরকারি বা আইনি ব্যবহারের আগে সংশ্লিষ্ট সরকারি মূল নথি ও প্রত্যয়িত কপির সাথে তথ্য যাচাই করুন।
                 </div>
               </footer>
             </article>
@@ -316,66 +375,96 @@ export default function MouzaPorchaDocument({
         }
 
         .report-page {
+          --report-primary: #0b5d3b;
+          --report-field: #18a363;
+          --report-teal: #0c7f7a;
+          --report-alert: #c83a3a;
+          --report-gold: #d6a124;
+          --report-ink: #12221a;
+          --report-muted: #607068;
+          --report-border: #dde7e1;
+          --report-canvas: #f5f8f6;
+          --report-mist: #e7efea;
           position: relative;
           box-sizing: border-box;
           width: 297mm;
           min-height: 210mm;
           overflow: hidden;
-          padding: 8mm 8mm 17mm;
+          padding: 7mm 8mm 19mm;
           background: #fff;
-          color: #172033;
-          border: 1px solid #d8dee8;
-          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-          font-size: 8.2pt;
-          line-height: 1.42;
+          color: var(--report-ink);
+          border: 1px solid var(--report-border);
+          box-shadow: 0 10px 30px rgba(11, 45, 30, 0.08);
+          font-size: 8pt;
+          line-height: 1.38;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
         }
 
-        .report-page > :not(.report-watermark) {
+        .report-page > :not(.report-watermark):not(.report-top-accent) {
           position: relative;
-          z-index: 1;
+          z-index: 2;
         }
+
+        .report-top-accent {
+          position: absolute;
+          inset: 0 0 auto;
+          z-index: 3;
+          display: grid;
+          grid-template-columns: 66% 22% 12%;
+          height: 1.15mm;
+        }
+        .report-top-accent i:nth-child(1) { background: var(--report-primary); }
+        .report-top-accent i:nth-child(2) { background: var(--report-teal); }
+        .report-top-accent i:nth-child(3) { background: var(--report-alert); }
 
         .report-watermark {
           position: absolute;
           z-index: 0;
-          top: 50%;
+          top: 54%;
           left: 50%;
           display: flex;
-          width: 72%;
-          transform: translate(-50%, -50%) rotate(-31deg);
-          transform-origin: center;
+          transform: translate(-50%, -50%) rotate(-25deg);
           flex-direction: column;
           align-items: center;
           justify-content: center;
           pointer-events: none;
           user-select: none;
-          color: rgba(0, 106, 78, 0.055);
+          color: rgba(11, 93, 59, 0.045);
           text-align: center;
           white-space: nowrap;
         }
 
+        .report-watermark img {
+          width: 38mm;
+          height: 38mm;
+          opacity: 0.055;
+          filter: grayscale(1);
+        }
+
         .report-watermark span {
+          margin-top: 1mm;
           font-family: var(--font-inter), Inter, Arial, sans-serif !important;
-          font-size: 58pt;
-          font-weight: 800;
-          letter-spacing: 0.08em;
+          font-size: 42pt;
+          font-weight: 850;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
         }
 
         .report-watermark small {
-          margin-top: 1mm;
-          font-size: 15pt;
-          font-weight: 700;
-          letter-spacing: 0.04em;
+          margin-top: 0.5mm;
+          font-size: 11pt;
+          font-weight: 750;
+          letter-spacing: 0.03em;
         }
 
         .report-document-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 10mm;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: start;
+          gap: 8mm;
           padding-bottom: 3mm;
-          border-bottom: 1.5pt solid #006a4e;
+          border-bottom: 0.45mm solid var(--report-primary);
         }
 
         .report-brand-lockup {
@@ -385,178 +474,301 @@ export default function MouzaPorchaDocument({
           gap: 4mm;
         }
 
-        .report-brand-mark {
-          display: flex;
-          width: 15mm;
-          height: 15mm;
-          flex: 0 0 15mm;
+        .report-logo-shell {
+          display: inline-flex;
+          width: 17mm;
+          height: 17mm;
+          flex: 0 0 17mm;
           align-items: center;
           justify-content: center;
-          border-radius: 4mm;
-          background: #006a4e;
-          color: #fff;
-          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
-          font-size: 16pt;
-          font-weight: 800;
-          letter-spacing: -0.5pt;
-          box-shadow: inset 0 -2mm 0 #f5b400;
+          overflow: hidden;
+          border: 0.3mm solid var(--report-border);
+          border-radius: 4.2mm;
+          background: var(--report-canvas);
         }
 
-        .report-brand-name,
-        .report-latin-id,
-        .report-repeat-id,
-        .report-footer-top strong,
-        .report-qr-unavailable,
-        .report-legal-disclaimer p[lang="en"] {
-          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+        .report-logo-shell img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
 
-        .report-brand-name {
-          color: #006a4e;
-          font-size: 9pt;
+        .report-logo-shell.is-compact {
+          width: 8.5mm;
+          height: 8.5mm;
+          flex-basis: 8.5mm;
+          border-radius: 2.2mm;
+        }
+
+        .report-brand-copy {
+          min-width: 0;
+        }
+
+        .report-brand-row {
+          display: flex;
+          align-items: center;
+          gap: 2.2mm;
+        }
+
+        .report-brand-row strong {
+          color: var(--report-primary);
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 12pt;
+          font-weight: 850;
+          letter-spacing: -0.2pt;
+        }
+
+        .report-brand-row span {
+          padding: 0.65mm 1.4mm;
+          border: 0.25mm solid rgba(12, 127, 122, 0.22);
+          border-radius: 1.5mm;
+          background: rgba(12, 127, 122, 0.07);
+          color: var(--report-teal);
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 5.1pt;
           font-weight: 800;
-          letter-spacing: 0.7pt;
-          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .report-brand-tagline {
+          margin-top: 0.25mm;
+          color: var(--report-muted);
+          font-size: 6.1pt;
+          font-weight: 650;
         }
 
         .report-document-header h1 {
-          margin: 0.7mm 0 0;
-          color: #0f172a;
-          font-size: 17pt;
-          font-weight: 700;
-          line-height: 1.25;
+          margin: 1.25mm 0 0;
+          color: var(--report-ink);
+          font-size: 15.8pt;
+          font-weight: 800;
+          line-height: 1.16;
         }
 
         .report-document-header p {
-          margin: 1mm 0 0;
-          color: #64748b;
-          font-size: 8pt;
-          font-weight: 600;
+          margin: 0.8mm 0 0;
+          color: var(--report-muted);
+          font-size: 7.5pt;
+          font-weight: 650;
         }
 
         .report-header-right {
-          flex: 0 0 auto;
+          display: flex;
+          align-items: flex-start;
+          gap: 3mm;
+        }
+
+        .report-verification-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 1.1mm;
+          margin-top: 0.5mm;
+          padding: 1mm 1.6mm;
+          border: 0.25mm solid var(--report-border);
+          border-radius: 2mm;
+          background: var(--report-canvas);
+          color: var(--report-muted);
+          font-size: 5.3pt;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+
+        .report-verification-chip.is-verified {
+          border-color: rgba(24, 163, 99, 0.24);
+          background: rgba(24, 163, 99, 0.08);
+          color: var(--report-primary);
+        }
+
+        .report-verification-dot {
+          width: 1.7mm;
+          height: 1.7mm;
+          border-radius: 50%;
+          background: #a6b2ac;
+        }
+
+        .report-verification-chip.is-verified .report-verification-dot {
+          background: var(--report-field);
         }
 
         .report-qr-box {
-          width: 28mm;
+          width: 25mm;
+          padding: 1.4mm 1.3mm 1mm;
+          border: 0.25mm solid var(--report-border);
+          border-radius: 2.2mm;
+          background: #fff;
           text-align: center;
-          color: #64748b;
-          font-size: 5.8pt;
+          color: var(--report-muted);
+          font-size: 5.2pt;
           line-height: 1.25;
         }
 
         .report-qr-box img {
           display: block;
-          width: 22mm;
-          height: 22mm;
+          width: 18.5mm;
+          height: 18.5mm;
           margin: 0 auto 0.7mm;
           object-fit: contain;
         }
 
         .report-qr-unavailable {
           width: 25mm;
-          padding: 3mm 1mm;
-          border: 0.6pt dashed #cbd5e1;
-          color: #94a3b8;
-          font-size: 6pt;
+          padding: 4mm 1mm;
+          border: 0.3mm dashed var(--report-border);
+          border-radius: 2mm;
+          color: #8a9891;
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 5.6pt;
           line-height: 1.35;
           text-align: center;
+        }
+
+        .report-document-strip {
+          display: grid;
+          grid-template-columns: auto auto auto minmax(0, 1fr);
+          align-items: center;
+          gap: 3mm;
+          margin: 2.1mm 0 2.4mm;
+          padding: 1.25mm 2mm;
+          border-radius: 1.6mm;
+          background: var(--report-canvas);
+          color: var(--report-muted);
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 5.3pt;
+          font-weight: 700;
+        }
+
+        .report-document-strip > :last-child {
+          justify-self: end;
         }
 
         .report-meta-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.5pt;
-          margin: 3mm 0;
-          border: 0.6pt solid #cbd5e1;
-          background: #cbd5e1;
+          gap: 0.3mm;
+          margin: 0 0 2.4mm;
+          padding: 0.3mm;
+          border: 0.25mm solid var(--report-border);
+          border-radius: 2mm;
+          background: var(--report-border);
+          overflow: hidden;
         }
 
         .report-meta-grid > div {
           min-width: 0;
-          padding: 1.8mm 2.4mm;
-          background: rgba(255, 255, 255, 0.92);
+          padding: 1.55mm 2.1mm;
+          background: rgba(255, 255, 255, 0.98);
         }
 
         .report-meta-grid span {
           display: block;
-          margin-bottom: 0.5mm;
-          color: #64748b;
-          font-size: 6.3pt;
-          font-weight: 600;
+          margin-bottom: 0.35mm;
+          color: var(--report-muted);
+          font-size: 5.8pt;
+          font-weight: 650;
         }
 
         .report-meta-grid strong {
           display: block;
           overflow-wrap: break-word;
-          color: #0f172a;
-          font-size: 7.4pt;
-          font-weight: 700;
+          color: var(--report-ink);
+          font-size: 7.1pt;
+          font-weight: 750;
         }
 
-        .report-latin-id {
-          letter-spacing: 0.15pt;
+        .report-latin-id,
+        .report-repeat-id,
+        .report-footer-center strong,
+        .report-footer-brand strong,
+        .report-footer-brand span,
+        .report-footer-source strong,
+        .report-legal-disclaimer p[lang="en"] {
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
         }
 
         .report-legal-disclaimer {
-          margin: 3mm 0;
-          padding: 2.5mm 3mm;
-          border: 1.2pt solid #b91c1c;
-          border-radius: 1.5mm;
-          background: rgba(255, 241, 242, 0.94);
-          color: #7f1d1d;
-          line-height: 1.45;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 2.5mm;
+          margin: 2.4mm 0;
+          padding: 2mm 2.5mm;
+          border: 0.3mm solid rgba(200, 58, 58, 0.32);
+          border-left: 1.1mm solid var(--report-alert);
+          border-radius: 1.8mm;
+          background: rgba(200, 58, 58, 0.045);
+          color: #6e2929;
+          line-height: 1.36;
+        }
+
+        .report-disclaimer-badge {
+          align-self: start;
+          padding: 0.8mm 1.3mm;
+          border-radius: 1.2mm;
+          background: var(--report-alert);
+          color: #fff;
+          font-size: 5.4pt;
+          font-weight: 800;
+          white-space: nowrap;
         }
 
         .report-legal-disclaimer strong {
           display: block;
-          margin-bottom: 0.7mm;
-          font-size: 8.2pt;
+          color: #6a2828;
+          font-size: 7.1pt;
         }
 
         .report-legal-disclaimer p {
-          margin: 0.4mm 0;
-          font-size: 6.7pt;
+          margin: 0.35mm 0 0;
+          font-size: 5.9pt;
         }
 
         .report-legal-disclaimer p[lang="en"] {
-          font-size: 6.2pt;
+          color: #815050;
+          font-size: 5.25pt;
         }
 
         .report-completeness {
           display: grid;
-          grid-template-columns: 0.85fr 1.5fr;
+          grid-template-columns: 0.7fr 1.6fr;
           gap: 3mm;
-          margin-bottom: 3mm;
-          padding: 2.4mm 3mm;
-          border: 0.6pt solid #bbd7c9;
-          border-left: 2.2pt solid #006a4e;
-          background: rgba(242, 251, 247, 0.94);
+          margin-bottom: 2.5mm;
+          padding: 2mm 2.5mm;
+          border: 0.25mm solid rgba(24, 163, 99, 0.25);
+          border-left: 1.1mm solid var(--report-field);
+          border-radius: 1.8mm;
+          background: rgba(24, 163, 99, 0.045);
           color: #173b2c;
-          font-size: 6.6pt;
+          font-size: 5.95pt;
         }
 
         .report-completeness.is-warning {
-          border-color: #f5d58b;
-          border-left-color: #b7791f;
-          background: rgba(255, 250, 240, 0.95);
-          color: #6b4612;
+          border-color: rgba(214, 161, 36, 0.35);
+          border-left-color: var(--report-gold);
+          background: rgba(214, 161, 36, 0.06);
+          color: #624a13;
         }
 
         .report-completeness-main,
         .report-completeness-details {
           display: flex;
           flex-direction: column;
-          gap: 0.7mm;
+          gap: 0.55mm;
+        }
+
+        .report-status-kicker {
+          color: var(--report-teal);
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 4.8pt;
+          font-weight: 850;
+          letter-spacing: 0.08em;
         }
 
         .report-completeness-main strong {
-          font-size: 7.3pt;
+          font-size: 7.2pt;
         }
 
         .report-history-note {
-          color: #475569;
+          color: var(--report-muted);
           font-style: italic;
         }
 
@@ -565,46 +777,76 @@ export default function MouzaPorchaDocument({
           align-items: center;
           justify-content: space-between;
           gap: 6mm;
-          margin-bottom: 3mm;
+          margin-bottom: 2.7mm;
           padding-bottom: 2mm;
-          border-bottom: 1.2pt solid #006a4e;
+          border-bottom: 0.4mm solid var(--report-primary);
         }
 
-        .report-repeat-header > div {
+        .report-repeat-brand {
+          display: flex;
           min-width: 0;
+          align-items: center;
+          gap: 2.5mm;
         }
 
-        .report-repeat-header strong {
+        .report-repeat-title {
+          display: flex;
+          align-items: baseline;
+          gap: 2mm;
+        }
+
+        .report-repeat-title strong {
+          color: var(--report-primary);
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-size: 8.3pt;
+          font-weight: 850;
+        }
+
+        .report-repeat-title span {
+          color: var(--report-ink);
+          font-size: 7.6pt;
+          font-weight: 750;
+        }
+
+        .report-repeat-brand small {
           display: block;
-          color: #0f172a;
-          font-size: 9pt;
+          margin-top: 0.25mm;
+          color: var(--report-muted);
+          font-size: 5.6pt;
+          font-weight: 650;
         }
 
-        .report-repeat-header span {
+        .report-repeat-meta {
+          text-align: right;
+        }
+
+        .report-repeat-meta > span {
           display: block;
-          margin-top: 0.5mm;
-          color: #64748b;
-          font-size: 6.5pt;
+          color: var(--report-teal);
+          font-size: 5pt;
+          font-weight: 750;
         }
 
-        .report-repeat-header .report-repeat-id {
-          flex: 0 0 auto;
-          color: #334155;
-          font-size: 6.4pt;
-          font-weight: 700;
+        .report-repeat-id {
+          display: block;
+          margin-top: 0.4mm;
+          color: var(--report-muted);
+          font-size: 5.5pt;
+          font-weight: 750;
         }
 
         .report-table-wrapper {
           width: 100%;
           overflow: visible;
+          border-radius: 1.8mm;
         }
 
         .report-table {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 7.1pt;
-          line-height: 1.38;
+          font-size: 6.85pt;
+          line-height: 1.32;
         }
 
         .report-table thead {
@@ -612,29 +854,39 @@ export default function MouzaPorchaDocument({
         }
 
         .report-table th {
-          padding: 1.5mm 1.4mm;
-          border: 1px solid #b9c5d3;
-          background: #006a4e;
+          padding: 1.35mm 1.25mm;
+          border: 0.25mm solid #0a5135;
+          background: var(--report-primary);
           color: #fff;
-          font-weight: 700;
+          font-weight: 750;
           text-align: left;
           vertical-align: middle;
         }
 
+        .report-table th:first-child {
+          border-left-color: var(--report-teal);
+          box-shadow: inset 1.2mm 0 0 var(--report-teal);
+          padding-left: 2mm;
+        }
+
         .report-table td {
-          padding: 1.35mm 1.4mm;
-          border: 1px solid #cbd5e1;
-          color: #1e293b;
+          padding: 1.1mm 1.25mm;
+          border: 0.22mm solid var(--report-border);
+          color: #20342a;
           text-align: left;
           vertical-align: top;
           white-space: normal;
           word-break: normal;
           overflow-wrap: anywhere;
-          background: rgba(255, 255, 255, 0.82);
+          background: rgba(255, 255, 255, 0.96);
         }
 
         .report-table tbody tr:nth-child(even) td {
-          background: rgba(248, 250, 252, 0.86);
+          background: rgba(245, 248, 246, 0.92);
+        }
+
+        .report-table tbody tr:nth-child(5n) td:first-child {
+          border-left: 0.6mm solid rgba(12, 127, 122, 0.45);
         }
 
         .report-table tr {
@@ -643,10 +895,7 @@ export default function MouzaPorchaDocument({
         }
 
         .report-cell-list,
-        .report-history-list {
-          display: inline;
-        }
-
+        .report-history-list,
         .report-cell-item,
         .report-history-item {
           display: inline;
@@ -655,11 +904,11 @@ export default function MouzaPorchaDocument({
         .report-cell-item:not(:last-child)::after,
         .report-history-item:not(:last-child)::after {
           content: ", ";
-          color: #94a3b8;
+          color: #829188;
         }
 
         .report-empty {
-          color: #94a3b8;
+          color: #8a9891;
         }
 
         .report-khatian-number,
@@ -669,16 +918,18 @@ export default function MouzaPorchaDocument({
         }
 
         .report-khatian-number {
-          color: #0f172a !important;
-          font-weight: 700;
+          color: var(--report-primary) !important;
+          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+          font-weight: 800;
         }
 
         .report-land-area {
-          font-weight: 700;
+          color: #263f33;
+          font-weight: 750;
         }
 
         .report-history-label {
-          color: #475569;
+          color: var(--report-muted);
           font-size: 0.92em;
           font-weight: 700;
         }
@@ -686,55 +937,95 @@ export default function MouzaPorchaDocument({
         .report-history-arrow {
           display: inline-block;
           margin: 0 0.65mm;
-          color: #006a4e;
+          color: var(--report-teal);
           font-family: var(--font-inter), Inter, Arial, sans-serif !important;
-          font-weight: 700;
+          font-weight: 800;
         }
 
         .report-page-footer {
           position: absolute !important;
-          z-index: 2 !important;
+          z-index: 3 !important;
           right: 8mm;
-          bottom: 5mm;
+          bottom: 4mm;
           left: 8mm;
-          color: #64748b;
-          font-size: 5.8pt;
-          line-height: 1.35;
-        }
-
-        .report-footer-top {
           display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          align-items: center;
-          gap: 3mm;
-          padding-top: 1.2mm;
-          border-top: 1px solid #cbd5e1;
+          grid-template-columns: 1fr auto 1.4fr;
+          align-items: end;
+          gap: 4mm;
+          padding-top: 1.5mm;
+          border-top: 0.25mm solid var(--report-border);
+          color: var(--report-muted);
+          font-size: 5.15pt;
+          line-height: 1.3;
+          background: #fff;
         }
 
-        .report-footer-top > :last-child {
+        .report-footer-brand {
+          display: flex;
+          align-items: center;
+          gap: 1.8mm;
+        }
+
+        .report-footer-brand strong {
+          display: block;
+          color: var(--report-primary);
+          font-size: 6.1pt;
+          font-weight: 850;
+        }
+
+        .report-footer-brand span {
+          display: block;
+          color: var(--report-muted);
+          font-size: 4.8pt;
+          font-weight: 650;
+        }
+
+        .report-footer-center {
+          text-align: center;
+        }
+
+        .report-footer-center strong {
+          display: block;
+          color: var(--report-ink);
+          font-size: 5.7pt;
+        }
+
+        .report-footer-center span {
+          display: block;
+          margin-top: 0.2mm;
+          font-size: 4.7pt;
+        }
+
+        .report-footer-source {
           text-align: right;
         }
 
-        .report-footer-top strong {
-          color: #334155;
-          font-size: 6pt;
+        .report-footer-source strong {
+          display: block;
+          color: var(--report-teal);
+          font-size: 4.8pt;
+          font-weight: 800;
+        }
+
+        .report-footer-source span {
+          display: block;
+          margin-top: 0.2mm;
+          font-size: 4.7pt;
         }
 
         .report-footer-disclaimer {
-          margin-top: 0.8mm;
+          grid-column: 1 / -1;
+          padding-top: 0.7mm;
+          border-top: 0.18mm solid #eef3f0;
+          color: #7a4c4c;
+          font-size: 4.75pt;
+          font-weight: 650;
           text-align: center;
-          color: #7f1d1d;
-          font-size: 5.7pt;
-          font-weight: 600;
         }
 
         @media (max-width: 900px) {
-          .report-page-stack {
-            align-items: flex-start;
-          }
-          .report-page {
-            transform-origin: top left;
-          }
+          .report-page-stack { align-items: flex-start; }
+          .report-page { transform-origin: top left; }
         }
 
         @media print {
@@ -750,9 +1041,7 @@ export default function MouzaPorchaDocument({
             background: #fff !important;
           }
 
-          body > * {
-            visibility: hidden !important;
-          }
+          body > * { visibility: hidden !important; }
 
           #mouza-porcha-report,
           #mouza-porcha-report * {
@@ -785,8 +1074,6 @@ export default function MouzaPorchaDocument({
             box-shadow: none !important;
             break-after: page;
             page-break-after: always;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
           }
 
           .report-page:last-child {
@@ -794,9 +1081,7 @@ export default function MouzaPorchaDocument({
             page-break-after: auto;
           }
 
-          .report-table-wrapper {
-            overflow: visible !important;
-          }
+          .report-table-wrapper { overflow: visible !important; }
 
           nav,
           .report-controls,
@@ -808,165 +1093,20 @@ export default function MouzaPorchaDocument({
 
         @media print and (orientation: landscape) {
           .report-page {
-            padding: 7mm 8mm 16mm !important;
+            padding: 7mm 8mm 19mm !important;
           }
 
           .report-table {
-            font-size: 7pt !important;
-            line-height: 1.34 !important;
-          }
-
-          .report-table th {
-            padding: 1.35mm 1.3mm !important;
-          }
-
-          .report-table td {
-            padding: 1.15mm 1.3mm !important;
-          }
-        }
-
-        @media print and (orientation: portrait) {
-          .report-page {
-            padding: 7mm 6.5mm 16mm !important;
-          }
-
-          .report-document-header {
-            gap: 5mm !important;
-            padding-bottom: 2mm !important;
-          }
-
-          .report-brand-mark {
-            width: 12mm !important;
-            height: 12mm !important;
-            flex-basis: 12mm !important;
-            border-radius: 3mm !important;
-            font-size: 12.5pt !important;
-          }
-
-          .report-brand-name {
-            font-size: 7.5pt !important;
-          }
-
-          .report-document-header h1 {
-            margin-top: 0.4mm !important;
-            font-size: 13pt !important;
-          }
-
-          .report-document-header p {
-            margin-top: 0.5mm !important;
             font-size: 6.8pt !important;
-          }
-
-          .report-qr-box {
-            width: 22mm !important;
-            font-size: 5.2pt !important;
-          }
-
-          .report-qr-box img {
-            width: 18mm !important;
-            height: 18mm !important;
-          }
-
-          .report-meta-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            margin: 2mm 0 !important;
-          }
-
-          .report-meta-grid > div {
-            padding: 1.2mm 1.7mm !important;
-          }
-
-          .report-meta-grid span {
-            margin-bottom: 0.25mm !important;
-            font-size: 5.5pt !important;
-          }
-
-          .report-meta-grid strong {
-            font-size: 6.5pt !important;
-          }
-
-          .report-legal-disclaimer {
-            margin: 2mm 0 !important;
-            padding: 1.7mm 2mm !important;
-            line-height: 1.32 !important;
-          }
-
-          .report-legal-disclaimer strong {
-            margin-bottom: 0.35mm !important;
-            font-size: 7.1pt !important;
-          }
-
-          .report-legal-disclaimer p {
-            margin: 0.2mm 0 !important;
-            font-size: 5.8pt !important;
-          }
-
-          .report-legal-disclaimer p[lang="en"] {
-            font-size: 5.3pt !important;
-          }
-
-          .report-completeness {
-            grid-template-columns: 1fr !important;
-            gap: 1mm !important;
-            margin-bottom: 2mm !important;
-            padding: 1.7mm 2mm !important;
-            font-size: 5.7pt !important;
-          }
-
-          .report-completeness-main strong {
-            font-size: 6.4pt !important;
-          }
-
-          .report-repeat-header {
-            gap: 3mm !important;
-            margin-bottom: 2mm !important;
-            padding-bottom: 1.5mm !important;
-          }
-
-          .report-repeat-header strong {
-            font-size: 7.4pt !important;
-          }
-
-          .report-repeat-header span,
-          .report-repeat-header .report-repeat-id {
-            font-size: 5.5pt !important;
-          }
-
-          .report-table {
-            font-size: 6.05pt !important;
-            line-height: 1.28 !important;
+            line-height: 1.3 !important;
           }
 
           .report-table th {
-            padding: 1.05mm 0.8mm !important;
+            padding: 1.25mm 1.2mm !important;
           }
 
           .report-table td {
-            padding: 0.9mm 0.8mm !important;
-          }
-
-          .report-page-footer {
-            right: 6.5mm !important;
-            bottom: 4mm !important;
-            left: 6.5mm !important;
-            font-size: 5.1pt !important;
-          }
-
-          .report-footer-top strong {
-            font-size: 5.2pt !important;
-          }
-
-          .report-footer-disclaimer {
-            margin-top: 0.5mm !important;
-            font-size: 5pt !important;
-          }
-
-          .report-watermark span {
-            font-size: 44pt !important;
-          }
-
-          .report-watermark small {
-            font-size: 11pt !important;
+            padding: 1mm 1.2mm !important;
           }
         }
       `}</style>
