@@ -670,7 +670,7 @@ export default function WarishEditor() {
           </div>
 
           <footer className="sample-footer">
-            <span>LANDBD DEMO TEMPLATE</span>
+            <span>LANDBD · landbd.pincodeit.com</span>
             <strong>NOT AN OFFICIAL GOVERNMENT DOCUMENT</strong>
             <span>FOR DRAFTING / PREVIEW ONLY</span>
           </footer>
