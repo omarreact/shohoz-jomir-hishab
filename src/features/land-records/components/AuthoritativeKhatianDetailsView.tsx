@@ -675,8 +675,8 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
                   ) : null}
                 </div>
 
-                <div className="min-w-[290px] text-center">
-                  <h2 className="text-[31px] font-medium leading-none text-slate-950">
+                <div className="min-w-[180px] text-center">
+                  <h2 className="text-[27px] font-medium leading-none text-slate-950">
                     খতিয়ান নং {toBanglaDigits(khatian.KHATIAN_NO || "—")}
                   </h2>
                 </div>
@@ -694,25 +694,23 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
                     ) : null}
                   </div>
 
-                  {landBdVerification ? (
-                    <a
-                      className="qr-card"
-                      href={landBdVerification.verificationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/reports/mouza-porcha/qr?id=${encodeURIComponent(landBdVerification.reportId)}`}
-                        alt="LandBD verification QR"
-                      />
-                      <span>Verify via LandBD</span>
-                    </a>
-                  ) : (
-                    <div className="flex h-[88px] w-[88px] items-center justify-center rounded-[7px] border border-dashed border-slate-300 bg-slate-50 px-2 text-center text-[10px] leading-4 text-slate-500">
-                      LandBD verification প্রস্তুত হচ্ছে…
-                    </div>
-                  )}
+                  <a
+                    className="qr-card"
+                    href={landBdVerification?.verificationUrl || "/dlrms-khatian"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        landBdVerification
+                          ? `/api/reports/mouza-porcha/qr?id=${encodeURIComponent(landBdVerification.reportId)}`
+                          : "/api/reports/mouza-porcha/qr?target=dlrms-khatian"
+                      }
+                      alt={landBdVerification ? "LandBD verification QR" : "LandBD khatian QR"}
+                    />
+                    <span>{landBdVerification ? "Verify via LandBD" : "Open in LandBD"}</span>
+                  </a>
                 </div>
               </div>
 
