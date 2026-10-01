@@ -9,6 +9,12 @@ import {
   KhatianPageSchema,
 } from "./schemas";
 import { FullKhatianSchema, type FullKhatian } from "./full-khatian";
+import {
+  DlrmsCitizenInvoiceSchema,
+  DlrmsCitizenPrintSchema,
+  type DlrmsCitizenInvoice,
+  type DlrmsCitizenPrint,
+} from "./dlrms-citizen";
 import type {
   Division,
   District,
@@ -63,6 +69,22 @@ async function get<T>(
 ): Promise<T> {
   try {
     const response = await client.get(path, { params });
+    return schema.parse(response.data);
+  } catch (error) {
+    throw new Error(apiErrorMessage(error));
+  }
+}
+
+async function post<T>(
+  path: string,
+  schema: { parse(value: unknown): T },
+  body: Record<string, unknown>,
+): Promise<T> {
+  try {
+    const response = await client.post(path, body, {
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      withCredentials: true,
+    });
     return schema.parse(response.data);
   } catch (error) {
     throw new Error(apiErrorMessage(error));
@@ -138,5 +160,17 @@ export const landRecordsApi = {
     get<FullKhatian>(
       `/full-khatian/verify/${encodeURIComponent(uuid)}`,
       FullKhatianSchema,
+    ),
+  citizenInvoice: (token: string, invoiceOrOrderId: string) =>
+    post<DlrmsCitizenInvoice>(
+      "/dlrms-citizen/invoice",
+      DlrmsCitizenInvoiceSchema,
+      { token, invoiceOrOrderId },
+    ),
+  citizenPrintKhatian: (token: string, applicationId: number) =>
+    post<DlrmsCitizenPrint>(
+      "/dlrms-citizen/print",
+      DlrmsCitizenPrintSchema,
+      { token, applicationId },
     ),
 };
