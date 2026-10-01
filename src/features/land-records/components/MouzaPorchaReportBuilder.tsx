@@ -75,7 +75,6 @@ export default function MouzaPorchaReportBuilder() {
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [fontReady, setFontReady] = useState(false);
   const [phase, setPhase] = useState<"idle" | "records" | "hal-sabek" | "verification" | "done">("idle");
   const [loadedRecords, setLoadedRecords] = useState(0);
   const [expectedRecords, setExpectedRecords] = useState<number | null>(null);
@@ -97,20 +96,6 @@ export default function MouzaPorchaReportBuilder() {
     () => surveys.map((item) => ({ value: item.SURVEY_ID, label: item.LOCAL_NAME })),
     [surveys],
   );
-
-  useEffect(() => {
-    let active = true;
-    if (typeof document === "undefined" || !document.fonts) {
-      setFontReady(true);
-      return;
-    }
-    void document.fonts.ready.then(() => {
-      if (active) setFontReady(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (division) void loadDistricts(division);
@@ -353,7 +338,7 @@ export default function MouzaPorchaReportBuilder() {
 
 
 
-  const downloadBrandedPdf = async () => {
+  const downloadPdf = async () => {
     if (!reportRef.current || phase !== "done" || !rows.length) return;
 
     setPdfGenerating(true);
@@ -365,7 +350,7 @@ export default function MouzaPorchaReportBuilder() {
       const result = await generatePagedReportPdf({
         source: reportRef.current,
         pageSelector: ".report-page",
-        fileName: `LandBD-${mouzaPart}-${surveyPart}-Porcha-Report-${reportPart}-A4-Landscape`,
+        fileName: `Mouza-${mouzaPart}-${surveyPart}-Porcha-Report-${reportPart}-A4-Landscape`,
         orientation: "landscape",
         scale: 1.55,
         jpegQuality: 0.94,
@@ -373,8 +358,8 @@ export default function MouzaPorchaReportBuilder() {
 
       if (!result.ok) setPdfError(result.error);
     } catch (error) {
-      console.error("Mouza Porcha branded PDF generation failed", error);
-      setPdfError("ব্র্যান্ডেড PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।");
+      console.error("Mouza Porcha PDF generation failed", error);
+      setPdfError("PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।");
     } finally {
       setPdfGenerating(false);
     }
@@ -394,7 +379,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎস JSON/API-তে প্রকাশিত জমির পরিমাণ একত্র করে LandBD 2026 ব্র্যান্ডেড A4 PDF রিপোর্ট তৈরি করুন। DLRMS-এ mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের সাদা-কালো A4 টেবিল রিপোর্ট তৈরি করুন। DLRMS mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
         pattern="grid"
       />
 
@@ -476,7 +461,7 @@ export default function MouzaPorchaReportBuilder() {
 
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                 <ShieldCheck size={16} className="text-[var(--primary)]" />
-                <span>Bengali PDF font: <strong>{fontReady ? "Noto Sans Bengali প্রস্তুত" : "লোড হচ্ছে…"}</strong></span>
+                <span>Bengali PDF font: <strong>Kalpurush</strong></span>
                 <span className="text-slate-300">•</span>
                 <span>রেকর্ড টেক্সট NFC normalization সহ source wording সংরক্ষণ করবে।</span>
               </div>
@@ -550,7 +535,7 @@ export default function MouzaPorchaReportBuilder() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <ResultDownloadButton
-                  onClick={() => void downloadBrandedPdf()}
+                  onClick={() => void downloadPdf()}
                   loading={pdfGenerating}
                   disabled={generating || phase !== "done"}
                   className="rounded-[12px]"
