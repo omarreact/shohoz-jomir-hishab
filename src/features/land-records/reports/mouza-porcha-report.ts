@@ -144,8 +144,8 @@ export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
-  firstPageBudget = 36,
-  laterPageBudget = 82,
+  firstPageBudget = 22,
+  laterPageBudget = 50,
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
 
