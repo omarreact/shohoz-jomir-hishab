@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Database, FileText, History, Link2, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian } from "../full-khatian";
 
@@ -8,8 +8,13 @@ type Props = {
   fullKhatian: FullKhatian;
 };
 
-function Value({ children }: { children: React.ReactNode }) {
-  return <span className="font-semibold text-slate-900 dark:text-slate-100">{children}</span>;
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="border border-black bg-white">
+      <h3 className="border-b border-black px-3 py-2 text-[15px] font-normal">{title}</h3>
+      <div className="p-3">{children}</div>
+    </section>
+  );
 }
 
 function sourceLabel(source: FullKhatian["evidence"][number]["source"]): string {
@@ -43,121 +48,182 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
   );
 
   return (
-    <section className="mt-4 space-y-3 print:break-before-page" aria-label="সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য">
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 shrink-0 text-[#006a4e]" size={19} />
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-100">ডেটা উৎস ও পূর্ণতা</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {evidence.map((item, index) => (
-                <span
-                  key={`${item.source}-${item.field}-${index}`}
-                  className="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                  title={item.endpoint}
-                >
-                  {sourceLabel(item.source)} · {item.access === "public" ? "পাবলিক" : item.access === "authorized-private" ? "অনুমোদিত" : "ডেভেলপমেন্ট"}
-                </span>
-              ))}
-            </div>
-            <p className="mt-2 text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/90">
-              কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। জমির পরিমাণ শুধু উৎস JSON-এর area value থেকে Acre-এ দেখানো হয়; geometry থেকে area গণনা করা হয় না।
-            </p>
-          </div>
-        </div>
-      </div>
+    <section
+      className="dlrms-official-record mt-4 space-y-4 bg-white text-[14px] leading-6 text-black print:break-before-page"
+      aria-label="সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য"
+    >
+      <Panel title="ডেটা উৎস ও পূর্ণতা">
+        <p>
+          {evidence.length
+            ? evidence.map((item) => `${sourceLabel(item.source)} · ${item.access === "public" ? "পাবলিক" : item.access === "authorized-private" ? "অনুমোদিত" : "ডেভেলপমেন্ট"}`).join(" | ")
+            : "উৎস তথ্য পাওয়া যায়নি।"}
+        </p>
+        <p className="mt-2 text-[12px]">
+          কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। জমির পরিমাণ শুধু উৎস JSON-এর area value থেকে Acre-এ দেখানো হয়; geometry থেকে area গণনা করা হয় না।
+        </p>
+      </Panel>
 
       {tracking ? (
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Database size={17} className="text-[#006a4e]" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">DLRMS যাচাইকরণ / QR রেকর্ড</h3>
-          </div>
-          <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
-            <div><span className="text-[var(--muted-foreground)]">Verification ID:</span> <Value>{tracking.displayCode}</Value></div>
-            {tracking.khatianId ? <div><span className="text-[var(--muted-foreground)]">Tracking Khatian ID:</span> <Value>{tracking.khatianId}</Value></div> : null}
-            {tracking.applicationStatus !== undefined ? <div><span className="text-[var(--muted-foreground)]">Application status:</span> <Value>{tracking.applicationStatus}</Value></div> : null}
-            {tracking.totalLandRaw ? <div><span className="text-[var(--muted-foreground)]">মোট জমি (একর):</span> <Value>{dlrmsAreaLabel(tracking.totalLandRaw)}</Value></div> : null}
-          </div>
+        <Panel title="DLRMS যাচাইকরণ / QR রেকর্ড">
+          <table className="w-full border-collapse border border-black">
+            <tbody>
+              <tr>
+                <td className="w-1/4 border border-black px-2 py-1.5">Verification ID</td>
+                <td className="border border-black px-2 py-1.5">{tracking.displayCode}</td>
+                <td className="w-1/4 border border-black px-2 py-1.5">Tracking Khatian ID</td>
+                <td className="border border-black px-2 py-1.5">{tracking.khatianId || "—"}</td>
+              </tr>
+              <tr>
+                <td className="border border-black px-2 py-1.5">Application status</td>
+                <td className="border border-black px-2 py-1.5">{tracking.applicationStatus ?? "—"}</td>
+                <td className="border border-black px-2 py-1.5">মোট জমি (একর)</td>
+                <td className="border border-black px-2 py-1.5">{tracking.totalLandRaw ? dlrmsAreaLabel(tracking.totalLandRaw) : "—"}</td>
+              </tr>
+            </tbody>
+          </table>
           {!tracking.matchesBaseRecord ? (
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="mt-2 border border-black px-2 py-1.5 text-[12px]">
               এই verification ID অন্য একটি খতিয়ান নির্দেশ করছে; তথ্য মূল রেকর্ডের সঙ্গে merge করা হয়নি।
             </p>
           ) : null}
-        </div>
+        </Panel>
       ) : null}
 
       {halSabek.length ? (
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <History size={17} className="text-[#006a4e]" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">হাল–সাবেক দাগ</h3>
-          </div>
+        <Panel title="হাল–সাবেক দাগ">
+          <table className="w-full border-collapse border border-black">
+            <thead>
+              <tr>
+                <th className="border border-black px-2 py-1.5 text-left font-normal">হাল দাগ</th>
+                <th className="border border-black px-2 py-1.5 text-left font-normal">সাবেক দাগ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {halSabek.map((row, index) => (
+                <tr key={`${row.currentDag}-${row.previousDag}-${index}`}>
+                  <td className="border border-black px-2 py-1.5">{row.currentDag || "—"}</td>
+                  <td className="border border-black px-2 py-1.5">{row.previousDag || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      ) : null}
+
+      {structuredOwners.length ? (
+        <Panel title="Structured মালিকানা তথ্য">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[24rem] text-sm">
-              <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-4">হাল দাগ</th><th className="py-2">সাবেক দাগ</th></tr></thead>
+            <table className="w-full min-w-[42rem] border-collapse border border-black">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">মালিক</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">পিতা/স্বামী</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">ঠিকানা</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">অংশ</th>
+                </tr>
+              </thead>
               <tbody>
-                {halSabek.map((row, index) => (
-                  <tr key={`${row.currentDag}-${row.previousDag}-${index}`} className="border-b border-[var(--border-color)]/60 last:border-0">
-                    <td className="py-2 pr-4 font-semibold tabular-nums">{row.currentDag || "—"}</td>
-                    <td className="py-2 font-semibold tabular-nums">{row.previousDag || "—"}</td>
+                {structuredOwners.map((owner, index) => (
+                  <tr key={`${owner.name}-${index}`}>
+                    <td className="border border-black px-2 py-1.5">{owner.name}</td>
+                    <td className="border border-black px-2 py-1.5">{owner.fatherOrHusband || "—"}</td>
+                    <td className="border border-black px-2 py-1.5">{owner.address || "—"}</td>
+                    <td className="border border-black px-2 py-1.5">{owner.shareRaw || "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      ) : null}
-
-      {structuredOwners.length ? (
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">Structured মালিকানা তথ্য</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] text-sm">
-              <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">মালিক</th><th className="py-2 pr-3">পিতা/স্বামী</th><th className="py-2 pr-3">ঠিকানা</th><th className="py-2">অংশ</th></tr></thead>
-              <tbody>{structuredOwners.map((owner, index) => <tr key={`${owner.name}-${index}`} className="border-b border-[var(--border-color)]/60 last:border-0"><td className="py-2 pr-3 font-semibold">{owner.name}</td><td className="py-2 pr-3">{owner.fatherOrHusband || "—"}</td><td className="py-2 pr-3">{owner.address || "—"}</td><td className="py-2">{owner.shareRaw || "—"}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </div>
+        </Panel>
       ) : null}
 
       {structuredDags.length ? (
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-slate-100">দাগভিত্তিক পূর্ণ তথ্য</h3>
+        <Panel title="দাগভিত্তিক পূর্ণ তথ্য">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[52rem] text-sm">
-              <thead><tr className="border-b border-[var(--border-color)] text-left text-xs text-[var(--muted-foreground)]"><th className="py-2 pr-3">দাগ</th><th className="py-2 pr-3">শ্রেণী</th><th className="py-2 pr-3">মোট আয়তন (একর)</th><th className="py-2 pr-3">খতিয়ান অংশ (একর)</th><th className="py-2">GIS/ব্যবহার</th></tr></thead>
-              <tbody>{structuredDags.map((dag, index) => {
-                const flags = [dag.isGovernmentOwned ? "সরকারি" : "", dag.isRoad ? "রাস্তা" : "", dag.isWetland ? "জলাভূমি" : "", dag.isForest ? "বন" : "", dag.isReligiousType ? "ধর্মীয়" : ""].filter(Boolean).join(", ");
-                return <tr key={`${dag.dagNo}-${index}`} className="border-b border-[var(--border-color)]/60 last:border-0"><td className="py-2 pr-3 font-semibold tabular-nums">{dag.dagNo}</td><td className="py-2 pr-3">{dag.landType || dag.agriculturalType || "—"}</td><td className="py-2 pr-3">{dag.totalAreaRaw ? dlrmsAreaLabel(dag.totalAreaRaw) : "—"}</td><td className="py-2 pr-3">{dag.khatianAreaRaw ? dlrmsAreaLabel(dag.khatianAreaRaw) : "—"}</td><td className="py-2">{flags || dag.remarks || "—"}</td></tr>;
-              })}</tbody>
+            <table className="w-full min-w-[52rem] border-collapse border border-black">
+              <thead>
+                <tr>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">দাগ</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">শ্রেণী</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">মোট আয়তন (একর)</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">খতিয়ান অংশ (একর)</th>
+                  <th className="border border-black px-2 py-1.5 text-left font-normal">ব্যবহার / মন্তব্য</th>
+                </tr>
+              </thead>
+              <tbody>
+                {structuredDags.map((dag, index) => {
+                  const flags = [
+                    dag.isGovernmentOwned ? "সরকারি" : "",
+                    dag.isRoad ? "রাস্তা" : "",
+                    dag.isWetland ? "জলাভূমি" : "",
+                    dag.isForest ? "বন" : "",
+                    dag.isReligiousType ? "ধর্মীয়" : "",
+                  ].filter(Boolean).join(", ");
+
+                  return (
+                    <tr key={`${dag.dagNo}-${index}`}>
+                      <td className="border border-black px-2 py-1.5">{dag.dagNo}</td>
+                      <td className="border border-black px-2 py-1.5">{dag.landType || dag.agriculturalType || "—"}</td>
+                      <td className="border border-black px-2 py-1.5">{dag.totalAreaRaw ? dlrmsAreaLabel(dag.totalAreaRaw) : "—"}</td>
+                      <td className="border border-black px-2 py-1.5">{dag.khatianAreaRaw ? dlrmsAreaLabel(dag.khatianAreaRaw) : "—"}</td>
+                      <td className="border border-black px-2 py-1.5">{flags || dag.remarks || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           </div>
-        </div>
+        </Panel>
       ) : null}
 
       {hasLisfData ? (
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-          <div className="flex items-center gap-2"><FileText size={17} className="text-[#006a4e]" /><h3 className="text-sm font-bold">LISF অতিরিক্ত রেকর্ড</h3></div>
-          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            {lisf.taxAmountRaw ? <p>কর/রাজস্ব: <Value>{lisf.taxAmountRaw}</Value></p> : null}
-            {lisf.referenceKhatians.length ? <p>রেফারেন্স খতিয়ান: <Value>{lisf.referenceKhatians.join(", ")}</Value></p> : null}
-            {lisf.referenceDags.length ? <p>রেফারেন্স দাগ: <Value>{lisf.referenceDags.join(", ")}</Value></p> : null}
-            {lisf.deeds.length ? <p>দলিল রেকর্ড: <Value>{lisf.deeds.length}</Value></p> : null}
-            {lisf.formattedRecord !== undefined ? <p>পূর্ণ formatted khatian: <Value>উপলব্ধ</Value></p> : null}
-          </div>
-          {lisf.deeds.length ? <div className="mt-3 space-y-2">{lisf.deeds.map((deed, index) => <div key={`${deed.deedNo}-${index}`} className="rounded-lg border border-[var(--border-color)] p-3 text-xs"><div className="flex items-center gap-1.5 font-semibold"><Link2 size={13} /> দলিল {deed.deedNo || index + 1}</div><p className="mt-1 text-[var(--muted-foreground)]">{[deed.deedType, deed.deedDate, deed.officeInformation].filter(Boolean).join(" · ")}</p>{deed.scannedDeedLink ? <p className="mt-1 break-all">Scanned reference: {deed.scannedDeedLink}</p> : null}</div>)}</div> : null}
-        </div>
+        <Panel title="LISF অতিরিক্ত রেকর্ড">
+          <table className="w-full border-collapse border border-black">
+            <tbody>
+              {lisf.taxAmountRaw ? (
+                <tr><td className="w-1/4 border border-black px-2 py-1.5">কর/রাজস্ব</td><td className="border border-black px-2 py-1.5">{lisf.taxAmountRaw}</td></tr>
+              ) : null}
+              {lisf.referenceKhatians.length ? (
+                <tr><td className="border border-black px-2 py-1.5">রেফারেন্স খতিয়ান</td><td className="border border-black px-2 py-1.5">{lisf.referenceKhatians.join(", ")}</td></tr>
+              ) : null}
+              {lisf.referenceDags.length ? (
+                <tr><td className="border border-black px-2 py-1.5">রেফারেন্স দাগ</td><td className="border border-black px-2 py-1.5">{lisf.referenceDags.join(", ")}</td></tr>
+              ) : null}
+              {lisf.deeds.length ? (
+                <tr><td className="border border-black px-2 py-1.5">দলিল রেকর্ড</td><td className="border border-black px-2 py-1.5">{lisf.deeds.length}</td></tr>
+              ) : null}
+              {lisf.formattedRecord !== undefined ? (
+                <tr><td className="border border-black px-2 py-1.5">পূর্ণ formatted khatian</td><td className="border border-black px-2 py-1.5">উপলব্ধ</td></tr>
+              ) : null}
+            </tbody>
+          </table>
+
+          {lisf.deeds.length ? (
+            <div className="mt-3 space-y-2">
+              {lisf.deeds.map((deed, index) => (
+                <div key={`${deed.deedNo}-${index}`} className="border border-black px-3 py-2 text-[12px]">
+                  <p>দলিল {deed.deedNo || index + 1}</p>
+                  <p>{[deed.deedType, deed.deedDate, deed.officeInformation].filter(Boolean).join(" · ") || "—"}</p>
+                  {deed.scannedDeedLink ? <p className="break-all">Scanned reference: {deed.scannedDeedLink}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Panel>
       ) : (
-        <div className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--secondary)]/20 p-4 text-xs text-[var(--muted-foreground)]">
-          <div className="flex items-start gap-2"><Database size={16} className="mt-0.5 shrink-0" /><div><p className="font-semibold text-slate-700 dark:text-slate-200">LISF enrichment: {lisf.status}</p>{lisf.message ? <p className="mt-1 leading-5">{lisf.message}</p> : null}</div></div>
-        </div>
+        <Panel title={`LISF enrichment: ${lisf.status}`}>
+          <p className="text-[12px]">{lisf.message || "অতিরিক্ত LISF তথ্য পাওয়া যায়নি।"}</p>
+        </Panel>
       )}
 
       {warnings.length ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          <div className="flex items-start gap-2"><AlertTriangle size={16} className="mt-0.5 shrink-0" /><div><p className="font-semibold">আংশিক তথ্য / সতর্কতা</p><ul className="mt-1 list-disc space-y-1 pl-4">{warnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul></div></div>
-        </div>
+        <Panel title="আংশিক তথ্য / সতর্কতা">
+          <ol className="space-y-1">
+            {warnings.map((warning, index) => (
+              <li key={`${warning}-${index}`}>{index + 1}। {warning}</li>
+            ))}
+          </ol>
+        </Panel>
       ) : null}
     </section>
   );
