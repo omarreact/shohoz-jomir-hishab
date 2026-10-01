@@ -324,3 +324,122 @@
     padding: 3px 5px !important;
   }
 }
+
+
+/* LandBD canonical printable-document policy.
+   Downloaded PDFs use the same header/footer through src/shared/lib/pdf/branding.ts. */
+.landbd-print-branding,
+.landbd-print-footer {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 10mm 15mm;
+  }
+
+  body:has([data-result-document="1"]) * {
+    visibility: hidden !important;
+  }
+
+  body:has([data-result-document="1"]) [data-result-document="1"],
+  body:has([data-result-document="1"]) [data-result-document="1"] * {
+    visibility: visible !important;
+  }
+
+  body:has([data-result-document="1"]) [data-result-document="1"] {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding-top: 13mm !important;
+    padding-bottom: 12mm !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #12221a !important;
+    font-family: var(--font-report) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .landbd-print-branding {
+    position: fixed !important;
+    top: 0 !important;
+    left: 10mm !important;
+    right: 10mm !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    height: 10mm !important;
+    align-items: center !important;
+    gap: 3mm !important;
+    border-bottom: .45mm solid #0b5d3b !important;
+    background: #fff !important;
+    color: #12221a !important;
+  }
+
+  .landbd-print-brand-mark {
+    display: grid !important;
+    width: 8mm !important;
+    height: 8mm !important;
+    place-items: center !important;
+    background: #0b5d3b !important;
+    color: #fff !important;
+    font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+    font-size: 8pt !important;
+    font-weight: 800 !important;
+  }
+
+  .landbd-print-branding > span:last-child {
+    display: grid !important;
+    gap: 0 !important;
+  }
+
+  .landbd-print-branding strong {
+    color: #0b5d3b !important;
+    font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+    font-size: 10pt !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+  }
+
+  .landbd-print-branding small {
+    color: #607068 !important;
+    font-size: 6.5pt !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+  }
+
+  .landbd-print-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 10mm !important;
+    right: 10mm !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8mm !important;
+    border-top: .25mm solid #dde7e1 !important;
+    background: #fff !important;
+    padding-top: 2mm !important;
+    color: #607068 !important;
+    font-size: 6pt !important;
+    line-height: 1.25 !important;
+  }
+
+  .landbd-print-footer strong {
+    color: #0b5d3b !important;
+    font-family: var(--font-inter), Inter, Arial, sans-serif !important;
+    font-size: 6.3pt !important;
+    white-space: nowrap !important;
+  }
+
+  .landbd-print-footer span {
+    text-align: right !important;
+  }
+}
