@@ -6,6 +6,7 @@ import type { FullKhatian } from "../full-khatian";
 
 type Props = {
   fullKhatian: FullKhatian;
+  pageOrientation: "portrait" | "landscape";
 };
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -31,7 +32,7 @@ function dlrmsAreaLabel(value: string | null | undefined): string {
   return formatAcre(acreFromDlrmsValue(value, "acre"));
 }
 
-export default function FullKhatianSupplement({ fullKhatian }: Props) {
+export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: Props) {
   const { tracking, halSabek, lisf, evidence, warnings } = fullKhatian;
   const structuredOwners = fullKhatian.owners.filter(
     (owner) => owner.fatherOrHusband || owner.address || owner.shareRaw,
@@ -62,8 +63,11 @@ export default function FullKhatianSupplement({ fullKhatian }: Props) {
 
   return (
     <section
-      className="dlrms-official-record mt-4 space-y-4 bg-white text-[14px] leading-6 text-black print:break-before-page"
+      className={`dlrms-official-record dlrms-full-khatian-supplement record-page-${pageOrientation} mx-auto mt-4 w-full space-y-4 bg-white text-[14px] leading-6 text-black print:break-before-page ${
+        pageOrientation === "landscape" ? "max-w-[1320px]" : "max-w-[900px]"
+      }`}
       aria-label="সম্পূর্ণ খতিয়ান উৎস ও সমৃদ্ধ তথ্য"
+      data-page-orientation={pageOrientation}
     >
       <Panel title="ডেটা উৎস ও পূর্ণতা">
         <p>

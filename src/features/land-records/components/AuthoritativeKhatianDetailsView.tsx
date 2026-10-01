@@ -13,6 +13,7 @@ type Props = {
   fullKhatian?: FullKhatian;
   surveyKey?: string;
   captureRef?: RefObject<HTMLDivElement | null>;
+  pageOrientation: "portrait" | "landscape";
 };
 
 type ExtraRow = { label: string; value: string };
@@ -161,7 +162,13 @@ function ownerShareText(owners: DisplayOwner[]): string {
   return shares.length ? shares.map((value) => toBanglaDigits(value)).join("\n") : "";
 }
 
-export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
+export default function AuthoritativeKhatianDetailsView({
+  khatian,
+  fullKhatian,
+  surveyKey,
+  captureRef,
+  pageOrientation,
+}: Props) {
   const model = useMemo(() => buildKhatianDisplayModel(khatian, surveyKey), [khatian, surveyKey]);
   const fullDagMap = useMemo(() => authoritativeDagMap(fullKhatian), [fullKhatian]);
   const owners = useMemo(() => mergeOwnerDetails(model.owners, fullKhatian), [model.owners, fullKhatian]);
@@ -589,8 +596,13 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
         .dlrms-landbd-record .record-footer-brand-strip span:nth-child(2) { background: var(--landbd-red); }
         .dlrms-landbd-record .record-footer-brand-strip span:nth-child(3) { background: var(--landbd-magenta); }
 
-        @page {
+        @page dlrmsPortrait {
           size: A4 portrait;
+          margin: 0;
+        }
+
+        @page dlrmsLandscape {
+          size: A4 landscape;
           margin: 0;
         }
 
@@ -603,13 +615,38 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           }
 
           .dlrms-landbd-record {
-            width: 210mm !important;
             min-width: 0 !important;
             max-width: none !important;
             margin: 0 !important;
             padding: 7mm 7mm 10mm !important;
             border: 0 !important;
             box-shadow: none !important;
+          }
+
+          .dlrms-landbd-record.record-page-portrait {
+            page: dlrmsPortrait;
+            width: 210mm !important;
+          }
+
+          .dlrms-landbd-record.record-page-landscape {
+            page: dlrmsLandscape;
+            width: 297mm !important;
+          }
+
+          .dlrms-full-khatian-supplement.record-page-portrait {
+            page: dlrmsPortrait;
+            width: 210mm !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 7mm 7mm 10mm !important;
+          }
+
+          .dlrms-full-khatian-supplement.record-page-landscape {
+            page: dlrmsLandscape;
+            width: 297mm !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 7mm 7mm 10mm !important;
           }
 
           .dlrms-landbd-record .record-table-scroll {
@@ -653,7 +690,14 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
       `}</style>
 
       <div className="w-full overflow-x-auto bg-slate-50/40 px-0 py-2 sm:px-1">
-        <article className="dlrms-landbd-record relative mx-auto min-w-[1000px] max-w-[1320px] overflow-hidden border border-slate-200 bg-white px-7 py-7 shadow-[0_12px_38px_rgba(15,45,30,0.08)] print:min-w-0 print:max-w-none">
+        <article
+          className={`dlrms-landbd-record record-page-${pageOrientation} relative mx-auto overflow-hidden border border-slate-200 bg-white px-7 py-7 shadow-[0_12px_38px_rgba(15,45,30,0.08)] print:min-w-0 print:max-w-none ${
+            pageOrientation === "landscape"
+              ? "min-w-[1000px] max-w-[1320px]"
+              : "min-w-[760px] max-w-[900px]"
+          }`}
+          data-page-orientation={pageOrientation}
+        >
           <div className="record-accent" aria-hidden="true"><span /><span /><span /></div>
           <div className="record-watermark" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}

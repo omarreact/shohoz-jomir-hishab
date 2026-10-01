@@ -14,11 +14,19 @@ type Props = {
   captureRef?: RefObject<HTMLDivElement | null>;
 };
 
+export type KhatianPageOrientation = "portrait" | "landscape";
+
+function resolveKhatianPageOrientation(surveyKey: string | undefined, surveyName: string): KhatianPageOrientation {
+  const normalized = (surveyKey || surveyName || "").toUpperCase().replace(/[^A-Z]/g, "");
+  return normalized === "BRS" || normalized === "SA" ? "landscape" : "portrait";
+}
+
 export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const internalCaptureRef = useRef<HTMLDivElement | null>(null);
   const resolvedCaptureRef = captureRef ?? internalCaptureRef;
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
   const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
+  const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
 
   return (
     <>
@@ -31,8 +39,11 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         fullKhatian={resolvedFullKhatian}
         surveyKey={surveyKey}
         captureRef={resolvedCaptureRef}
+        pageOrientation={pageOrientation}
       />
-      {resolvedFullKhatian ? <FullKhatianSupplement fullKhatian={resolvedFullKhatian} /> : null}
+      {resolvedFullKhatian ? (
+        <FullKhatianSupplement fullKhatian={resolvedFullKhatian} pageOrientation={pageOrientation} />
+      ) : null}
     </>
   );
 }
