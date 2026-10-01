@@ -129,11 +129,10 @@
 
 /* Khatian print mode: print the record, not the application shell. */
 @media print {
-  /* Keep the paper size/orientation controlled by the browser print dialog.
-     This lets the same Khatian render correctly on A4 Portrait or A4 Landscape. */
+  /* Canonical LandBD print target: A4 portrait for record/result documents. */
   @page {
-    size: auto;
-    margin: 10mm 11mm;
+    size: A4 portrait;
+    margin: 14mm 10mm 15mm;
   }
 
   html,
