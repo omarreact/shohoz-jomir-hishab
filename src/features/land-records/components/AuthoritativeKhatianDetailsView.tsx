@@ -283,7 +283,9 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
       },
     ];
 
-    return candidates.filter((column) => column.visible).map(({ visible: _visible, ...column }) => column);
+    return candidates
+      .filter((column) => column.visible)
+      .map(({ key, officialNo, label, scope }) => ({ key, officialNo, label, scope }));
   }, [owners, guardianText, totalTax, dags, model.kind]);
 
   const verificationPayload = useMemo(() => ({
@@ -480,7 +482,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           padding: 5px 7px;
           background: #edf4f0;
           color: #263b30;
-          font-size: 14px;
+          font-size: 17px;
           font-weight: 500;
         }
 
@@ -695,7 +697,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
 
                     {hasValue(totalLandDisplay) ? (
                       <tr>
-                        <td colSpan={visibleColumns.length} className="bg-[#f5f8f6_!important]">
+                        <td colSpan={visibleColumns.length} style={{ backgroundColor: "#f5f8f6" }}>
                           <div className="flex items-center justify-end gap-8">
                             <span className="font-medium">মোট জমি</span>
                             <strong className="min-w-[150px] text-center font-semibold">{toBanglaDigits(totalLandDisplay)}</strong>
