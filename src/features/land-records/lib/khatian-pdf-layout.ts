@@ -1,7 +1,9 @@
+import { LANDBD_PDF } from "@/src/shared/lib/pdf/branding";
+
 export type PdfSlice = { offsetY: number; height: number };
 
-export const A4_PORTRAIT_WIDTH_MM = 210;
-export const A4_PORTRAIT_HEIGHT_MM = 297;
+export const A4_PORTRAIT_WIDTH_MM = LANDBD_PDF.a4Portrait.widthMm;
+export const A4_PORTRAIT_HEIGHT_MM = LANDBD_PDF.a4Portrait.heightMm;
 export const PDF_MARGIN_MM = 10;
 export const PDF_CONTENT_TOP_MM = 20;
 export const PDF_CONTENT_BOTTOM_MM = 15;
