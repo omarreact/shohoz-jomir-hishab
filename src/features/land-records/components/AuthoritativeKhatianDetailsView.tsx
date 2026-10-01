@@ -32,6 +32,7 @@ type DisplayOwner = {
 
 type ColumnKey =
   | "owners"
+  | "guardian"
   | "share"
   | "tax"
   | "dagNo"
@@ -213,7 +214,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
   addExtra("সেস", model.publicRecord.CESS);
 
   const officialVerificationId = firstText(fullKhatian?.tracking?.displayCode);
-  const guardianText = model.guardians.filter(hasValue).join(", ");
+  const guardianText = model.guardians.filter(hasValue).join("\n");
   const shares = ownerShareText(owners);
 
   const visibleColumns = useMemo<VisibleColumn[]>(() => {
@@ -223,7 +224,14 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
         officialNo: "১",
         label: "মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা",
         scope: "record",
-        visible: owners.some((owner) => hasValue(owner.name) || hasValue(owner.fatherOrHusband) || hasValue(owner.address)) || Boolean(guardianText),
+        visible: owners.some((owner) => hasValue(owner.name) || hasValue(owner.fatherOrHusband) || hasValue(owner.address)),
+      },
+      {
+        key: "guardian",
+        officialNo: "১(ক)",
+        label: "পিতা / স্বামী / অভিভাবক তালিকা",
+        scope: "record",
+        visible: Boolean(guardianText),
       },
       {
         key: "share",
@@ -359,7 +367,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
 
   const renderRecordCell = (key: ColumnKey) => {
     if (key === "owners") {
-      return owners.length || guardianText ? (
+      return owners.length ? (
         <div className="space-y-2">
           {owners.map((owner, ownerIndex) => (
             <div
@@ -371,13 +379,12 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
               {hasValue(owner.address) ? <p>সাং- {owner.address}</p> : null}
             </div>
           ))}
-          {guardianText ? (
-            <p className="border-t border-dotted border-slate-500 pt-2 leading-6">
-              <strong className="font-medium">অভিভাবক তালিকা (উৎস ক্রম):</strong> {guardianText}
-            </p>
-          ) : null}
         </div>
       ) : null;
+    }
+
+    if (key === "guardian") {
+      return guardianText ? <div className="whitespace-pre-line leading-6">{guardianText}</div> : null;
     }
 
     if (key === "share") {
@@ -414,7 +421,8 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
 
         .dlrms-landbd-record {
           --landbd-green: #0b5d3b;
-          --landbd-red: #b4232c;
+          --landbd-red: #d71920;
+          --landbd-magenta: #b3237b;
           --landbd-ink: #101814;
           --landbd-line: #1c2822;
           --landbd-soft: #eaf4ef;
@@ -426,27 +434,57 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           inset: 0 0 auto;
           z-index: 4;
           display: grid;
-          grid-template-columns: 92% 8%;
+          grid-template-columns: 55% 27% 18%;
           height: 4px;
         }
 
-        .dlrms-landbd-record .record-accent span:first-child { background: var(--landbd-green); }
-        .dlrms-landbd-record .record-accent span:last-child { background: var(--landbd-red); }
+        .dlrms-landbd-record .record-accent span:nth-child(1) { background: var(--landbd-green); }
+        .dlrms-landbd-record .record-accent span:nth-child(2) { background: var(--landbd-red); }
+        .dlrms-landbd-record .record-accent span:nth-child(3) { background: var(--landbd-magenta); }
+
+        .dlrms-landbd-record .record-brand-logo {
+          display: block;
+          width: 132px;
+          max-width: 100%;
+          height: auto;
+          margin-bottom: 5px;
+        }
 
         .dlrms-landbd-record .record-watermark {
           position: absolute;
           z-index: 0;
           top: 52%;
           left: 50%;
-          transform: translate(-50%, -50%) rotate(-27deg);
-          color: rgba(11, 93, 59, 0.045);
-          font-family: Arial, sans-serif !important;
-          font-size: clamp(34px, 5vw, 70px);
-          font-weight: 800;
-          letter-spacing: 0.08em;
+          display: flex;
+          transform: translate(-50%, -50%) rotate(-24deg);
+          flex-direction: column;
+          align-items: center;
+          color: rgba(11, 93, 59, 0.05);
+          text-align: center;
           white-space: nowrap;
           pointer-events: none;
           user-select: none;
+        }
+
+        .dlrms-landbd-record .record-watermark img {
+          width: 118px;
+          height: auto;
+          opacity: .11;
+          filter: grayscale(1);
+        }
+
+        .dlrms-landbd-record .record-watermark strong {
+          margin-top: 6px;
+          font-family: Arial, sans-serif !important;
+          font-size: clamp(32px, 5vw, 66px);
+          font-weight: 900;
+          letter-spacing: .08em;
+        }
+
+        .dlrms-landbd-record .record-watermark span {
+          margin-top: 2px;
+          font-size: 16px;
+          font-weight: 700;
         }
 
         .dlrms-landbd-record .record-content {
@@ -526,8 +564,33 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           line-height: 1.15;
         }
 
+        .dlrms-landbd-record .record-footer-brand-strip {
+          display: grid;
+          grid-template-columns: 55% 27% 18%;
+          min-height: 22px;
+          margin-top: 8px;
+          overflow: hidden;
+          border-radius: 3px;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          line-height: 1.2;
+          text-align: center;
+        }
+
+        .dlrms-landbd-record .record-footer-brand-strip span {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px 6px;
+        }
+
+        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(1) { background: var(--landbd-green); }
+        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(2) { background: var(--landbd-red); }
+        .dlrms-landbd-record .record-footer-brand-strip span:nth-child(3) { background: var(--landbd-magenta); }
+
         @page {
-          size: A4 landscape;
+          size: A4 portrait;
           margin: 0;
         }
 
@@ -540,11 +603,11 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           }
 
           .dlrms-landbd-record {
-            width: 297mm !important;
+            width: 210mm !important;
             min-width: 0 !important;
             max-width: none !important;
             margin: 0 !important;
-            padding: 7mm 8mm 9mm !important;
+            padding: 7mm 7mm 10mm !important;
             border: 0 !important;
             box-shadow: none !important;
           }
@@ -580,20 +643,31 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
           .dlrms-landbd-record .record-watermark {
             position: fixed;
             color: rgba(11,93,59,.04);
-            font-size: 34pt;
+          }
+
+          .dlrms-landbd-record .record-footer-brand-strip {
+            min-height: 6mm;
+            font-size: 7.5pt;
           }
         }
       `}</style>
 
       <div className="w-full overflow-x-auto bg-slate-50/40 px-0 py-2 sm:px-1">
         <article className="dlrms-landbd-record relative mx-auto min-w-[1000px] max-w-[1320px] overflow-hidden border border-slate-200 bg-white px-7 py-7 shadow-[0_12px_38px_rgba(15,45,30,0.08)] print:min-w-0 print:max-w-none">
-          <div className="record-accent" aria-hidden="true"><span /><span /></div>
-          <div className="record-watermark" aria-hidden="true">LANDBD · NOT FOR LEGAL USE</div>
+          <div className="record-accent" aria-hidden="true"><span /><span /><span /></div>
+          <div className="record-watermark" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/landbd-symbol-2026.svg" alt="" />
+            <strong>LANDBD</strong>
+            <span>সহজ জমির হিসাব</span>
+          </div>
 
           <div className="record-content">
             <header className="mb-5">
               <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-5">
                 <div className="pt-1 text-[14px] leading-5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="record-brand-logo" src="/brand/landbd-logo-horizontal.svg" alt="LandBD" />
                   <p className="font-semibold">সরকারি ডিএলআরএমএস ভূমি রেকর্ড</p>
                   <p>{model.badgeBn}{model.surveyLabel ? ` · ${model.surveyLabel}` : ""}</p>
                   {officialVerificationId ? (
@@ -739,13 +813,20 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
               </ol>
             </section>
 
-            <footer className="mt-5 flex items-end justify-between gap-5 border-t border-slate-300 pt-2 text-[10px] leading-4 text-slate-500">
-              <span>LandBD · Digital Land Record Viewer</span>
-              <span className="text-right">
-                রেকর্ড আইডি: {toBanglaDigits(khatian.ID)}
-                {khatian.KHATIAN_ENTRY_ID != null ? ` · এন্ট্রি আইডি: ${toBanglaDigits(khatian.KHATIAN_ENTRY_ID)}` : ""}
-                {khatian.JL_NUMBER ? ` · জে.এল নং: ${toBanglaDigits(khatian.JL_NUMBER)}` : ""}
-              </span>
+            <footer className="mt-5 border-t border-slate-300 pt-2 text-[10px] leading-4 text-slate-500">
+              <div className="flex items-end justify-between gap-5">
+                <span>LandBD · Digital Land Record Viewer</span>
+                <span className="text-right">
+                  রেকর্ড আইডি: {toBanglaDigits(khatian.ID)}
+                  {khatian.KHATIAN_ENTRY_ID != null ? ` · এন্ট্রি আইডি: ${toBanglaDigits(khatian.KHATIAN_ENTRY_ID)}` : ""}
+                  {khatian.JL_NUMBER ? ` · জে.এল নং: ${toBanglaDigits(khatian.JL_NUMBER)}` : ""}
+                </span>
+              </div>
+              <div className="record-footer-brand-strip" aria-label="LandBD brand principles">
+                <span>সহজ জমির হিসাব</span>
+                <span>ডিজিটাল ভূমি তথ্য</span>
+                <span>যাচাই করে ব্যবহার</span>
+              </div>
             </footer>
           </div>
         </article>
