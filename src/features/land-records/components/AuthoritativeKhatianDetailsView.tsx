@@ -370,7 +370,7 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
             </div>
           ))}
           {guardianText ? (
-            <p className="border-t border-dotted border-slate-500 pt-2 text-[15px] leading-6">
+            <p className="border-t border-dotted border-slate-500 pt-2 leading-6">
               <strong className="font-medium">অভিভাবক তালিকা (উৎস ক্রম):</strong> {guardianText}
             </p>
           ) : null}
