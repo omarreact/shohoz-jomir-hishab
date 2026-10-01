@@ -7,6 +7,7 @@ import {
   BookOpen,
   Calculator,
   ChevronDown,
+  FileSearch,
   FileText,
   Home,
   LogIn,
