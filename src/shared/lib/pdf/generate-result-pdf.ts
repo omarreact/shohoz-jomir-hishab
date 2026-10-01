@@ -1,3 +1,5 @@
+import { applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox } from "@/src/shared/lib/pdf/branding";
+
 export type GenerateResultPdfOptions = {
   source: HTMLElement;
   fileName: string;
@@ -14,9 +16,7 @@ type PdfSlice = { offsetY: number; height: number };
 type EncodedCanvas = { bytes: Uint8Array; format: "JPEG" | "PNG" };
 type StylableElement = Element & { style: CSSStyleDeclaration };
 
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
-const DEFAULT_MARGIN_MM = 8;
+const DEFAULT_MARGIN_MM = 10;
 const DEFAULT_EXPORT_WIDTH_PX = 980;
 const RENDER_SCALES = [1.35, 1.15, 1, 0.85];
 const JPEG_QUALITY = 0.94;
@@ -49,10 +49,8 @@ function sanitizeFileName(name: string): string {
 }
 
 function contentSizeMm(marginMm: number) {
-  return {
-    width: A4_WIDTH_MM - marginMm * 2,
-    height: A4_HEIGHT_MM - marginMm * 2,
-  };
+  const box = getLandBdA4ContentBox("portrait", marginMm);
+  return { width: box.width, height: box.height };
 }
 
 function idealPageCssHeight(exportWidthPx: number, marginMm: number): number {
@@ -344,7 +342,12 @@ async function renderAtScale(
   }
 
   const pdf = new JsPdf({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  applyLandBdPdfMetadata(pdf, {
+    title: fileName,
+    subject: "LandBD branded A4 result report",
+  });
   const content = contentSizeMm(marginMm);
+  const contentBox = getLandBdA4ContentBox("portrait", marginMm);
 
   for (let index = 0; index < slices.length; index += 1) {
     const slice = slices[index];
@@ -386,9 +389,24 @@ async function renderAtScale(
     if (!canvas.width || !canvas.height) throw new Error(`Empty PDF page ${index + 1}`);
     const encoded = await encodeCanvas(canvas);
 
-    if (index > 0) pdf.addPage();
+    if (index > 0) pdf.addPage("a4", "portrait");
     const renderedHeight = Math.min(content.height, (slice.height * content.width) / exportWidthPx);
-    pdf.addImage(encoded.bytes, encoded.format, marginMm, marginMm, content.width, renderedHeight, undefined, "FAST");
+    pdf.addImage(
+      encoded.bytes,
+      encoded.format,
+      contentBox.x,
+      contentBox.y,
+      content.width,
+      renderedHeight,
+      undefined,
+      "FAST",
+    );
+    drawLandBdPdfChrome(pdf, {
+      title: fileName,
+      source: "LandBD application",
+      pageNumber: index + 1,
+      pageCount: slices.length,
+    });
     canvas.width = 1;
     canvas.height = 1;
   }

@@ -1,14 +1,16 @@
 import type { jsPDF } from "jspdf";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { LANDBD_PDF } from "@/src/shared/lib/pdf/branding";
 
 export type GeoExtent = { xmin: number; ymin: number; xmax: number; ymax: number };
 export type PdfProject = (lng: number, lat: number, extent: GeoExtent) => readonly [number, number];
 
-const MARGIN = 14;
-const PAGE_W = 420;
-const PAGE_H = 297;
+const MARGIN = 10;
+const PAGE_W = LANDBD_PDF.a4Landscape.widthMm;
+const PAGE_H = LANDBD_PDF.a4Landscape.heightMm;
+const MAP_TOP = 20;
 const DRAW_W = PAGE_W - MARGIN * 2;
-const DRAW_H = PAGE_H - MARGIN * 2 - 16;
+const DRAW_H = 155;
 
 function ringCentroid(ring: number[][]): [number, number] | null {
   if (ring.length < 3) return null;
@@ -85,7 +87,7 @@ export function drawNorthArrow(doc: jsPDF, x = PAGE_W - 24, y = MARGIN + 8): voi
 
 function metersPerDegreeLon(latitude: number): number { const phi = (latitude * Math.PI) / 180; return 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi); }
 
-export function drawScaleBar(doc: jsPDF, extent: GeoExtent, x = MARGIN, y = PAGE_H - 5): void {
+export function drawScaleBar(doc: jsPDF, extent: GeoExtent, x = MARGIN, y = MAP_TOP + DRAW_H - 3): void {
   const lat = (extent.ymin + extent.ymax) / 2; const groundWidthM = Math.max(1, (extent.xmax - extent.xmin) * metersPerDegreeLon(lat));
   const candidates = [25, 50, 100, 200, 500, 1000, 2000, 5000, 10000]; const target = groundWidthM * 0.16;
   const meters = candidates.reduce((best, value) => Math.abs(value - target) < Math.abs(best - target) ? value : best, candidates[0]);
@@ -106,7 +108,7 @@ export function drawCoordinateGrid(doc: jsPDF, extent: GeoExtent, project: PdfPr
   const latSpan = extent.ymax - extent.ymin; const lonSpan = extent.xmax - extent.xmin;
   const stepLat = latSpan > 0.05 ? 0.01 : latSpan > 0.01 ? 0.002 : 0.001; const stepLon = lonSpan > 0.05 ? 0.01 : lonSpan > 0.01 ? 0.002 : 0.001;
   doc.setDrawColor(90, 100, 110); doc.setLineWidth(0.08); doc.setFont("helvetica", "normal"); doc.setFontSize(4.5); doc.setTextColor(80, 90, 100);
-  for (let lon = Math.ceil(extent.xmin / stepLon) * stepLon; lon < extent.xmax; lon += stepLon) { const [x] = project(lon, extent.ymin, extent); doc.line(x, MARGIN + 10, x, MARGIN + 10 + DRAW_H); const label = formatCoordinate(lon, "E", "W"); doc.text(label, x, MARGIN + 8, { align: "center" }); doc.text(label, x, MARGIN + 10 + DRAW_H + 4, { align: "center" }); }
+  for (let lon = Math.ceil(extent.xmin / stepLon) * stepLon; lon < extent.xmax; lon += stepLon) { const [x] = project(lon, extent.ymin, extent); doc.line(x, MAP_TOP, x, MAP_TOP + DRAW_H); const label = formatCoordinate(lon, "E", "W"); doc.text(label, x, MARGIN + 8, { align: "center" }); doc.text(label, x, MAP_TOP + DRAW_H + 4, { align: "center" }); }
   for (let lat = Math.ceil(extent.ymin / stepLat) * stepLat; lat < extent.ymax; lat += stepLat) { const [, y] = project(extent.xmin, lat, extent); doc.line(MARGIN, y, MARGIN + DRAW_W, y); const label = formatCoordinate(lat, "N", "S"); doc.text(label, MARGIN - 1, y + 1, { align: "right" }); doc.text(label, MARGIN + DRAW_W + 1, y + 1, { align: "left" }); }
 }
 
@@ -118,12 +120,50 @@ export function drawScaleText(doc: jsPDF, extent: GeoExtent, y = 8): void {
 }
 
 export function drawPublicationFooter(doc: jsPDF, meta: { mouza: string; jl: string; upazila: string; district: string; plots: number; layers: string; satellite: boolean; scale: string }): void {
-  const top = PAGE_H - 25; const col1 = MARGIN; const col2 = 154; const col3 = 285;
-  doc.setFillColor(248, 249, 250); doc.setDrawColor(185, 190, 195); doc.setLineWidth(0.2); doc.rect(MARGIN, top, DRAW_W, 16, "FD");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(6); doc.setTextColor(30, 35, 40); doc.text("Mouza Details", col1 + 2, top + 4); doc.text("Map / Print", col2 + 2, top + 4); doc.text("Legend", col3 + 2, top + 4);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(5.3);
-  doc.text(`Name: ${meta.mouza || "N/A"}`, col1 + 2, top + 8); doc.text(`JL No: ${meta.jl || "N/A"}`, col1 + 2, top + 11); doc.text(`Upazila: ${meta.upazila || "N/A"}`, col1 + 2, top + 14); doc.text(`District: ${meta.district || "N/A"}  |  Plots: ${meta.plots}`, col1 + 52, top + 8);
-  doc.text(`Print Ratio: ${meta.scale || "N/A"}  |  CRS: EPSG:4326`, col2 + 2, top + 8); doc.text(`Layers: ${meta.layers}  |  ${meta.satellite ? "Satellite + Vector" : "Vector"}`, col2 + 2, top + 11); doc.text("Publication-ready cadastral map", col2 + 2, top + 14);
-  const swatch = (x: number, y: number, r: number, g: number, b: number, label: string, dashed = false) => { doc.setDrawColor(r, g, b); doc.setLineWidth(0.7); if (dashed) doc.setLineDashPattern([1.2, 0.8], 0); doc.line(x, y, x + 9, y); if (dashed) doc.setLineDashPattern([], 0); doc.setFontSize(5); doc.setTextColor(35, 40, 45); doc.text(label, x + 12, y + 1.5); };
-  swatch(col3 + 2, top + 8, 255, 230, 0, "RS Line"); swatch(col3 + 2, top + 12, 0, 240, 255, "MS Line", true); swatch(col3 + 70, top + 8, 230, 0, 120, "Mouza Boundary"); swatch(col3 + 70, top + 12, 110, 120, 130, "Neighboring Mouza", true);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const top = pageHeight - 32;
+  const usable = pageWidth - MARGIN * 2;
+  const col1 = MARGIN;
+  const col2 = MARGIN + usable * 0.36;
+  const col3 = MARGIN + usable * 0.68;
+
+  doc.setFillColor(248, 250, 249);
+  doc.setDrawColor(199, 214, 206);
+  doc.setLineWidth(0.2);
+  doc.rect(MARGIN, top, usable, 17, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(5.8);
+  doc.setTextColor(18, 34, 26);
+  doc.text("Mouza Details", col1 + 2, top + 4);
+  doc.text("Map / Print", col2 + 2, top + 4);
+  doc.text("Legend", col3 + 2, top + 4);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(4.8);
+  doc.setTextColor(70, 82, 76);
+  doc.text("Name: " + (meta.mouza || "N/A"), col1 + 2, top + 8);
+  doc.text("JL: " + (meta.jl || "N/A") + "  |  Plots: " + meta.plots, col1 + 2, top + 11);
+  doc.text((meta.upazila || "N/A") + ", " + (meta.district || "N/A"), col1 + 2, top + 14);
+
+  doc.text("Scale: " + (meta.scale || "N/A"), col2 + 2, top + 8);
+  doc.text("CRS: EPSG:4326  |  Layers: " + meta.layers, col2 + 2, top + 11);
+  doc.text(meta.satellite ? "Satellite + vector" : "Vector cadastral geometry", col2 + 2, top + 14);
+
+  const swatch = (x: number, y: number, r: number, g: number, b: number, label: string, dashed = false) => {
+    doc.setDrawColor(r, g, b);
+    doc.setLineWidth(0.7);
+    if (dashed) doc.setLineDashPattern([1.2, 0.8], 0);
+    doc.line(x, y, x + 7, y);
+    if (dashed) doc.setLineDashPattern([], 0);
+    doc.setFontSize(4.5);
+    doc.setTextColor(35, 45, 40);
+    doc.text(label, x + 9, y + 1.3);
+  };
+
+  swatch(col3 + 2, top + 8, 255, 190, 0, "RS");
+  swatch(col3 + 2, top + 12, 0, 160, 190, "MS", true);
+  swatch(col3 + 34, top + 8, 200, 40, 110, "Mouza");
+  swatch(col3 + 34, top + 12, 110, 120, 130, "Neighbor", true);
 }

@@ -40,7 +40,7 @@ function clientKey(request: NextRequest): string {
 
 function pdfCacheKey(input: { mouza: string; jl?: string; layers: string; satellite?: boolean }): string {
   const canonical = JSON.stringify({
-    renderer: "v3-max-fidelity",
+    renderer: "v4-a4-branded",
     mouza: input.mouza.trim().toUpperCase(),
     jl: input.jl?.trim() ?? "",
     layers: input.layers,

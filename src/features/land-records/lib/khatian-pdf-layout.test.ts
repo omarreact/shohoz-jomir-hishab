@@ -7,9 +7,9 @@ import {
 
 describe("khatian A4 portrait PDF layout", () => {
   test("uses A4 portrait content dimensions", () => {
-    expect(portraitContentSizeMm()).toEqual({ width: 194, height: 281 });
-    expect(idealPageCssHeight()).toBeGreaterThan(1400);
-    expect(idealPageCssHeight()).toBeLessThan(1430);
+    expect(portraitContentSizeMm()).toEqual({ width: 190, height: 262 });
+    expect(idealPageCssHeight()).toBeGreaterThan(1340);
+    expect(idealPageCssHeight()).toBeLessThan(1360);
     expect(PDF_EXPORT_WIDTH_PX).toBe(980);
   });
 
@@ -19,7 +19,7 @@ describe("khatian A4 portrait PDF layout", () => {
       [500, 1250, 1400, 2500, 2780, 3900, 4200],
     );
 
-    expect(slices[0]).toEqual({ offsetY: 0, height: 1400 });
+    expect(slices[0]).toEqual({ offsetY: 0, height: 1250 });
     expect(slices.at(-1)!.offsetY + slices.at(-1)!.height).toBe(4300);
 
     for (let index = 1; index < slices.length; index += 1) {

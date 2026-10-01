@@ -3,6 +3,7 @@ import "server-only";
 import { jsPDF } from "jspdf";
 import { getPlots } from "./rajukQuery.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
 import {
   drawAdaptivePlotLabels,
   drawCoordinateGrid,
@@ -32,11 +33,13 @@ export type MouzaVectorPdfResult = {
   };
 };
 
-const PAGE_W = 420;
-const PAGE_H = 297;
-const MARGIN = 14;
+const PAGE_W = LANDBD_PDF.a4Landscape.widthMm;
+const PAGE_H = LANDBD_PDF.a4Landscape.heightMm;
+const MARGIN = 10;
+const MAP_TOP = 20;
+const MAP_BOTTOM = 35;
 const DRAW_W = PAGE_W - MARGIN * 2;
-const DRAW_H = PAGE_H - MARGIN * 2 - 16;
+const DRAW_H = PAGE_H - MAP_TOP - MAP_BOTTOM;
 const MAX_POINTS_PER_RING = 900;
 const PAGE_ASPECT = DRAW_W / DRAW_H;
 const SATELLITE_TIMEOUT_MS = 25_000;
@@ -96,7 +99,7 @@ function fitExtentToPage(extent: GeoExtent): GeoExtent {
 function project(lng: number, lat: number, extent: GeoExtent): readonly [number, number] {
   const dx = Math.max(extent.xmax - extent.xmin, 1e-12);
   const dy = Math.max(extent.ymax - extent.ymin, 1e-12);
-  return [MARGIN + ((lng - extent.xmin) / dx) * DRAW_W, MARGIN + 10 + (1 - (lat - extent.ymin) / dy) * DRAW_H];
+  return [MARGIN + ((lng - extent.xmin) / dx) * DRAW_W, MAP_TOP + (1 - (lat - extent.ymin) / dy) * DRAW_H];
 }
 
 function drawRing(doc: jsPDF, ring: number[][], extent: GeoExtent): void {
@@ -165,16 +168,20 @@ export async function exportMouzaVectorPdf(input: MouzaVectorPdfRequest): Promis
   if (!extent) throw new Error("No valid plot geometry found");
   const fitted = fitExtentToPage(extent);
 
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: [PAGE_W, PAGE_H], compress: true, putOnlyUsedFonts: true });
-  doc.setProperties({ title: `LandBD Vector Mouza Map - ${normalized}`, subject: `${input.satellite ? "Satellite + " : ""}RS/MS cadastral vector map`, creator: "LandBD", author: "LandBD" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true, putOnlyUsedFonts: true });
+  applyLandBdPdfMetadata(doc, {
+    title: `LandBD Vector Mouza Map - ${normalized}`,
+    subject: `${input.satellite ? "Satellite + " : ""}A4 RS/MS cadastral vector map`,
+    keywords: ["LandBD", "mouza", "RS", "MS", "A4"],
+  });
 
   doc.setFillColor(250, 250, 250);
-  doc.rect(MARGIN, MARGIN + 10, DRAW_W, DRAW_H, "F");
+  doc.rect(MARGIN, MAP_TOP, DRAW_W, DRAW_H, "F");
   let satellite = false;
   if (input.satellite) {
     try {
       const image = await fetchSatelliteImage(fitted);
-      doc.addImage(image, "JPEG", MARGIN, MARGIN + 10, DRAW_W, DRAW_H, undefined, "FAST");
+      doc.addImage(image, "JPEG", MARGIN, MAP_TOP, DRAW_W, DRAW_H, undefined, "FAST");
       satellite = true;
     } catch (error) {
       console.warn("LandBD satellite PDF backdrop unavailable; continuing with vector-only PDF:", error);
@@ -186,24 +193,29 @@ export async function exportMouzaVectorPdf(input: MouzaVectorPdfRequest): Promis
   for (const feature of features) drawFeature(doc, feature, fitted, isMs(feature));
   drawAdaptivePlotLabels(doc, features, fitted, project, isMs);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20, 30, 40);
-  doc.text(`LandBD — ${normalized}`, MARGIN, 8);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.text(`${satellite ? "Satellite + " : ""}Vector cadastral map · ${input.layers === "combined" ? "RS + MS" : input.layers.toUpperCase()} · ${features.length} plots`, MARGIN, 12);
-  drawScaleText(doc, fitted, 4);
-  drawNorthArrow(doc);
-  drawScaleBar(doc, fitted);
+  drawScaleText(doc, fitted, 15);
+  drawNorthArrow(doc, PAGE_W - 20, MAP_TOP + 7);
+  drawScaleBar(doc, fitted, MARGIN, MAP_TOP + DRAW_H - 3);
 
-  const legendY = PAGE_H - 5;
+  const legendY = PAGE_H - 23;
   doc.setFontSize(6);
   doc.setDrawColor(37, 99, 235); doc.line(MARGIN + 55, legendY, MARGIN + 62, legendY);
   doc.setTextColor(35, 35, 35); doc.text("RS", MARGIN + 64, legendY + 1.5);
   doc.setDrawColor(105, 55, 180); doc.line(MARGIN + 80, legendY, MARGIN + 87, legendY);
   doc.text("MS", MARGIN + 89, legendY + 1.5);
-  doc.text(satellite ? "Satellite backdrop + vector cadastral geometry" : "Vector cadastral geometry", MARGIN + 110, legendY + 1.5);
+  doc.text(
+    satellite ? "Satellite backdrop + vector cadastral geometry" : "Vector cadastral geometry",
+    MARGIN + 110,
+    legendY + 1.5,
+  );
+
+  drawLandBdPdfChrome(doc, {
+    title: `${normalized} Mouza Map`,
+    subtitle: `${input.layers === "combined" ? "RS + MS" : input.layers.toUpperCase()} · A4 landscape`,
+    source: "RAJUK GIS / LandBD",
+    pageNumber: 1,
+    pageCount: 1,
+  });
 
   const body = Buffer.from(doc.output("arraybuffer"));
   return {
