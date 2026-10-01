@@ -6,7 +6,6 @@ import type { KhatianDetails } from "../types";
 import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import ResultDownloadButton from "@/src/shared/components/ResultDownloadButton";
 import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
-import ResultWatermarkPortal from "@/src/shared/components/ResultWatermarkPortal";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
 
@@ -30,10 +29,24 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
   const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
 
-  const fileName = `LandBD-${safePart(surveyKey, "Khatian")}-Khatian-${safePart(khatian.KHATIAN_NO, "record")}-${safePart(khatian.MOUZA_NAME, "mouza")}-A4-Portrait`;
+  const fileName = `DLRMS-${safePart(surveyKey, "Khatian")}-Khatian-${safePart(khatian.KHATIAN_NO, "record")}-${safePart(khatian.MOUZA_NAME, "mouza")}-A4-Landscape`;
   const { generatePDF, isGenerating, pdfError } = useGeneratePDF({
     sourceRef: resolvedCaptureRef,
     fileName,
+    orientation: "landscape",
+    chrome: "none",
+    marginMm: 8,
+    exportWidthPx: 1400,
+    prepareClone: (clone) => {
+      clone.style.setProperty("padding", "0", "important");
+      clone.style.setProperty("background", "#ffffff", "important");
+      clone.style.setProperty("color", "#000000", "important");
+      clone.style.setProperty(
+        "font-family",
+        '"Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif',
+        "important",
+      );
+    },
   });
 
   const handleGeneratePdf = async () => {
@@ -68,7 +81,6 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         surveyKey={surveyKey}
         captureRef={resolvedCaptureRef}
       />
-      <ResultWatermarkPortal targetRef={resolvedCaptureRef} />
       {resolvedFullKhatian ? <FullKhatianSupplement fullKhatian={resolvedFullKhatian} /> : null}
     </>
   );

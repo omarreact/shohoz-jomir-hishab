@@ -1,16 +1,10 @@
 "use client";
 
-import { useMemo, useState, type ReactNode, type RefObject } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Info,
-  MapPin,
-} from "lucide-react";
+import { useMemo, useState, type RefObject } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
-import type { FullKhatian, FullKhatianDag } from "../full-khatian";
+import type { FullKhatian, FullKhatianDag, FullKhatianOwner } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { buildKhatianDisplayModel, type ParsedDagRow } from "../lib/khatian-display";
 
@@ -26,30 +20,15 @@ type ExtraRow = { label: string; value: string };
 type AuthoritativeDagRow = ParsedDagRow & {
   totalArea?: string;
   khatianArea?: string;
-  sourceLabel?: string;
+  remarks?: string;
 };
 
-function Section({ id, title, children, icon }: { id?: string; title: string; children: ReactNode; icon?: ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-4 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)]">
-      <header className="flex items-center gap-2 border-b border-[var(--border-color)] px-4 py-3">
-        {icon}
-        <h3 className="text-sm font-bold tracking-tight text-slate-900">{title}</h3>
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function MetaChip({ label, value }: { label: string; value: string }) {
-  if (!value || value === "—") return null;
-  return (
-    <div className="rounded-lg border border-[var(--border-color)] bg-[var(--secondary)]/40 px-3 py-2">
-      <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}
+type DisplayOwner = {
+  name: string;
+  share?: string;
+  fatherOrHusband?: string;
+  address?: string;
+};
 
 function sourcePriority(source: FullKhatianDag["source"]): number {
   if (source === "LISF_AUTHORIZED") return 3;
@@ -92,29 +71,70 @@ function acreLabel(raw: string | undefined): string | undefined {
   return acre == null ? undefined : formatAcre(acre);
 }
 
-function sourceLabel(source: FullKhatianDag["source"] | undefined): string | undefined {
-  if (source === "LISF_AUTHORIZED") return "LISF Authorized";
-  if (source === "DLRMS_PUBLIC") return "DLRMS Public";
-  return undefined;
+function normalizeOwnerName(value: string): string {
+  return value.replace(/[\s.,،]+/gu, "").toLocaleLowerCase("bn-BD");
 }
 
-function LandBDSeal() {
-  return (
-    <div className="flex justify-center sm:justify-end print:justify-center" data-landbd-seal="1">
-      <div className="flex h-32 w-32 shrink-0 flex-col items-center justify-center rounded-full border-4 border-double border-[var(--brand-gold)] bg-[var(--brand-gold-faint)] px-3 text-center text-[var(--brand-gold-text)] print:bg-white">
-        <p className="text-lg font-black tracking-tight">LandBD</p>
-        <p className="mt-0.5 text-[11px] font-bold">সহজ জমির হিসাব</p>
-        <div className="my-1.5 h-px w-16 bg-[var(--brand-gold)]/40" />
-        <p className="text-[9px] font-semibold leading-4">ডিজিটাল রেকর্ড ভিউ</p>
-        <p className="mt-1 rounded-full border border-[var(--brand-gold)]/40 px-2 py-0.5 text-[8px] font-bold">সরকারি সীল নয়</p>
-      </div>
-    </div>
-  );
+function mergeOwnerDetails(
+  owners: Array<{ name: string; share?: string }>,
+  fullKhatian: FullKhatian | undefined,
+): DisplayOwner[] {
+  const structured = (fullKhatian?.owners ?? []).filter((owner) => owner.source !== "LISF_MOCK");
+
+  const findStructured = (name: string): FullKhatianOwner | undefined => {
+    const key = normalizeOwnerName(name);
+    return (
+      structured.find((candidate) => normalizeOwnerName(candidate.name) === key) ??
+      structured.find((candidate) => {
+        const candidateKey = normalizeOwnerName(candidate.name);
+        return candidateKey.includes(key) || key.includes(candidateKey);
+      })
+    );
+  };
+
+  if (!owners.length && structured.length) {
+    return structured.map((owner) => ({
+      name: owner.name,
+      share: owner.shareRaw,
+      fatherOrHusband: owner.fatherOrHusband,
+      address: owner.address,
+    }));
+  }
+
+  return owners.map((owner) => {
+    const detail = findStructured(owner.name);
+    return {
+      name: owner.name,
+      share: owner.share || detail?.shareRaw,
+      fatherOrHusband: detail?.fatherOrHusband,
+      address: detail?.address,
+    };
+  });
+}
+
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (value === undefined || value === null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function toBanglaDigits(value: string | number | undefined | null): string {
+  if (value === undefined || value === null || value === "") return "—";
+  return String(value).replace(/[0-9]/g, (digit) => "০১২৩৪৫৬৭৮৯"[Number(digit)]);
+}
+
+function ownerShareText(owners: DisplayOwner[]): string {
+  const shares = owners.map((owner) => owner.share?.trim()).filter(Boolean);
+  return shares.length ? shares.map((value) => toBanglaDigits(value)).join("\n") : "—";
 }
 
 export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
   const model = useMemo(() => buildKhatianDisplayModel(khatian, surveyKey), [khatian, surveyKey]);
   const fullDagMap = useMemo(() => authoritativeDagMap(fullKhatian), [fullKhatian]);
+  const owners = useMemo(() => mergeOwnerDetails(model.owners, fullKhatian), [model.owners, fullKhatian]);
   const { isLoggedIn } = useAuth();
   const [techOpen, setTechOpen] = useState(false);
 
@@ -125,25 +145,11 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
       landClass: official?.landType || official?.agriculturalType || dag.landClass,
       totalArea: acreLabel(official?.totalAreaRaw) || dag.totalArea,
       khatianArea: acreLabel(official?.khatianAreaRaw) || dag.area || dag.shareArea,
-      sourceLabel: sourceLabel(official?.source),
+      remarks: official?.remarks,
     };
   }), [model.dags, fullDagMap]);
 
-  const showOwnerCol = model.owners.length > 0;
-  const showOwnerShareCol = model.hasOwnerShares;
-  const showGuardianCol = model.guardians.length > 0;
-  const showDagCol = dags.length > 0;
-  const showLandClassCol = dags.some((dag) => Boolean(dag.landClass));
-  const showTotalAreaCol = dags.some((dag) => Boolean(dag.totalArea));
-  const showKhatianAreaCol = dags.some((dag) => Boolean(dag.khatianArea));
-  const hasOfficialPerDagArea = showTotalAreaCol || showKhatianAreaCol;
-
-  const rowCount = Math.max(model.owners.length, model.guardians.length, dags.length);
-  const combinedRows = Array.from({ length: rowCount }, (_, index) => ({
-    owner: model.owners[index],
-    guardian: model.guardians[index],
-    dag: dags[index],
-  }));
+  const tableDags: AuthoritativeDagRow[] = dags.length ? dags : [{ dagNo: "" }];
 
   const totalLandDisplay = model.totalLand
     ? /একর|acre/i.test(model.totalLand)
@@ -153,164 +159,229 @@ export default function AuthoritativeKhatianDetailsView({ khatian, fullKhatian, 
 
   const previousRaw = model.publicRecord["আগে_খতিয়ান"] ?? model.publicRecord.PREVIOUS_KHATIAN;
   const lineageFrom = previousRaw != null ? String(previousRaw).trim() : "";
+  const totalTax = firstText(
+    fullKhatian?.lisf.taxAmountRaw,
+    model.publicRecord.LAND_DEVELOPMENT_TAX,
+    model.publicRecord.RAJASWA,
+    model.publicRecord.REVENUE,
+    model.publicRecord.KHAJNA,
+    model.publicRecord.RENT,
+  );
+
   const extraRows: ExtraRow[] = [];
   const addExtra = (label: string, value: unknown) => {
     if (value == null) return;
     const text = String(value).trim();
     if (!text) return;
-    if (!extraRows.some((row) => row.label === label && row.value === text)) extraRows.push({ label, value: text });
+    if (!extraRows.some((row) => row.label === label && row.value === text)) {
+      extraRows.push({ label, value: text });
+    }
   };
+
   addExtra("আগে / সাবেক খতিয়ান", lineageFrom);
   addExtra("রাজস্ব", model.publicRecord.RAJASWA ?? model.publicRecord.REVENUE);
   addExtra("খাজনা", model.publicRecord.KHAJNA ?? model.publicRecord.RENT);
   addExtra("সেস", model.publicRecord.CESS);
-  addExtra("ভূমি উন্নয়ন কর", model.publicRecord.LAND_DEVELOPMENT_TAX);
 
-  const summaryItems = [
-    model.ownerCount ? { label: "মোট মালিক", value: String(model.ownerCount) } : null,
-    model.guardians.length ? { label: "অভিভাবক তথ্য", value: String(model.guardians.length) } : null,
-    model.dagCount ? { label: "মোট দাগ", value: String(model.dagCount) } : null,
-    totalLandDisplay ? { label: "মোট জমি", value: totalLandDisplay } : null,
-  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const verificationId = firstText(fullKhatian?.tracking?.displayCode);
+  const guardianText = model.guardians.join(", ");
 
   return (
-    <div ref={captureRef ?? undefined} className="w-full min-w-0 max-w-full space-y-3 overflow-x-hidden print:bg-white print:text-black">
-      <div className="overflow-hidden rounded-xl border border-[var(--brand-gold)]/35 bg-[var(--card-bg)] print:border-slate-300 print:bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-color)] px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-sm font-black text-white">LB</div>
-            <div>
-              <p className="text-base font-black tracking-tight text-slate-950">LandBD · সহজ জমির হিসাব</p>
-              <a href="https://landbd.pincodeit.com/" className="text-xs font-semibold text-[var(--brand-gold-text)] no-underline">landbd.pincodeit.com</a>
-              <p className="text-[11px] text-[var(--muted-foreground)]">ডিজিটাল খতিয়ান রিডার · সরকারি রেকর্ড উৎসের পাঠযোগ্য উপস্থাপন</p>
+    <div ref={captureRef ?? undefined} className="w-full min-w-0 max-w-full bg-white text-black">
+      <style>{`
+        @import url("https://fonts.maateen.me/kalpurush/font.css");
+        .dlrms-official-record,
+        .dlrms-official-record * {
+          font-family: "Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif;
+        }
+        .dlrms-official-record table,
+        .dlrms-official-record th,
+        .dlrms-official-record td {
+          border-color: #000 !important;
+        }
+        @media print {
+          .dlrms-official-record {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+
+      <div className="w-full overflow-x-auto bg-white">
+        <article className="dlrms-official-record mx-auto min-w-[1120px] max-w-[1320px] bg-white px-5 py-7 text-[15px] leading-[1.45] text-black print:min-w-0 print:max-w-none print:px-0 print:py-0">
+          <header className="mb-5">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
+              <div className="pt-2 text-[13px] leading-5">
+                <p>সরকারি DLRMS ভূমি রেকর্ড</p>
+                <p>{model.badgeBn} · {model.surveyLabel}</p>
+              </div>
+
+              <div className="text-center">
+                <h2 className="text-[30px] font-normal leading-none">
+                  খতিয়ান নং {toBanglaDigits(khatian.KHATIAN_NO || "—")}
+                </h2>
+              </div>
+
+              <div className="justify-self-end text-right text-[13px] leading-5">
+                {verificationId ? <p>যাচাইকরণ আইডি: {verificationId}</p> : null}
+                <p>রেকর্ড আইডি: {toBanglaDigits(khatian.ID)}</p>
+                {khatian.KHATIAN_ENTRY_ID != null ? (
+                  <p>এন্ট্রি আইডি: {toBanglaDigits(khatian.KHATIAN_ENTRY_ID)}</p>
+                ) : null}
+              </div>
             </div>
-          </div>
-          <div className="text-right text-[11px] leading-5 text-[var(--muted-foreground)]">
-            <p className="font-semibold text-slate-800">{model.badgeBn} · {model.surveyLabel}</p>
-            {khatian.JL_NUMBER ? <p>জে.এল. নং: {khatian.JL_NUMBER}</p> : null}
-          </div>
-        </div>
 
-        <div className="px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">খতিয়ান নং — {khatian.KHATIAN_NO || "—"}</h2>
-              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-                <MapPin size={14} className="shrink-0 text-[var(--brand-gold-text)]" />
-                <span>{[khatian.DIVISION_NAME, khatian.DISTRICT_NAME, khatian.UPAZILA_NAME, khatian.MOUZA_NAME].filter(Boolean).join(" · ") || "অবস্থান উপলব্ধ নয়"}</span>
-              </p>
+            <div className="mt-7 grid grid-cols-4 gap-x-8 text-center text-[15px]">
+              <p>জেলা : {khatian.DISTRICT_NAME || "—"}</p>
+              <p>উপজেলা / সার্কেল : {khatian.UPAZILA_NAME || "—"}</p>
+              <p>মৌজা : {khatian.MOUZA_NAME || "—"}</p>
+              <p>জে.এল নং : {toBanglaDigits(khatian.JL_NUMBER || "—")}</p>
             </div>
-            {khatian.IS_LOCKED === 1 ? <p className="text-xs font-semibold text-amber-700">রেকর্ড লক করা আছে</p> : null}
-          </div>
+          </header>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <MetaChip label="বিভাগ" value={khatian.DIVISION_NAME || ""} />
-            <MetaChip label="জেলা" value={khatian.DISTRICT_NAME || ""} />
-            <MetaChip label="উপজেলা / থানা" value={khatian.UPAZILA_NAME || ""} />
-            <MetaChip label="মৌজা" value={khatian.MOUZA_NAME || ""} />
-          </div>
-
-          {summaryItems.length ? (
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {summaryItems.map((item) => (
-                <div key={item.label} className="rounded-lg border border-[var(--border-color)] bg-[var(--secondary)]/30 px-3 py-2 text-center">
-                  <p className="text-[10px] text-[var(--muted-foreground)]">{item.label}</p>
-                  <p className="mt-0.5 text-base font-black tabular-nums text-slate-950">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {rowCount > 0 ? (
-        <Section id="record-table" title={model.kind === "CS" ? "সমন্বিত স্বত্ব ও দাগ সারণি" : "সমন্বিত খতিয়ান তথ্য"} icon={<FileText size={16} className="text-[var(--brand-gold-text)]" />}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] border-collapse text-sm">
+          <div className="overflow-visible">
+            <table className="w-full table-fixed border-collapse border border-black text-[14px] leading-[1.4]">
+              <colgroup>
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+              </colgroup>
               <thead>
-                <tr className="border-b border-[var(--border-color)] bg-[var(--secondary)]/30 text-left text-xs text-[var(--muted-foreground)]">
-                  <th className="px-2 py-2 font-semibold">ক্রম</th>
-                  {showOwnerCol ? <th className="px-2 py-2 font-semibold">মালিকের নাম</th> : null}
-                  {showOwnerShareCol ? <th className="px-2 py-2 font-semibold">অংশ</th> : null}
-                  {showGuardianCol ? <th className="px-2 py-2 font-semibold">পিতা / স্বামী / অভিভাবক তালিকা</th> : null}
-                  {showDagCol ? <th className="px-2 py-2 font-semibold">{model.kind === "MUTATION" ? "দাগ / প্লট নং" : "দাগ নং"}</th> : null}
-                  {showLandClassCol ? <th className="px-2 py-2 font-semibold">জমির শ্রেণী</th> : null}
-                  {showTotalAreaCol ? <th className="px-2 py-2 font-semibold">দাগের মোট পরিমাণ</th> : null}
-                  {showKhatianAreaCol ? <th className="px-2 py-2 font-semibold">খতিয়ানে জমির পরিমাণ</th> : null}
+                <tr>
+                  <th className="border border-black px-2 py-2 text-center font-normal">
+                    মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা
+                  </th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">অংশ</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">মোট ভূমি উন্নয়ন কর</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">
+                    {model.kind === "MUTATION" ? "দাগ/প্লট নং" : "দাগ নং"}
+                  </th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">জমির রেকর্ডীয় শ্রেণী</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">দাগের মোট জমির পরিমাণ</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">দাগের মধ্যে অত্র খতিয়ানের অংশ</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">অংশানুযায়ী জমির পরিমাণ</th>
+                  <th className="border border-black px-2 py-2 text-center font-normal">দখল/স্বত্ব বিষয়ক বা অন্যান্য বিষয়ে মন্তব্য</th>
+                </tr>
+                <tr className="text-center">
+                  {["১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"].map((number) => (
+                    <th key={number} className="border border-black px-1 py-1 font-normal">{number}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {combinedRows.map((row, index) => (
-                  <tr key={`combined-${index}`} className="border-b border-[var(--border-color)]/70 last:border-0 print:break-inside-avoid">
-                    <td className="px-2 py-2 tabular-nums text-[var(--muted-foreground)]">{index + 1}</td>
-                    {showOwnerCol ? <td className="max-w-[16rem] break-words px-2 py-2 font-medium [overflow-wrap:anywhere]">{row.owner?.name || "—"}</td> : null}
-                    {showOwnerShareCol ? <td className="whitespace-nowrap px-2 py-2 tabular-nums">{row.owner?.share || "—"}</td> : null}
-                    {showGuardianCol ? <td className="max-w-[16rem] break-words px-2 py-2 [overflow-wrap:anywhere]">{row.guardian || "—"}</td> : null}
-                    {showDagCol ? <td className="px-2 py-2 font-semibold tabular-nums">{row.dag?.dagNo || "—"}</td> : null}
-                    {showLandClassCol ? <td className="px-2 py-2">{row.dag?.landClass || "—"}</td> : null}
-                    {showTotalAreaCol ? <td className="px-2 py-2 tabular-nums">{row.dag?.totalArea || "—"}</td> : null}
-                    {showKhatianAreaCol ? <td className="px-2 py-2 tabular-nums">{row.dag?.khatianArea || "—"}</td> : null}
+                {tableDags.map((dag, index) => (
+                  <tr key={dag.dagNo || `empty-${index}`} className="align-top print:break-inside-avoid">
+                    {index === 0 ? (
+                      <>
+                        <td rowSpan={tableDags.length} className="border border-black px-2 py-2">
+                          {owners.length ? (
+                            <div className="space-y-2">
+                              {owners.map((owner, ownerIndex) => (
+                                <div key={`${owner.name}-${ownerIndex}`} className={ownerIndex ? "border-t border-dotted border-black pt-2" : ""}>
+                                  <p>{owner.name}</p>
+                                  {owner.fatherOrHusband ? <p>পিতা/স্বামী- {owner.fatherOrHusband}</p> : null}
+                                  {owner.address ? <p>সাং- {owner.address}</p> : null}
+                                </div>
+                              ))}
+                              {guardianText ? (
+                                <p className="border-t border-dotted border-black pt-2 text-[12px]">
+                                  অভিভাবক তালিকা (উৎস ক্রম): {guardianText}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p>—</p>
+                          )}
+                        </td>
+                        <td rowSpan={tableDags.length} className="whitespace-pre-line border border-black px-2 py-2 text-center">
+                          {ownerShareText(owners)}
+                        </td>
+                        <td rowSpan={tableDags.length} className="border border-black px-2 py-2 text-center">
+                          {totalTax ? toBanglaDigits(totalTax) : "—"}
+                        </td>
+                      </>
+                    ) : null}
+
+                    <td className="border border-black px-2 py-2 text-center">{toBanglaDigits(dag.dagNo)}</td>
+                    <td className="border border-black px-2 py-2 text-center">{dag.landClass || "—"}</td>
+                    <td className="border border-black px-2 py-2 text-center">{dag.totalArea ? toBanglaDigits(dag.totalArea) : "—"}</td>
+                    <td className="border border-black px-2 py-2 text-center">{dag.khatianShare ? toBanglaDigits(dag.khatianShare) : "—"}</td>
+                    <td className="border border-black px-2 py-2 text-center">{dag.khatianArea ? toBanglaDigits(dag.khatianArea) : "—"}</td>
+                    <td className="border border-black px-2 py-2">{dag.remarks || "—"}</td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td className="border border-black px-2 py-2 text-right" colSpan={6}>
+                    মোট জমি
+                  </td>
+                  <td className="border border-black px-2 py-2 text-center" colSpan={2}>
+                    {totalLandDisplay ? toBanglaDigits(totalLandDisplay) : "—"}
+                  </td>
+                  <td className="border border-black px-2 py-2">
+                    {lineageFrom ? <>আগত/সাবেক খতিয়ান: {toBanglaDigits(lineageFrom)}</> : "—"}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
-          {(showGuardianCol || showDagCol) ? (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-600">
-              এই সারণির মালিক, অভিভাবক ও দাগ কলাম পৃথক উৎস তালিকার ক্রম compactভাবে পাশাপাশি দেখায়। একই সারির মানগুলোর মধ্যে আইনগত মালিক–অভিভাবক–দাগ সম্পর্ক LandBD দাবি করে না।
+          {extraRows.length ? (
+            <div className="mt-5">
+              <table className="w-full border-collapse border border-black text-[14px]">
+                <tbody>
+                  {extraRows.map((row) => (
+                    <tr key={`${row.label}-${row.value}`}>
+                      <td className="w-[22%] border border-black px-2 py-1.5">{row.label}</td>
+                      <td className="border border-black px-2 py-1.5">{toBanglaDigits(row.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : null}
 
-          {hasOfficialPerDagArea ? (
-            <p className="mt-3 text-xs leading-5 text-[var(--muted-foreground)]">দাগভিত্তিক জমির পরিমাণ শুধু DLRMS/LISF record JSON-এর area field থেকে Acre-এ দেখানো হয়েছে। RAJUK geometry, polygon, coordinates বা Shape__Area এই খতিয়ান area কলামে ব্যবহার করা হয়নি।</p>
-          ) : null}
-        </Section>
-      ) : null}
-
-      {extraRows.length ? (
-        <Section id="extra-record-data" title="অতিরিক্ত রেকর্ড তথ্য" icon={<Info size={16} className="text-[var(--brand-gold-text)]" />}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[20rem] border-collapse text-sm">
-              <thead><tr className="border-b border-[var(--border-color)] bg-[var(--secondary)]/30 text-left text-xs text-[var(--muted-foreground)]"><th className="px-2 py-2 font-semibold">তথ্য</th><th className="px-2 py-2 font-semibold">মান</th></tr></thead>
-              <tbody>{extraRows.map((row) => <tr key={`${row.label}-${row.value}`} className="border-b border-[var(--border-color)]/70 last:border-0"><td className="px-2 py-2 font-medium">{row.label}</td><td className="px-2 py-2">{row.value}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </Section>
-      ) : null}
-
-      <Section id="verify" title="যাচাই, উৎস ও LandBD সীল" icon={<Info size={16} className="text-[var(--brand-gold-text)]" />}>
-        <div className="grid items-center gap-5 sm:grid-cols-[1fr_auto]">
-          <div>
-            <ul className="space-y-1.5 text-sm leading-6 text-slate-700">
-              <li>• LandBD সরকারি ভূমি-রেকর্ড তথ্যকে পাঠযোগ্য ডিজিটাল বিন্যাসে দেখায়।</li>
-              <li>• এটি সরকারি সার্টিফাইড / আইনগত কপি নয়। সরকারি সিল, স্বাক্ষর বা QR LandBD তৈরি করে না।</li>
-              <li>• খতিয়ানের জমির পরিমাণে GIS geometry-ভিত্তিক area ব্যবহার করা হয় না।</li>
-              <li>• সম্পূর্ণ আইনগত যাচাই ও QR কপির জন্য সরকারি DLRMS / ePorcha ব্যবহার করুন।</li>
-            </ul>
-            <div className="mt-3 flex flex-wrap gap-2 print:hidden">
-              <a href="https://dlrms.land.gov.bd/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center rounded-lg border border-[var(--border-color)] px-3 text-xs font-semibold no-underline hover:bg-[var(--secondary)]">সরকারি DLRMS-এ যাচাই করুন</a>
-              <a href="https://eporcha.gov.bd/" target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center rounded-lg border border-[var(--border-color)] px-3 text-xs font-semibold no-underline hover:bg-[var(--secondary)]">ePorcha দেখুন</a>
-            </div>
-          </div>
-          <LandBDSeal />
-        </div>
-      </Section>
+          <section className="mt-8 text-[13px] leading-6">
+            <p className="font-semibold">বিশেষ দ্রষ্টব্য:</p>
+            <p>১। এই প্রদর্শন সরকারি DLRMS উৎসে পাওয়া রেকর্ড তথ্যের ভিত্তিতে তৈরি।</p>
+            <p>২। এটি সরকার কর্তৃক জারি করা সার্টিফাইড/আইনগত খতিয়ান কপি নয়।</p>
+            <p>৩। উৎসে অনুপস্থিত মালিক, দাগ, শ্রেণী বা জমির পরিমাণ অনুমান করে পূরণ করা হয়নি।</p>
+            <p>৪। সরকারি যাচাই ও QR কপির জন্য DLRMS / ePorcha ব্যবহার করুন।</p>
+          </section>
+        </article>
+      </div>
 
       {isLoggedIn ? (
-        <div className="rounded-xl border border-dashed border-[var(--border-color)] print:hidden" data-exclude-export="1">
-          <button type="button" onClick={() => setTechOpen((value) => !value)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-[var(--muted-foreground)]">
+        <div className="dlrms-official-record mt-3 border border-dashed border-slate-400 bg-white print:hidden" data-exclude-export="1">
+          <button
+            type="button"
+            onClick={() => setTechOpen((value) => !value)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm"
+          >
             প্রযুক্তিগত তথ্য
             {techOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           {techOpen ? (
-            <div className="space-y-2 border-t border-[var(--border-color)] px-4 py-3 text-xs leading-6 text-slate-600">
+            <div className="space-y-1 border-t border-slate-300 px-4 py-3 text-xs leading-6">
               <p>রেকর্ড ID: {khatian.ID}</p>
               {khatian.KHATIAN_ENTRY_ID != null ? <p>KHATIAN_ENTRY_ID: {khatian.KHATIAN_ENTRY_ID}</p> : null}
               <p>JL_NUMBER_ID: {khatian.JL_NUMBER_ID}</p>
               {khatian.SURVEY_ID != null ? <p>SURVEY_ID: {khatian.SURVEY_ID}</p> : null}
               {fullKhatian ? <p>LISF status: {fullKhatian.lisf.status}</p> : null}
-              {model.reconstruction ? <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-slate-950/5 p-2 text-[10px]">{JSON.stringify(model.reconstruction, null, 2)}</pre> : null}
+              {model.reconstruction ? (
+                <pre className="mt-2 max-h-48 overflow-auto border border-slate-300 bg-slate-50 p-2 text-[10px]">
+                  {JSON.stringify(model.reconstruction, null, 2)}
+                </pre>
+              ) : null}
             </div>
           ) : null}
         </div>

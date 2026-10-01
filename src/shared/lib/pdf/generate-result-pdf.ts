@@ -1,10 +1,12 @@
-import { applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox } from "@/src/shared/lib/pdf/branding";
+import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox, type LandBdPdfOrientation } from "@/src/shared/lib/pdf/branding";
 
 export type GenerateResultPdfOptions = {
   source: HTMLElement;
   fileName: string;
   marginMm?: number;
   exportWidthPx?: number;
+  orientation?: LandBdPdfOrientation;
+  chrome?: "landbd" | "none";
   prepareClone?: (clone: HTMLElement) => void;
 };
 
@@ -15,6 +17,7 @@ export type GenerateResultPdfResult =
 type PdfSlice = { offsetY: number; height: number };
 type EncodedCanvas = { bytes: Uint8Array; format: "JPEG" | "PNG" };
 type StylableElement = Element & { style: CSSStyleDeclaration };
+type PdfChrome = "landbd" | "none";
 
 const DEFAULT_MARGIN_MM = 10;
 const DEFAULT_EXPORT_WIDTH_PX = 980;
@@ -48,13 +51,42 @@ function sanitizeFileName(name: string): string {
   );
 }
 
-function contentSizeMm(marginMm: number) {
-  const box = getLandBdA4ContentBox("portrait", marginMm);
+function plainA4ContentBox(orientation: LandBdPdfOrientation, marginMm: number) {
+  const page = orientation === "landscape" ? LANDBD_PDF.a4Landscape : LANDBD_PDF.a4Portrait;
+  return {
+    x: marginMm,
+    y: marginMm,
+    width: page.widthMm - marginMm * 2,
+    height: page.heightMm - marginMm * 2,
+  };
+}
+
+function outputContentBox(
+  orientation: LandBdPdfOrientation,
+  marginMm: number,
+  chrome: PdfChrome,
+) {
+  return chrome === "landbd"
+    ? getLandBdA4ContentBox(orientation, marginMm)
+    : plainA4ContentBox(orientation, marginMm);
+}
+
+function contentSizeMm(
+  marginMm: number,
+  orientation: LandBdPdfOrientation,
+  chrome: PdfChrome,
+) {
+  const box = outputContentBox(orientation, marginMm, chrome);
   return { width: box.width, height: box.height };
 }
 
-function idealPageCssHeight(exportWidthPx: number, marginMm: number): number {
-  const content = contentSizeMm(marginMm);
+function idealPageCssHeight(
+  exportWidthPx: number,
+  marginMm: number,
+  orientation: LandBdPdfOrientation,
+  chrome: PdfChrome,
+): number {
+  const content = contentSizeMm(marginMm, orientation, chrome);
   return Math.max(1, Math.floor((exportWidthPx * content.height) / content.width));
 }
 
@@ -93,11 +125,13 @@ function planSlices(
   breakpoints: number[],
   exportWidthPx: number,
   marginMm: number,
+  orientation: LandBdPdfOrientation,
+  chrome: PdfChrome,
 ): PdfSlice[] {
   const height = Math.max(0, Math.ceil(totalHeight));
   if (!height) return [];
 
-  const idealHeight = idealPageCssHeight(exportWidthPx, marginMm);
+  const idealHeight = idealPageCssHeight(exportWidthPx, marginMm, orientation, chrome);
   const points = normalizeBreakpoints(breakpoints, height);
   const slices: PdfSlice[] = [];
   let offsetY = 0;
@@ -334,20 +368,38 @@ async function renderAtScale(
   scale: number,
   marginMm: number,
   exportWidthPx: number,
+  orientation: LandBdPdfOrientation,
+  chrome: PdfChrome,
 ): Promise<{ pages: number; scale: number }> {
   const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
-  const slices = planSlices(totalHeight, collectBreakpoints(clone), exportWidthPx, marginMm);
+  const slices = planSlices(
+    totalHeight,
+    collectBreakpoints(clone),
+    exportWidthPx,
+    marginMm,
+    orientation,
+    chrome,
+  );
   if (!slices.length || slices.length > MAX_PAGES) {
     throw new Error(`Unsafe PDF page count: ${slices.length}`);
   }
 
-  const pdf = new JsPdf({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  applyLandBdPdfMetadata(pdf, {
-    title: fileName,
-    subject: "LandBD branded A4 result report",
-  });
-  const content = contentSizeMm(marginMm);
-  const contentBox = getLandBdA4ContentBox("portrait", marginMm);
+  const pdf = new JsPdf({ orientation, unit: "mm", format: "a4", compress: true });
+  if (chrome === "landbd") {
+    applyLandBdPdfMetadata(pdf, {
+      title: fileName,
+      subject: "LandBD branded A4 result report",
+    });
+  } else {
+    pdf.setProperties({
+      title: fileName,
+      subject: "DLRMS khatian record export",
+      creator: "LandBD",
+      author: "LandBD",
+    });
+  }
+  const content = contentSizeMm(marginMm, orientation, chrome);
+  const contentBox = outputContentBox(orientation, marginMm, chrome);
 
   for (let index = 0; index < slices.length; index += 1) {
     const slice = slices[index];
@@ -389,7 +441,7 @@ async function renderAtScale(
     if (!canvas.width || !canvas.height) throw new Error(`Empty PDF page ${index + 1}`);
     const encoded = await encodeCanvas(canvas);
 
-    if (index > 0) pdf.addPage("a4", "portrait");
+    if (index > 0) pdf.addPage("a4", orientation);
     const renderedHeight = Math.min(content.height, (slice.height * content.width) / exportWidthPx);
     pdf.addImage(
       encoded.bytes,
@@ -401,12 +453,14 @@ async function renderAtScale(
       undefined,
       "FAST",
     );
-    drawLandBdPdfChrome(pdf, {
-      title: fileName,
-      source: "LandBD application",
-      pageNumber: index + 1,
-      pageCount: slices.length,
-    });
+    if (chrome === "landbd") {
+      drawLandBdPdfChrome(pdf, {
+        title: fileName,
+        source: "LandBD application",
+        pageNumber: index + 1,
+        pageCount: slices.length,
+      });
+    }
     canvas.width = 1;
     canvas.height = 1;
   }
@@ -422,6 +476,8 @@ export async function generateResultPdf({
   fileName,
   marginMm = DEFAULT_MARGIN_MM,
   exportWidthPx = DEFAULT_EXPORT_WIDTH_PX,
+  orientation = "portrait",
+  chrome = "landbd",
   prepareClone,
 }: GenerateResultPdfOptions): Promise<GenerateResultPdfResult> {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -480,6 +536,8 @@ export async function generateResultPdf({
             scale,
             marginMm,
             exportWidthPx,
+            orientation,
+            chrome,
           )),
         };
       } catch (error) {
