@@ -5,13 +5,13 @@ import { getPlots } from "./rajukQuery.service";
 import { RAJUK_DB } from "./rajukLayers.service";
 import { getValidToken } from "./rajukAuth.service";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
-import { applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
+import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome } from "@/src/shared/lib/pdf/branding";
 import { drawAdaptivePlotLabels, drawNorthArrow, drawScaleBar, drawScaleText, type GeoExtent } from "./mouzaCartography";
 
 export type MouzaPublicationRequest = { mouza: string; jl?: string; layers: "rs" | "ms" | "combined"; satellite?: boolean };
 export type MouzaPublicationResult = { filename: string; contentType: "application/pdf"; body: Buffer; meta: { mouza: string; width: number; height: number; zoom: number; resolution: number; crs: string; extent: GeoExtent; tileCount: number; plotCount: number; satellite: boolean } };
 type Ring = number[][]; type Polygon = { rings: Ring[] }; type MouzaRow = { attributes: Record<string, unknown>; geometry?: Polygon };
-const PAGE_W=297,PAGE_H=210,MARGIN=10,MAP_TOP=20,MAP_BOTTOM=35,DRAW_W=PAGE_W-MARGIN*2,DRAW_H=PAGE_H-MAP_TOP-MAP_BOTTOM,PAGE_ASPECT=DRAW_W/DRAW_H,SAT_TIMEOUT=15_000,SAT_W=2480,SAT_H=Math.round(SAT_W/PAGE_ASPECT),MAX_NEIGHBORS=24;
+const PAGE_W=LANDBD_PDF.a4Landscape.widthMm,PAGE_H=LANDBD_PDF.a4Landscape.heightMm,MARGIN=10,MAP_TOP=20,MAP_BOTTOM=35,DRAW_W=PAGE_W-MARGIN*2,DRAW_H=PAGE_H-MAP_TOP-MAP_BOTTOM,PAGE_ASPECT=DRAW_W/DRAW_H,SAT_TIMEOUT=15_000,SAT_W=2480,SAT_H=Math.round(SAT_W/PAGE_ASPECT),MAX_NEIGHBORS=24;
 const text=(a:Record<string,unknown>,keys:string[])=>{for(const k of keys){const v=String(a[k]??"").trim();if(v)return v;}return ""};
 const safePart=(v:string)=>v.replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"")||"mouza";
 function isMs(f:RajukPlotFeature){const a=f.attributes as Record<string,unknown>;return a._layer_source==="ms"||a.plot_kind==="ms"||Boolean(String(a.ms_plot_no??"").trim());}
