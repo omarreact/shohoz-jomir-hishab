@@ -135,7 +135,7 @@ async function requestCitizenJson(
   const outer = asRecord(payload);
   if (outer.success === false) {
     const message = cleanDlrmsCitizenText(outer.message);
-    throw new DlrmsCitizenError(message || "DLRMS citizen request ব্যর্থ হয়েছে。", 502);
+    throw new DlrmsCitizenError(message || "DLRMS citizen request ব্যর্থ হয়েছে।", 502);
   }
 
   return asRecord(outer.data ?? outer);
