@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "landbd",
+  "main": "cloudflare/gateway/src/index.ts",
+  "compatibility_date": "2026-10-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "landbd-staging.pincodeit.com",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "vars": {
+    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "smart-khotiyan",
+    "PROXY_RATE_LIMIT_WINDOW": "60000",
+    "PROXY_RATE_LIMIT_MAX": "100"
+  },
+  "services": [
+    {
+      "binding": "LANDBD_APP",
+      "service": "landbd-app"
+    }
+  ]
+}

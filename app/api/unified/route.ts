@@ -11,6 +11,7 @@ const gateway = new UnifiedGateway();
 
 function clientIp(req: NextRequest): string {
   return (
+    req.headers.get("cf-connecting-ip")?.trim() ||
     req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip")?.trim() ||

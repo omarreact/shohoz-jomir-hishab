@@ -69,3 +69,26 @@ jobs:
         run: npm run build -- --webpack
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+
+  cloudflare-opennext:
+    if: ${{ github.head_ref == 'migration/cloudflare-opennext-landbd' || github.ref == 'refs/heads/migration/cloudflare-opennext-landbd' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Cloudflare OpenNext build
+        run: npm run cf:build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

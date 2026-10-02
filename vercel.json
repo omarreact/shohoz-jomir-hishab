@@ -3,5 +3,6 @@
   "framework": "nextjs",
   "fluid": true,
   "installCommand": "npm install --no-audit --no-fund --prefer-offline",
-  "buildCommand": "next build --webpack"
+  "buildCommand": "next build --webpack",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"migration/cloudflare-opennext-landbd\" ]; then exit 0; else exit 1; fi"
 }

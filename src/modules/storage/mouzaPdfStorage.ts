@@ -3,7 +3,7 @@ import { getStorage } from "firebase-admin/storage";
 
 import "@/src/modules/database/firebaseAdmin";
 
-export type MouzaPdfStorageProvider = "firebase" | "vercel";
+export type MouzaPdfStorageProvider = "cloudflare" | "firebase" | "vercel";
 
 export type MouzaPdfMetadata = {
   pathname: string;
@@ -15,6 +15,33 @@ export type MouzaPdfObject = {
   stream: ReadableStream<Uint8Array>;
   size: number;
   contentType: string;
+};
+
+type R2HeadLike = {
+  size: number;
+};
+
+type R2ObjectBodyLike = {
+  body: ReadableStream<Uint8Array>;
+  size: number;
+  httpMetadata?: {
+    contentType?: string;
+  };
+};
+
+type R2BucketLike = {
+  head(key: string): Promise<R2HeadLike | null>;
+  get(key: string): Promise<R2ObjectBodyLike | null>;
+  put(
+    key: string,
+    value: Uint8Array | ArrayBuffer | ReadableStream<Uint8Array> | string,
+    options?: {
+      httpMetadata?: {
+        contentType?: string;
+        cacheControl?: string;
+      };
+    },
+  ): Promise<unknown>;
 };
 
 function firebaseConfig(): Record<string, unknown> | null {
@@ -43,17 +70,18 @@ function firebaseStorageBucketName(): string | undefined {
 export function mouzaPdfStorageProvider(): MouzaPdfStorageProvider {
   const configured = process.env.LAND_EXPORT_STORAGE_PROVIDER?.trim().toLowerCase();
 
-  if (configured === "firebase" || configured === "vercel") {
+  if (
+    configured === "cloudflare" ||
+    configured === "firebase" ||
+    configured === "vercel"
+  ) {
     return configured;
   }
 
-  // LandBD production remains on Vercel. Firebase-related environment
-  // variables alone must not switch storage providers.
   if (process.env.VERCEL) {
     return "vercel";
   }
 
-  // Firebase App Hosting runs on Cloud Run.
   if (process.env.K_SERVICE || process.env.K_REVISION) {
     return "firebase";
   }
@@ -65,6 +93,19 @@ export function mouzaPdfStorageProvider(): MouzaPdfStorageProvider {
   return "firebase";
 }
 
+async function cloudflareBucket(): Promise<R2BucketLike> {
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const env = getCloudflareContext().env as unknown as {
+    LANDBD_FILES?: R2BucketLike;
+  };
+
+  if (!env.LANDBD_FILES) {
+    throw new Error("LANDBD_FILES R2 binding is not configured");
+  }
+
+  return env.LANDBD_FILES;
+}
+
 function firebaseBucket() {
   const name = firebaseStorageBucketName();
   const storage = getStorage();
@@ -74,7 +115,14 @@ function firebaseBucket() {
 export async function getMouzaPdfMetadata(
   pathname: string,
 ): Promise<MouzaPdfMetadata | null> {
-  if (mouzaPdfStorageProvider() === "vercel") {
+  const provider = mouzaPdfStorageProvider();
+
+  if (provider === "cloudflare") {
+    const meta = await (await cloudflareBucket()).head(pathname);
+    return meta ? { pathname, size: meta.size } : null;
+  }
+
+  if (provider === "vercel") {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) return null;
 
@@ -109,7 +157,19 @@ export async function putMouzaPdf(
   body: Buffer,
   cacheAgeSeconds: number,
 ): Promise<void> {
-  if (mouzaPdfStorageProvider() === "vercel") {
+  const provider = mouzaPdfStorageProvider();
+
+  if (provider === "cloudflare") {
+    await (await cloudflareBucket()).put(pathname, body, {
+      httpMetadata: {
+        contentType: "application/pdf",
+        cacheControl: `private, max-age=${cacheAgeSeconds}`,
+      },
+    });
+    return;
+  }
+
+  if (provider === "vercel") {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
       throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
@@ -139,7 +199,21 @@ export async function putMouzaPdf(
 export async function getMouzaPdf(
   pathname: string,
 ): Promise<MouzaPdfObject | null> {
-  if (mouzaPdfStorageProvider() === "vercel") {
+  const provider = mouzaPdfStorageProvider();
+
+  if (provider === "cloudflare") {
+    const result = await (await cloudflareBucket()).get(pathname);
+    if (!result) return null;
+
+    return {
+      pathname,
+      stream: result.body,
+      size: result.size,
+      contentType: result.httpMetadata?.contentType || "application/pdf",
+    };
+  }
+
+  if (provider === "vercel") {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) return null;
 

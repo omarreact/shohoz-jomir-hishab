@@ -12,6 +12,7 @@ const MAX_COOKIE_AGE_SECONDS = 60 * 60;
 
 function clientIp(req: NextRequest): string {
   return (
+    req.headers.get("cf-connecting-ip")?.trim() ||
     req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
