@@ -160,11 +160,9 @@ export function estimateReportSegmentUnits(
 }
 
 /**
- * Produces dense A4-portrait logical pages for inline preview, print and PDF.
- * Each Khatian stays in one row. The first page reserves room for report
- * metadata; later pages use the taller portrait table area. Line estimates are
- * intentionally narrower than the old landscape layout so long Bangla owner,
- * guardian and Dag values paginate before they can be clipped.
+ * Produces dense A4 logical pages for both portrait and landscape output.
+ * Each Khatian stays in one row. The first page reserves room for metadata,
+ * QR and disclaimer content; later pages devote most of the sheet to the table.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
@@ -178,9 +176,9 @@ export function paginateMouzaReportRows(
   // therefore fewer wrapped lines. These budgets are tuned to keep the table
   // visually dense while still reserving the first-page metadata and footer.
   const resolvedFirstBudget =
-    firstPageBudget ?? (orientation === "landscape" ? 30 : 42);
+    firstPageBudget ?? (orientation === "landscape" ? 20 : 28);
   const resolvedLaterBudget =
-    laterPageBudget ?? (orientation === "landscape" ? 54 : 78);
+    laterPageBudget ?? (orientation === "landscape" ? 30 : 46);
 
   const pages: MouzaReportRowSegment[][] = [];
   let current: MouzaReportRowSegment[] = [];
