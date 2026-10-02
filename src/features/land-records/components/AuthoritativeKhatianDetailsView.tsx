@@ -475,24 +475,11 @@ export default function AuthoritativeKhatianDetailsView({
         }
 
         .dlrms-landbd-record .record-watermark img {
-          width: 118px;
+          width: 320px;
+          max-width: 55vw;
           height: auto;
-          opacity: .11;
+          opacity: .075;
           filter: grayscale(1);
-        }
-
-        .dlrms-landbd-record .record-watermark strong {
-          margin-top: 6px;
-          font-family: Arial, sans-serif !important;
-          font-size: clamp(32px, 5vw, 66px);
-          font-weight: 900;
-          letter-spacing: .08em;
-        }
-
-        .dlrms-landbd-record .record-watermark span {
-          margin-top: 2px;
-          font-size: 16px;
-          font-weight: 700;
         }
 
         .dlrms-landbd-record .record-content {
@@ -594,7 +581,7 @@ export default function AuthoritativeKhatianDetailsView({
             min-width: 0 !important;
             max-width: none !important;
             margin: 0 !important;
-            padding: 7mm 7mm 10mm !important;
+            padding: 7mm 7mm 14mm !important;
             border: 0 !important;
             box-shadow: none !important;
           }
@@ -653,9 +640,32 @@ export default function AuthoritativeKhatianDetailsView({
             padding: 1.35mm 1.25mm !important;
           }
 
+          .dlrms-landbd-record .record-brand-logo {
+            width: 46mm !important;
+            margin-bottom: 1.5mm !important;
+          }
+
+          .dlrms-landbd-record .qr-card {
+            width: 29mm !important;
+            flex-basis: 29mm !important;
+            padding: 1mm !important;
+          }
+
+          .dlrms-landbd-record .qr-card img {
+            width: 25mm !important;
+            height: 25mm !important;
+          }
+
+          .dlrms-landbd-record .qr-card span {
+            font-size: 7pt !important;
+          }
+
           .dlrms-landbd-record .record-watermark {
-            position: fixed;
-            color: rgba(11,93,59,.04);
+            display: none !important;
+          }
+
+          .dlrms-landbd-record .record-local-ribbon {
+            display: none !important;
           }
 
         }
@@ -673,9 +683,7 @@ export default function AuthoritativeKhatianDetailsView({
           <div className="record-accent" aria-hidden="true"><span /><span /><span /></div>
           <div className="record-watermark" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/landbd-symbol-2026.svg" alt="" />
-            <strong>LANDBD</strong>
-            <span>{LANDBD_TAGLINES[0]}</span>
+            <img src="/brand/logo-bangla.svg" alt="" />
           </div>
 
           <div className="record-content">
@@ -836,7 +844,7 @@ export default function AuthoritativeKhatianDetailsView({
                   {khatian.JL_NUMBER ? ` · জে.এল নং: ${toBanglaDigits(khatian.JL_NUMBER)}` : ""}
                 </span>
               </div>
-              <LandBdPrintRibbon className="mt-2 rounded-[3px]" />
+              <LandBdPrintRibbon className="record-local-ribbon mt-2 rounded-[3px]" />
             </footer>
           </div>
         </article>
