@@ -1,0 +1,51 @@
+name: Cloudflare Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "public/**"
+      - "next.config.ts"
+      - "open-next.config.ts"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/cloudflare-compat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  opennext-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: OpenNext Cloudflare build
+        run: npm run cf:build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXTJS_ENV: "production"
+          LANDBD_PLATFORM: "cloudflare-workers"
+          LAND_EXPORT_STORAGE_PROVIDER: "cloudflare"
