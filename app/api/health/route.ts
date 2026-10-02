@@ -4,10 +4,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function hostingPlatform(): string {
-  if (process.env.FIREBASE_CONFIG || process.env.K_SERVICE) {
+  if (process.env.VERCEL) return "vercel";
+  if (process.env.K_SERVICE || process.env.K_REVISION) {
     return "firebase-app-hosting";
   }
-  if (process.env.VERCEL) return "vercel";
   return "local";
 }
 
