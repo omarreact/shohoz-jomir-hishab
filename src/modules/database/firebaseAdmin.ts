@@ -41,12 +41,13 @@ function parsedFirebaseConfig(): Record<string, unknown> | null {
 }
 
 function isGoogleManagedRuntime(): boolean {
-  return Boolean(
-    process.env.K_SERVICE ||
-      process.env.GOOGLE_CLOUD_PROJECT ||
-      process.env.GCLOUD_PROJECT ||
-      process.env.FIREBASE_CONFIG,
-  );
+  // Vercel may have Firebase-related environment variables configured, but
+  // those do not provide Google Application Default Credentials.
+  if (process.env.VERCEL) return false;
+
+  // K_SERVICE/K_REVISION are Cloud Run runtime markers used by Firebase App
+  // Hosting. Only use ADC when the process is actually running there.
+  return Boolean(process.env.K_SERVICE || process.env.K_REVISION);
 }
 
 function initAdmin(): void {
