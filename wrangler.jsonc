@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "landbd",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "vars": {
+    "NEXTJS_ENV": "production",
+    "LANDBD_PLATFORM": "cloudflare-workers",
+    "LANDBD_ENV": "production",
+    "LAND_EXPORT_STORAGE_PROVIDER": "cloudflare"
+  },
+  "r2_buckets": [
+    {
+      "binding": "LANDBD_FILES",
+      "bucket_name": "landbd-files"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "landbd-next-cache"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "landbd-next-tags",
+      "database_id": "71c651eb-6f52-4b92-ab9e-457145992d30"
+    }
+  ],
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "landbd"
+    }
+  ]
+}
