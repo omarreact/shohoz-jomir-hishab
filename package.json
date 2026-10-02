@@ -43,7 +43,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.23.0",
     "maplibre-gl": "^6.6.0",
-    "next": "16.3.7",
+    "next": "16.3.8",
     "next-cloudinary": "^6.17.5",
     "next-firebase-auth-edge": "^1.12.1",
     "next-themes": "^0.4.6",
@@ -65,7 +65,7 @@
     "uuid": "^14.0.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14",
-    "@opennextjs/cloudflare": "^1.20.7"
+    "@opennextjs/cloudflare": "1.20.8"
   },
   "overrides": {
     "firebase-admin": {
@@ -81,7 +81,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.7",
+    "eslint-config-next": "16.3.8",
     "firebase-tools": "^15.24.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
