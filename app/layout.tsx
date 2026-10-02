@@ -39,6 +39,7 @@ const notoSansBengali = Noto_Sans_Bengali({
 
 const siteUrl = new URL("https://landbd.pincodeit.com");
 const socialImage = "/brand/og-default.svg";
+const enableVercelTelemetry = Boolean(process.env.VERCEL);
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
@@ -120,8 +121,12 @@ export default function RootLayout({
           <ConditionalShell>{children}</ConditionalShell>
           <BanglaUiEnforcer />
           <VisitTracker />
-          <Analytics />
-          <SpeedInsights />
+          {enableVercelTelemetry ? (
+            <>
+              <Analytics />
+              <SpeedInsights />
+            </>
+          ) : null}
         </ThemeProvider>
       </body>
     </html>
