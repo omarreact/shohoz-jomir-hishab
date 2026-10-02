@@ -6,6 +6,7 @@ import {
   signOut,
   onIdTokenChanged,
   getIdToken,
+  type User,
 } from "firebase/auth";
 import { auth } from "@/src/modules/database/firebaseClient";
 import { normalizeRole } from "@/src/modules/auth/roles";
@@ -89,13 +90,7 @@ export function useAuth(): AuthState & {
   );
 
   const loadFromToken = useCallback(
-    async (
-      firebaseUser: {
-        uid: string;
-        email: string | null;
-        displayName: string | null;
-      } | null,
-    ) => {
+    async (firebaseUser: User | null) => {
       if (!firebaseUser) {
         await clearServerSession().catch(() => undefined);
         clearClientState();
@@ -105,7 +100,7 @@ export function useAuth(): AuthState & {
       try {
         // Firebase refreshes ID tokens automatically. onIdTokenChanged runs
         // again after a refresh so the HttpOnly server cookie stays in sync.
-        const token = await getIdToken(firebaseUser as never, false);
+        const token = await getIdToken(firebaseUser, false);
         const remote = await establishServerSession(token);
 
         setState({
@@ -176,20 +171,21 @@ export function useAuth(): AuthState & {
   }, [clearClientState, clearServerSession]);
 
   const refresh = useCallback(async () => {
-    if (!auth.currentUser) return false;
+    const currentUser = auth.currentUser;
+    if (!currentUser) return false;
 
     try {
-      const token = await getIdToken(auth.currentUser, true);
+      const token = await getIdToken(currentUser, true);
       const remote = await establishServerSession(token);
 
       setState({
         user: {
-          id: remote.id || auth.currentUser.uid,
-          email: remote.email || auth.currentUser.email || "",
+          id: remote.id || currentUser.uid,
+          email: remote.email || currentUser.email || "",
           name:
             typeof remote.name === "string" && remote.name.trim()
               ? remote.name
-              : auth.currentUser.displayName,
+              : currentUser.displayName,
           role: normalizeRole(remote.role || "User"),
         },
         isLoggedIn: true,
