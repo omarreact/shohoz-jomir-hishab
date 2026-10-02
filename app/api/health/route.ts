@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function hostingPlatform(): string {
+  if (process.env.LANDBD_PLATFORM) return process.env.LANDBD_PLATFORM;
   if (process.env.VERCEL) return "vercel";
   if (process.env.K_SERVICE || process.env.K_REVISION) {
     return "firebase-app-hosting";
@@ -21,6 +22,7 @@ export async function GET() {
       platform: hostingPlatform(),
       commit:
         process.env.LANDBD_GIT_COMMIT_SHA ||
+        process.env.CF_PAGES_COMMIT_SHA ||
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.K_REVISION ||
         "local",
