@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { importX509, jwtVerify } from "jose";
 
-import { getPageAccessLevel } from "@/src/shared/config/pageAccess";
-import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
-import { verifyServerAuth, type ServerUser } from "@/src/modules/auth/serverAuth";
+import {
+  getDefaultPageAccessRules,
+  getPageAccessLevel,
+  type PageAccessLevel,
+} from "@/src/shared/config/pageAccess";
 import {
   isAdminRole,
   isStaffRole,
@@ -15,6 +17,128 @@ let publicKeysCache: Record<string, string> | null = null;
 let keysCacheTime = 0;
 
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
+
+
+type ProxyUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+};
+
+type ProxySiteAccessPolicy = {
+  maintenanceMode: boolean;
+  pageAccess: Record<string, PageAccessLevel>;
+  pageAccessUpdatedAt: string | null;
+  degraded: boolean;
+  reason?: string;
+  loadedAt: number;
+};
+
+const POLICY_TTL_MS = 5_000;
+
+let proxyPolicyCache:
+  | {
+      value: ProxySiteAccessPolicy;
+      expiresAt: number;
+    }
+  | null = null;
+
+function failClosedPolicy(reason: string): ProxySiteAccessPolicy {
+  return {
+    maintenanceMode: true,
+    pageAccess:
+      proxyPolicyCache?.value.pageAccess ?? getDefaultPageAccessRules(),
+    pageAccessUpdatedAt:
+      proxyPolicyCache?.value.pageAccessUpdatedAt ?? null,
+    degraded: true,
+    reason,
+    loadedAt: Date.now(),
+  };
+}
+
+async function getProxySiteAccessPolicy(
+  request: NextRequest,
+): Promise<ProxySiteAccessPolicy> {
+  const now = Date.now();
+  if (proxyPolicyCache && proxyPolicyCache.expiresAt > now) {
+    return proxyPolicyCache.value;
+  }
+
+  try {
+    const url = new URL("/api/public/access-policy", request.url);
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "x-landbd-proxy-internal": "1",
+      },
+    });
+    const body = (await response.json()) as Partial<ProxySiteAccessPolicy>;
+
+    if (
+      typeof body.maintenanceMode !== "boolean" ||
+      !body.pageAccess ||
+      typeof body.pageAccess !== "object" ||
+      typeof body.degraded !== "boolean"
+    ) {
+      throw new Error("site-access-policy-invalid");
+    }
+
+    const policy: ProxySiteAccessPolicy = {
+      maintenanceMode: body.maintenanceMode,
+      pageAccess: body.pageAccess as Record<string, PageAccessLevel>,
+      pageAccessUpdatedAt:
+        typeof body.pageAccessUpdatedAt === "string"
+          ? body.pageAccessUpdatedAt
+          : null,
+      degraded: body.degraded,
+      ...(typeof body.reason === "string" ? { reason: body.reason } : {}),
+      loadedAt:
+        typeof body.loadedAt === "number" ? body.loadedAt : Date.now(),
+    };
+
+    proxyPolicyCache = {
+      value: policy,
+      expiresAt: now + POLICY_TTL_MS,
+    };
+    return policy;
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : "site-access-policy-failed";
+    const policy = failClosedPolicy(reason);
+    proxyPolicyCache = {
+      value: policy,
+      expiresAt: now + POLICY_TTL_MS,
+    };
+    return policy;
+  }
+}
+
+async function getAuthoritativeUser(
+  request: NextRequest,
+  token: string,
+): Promise<ProxyUser> {
+  const url = new URL("/api/auth/me", request.url);
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      "x-landbd-proxy-internal": "1",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      response.status === 403 ? "Account disabled or locked" : "Unauthorized",
+    );
+  }
+
+  const body = (await response.json()) as { user?: ProxyUser };
+  if (!body.user?.id) throw new Error("Unauthorized");
+  return body.user;
+}
 
 async function getFirebasePublicKeys() {
   const now = Date.now();
@@ -106,6 +230,7 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/login",
   "/maintenance",
   "/api/public/maintenance",
+  "/api/public/access-policy",
 ]);
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
@@ -289,13 +414,13 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  let authoritativeUserPromise: Promise<ServerUser> | null = null;
+  let authoritativeUserPromise: Promise<ProxyUser> | null = null;
 
-  async function authoritativeUser(): Promise<ServerUser> {
+  async function authoritativeUser(): Promise<ProxyUser> {
     if (!rawToken) throw new Error("Unauthorized");
 
     if (!authoritativeUserPromise) {
-      authoritativeUserPromise = verifyServerAuth(request);
+      authoritativeUserPromise = getAuthoritativeUser(request, rawToken);
     }
 
     const user = await authoritativeUserPromise;
@@ -308,7 +433,9 @@ export async function proxy(request: NextRequest) {
 
   // Essential maintenance/login/auth endpoints must stay available even when
   // the policy backend itself is unavailable.
-  const policy = maintenanceEssential ? null : await getSiteAccessPolicy();
+  const policy = maintenanceEssential
+    ? null
+    : await getProxySiteAccessPolicy(request);
 
   // Maintenance is the first application access rule.
   if (policy?.maintenanceMode && !maintenanceEssential) {
