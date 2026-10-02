@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import LandBdPrintRibbon, { LANDBD_TAGLINES } from "@/src/shared/components/LandBdPrintRibbon";
+import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { KhatianIndex } from "../types";
 import {
   buildMouzaReportRows,
@@ -9,6 +9,7 @@ import {
   segmentMouzaReportRows,
   summarizeNumericKhatianGaps,
   type HalSabekReportState,
+  type MouzaReportOrientation,
   type MouzaReportRowSegment,
 } from "../reports/mouza-porcha-report";
 
@@ -31,6 +32,7 @@ type Props = {
   mouzaName: string;
   jlNumber: string;
   reportMeta: MouzaPorchaReportMeta | null;
+  pageOrientation: MouzaReportOrientation;
 };
 
 function MultiValueCell({ items }: { items: string[] }) {
@@ -198,10 +200,14 @@ export default function MouzaPorchaDocument({
   mouzaName,
   jlNumber,
   reportMeta,
+  pageOrientation,
 }: Props) {
   const reportRows = useMemo(() => buildMouzaReportRows(rows, halSabek), [rows, halSabek]);
   const segments = useMemo(() => segmentMouzaReportRows(reportRows), [reportRows]);
-  const pages = useMemo(() => paginateMouzaReportRows(segments), [segments]);
+  const pages = useMemo(
+    () => paginateMouzaReportRows(segments, undefined, undefined, pageOrientation),
+    [segments, pageOrientation],
+  );
   const gapSummary = useMemo(
     () => summarizeNumericKhatianGaps(reportRows.map((row) => row.khatianNo)),
     [reportRows],
@@ -244,20 +250,22 @@ export default function MouzaPorchaDocument({
           const firstPage = pageIndex === 0;
           const pageStartIndex = pages.slice(0, pageIndex).reduce((sum, item) => sum + item.length, 0);
           return (
-            <article className="report-page" key={`page-${pageIndex + 1}`}>
+            <article
+              className={`report-page report-page-${pageOrientation}`}
+              data-page-orientation={pageOrientation}
+              key={`page-${pageIndex + 1}`}
+            >
               <div className="report-top-accent" aria-hidden="true"><i /><i /><i /></div>
               <div className="report-watermark" aria-hidden="true">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand/landbd-symbol-2026.svg" alt="" />
-                <span>LANDBD</span>
-                <small>{LANDBD_TAGLINES[0]}</small>
+                <img src="/brand/logo-bangla.svg" alt="" />
               </div>
               {firstPage ? (
                 <>
                   <header className="report-document-header">
                     <div className="report-official-left">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img className="report-official-logo" src="/brand/landbd-logo-horizontal.svg" alt="LandBD" />
+                      <img className="report-official-logo" src="/brand/logo-bangla.svg" alt="সহজ জমির হিসাব - LandBD" />
                       <p>তথ্যসূত্র : DLRMS ভূমি রেকর্ড</p>
                       <p>সার্ভে : {surveyName || "—"}</p>
                     </div>
@@ -368,8 +376,8 @@ export default function MouzaPorchaDocument({
                 <div className="report-footer-disclaimer">
                   এটি সরকারি প্রত্যয়িত পর্চা নয়। দাপ্তরিক বা আইনি ব্যবহারের আগে সরকারি মূল নথির সাথে যাচাই করুন।
                 </div>
-                <LandBdPrintRibbon className="report-footer-ribbon" />
               </footer>
+              <LandBdPrintRibbon className="report-page-ribbon" />
             </article>
           );
         })}
@@ -405,10 +413,7 @@ export default function MouzaPorchaDocument({
           --report-mist: #e7efea;
           position: relative;
           box-sizing: border-box;
-          width: 210mm;
-          min-height: 297mm;
           overflow: hidden;
-          padding: 8mm 7mm 29mm;
           background: #fff;
           color: var(--report-ink);
           border: 1px solid var(--report-border);
@@ -419,7 +424,19 @@ export default function MouzaPorchaDocument({
           -webkit-print-color-adjust: exact;
         }
 
-        .report-page > :not(.report-watermark):not(.report-top-accent) {
+        .report-page.report-page-portrait {
+          width: 210mm;
+          min-height: 297mm;
+          padding: 8mm 7mm 30mm;
+        }
+
+        .report-page.report-page-landscape {
+          width: 297mm;
+          min-height: 210mm;
+          padding: 7mm 8mm 27mm;
+        }
+
+        .report-page > :not(.report-watermark):not(.report-top-accent):not(.report-page-ribbon) {
           position: relative;
           z-index: 2;
         }
@@ -454,31 +471,19 @@ export default function MouzaPorchaDocument({
         }
 
         .report-watermark img {
-          width: 38mm;
-          height: 38mm;
-          opacity: 0.055;
+          width: 88mm;
+          height: auto;
+          opacity: 0.075;
           filter: grayscale(1);
         }
 
-        .report-watermark span {
-          margin-top: 1mm;
-          font-family: var(--font-inter), Inter, Arial, sans-serif !important;
-          font-size: 42pt;
-          font-weight: 850;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-        }
-
-        .report-watermark small {
-          margin-top: 0.5mm;
-          font-size: 11pt;
-          font-weight: 750;
-          letter-spacing: 0.03em;
+        .report-page-landscape .report-watermark img {
+          width: 112mm;
         }
 
         .report-official-logo {
           display: block;
-          width: 34mm;
+          width: 46mm;
           max-width: 100%;
           height: auto;
           margin-bottom: 1.2mm;
@@ -972,7 +977,7 @@ export default function MouzaPorchaDocument({
           position: absolute !important;
           z-index: 3 !important;
           right: 7mm;
-          bottom: 4mm;
+          bottom: 10.5mm;
           left: 7mm;
           display: grid;
           grid-template-columns: 1fr auto 1.4fr;
@@ -1049,10 +1054,28 @@ export default function MouzaPorchaDocument({
           text-align: center;
         }
 
-        .report-footer-ribbon {
-          grid-column: 1 / -1;
-          margin-top: 0.8mm;
-          border-radius: 0.6mm;
+        .report-page-ribbon {
+          position: absolute !important;
+          z-index: 5 !important;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          border-radius: 0;
+        }
+
+        .report-page-ribbon svg {
+          width: 100% !important;
+          height: 9mm !important;
+          min-height: 0 !important;
+        }
+
+        .report-page-landscape .report-page-ribbon svg {
+          height: 8mm !important;
+        }
+
+        .report-page-landscape .report-page-footer {
+          bottom: 9.5mm;
         }
 
         @media (max-width: 900px) {
@@ -1060,11 +1083,17 @@ export default function MouzaPorchaDocument({
           .report-page { transform-origin: top left; }
         }
 
+        @page mouzaPortrait {
+          size: A4 portrait;
+          margin: 0;
+        }
+
+        @page mouzaLandscape {
+          size: A4 landscape;
+          margin: 0;
+        }
+
         @media print {
-          @page {
-            size: A4 portrait;
-            margin: 0;
-          }
 
           html,
           body {
@@ -1096,9 +1125,6 @@ export default function MouzaPorchaDocument({
           }
 
           .report-page {
-            width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
             margin: 0 !important;
             overflow: hidden !important;
             border: 0 !important;
@@ -1106,6 +1132,22 @@ export default function MouzaPorchaDocument({
             box-shadow: none !important;
             break-after: page;
             page-break-after: always;
+          }
+
+          .report-page.report-page-portrait {
+            page: mouzaPortrait;
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            padding: 8mm 7mm 30mm !important;
+          }
+
+          .report-page.report-page-landscape {
+            page: mouzaLandscape;
+            width: 297mm !important;
+            height: 210mm !important;
+            min-height: 210mm !important;
+            padding: 7mm 8mm 27mm !important;
           }
 
           .report-page:last-child {
@@ -1122,26 +1164,6 @@ export default function MouzaPorchaDocument({
             display: none !important;
           }
         }
-
-        @media print and (orientation: portrait) {
-          .report-page {
-            padding: 8mm 7mm 29mm !important;
-          }
-
-          .report-table {
-            font-size: 6.25pt !important;
-            line-height: 1.28 !important;
-          }
-
-          .report-table th {
-            padding: 1.15mm 1mm !important;
-          }
-
-          .report-table td {
-            padding: 1mm 1mm !important;
-          }
-        }
-
 
         /* Official khatian-inspired black-and-white presentation */
         #mouza-porcha-report,
@@ -1201,7 +1223,7 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-official-center {
-          min-width: 52mm;
+          min-width: 48mm;
           text-align: center;
         }
 
@@ -1219,17 +1241,18 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-qr-box {
-          width: 17mm;
-          padding: 0;
-          border: 0;
-          border-radius: 0;
+          width: 28mm;
+          padding: 1mm;
+          border: 0.22mm solid #000;
+          border-radius: 1mm;
           background: #fff;
+          font-size: 6.5pt;
         }
 
         #mouza-porcha-report .report-qr-box img {
-          width: 17mm;
-          height: 17mm;
-          margin: 0;
+          width: 24mm;
+          height: 24mm;
+          margin: 0 auto 0.7mm;
         }
 
         #mouza-porcha-report .report-location-row {
@@ -1341,13 +1364,13 @@ export default function MouzaPorchaDocument({
           border-collapse: collapse;
           table-layout: fixed;
           border: 0.28mm solid #000;
-          font-size: 10.1pt;
-          line-height: 1.34;
+          font-size: 12.35pt;
+          line-height: 1.36;
         }
 
         #mouza-porcha-report .report-table th,
         #mouza-porcha-report .report-table th:first-child {
-          padding: 1.25mm 1.15mm;
+          padding: 1.45mm 1.25mm;
           border: 0.22mm solid #000;
           box-shadow: none;
           background: #fff;
@@ -1363,12 +1386,12 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-table .report-column-numbers th {
           padding: 0.65mm 0.7mm;
-          font-size: 9.2pt;
+          font-size: 11.45pt;
         }
 
         #mouza-porcha-report .report-table td,
         #mouza-porcha-report .report-table tbody tr:nth-child(even) td {
-          padding: 1.1mm 1.15mm;
+          padding: 1.3mm 1.25mm;
           border: 0.22mm solid #000;
           background: #fff;
           color: #000;
@@ -1443,6 +1466,35 @@ export default function MouzaPorchaDocument({
           font-size: 7.7pt;
           font-weight: 400;
           text-align: center;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-document-header {
+          gap: 9mm;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-official-logo {
+          width: 54mm;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-table {
+          font-size: 12.5pt;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-location-row {
+          margin-top: 2mm;
+        }
+
+        #mouza-porcha-report .report-page-portrait .report-page-footer {
+          bottom: 10.5mm;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-page-footer {
+          bottom: 9.5mm;
+        }
+
+        #mouza-porcha-report .report-page-ribbon {
+          display: block !important;
+          border: 0 !important;
         }
 
       `}</style>

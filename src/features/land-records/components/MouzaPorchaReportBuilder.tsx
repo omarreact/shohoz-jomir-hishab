@@ -15,6 +15,7 @@ import {
   summarizeNumericKhatianGaps,
   type HalSabekReportEntry,
   type HalSabekReportState,
+  type MouzaReportOrientation,
 } from "../reports/mouza-porcha-report";
 
 const empty = "-- নির্বাচন করুন --";
@@ -106,6 +107,7 @@ export default function MouzaPorchaReportBuilder() {
   const [surveyId, setSurveyId] = useState("");
   const [mouzaId, setMouzaId] = useState("");
   const [includeHalSabek, setIncludeHalSabek] = useState(false);
+  const [pageOrientation, setPageOrientation] = useState<MouzaReportOrientation>("portrait");
   const [rows, setRows] = useState<KhatianIndex[]>([]);
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
@@ -428,7 +430,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের সাদা-কালো A4 Portrait রিপোর্ট তৈরি করুন। রিপোর্টটি পেজেই দেখা যাবে; DLRMS mapping পাওয়া গেলে সাবেক/হাল দাগও যুক্ত হবে।"
+        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের A4 রিপোর্ট তৈরি করুন। Portrait বা Landscape বেছে নেওয়া যাবে; প্রতিটি পৃষ্ঠায় Bangla LandBD watermark ও footer ribbon থাকবে।"
         pattern="grid"
       />
 
@@ -438,7 +440,7 @@ export default function MouzaPorchaReportBuilder() {
             <CardHeader>
               <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
-                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। রিপোর্ট তৈরি হলে নিচেই A4 Portrait preview দেখা যাবে এবং একই layout PDF/Print-এ ব্যবহার হবে।
+                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। Portrait বা Landscape layout বেছে নিন; preview এবং Print একই orientation ব্যবহার করবে।
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -487,6 +489,15 @@ export default function MouzaPorchaReportBuilder() {
                   ]}
                   loading={loading.mouzas}
                   disabled={!surveyId}
+                />
+                <Select
+                  label="প্রিন্ট পেজ"
+                  value={pageOrientation}
+                  onChange={(event) => setPageOrientation(event.target.value as MouzaReportOrientation)}
+                  options={[
+                    { value: "portrait", label: "A4 Portrait" },
+                    { value: "landscape", label: "A4 Landscape" },
+                  ]}
                 />
               </div>
 
@@ -579,7 +590,7 @@ export default function MouzaPorchaReportBuilder() {
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[var(--muted-foreground)]">
-                {rows.length}টি খতিয়ান {phase === "done" ? "A4 Portrait রিপোর্ট হিসেবে প্রস্তুত" : "লোড হয়েছে"}
+                {rows.length}টি খতিয়ান {phase === "done" ? `A4 ${pageOrientation === "landscape" ? "Landscape" : "Portrait"} রিপোর্ট হিসেবে প্রস্তুত` : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -590,7 +601,7 @@ export default function MouzaPorchaReportBuilder() {
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের preview-টাই A4 Portrait Print layout হিসেবে ব্যবহার হবে।
+                নিচের preview-টাই A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} Print layout হিসেবে ব্যবহার হবে।
               </p>
             </div>
 
@@ -606,6 +617,7 @@ export default function MouzaPorchaReportBuilder() {
                 mouzaName={selectedMouza?.MOUZA_NAME ?? ""}
                 jlNumber={selectedMouza?.JL_NUMBER ?? ""}
                 reportMeta={reportMeta}
+                pageOrientation={pageOrientation}
               />
             </div>
           </section>

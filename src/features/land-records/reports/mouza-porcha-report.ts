@@ -36,6 +36,8 @@ export type KhatianGapSummary = {
   samples: string[];
 };
 
+export type MouzaReportOrientation = "portrait" | "landscape";
+
 /**
  * Preserve source text while giving Chromium one stable Unicode form.
  * NFC is deliberate: do not use NFKC on legal/source record text.
@@ -114,67 +116,96 @@ export function segmentMouzaReportRows(rows: MouzaReportRow[]): MouzaReportRowSe
   }));
 }
 
-function inlineLineEstimate(values: string[], charsPerLine: number): number {
-  if (!values.length) return 1;
-  return Math.max(1, Math.ceil(values.join(", ").length / charsPerLine));
+const banglaGraphemeSegmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter("bn-BD", { granularity: "grapheme" })
+    : null;
+
+function visibleTextLength(value: string): number {
+  if (!value) return 0;
+  if (banglaGraphemeSegmenter) {
+    return Array.from(banglaGraphemeSegmenter.segment(value)).length;
+  }
+  return Array.from(value).length;
 }
 
-export function estimateReportSegmentUnits(row: MouzaReportRowSegment): number {
+function inlineLineEstimate(values: string[], charsPerLine: number): number {
+  if (!values.length) return 1;
+  return Math.max(1, Math.ceil(visibleTextLength(values.join(", ")) / charsPerLine));
+}
+
+export function estimateReportSegmentUnits(
+  row: MouzaReportRowSegment,
+  orientation: MouzaReportOrientation = "portrait",
+): number {
   const historyValues = row.history.map(
     (entry) => `সাবেক ${entry.previousDag || "—"} → হাল ${entry.currentDag || "—"}`,
   );
 
-  // Cells are rendered as inline wrapping text, so estimate visual lines from
-  // the full cell text instead of counting every item as its own block line.
+  // Use grapheme clusters instead of JavaScript string.length. Bangla vowel
+  // signs and combining marks otherwise make rows look much longer than they
+  // visually are, which caused very sparse PDF pages.
+  const lineWidths =
+    orientation === "landscape"
+      ? { owners: 34, guardians: 30, dags: 45, history: 32 }
+      : { owners: 23, guardians: 20, dags: 30, history: 23 };
+
   return Math.max(
     2,
-    inlineLineEstimate(row.owners, 22),
-    inlineLineEstimate(row.guardians, 20),
-    inlineLineEstimate(row.dags, 29),
-    inlineLineEstimate(historyValues, 22),
+    inlineLineEstimate(row.owners, lineWidths.owners),
+    inlineLineEstimate(row.guardians, lineWidths.guardians),
+    inlineLineEstimate(row.dags, lineWidths.dags),
+    inlineLineEstimate(historyValues, lineWidths.history),
   );
 }
 
 /**
- * Produces dense A4-portrait logical pages for inline preview, print and PDF.
- * Each Khatian stays in one row. The first page reserves room for report
- * metadata; later pages use the taller portrait table area. Line estimates are
- * intentionally narrower than the old landscape layout so long Bangla owner,
- * guardian and Dag values paginate before they can be clipped.
+ * Produces dense A4 logical pages for both portrait and landscape output.
+ * Each Khatian stays in one row. The first page reserves room for metadata,
+ * QR and disclaimer content; later pages devote most of the sheet to the table.
  */
 export function paginateMouzaReportRows(
   segments: MouzaReportRowSegment[],
-  firstPageBudget = 22,
-  laterPageBudget = 50,
+  firstPageBudget?: number,
+  laterPageBudget?: number,
+  orientation: MouzaReportOrientation = "portrait",
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
+
+  // Portrait has more vertical room; landscape has more horizontal room and
+  // therefore fewer wrapped lines. These budgets are tuned to keep the table
+  // visually dense while still reserving the first-page metadata and footer.
+  const resolvedFirstBudget =
+    firstPageBudget ?? (orientation === "landscape" ? 20 : 28);
+  const resolvedLaterBudget =
+    laterPageBudget ?? (orientation === "landscape" ? 30 : 46);
 
   const pages: MouzaReportRowSegment[][] = [];
   let current: MouzaReportRowSegment[] = [];
   let used = 0;
-  let budget = firstPageBudget;
+  let budget = resolvedFirstBudget;
 
   for (const segment of segments) {
-    const estimatedUnits = estimateReportSegmentUnits(segment) + 1;
-    const units = Math.min(estimatedUnits, laterPageBudget);
+    const estimatedUnits = estimateReportSegmentUnits(segment, orientation) + 1;
+    const units = Math.min(estimatedUnits, resolvedLaterBudget);
 
     if (current.length > 0 && used + units > budget) {
       pages.push(current);
       current = [];
       used = 0;
-      budget = laterPageBudget;
+      budget = resolvedLaterBudget;
     }
 
     current.push(segment);
     used += units;
 
     // A genuinely huge Khatian is still kept as one row on its own logical
-    // page. The PDF renderer scales that one page rather than clipping data.
+    // page. It is never split into synthetic continuation records.
     if (estimatedUnits >= budget && current.length === 1) {
       pages.push(current);
       current = [];
       used = 0;
-      budget = laterPageBudget;
+      budget = resolvedLaterBudget;
     }
   }
 

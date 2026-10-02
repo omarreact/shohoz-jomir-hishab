@@ -102,6 +102,28 @@ describe("mouza porcha report helpers", () => {
     expect(Math.max(...pages.map((page) => page.length))).toBeGreaterThanOrEqual(15);
   });
 
+  it("supports denser portrait and landscape pagination without splitting Khatians", () => {
+    const sourceRows = Array.from({ length: 60 }, (_, index) => ({
+      ...baseRow,
+      ID: index + 1,
+      KHATIAN_NO: String(index + 1),
+      OWNERS: `মোঃ আব্দুর রহমান, রহিমা খাতুন, মালিক ${index + 1}`,
+      GUARDIANS: `পিং মোঃ করিম, জং মোঃ সালাম`,
+      DAGS: `${1200 + index}, ${2200 + index}`,
+    }));
+    const segments = segmentMouzaReportRows(buildMouzaReportRows(sourceRows, {}));
+
+    const portrait = paginateMouzaReportRows(segments, undefined, undefined, "portrait");
+    const landscape = paginateMouzaReportRows(segments, undefined, undefined, "landscape");
+
+    expect(portrait.flat()).toHaveLength(60);
+    expect(landscape.flat()).toHaveLength(60);
+    expect(portrait.flat().every((row) => row.continuation === false)).toBe(true);
+    expect(landscape.flat().every((row) => row.continuation === false)).toBe(true);
+    expect(Math.max(...portrait.map((page) => page.length))).toBeGreaterThanOrEqual(12);
+    expect(Math.max(...landscape.map((page) => page.length))).toBeGreaterThanOrEqual(10);
+  });
+
   it("labels numeric sequence gaps as a hint rather than treating fractional records as missing", () => {
     const summary = summarizeNumericKhatianGaps(["1", "2", "4", "4/1", "7/2"]);
     expect(summary.count).toBe(1);
