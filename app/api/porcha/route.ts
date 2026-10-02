@@ -16,6 +16,17 @@ const porchaRecords: PorchaRecord[] = Array.isArray(porchaData)
     )
   : [];
 
+
+function clientIp(request: NextRequest): string {
+  return (
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
+
 function parsePage(raw: string | null): number | null {
   const page = Number(raw ?? "1");
   if (!Number.isSafeInteger(page) || page < 1 || page > MAX_PAGE) return null;
