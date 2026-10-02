@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import LandBdPrintRibbon, { LANDBD_TAGLINES } from "@/src/shared/components/LandBdPrintRibbon";
+import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian, FullKhatianDag, FullKhatianOwner } from "../full-khatian";
 import type { KhatianDetails } from "../types";
