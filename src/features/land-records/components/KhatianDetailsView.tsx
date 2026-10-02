@@ -30,7 +30,10 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
 
   return (
-    <div className={`dlrms-print-document dlrms-print-document-${pageOrientation}`}>
+    <div
+      className={`dlrms-print-document dlrms-print-document-${pageOrientation}`}
+      data-print-layout="landbd-v3"
+    >
       <style>{`
         .dlrms-fixed-print-watermark,
         .dlrms-fixed-print-ribbon {
