@@ -47,13 +47,17 @@ export function mouzaPdfStorageProvider(): MouzaPdfStorageProvider {
     return configured;
   }
 
-  // Firebase App Hosting runs on Cloud Run and supplies FIREBASE_CONFIG.
-  if (process.env.K_SERVICE || process.env.FIREBASE_CONFIG) {
+  // LandBD production remains on Vercel. Firebase-related environment
+  // variables alone must not switch storage providers.
+  if (process.env.VERCEL) {
+    return "vercel";
+  }
+
+  // Firebase App Hosting runs on Cloud Run.
+  if (process.env.K_SERVICE || process.env.K_REVISION) {
     return "firebase";
   }
 
-  // Preserve the existing production path while Vercel is still serving
-  // traffic during the migration window.
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     return "vercel";
   }
