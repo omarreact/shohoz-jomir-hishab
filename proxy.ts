@@ -26,7 +26,7 @@ async function getFirebasePublicKeys() {
   try {
     const response = await fetch(
       "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
-      { next: { revalidate: 3600 } },
+      { cache: "no-store" },
     );
 
     if (!response.ok) return null;
@@ -236,7 +236,7 @@ export async function proxy(request: NextRequest) {
 
   // Best-effort per-instance burst protection only. Route-level distributed
   // limits remain authoritative where configured.
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = request.headers.get("cf-connecting-ip")?.trim() || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
   const windowMs = parseInt(process.env.PROXY_RATE_LIMIT_WINDOW || "60000", 10);
   const max = parseInt(process.env.PROXY_RATE_LIMIT_MAX || "100", 10);
   const now = Date.now();
