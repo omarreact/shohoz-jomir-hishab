@@ -4,7 +4,7 @@ import {
   getApps,
   initializeApp,
 } from "firebase-admin/app";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { initializeFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
 
 let adminReady = false;
@@ -126,8 +126,17 @@ export function isFirebaseAdminReady(): boolean {
   return adminReady;
 }
 
-export const db: Firestore = getFirestore();
-export const auth: Auth = getAuth();
+const adminApp = getApps()[0];
+
+if (!adminApp) {
+  throw new Error("[FirebaseAdmin] app initialization failed");
+}
+
+// Cloudflare Workers does not provide the native gRPC transport used by the
+// default Firestore Admin client. preferRest keeps the same Admin SDK API while
+// using HTTP transport and is also valid on Vercel/Node.js.
+export const db: Firestore = initializeFirestore(adminApp, { preferRest: true });
+export const auth: Auth = getAuth(adminApp);
 
 export const collections = {
   users: db.collection("users"),
