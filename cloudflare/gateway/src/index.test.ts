@@ -1,3 +1,8 @@
+jest.mock("jose", () => ({
+  importX509: jest.fn(),
+  jwtVerify: jest.fn(),
+}));
+
 import {
   __resetGatewayStateForTests,
   handleGatewayRequest,
