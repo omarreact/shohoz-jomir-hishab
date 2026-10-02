@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import porchaData from "@/src/modules/porcha/data/porcha.json";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
 export const runtime = "nodejs";
@@ -11,48 +10,11 @@ const MAX_PAGE = 10_000;
 
 type PorchaRecord = Record<string, unknown>;
 
-let porchaDataPromise: Promise<PorchaRecord[]> | null = null;
-
-function clientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
-}
-
-function loadPorchaData(): Promise<PorchaRecord[]> {
-  if (porchaDataPromise) return porchaDataPromise;
-
-  const filePath = path.join(
-    process.cwd(),
-    "src",
-    "modules",
-    "porcha",
-    "data",
-    "porcha.json",
-  );
-
-  porchaDataPromise = fs
-    .readFile(filePath, "utf8")
-    .then((contents) => JSON.parse(contents) as unknown)
-    .then((parsed) => {
-      if (!Array.isArray(parsed)) {
-        throw new Error("Porcha data is not an array");
-      }
-      return parsed.filter(
-        (item): item is PorchaRecord => !!item && typeof item === "object",
-      );
-    })
-    .catch((error) => {
-      // Allow a later invocation to retry if the first load failed.
-      porchaDataPromise = null;
-      throw error;
-    });
-
-  return porchaDataPromise;
-}
+const porchaRecords: PorchaRecord[] = Array.isArray(porchaData)
+  ? (porchaData as unknown[]).filter(
+      (item): item is PorchaRecord => !!item && typeof item === "object",
+    )
+  : [];
 
 function parsePage(raw: string | null): number | null {
   const page = Number(raw ?? "1");
@@ -112,7 +74,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await loadPorchaData();
+    const data = porchaRecords;
     const query = rawQuery.toLocaleLowerCase("bn-BD");
     const filteredData = query
       ? data.filter((item) => matchesQuery(item, query))
