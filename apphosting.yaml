@@ -1,0 +1,35 @@
+# Firebase App Hosting runtime configuration for LandBD.
+# Secrets and Firebase web config values are intentionally managed in the
+# Firebase console / Secret Manager rather than committed to Git.
+runConfig:
+  cpu: 1
+  memoryMiB: 1024
+  minInstances: 0
+  maxInstances: 20
+  concurrency: 40
+
+env:
+  - variable: LAND_RECORD_PROVIDER
+    value: dlrms
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: LISF_ENABLED
+    value: "0"
+    availability:
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_ALLOW_BOOTSTRAP_ADMIN
+    value: "false"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # On Firebase App Hosting, generated private Mouza PDFs are stored in
+  # Firebase/Google Cloud Storage. During the transition, Vercel deployments
+  # continue using Vercel Blob unless this variable is explicitly overridden.
+  - variable: LAND_EXPORT_STORAGE_PROVIDER
+    value: firebase
+    availability:
+      - RUNTIME

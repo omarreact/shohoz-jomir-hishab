@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
-import { head, put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { exportMouzaRaster } from "@/src/services/rajuk/mouzaRasterExport.service";
 import { exportMouzaPublicationPdf } from "@/src/services/rajuk/mouzaPublicationPdfV2.service";
 import { mouzaExportQuerySchema, type MouzaExportQuery } from "@/src/services/rajuk/schemas/mouzaExport.schema";
 import { createPrivateDownloadToken } from "@/src/services/rajuk/privateMouzaPdfToken";
+import {
+  getMouzaPdfMetadata,
+  mouzaPdfStorageProvider,
+  putMouzaPdf,
+} from "@/src/modules/storage/mouzaPdfStorage";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import {
@@ -54,39 +58,27 @@ function pdfBlobPathname(key: string): string {
 }
 
 async function tryCachedPdf(key: string): Promise<PdfCacheHit | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
   const pathname = pdfBlobPathname(key);
   try {
-    const meta = await head(pathname, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    const meta = await getMouzaPdfMetadata(pathname);
     if (!meta) return null;
     return {
       pathname,
       downloadToken: createPrivateDownloadToken(pathname),
       filename: pathname.split("/").pop() || "landbd-mouza-map.pdf",
-      size: typeof meta.size === "number" ? meta.size : undefined,
+      size: meta.size,
     };
   } catch {
     return null;
   }
 }
 
-async function uploadPdfToBlob(
+async function uploadPdfToStorage(
   result: Awaited<ReturnType<typeof exportMouzaPublicationPdf>>,
   key: string,
 ): Promise<{ pathname: string; downloadToken: string }> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not configured; large Vector PDF delivery requires a Vercel Blob store");
-  }
-
   const pathname = pdfBlobPathname(key);
-  await put(pathname, result.body, {
-    access: "private",
-    addRandomSuffix: false,
-    contentType: "application/pdf",
-    cacheControlMaxAge: PDF_CACHE_AGE,
-    multipart: true,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
-  });
+  await putMouzaPdf(pathname, result.body, PDF_CACHE_AGE);
   return { pathname, downloadToken: createPrivateDownloadToken(pathname) };
 }
 
@@ -142,7 +134,7 @@ async function runExport(input: unknown, isAdmin: boolean): Promise<
     if (cached) return { cached, key };
 
     // Prevent a serverless cache stampede when several admins request the same
-    // expensive Mouza export concurrently on different Vercel instances.
+    // expensive Mouza export concurrently on different runtime instances.
     const lock = await tryAcquireDistributedLock(`mouza-pdf:${key}`, PDF_LOCK_TTL_SECONDS);
     if (!lock) {
       // A previous invocation may have completed between the cache check and lock attempt.
@@ -244,19 +236,19 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
       retrieveUrl.searchParams.set("token", out.cached.downloadToken);
       return NextResponse.json(
         { ok: true, downloadUrl: retrieveUrl.toString(), filename: out.cached.filename, size: out.cached.size, cache: "HIT" },
-        { status: 200, headers: { "Cache-Control": "private, no-store", "X-LandBD-Blob": "vercel-blob-hit" } },
+        { status: 200, headers: { "Cache-Control": "private, no-store", "X-LandBD-Storage": mouzaPdfStorageProvider(), "X-LandBD-Cache": "hit" } },
       );
     }
 
     if ("lock" in out && "key" in out && "result" in out) {
       const generation = out as PdfGeneration;
       try {
-        const blob = await uploadPdfToBlob(generation.result, generation.key);
+        const stored = await uploadPdfToStorage(generation.result, generation.key);
         const retrieveUrl = new URL("/api/mouza-map/retrieve", request.url);
-        retrieveUrl.searchParams.set("token", blob.downloadToken);
+        retrieveUrl.searchParams.set("token", stored.downloadToken);
         return NextResponse.json(
           { ok: true, downloadUrl: retrieveUrl.toString(), filename: generation.result.filename, size: generation.result.body.length, cache: "MISS" },
-          { status: 201, headers: { "Cache-Control": "private, no-store", "X-LandBD-Blob": "vercel-blob-private" } },
+          { status: 201, headers: { "Cache-Control": "private, no-store", "X-LandBD-Storage": mouzaPdfStorageProvider(), "X-LandBD-Cache": "miss" } },
         );
       } finally {
         await releaseDistributedLock(generation.lock).catch((releaseError) => {

@@ -12,7 +12,7 @@
     "rajuk:export": "tsx scripts/rajuk-export.ts"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

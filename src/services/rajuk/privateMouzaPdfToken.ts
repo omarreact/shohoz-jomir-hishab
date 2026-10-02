@@ -5,23 +5,37 @@ const TOKEN_VERSION = "v1";
 const PATH_PREFIX = "landbd/mouza-pdf/";
 
 function signingSecret(): string {
-  const secret = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!secret) throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
+  const secret =
+    process.env.MOUZA_DOWNLOAD_SIGNING_SECRET ||
+    process.env.BLOB_READ_WRITE_TOKEN;
+
+  if (!secret) {
+    throw new Error("MOUZA_DOWNLOAD_SIGNING_SECRET is not configured");
+  }
+
   return secret;
 }
 
 function sign(payload: string): string {
-  return createHmac("sha256", signingSecret()).update(payload).digest("base64url");
+  return createHmac("sha256", signingSecret())
+    .update(payload)
+    .digest("base64url");
 }
 
 export function createPrivateDownloadToken(pathname: string): string {
-  if (!pathname.startsWith(PATH_PREFIX)) throw new Error("Invalid private Blob pathname");
+  if (!pathname.startsWith(PATH_PREFIX)) {
+    throw new Error("Invalid private PDF pathname");
+  }
+
   const exp = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
   const payload = `${TOKEN_VERSION}.${exp}.${pathname}`;
+
   return `${Buffer.from(payload, "utf8").toString("base64url")}.${sign(payload)}`;
 }
 
-export function verifyPrivateDownloadToken(token: string): { pathname: string; exp: number } | null {
+export function verifyPrivateDownloadToken(
+  token: string,
+): { pathname: string; exp: number } | null {
   const [encoded, signature] = token.split(".");
   if (!encoded || !signature) return null;
 
@@ -42,11 +56,19 @@ export function verifyPrivateDownloadToken(token: string): { pathname: string; e
   const exp = Number(expText);
 
   if (version !== TOKEN_VERSION || !pathname.startsWith(PATH_PREFIX)) return null;
-  if (!Number.isSafeInteger(exp) || exp <= Math.floor(Date.now() / 1000)) return null;
+  if (!Number.isSafeInteger(exp) || exp <= Math.floor(Date.now() / 1000)) {
+    return null;
+  }
 
   const expected = Buffer.from(sign(payload), "utf8");
   const provided = Buffer.from(signature, "utf8");
-  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) return null;
+
+  if (
+    provided.length !== expected.length ||
+    !timingSafeEqual(provided, expected)
+  ) {
+    return null;
+  }
 
   return { pathname, exp };
 }
