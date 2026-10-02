@@ -147,7 +147,7 @@ export async function getMouzaPdf(
       pathname,
       stream: result.stream,
       size: result.blob.size,
-      contentType: result.blob.type || "application/pdf",
+      contentType: result.blob.contentType || "application/pdf",
     };
   }
 
