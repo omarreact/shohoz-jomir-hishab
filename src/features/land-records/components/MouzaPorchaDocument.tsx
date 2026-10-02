@@ -1484,6 +1484,19 @@ export default function MouzaPorchaDocument({
           margin-top: 2mm;
         }
 
+        #mouza-porcha-report .report-page-portrait .report-page-footer {
+          bottom: 10.5mm;
+        }
+
+        #mouza-porcha-report .report-page-landscape .report-page-footer {
+          bottom: 9.5mm;
+        }
+
+        #mouza-porcha-report .report-page-ribbon {
+          display: block !important;
+          border: 0 !important;
+        }
+
       `}</style>
     </section>
   );
