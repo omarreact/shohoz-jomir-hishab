@@ -125,8 +125,8 @@ export async function putMouzaPdf(
 
   await firebaseBucket().file(pathname).save(body, {
     resumable: body.length >= 5 * 1024 * 1024,
-    contentType: "application/pdf",
     metadata: {
+      contentType: "application/pdf",
       cacheControl: `private, max-age=${cacheAgeSeconds}`,
     },
   });
