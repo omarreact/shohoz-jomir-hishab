@@ -26,27 +26,35 @@ jobs:
       - name: Install application dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install Cloudflare adapter tooling
-        run: npm install --no-save --no-package-lock next@16.3.8 eslint-config-next@16.3.8 @opennextjs/cloudflare@1.20.8 @opentelemetry/api@1.9.0 wrangler@latest
+      - name: Initialize vinext Cloudflare target
+        run: >-
+          npx --yes vinext@latest init
+          --skip-check
+          --platform=cloudflare
+          --cdn-cache=none
+          --data-cache=none
+          --image-optimization=none
 
-      - name: Build OpenNext Worker bundle
-        run: npx opennextjs-cloudflare build
+      - name: Build vinext Cloudflare output
+        run: npm run build:vinext
         env:
           NODE_ENV: production
           LAND_EXPORT_STORAGE_PROVIDER: firebase
 
-      - name: Verify expected bundle
+      - name: Verify Cloudflare build output
         run: |
-          test -f .open-next/worker.js
-          test -d .open-next/assets
+          test -f cloudflare.config.ts
+          test -f vite.config.ts
+          test -f dist/server/wrangler.json
 
-      - name: Package staging artifact
-        run: tar -czf landbd-open-next.tar.gz .open-next wrangler.jsonc open-next.config.ts
+      - name: Package migration output
+        run: |
+          tar -czf landbd-vinext-migration.tar.gz             package.json package-lock.json             vite.config.ts cloudflare.config.ts             dist/server/wrangler.json
 
-      - name: Upload staging artifact
+      - name: Upload migration artifact
         uses: actions/upload-artifact@v4
         with:
-          name: landbd-open-next
-          path: landbd-open-next.tar.gz
+          name: landbd-vinext-migration
+          path: landbd-vinext-migration.tar.gz
           if-no-files-found: error
           retention-days: 7
