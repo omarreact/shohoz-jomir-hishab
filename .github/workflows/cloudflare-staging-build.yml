@@ -27,7 +27,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Install Cloudflare adapter tooling
-        run: npm install --no-save --no-package-lock @opennextjs/cloudflare@latest wrangler@latest
+        run: npm install --no-save --no-package-lock next@16.3.8 eslint-config-next@16.3.8 @opennextjs/cloudflare@1.20.8 wrangler@latest
 
       - name: Build OpenNext Worker bundle
         run: npx opennextjs-cloudflare build
