@@ -1,3 +1,5 @@
+import { logger } from "@/src/shared/utils/logger";
+
 /**
  * High-resolution Khatian image export.
  *
@@ -375,7 +377,7 @@ export async function exportKhatianImage(
   try {
     html2canvas = (await import("html2canvas")).default;
   } catch (error) {
-    console.error("Khatian export library load failed", error);
+    logger.error("Khatian export library load failed", error);
     return { ok: false, error: "ছবি তৈরির লাইব্রেরি লোড করা যায়নি।" };
   }
 
@@ -421,7 +423,7 @@ export async function exportKhatianImage(
 
     const candidates = safeScales(clone, scales);
     if (!candidates.length) {
-      console.error("Khatian export dimensions exceed safe browser canvas limits", {
+      logger.error("Khatian export dimensions exceed safe browser canvas limits", {
         width: clone.scrollWidth,
         height: clone.scrollHeight,
       });
@@ -475,11 +477,11 @@ export async function exportKhatianImage(
         return result;
       } catch (error) {
         lastError = error;
-        console.warn(`Khatian image render failed at scale ${scale}; trying a safer scale`, error);
+        logger.warn(`Khatian image render failed at scale ${scale}; trying a safer scale`, error);
       }
     }
 
-    console.error("Khatian image export failed after all safe scale fallbacks", lastError);
+    logger.error("Khatian image export failed after all safe scale fallbacks", lastError);
     return {
       ok: false,
       error: "খতিয়ানের ছবি তৈরি করা যায়নি। আবার চেষ্টা করুন অথবা প্রিন্ট / PDF ব্যবহার করুন।",
