@@ -13,9 +13,31 @@ import {
   sanitizeRajukDiagnosticUrl,
 } from "@/src/services/rajuk/rajukProxyDiagnostics";
 import { DATA_MONITOR_SERVICES } from "@/src/features/admin/data-monitor/api-registry";
+import { RAJUK_DB, RAJUK_LAYERS } from "@/src/services/rajuk/rajukLayers.service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+
+const UPSTREAM_ENDPOINTS: Readonly<Record<string, string>> = {
+  "rs-plots": `${RAJUK_DB}/0`,
+  "rs-mouza": `${RAJUK_DB}/1`,
+  upazila: `${RAJUK_DB}/9`,
+  district: `${RAJUK_DB}/10`,
+  "dap-landuse": RAJUK_LAYERS.dap.service,
+  "rs-mauza-tiles": RAJUK_LAYERS.rs.service,
+  "ms-mauza-tiles": RAJUK_LAYERS.ms.service,
+  flood: RAJUK_LAYERS.flood.service,
+  "overlay-boundary": RAJUK_LAYERS.boundary.service,
+  transport: RAJUK_LAYERS.transport.service,
+};
+
+function upstreamEndpoint(service: (typeof DATA_MONITOR_SERVICES)[number]): string {
+  if (service.kind === "external") return service.endpoint;
+  const endpoint = UPSTREAM_ENDPOINTS[service.id];
+  if (!endpoint) throw new Error("No upstream endpoint configured for monitored service");
+  return endpoint;
+}
 
 type MetadataAttempt = {
   response: Response;
@@ -63,7 +85,7 @@ export async function GET(request: NextRequest) {
   if (!service) return NextResponse.json({ error: "Unknown service" }, { status: 404 });
 
   try {
-    const url = new URL(service.endpoint);
+    const url = new URL(upstreamEndpoint(service));
     const configuredAsProtected = service.kind === "feature" || service.id === "ms-mauza-tiles" || service.id === "flood";
 
     // Always try anonymously first. Public services must not depend on token health.
