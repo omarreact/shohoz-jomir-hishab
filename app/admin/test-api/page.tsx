@@ -2,12 +2,11 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isAdminRole } from "@/src/modules/auth/roles";
 import { Button } from "@/src/shared/ui/button";
 import { ShieldCheck, Globe, Loader2, Play } from "lucide-react";
 
 export default function TestApiPage() {
-  const { user, isLoggedIn, loading: authChecking } = useAuth();
+  const { isLoggedIn, loading: authChecking } = useAuth();
   const [activeTab, setActiveTab] = useState<"public" | "private">("public");
   
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -17,7 +16,7 @@ export default function TestApiPage() {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
   }
 
-  if (!isLoggedIn || !isAdminRole(user?.role)) {
+  if (!isLoggedIn) {
     return <div className="p-8 text-center text-red-500">অননুমোদিত অ্যাক্সেস</div>;
   }
 
