@@ -110,8 +110,13 @@ async function loadPolicyFromFirestore(): Promise<SiteAccessPolicy> {
     throw new Error("maintenance-setting-invalid");
   }
 
+  // Emergency operational override: open public routes without weakening
+  // page-level authorization, admin checks, or API authorization.
+  const forcePublicAccess =
+    process.env.LANDBD_FORCE_PUBLIC_ACCESS === "true";
+
   return {
-    maintenanceMode,
+    maintenanceMode: forcePublicAccess ? false : maintenanceMode,
     pageAccess: normalizeStoredPageAccess(pageAccessData),
     pageAccessUpdatedAt:
       typeof pageAccessData?.updatedAt === "string" ? pageAccessData.updatedAt : null,
