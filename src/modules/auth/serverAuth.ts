@@ -14,6 +14,10 @@ export interface ServerUser {
   role: AppRole;
 }
 
+export function authenticatedFullAccessEnabled(): boolean {
+  return process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
+}
+
 /**
  * Firebase Admin is loaded lazily so a serverless route can still return a
  * JSON error when Admin credentials are invalid.
@@ -85,7 +89,7 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
 /** Super Admin only (sensitive platform-wide controls). */
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!isSuperAdminRole(user.role)) {
+  if (!authenticatedFullAccessEnabled() && !isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
   return user;
@@ -94,7 +98,7 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
 /** Admin or Super Admin only (users, settings, metrics). */
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!isAdminRole(user.role)) {
+  if (!authenticatedFullAccessEnabled() && !isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
   return user;
@@ -103,7 +107,7 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
 /** Editor+ (blog / pages). */
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!isStaffRole(user.role)) {
+  if (!authenticatedFullAccessEnabled() && !isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
   return user;
