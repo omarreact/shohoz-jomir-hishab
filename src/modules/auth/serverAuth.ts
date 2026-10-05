@@ -14,6 +14,10 @@ export interface ServerUser {
   role: AppRole;
 }
 
+/**
+ * Operational switch: when enabled, every valid active Firebase session gets
+ * the full authenticated LandBD surface. Anonymous access remains policy-driven.
+ */
 export function authenticatedFullAccessEnabled(): boolean {
   return process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
 }
