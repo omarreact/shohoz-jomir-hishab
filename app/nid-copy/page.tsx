@@ -135,7 +135,7 @@ export default function NidCopyPage() {
     }
   }
 
-  const fields = record
+  const fields: Array<[string, string | null]> = record
     ? [
         ["Birth Registration Number", record.birthRegistrationNumber],
         ["Date of Birth", record.dateOfBirth],
