@@ -16,15 +16,6 @@ import {
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
-
-function resolveLoginTarget(from: string | null): string {
-  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/";
-
-  const pathname = from.split(/[?#]/, 1)[0] || "/";
-  if (pathname === "/login" || pathname.startsWith("/login/")) return "/";
-
-  return from;
-}
 import { resolveLoginTarget } from "@/src/modules/auth/loginRedirect";
 
 function LoginForm() {
