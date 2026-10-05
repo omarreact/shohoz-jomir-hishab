@@ -6,7 +6,7 @@ import {
   RAJUK_PUBLIC_CONFIG,
 } from "@/src/services/rajuk/rajukAuth.service";
 import { hasUpstashConfig } from "@/src/services/rajuk/rajukRedis.service";
-import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import { authenticatedFullAccessEnabled, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     const user = await verifyStaffAuth(req);
-    if (!isAdminRole(user.role)) {
+    if (!authenticatedFullAccessEnabled() && !isAdminRole(user.role)) {
       return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
     }
   } catch (error: unknown) {

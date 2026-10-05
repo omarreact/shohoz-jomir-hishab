@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import { authenticatedFullAccessEnabled, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const user = await verifyStaffAuth(req);
-    const admin = isAdminRole(user.role);
+    const admin = authenticatedFullAccessEnabled() || isAdminRole(user.role);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
     const [blogSnap, pageCountRes, userCountRes, rajukTokenDoc, maintenanceDoc] =

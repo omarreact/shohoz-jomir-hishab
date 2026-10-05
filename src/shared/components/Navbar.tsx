@@ -23,7 +23,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isAdminRole } from "@/src/modules/auth/roles";
 import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import {
   FEATURE_LABELS,
@@ -154,7 +153,7 @@ export default function Navbar() {
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
-  const canSeeMapQa = isAdminRole(user?.role);
+  const canSeeMapQa = isLoggedIn;
 
   const visibleGroups = useMemo(
     () =>
