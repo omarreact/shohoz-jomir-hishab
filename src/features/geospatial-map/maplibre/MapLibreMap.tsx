@@ -9,6 +9,7 @@ import type { Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { logger } from "@/src/shared/utils/logger";
 import { sendPlotToFaraez, sendPlotToKhatiyan } from "@/src/modules/khatiyan/gis-bridge";
 import { useLiveLocationTracking } from "@/src/features/geospatial-map/hooks/useLiveLocationTracking";
 import {
@@ -216,7 +217,7 @@ export default function MapLibreMap() {
           if (!found.length) notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");
         } catch (error) {
           if (controller.signal.aborted || requestId !== identifyRequestIdRef.current) return;
-          console.error("RAJUK identify failed:", error);
+          logger.warn("RAJUK identify failed", error);
           notify(error instanceof Error ? error.message : "দাগ শনাক্ত করা যায়নি");
         }
       })();
@@ -235,7 +236,7 @@ export default function MapLibreMap() {
         setMapReady(true);
         void loadExtent();
       } catch (error) {
-        console.error("MapLibre initialization failed:", error);
+        logger.error("MapLibre initialization failed", error);
         setInitError(error instanceof Error ? error.message : "Map initialization failed");
       }
     });
@@ -312,7 +313,7 @@ export default function MapLibreMap() {
         setVectorStatus(`${rsFeatures.length + msFeatures.length}টি দাগ লোড হয়েছে`);
       } catch (error) {
         if (controller.signal.aborted || requestId !== extentRequestIdRef.current) return;
-        console.error("RAJUK extent load failed:", error);
+        logger.warn("RAJUK extent load failed", error);
         setVectorStatus(error instanceof Error ? error.message : "দাগের সীমানা লোড করা যায়নি");
       }
     }

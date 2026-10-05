@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { logger } from "@/src/shared/utils/logger";
 import {
   getPosition,
   MAP_VISIT_CONSENT_KEY,
@@ -23,7 +24,7 @@ export function useMapVisitConsent() {
       }
       setOpen(false);
     } catch (error) {
-      console.error("[map-visits] tracking failed", error);
+      logger.warn("[map-visits] tracking failed", error);
       setOpen(false);
     } finally {
       setBusy(false);

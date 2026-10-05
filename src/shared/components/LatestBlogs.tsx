@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/src/shared/utils/logger";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { t } from "@/src/locales";
@@ -24,7 +25,7 @@ export default function LatestBlogs() {
       .then((data) => {
         setPosts((data.blogs ?? []).slice(0, 3));
       })
-      .catch((err) => console.error("Error fetching latest posts:", err))
+      .catch((err) => logger.warn("Error fetching latest posts", err))
       .finally(() => setLoading(false));
   }, []);
 

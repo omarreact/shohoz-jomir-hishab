@@ -4,6 +4,7 @@ import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { acreFromJsonAttributes, formatAcre } from "@/src/modules/land/jsonArea";
 import { GIS_REQUEST_TIMEOUT_MS } from "./types";
 import { isValidPolygonRings } from "./geometryValidation";
+import { logger } from "@/src/shared/utils/logger";
 
 export function present(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== "";
@@ -184,7 +185,7 @@ export function createAccuracyPolygon(latitude: number, longitude: number, radiu
 export function updateSourceData(map: MapLibreInstance, sourceId: string, data: FeatureCollection<Geometry>): boolean {
   if (!map.isStyleLoaded()) return false;
   if (!isSafeGeoJson(data)) {
-    console.error(`Rejected unsafe GeoJSON for MapLibre source (${sourceId})`);
+    logger.warn(`Rejected unsafe GeoJSON for MapLibre source (${sourceId})`);
     return false;
   }
   const source = map.getSource(sourceId);
@@ -193,7 +194,7 @@ export function updateSourceData(map: MapLibreInstance, sourceId: string, data: 
     (source as GeoJSONSource).setData(data);
     return true;
   } catch (error) {
-    console.error(`MapLibre GeoJSON source update failed (${sourceId}):`, error);
+    logger.warn(`MapLibre GeoJSON source update failed (${sourceId}):`, error);
     return false;
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/src/shared/utils/logger";
 import { useCallback, useState } from "react";
 import { generateResultPdf, type GenerateResultPdfOptions } from "@/src/shared/lib/pdf/generate-result-pdf";
 
@@ -30,7 +31,7 @@ export function useGeneratePDF({ sourceRef, ...options }: UseGeneratePdfOptions)
       }
       return true;
     } catch (reason) {
-      console.error("PDF generation hook failed", reason);
+      logger.error("PDF generation hook failed", reason);
       setError("ফলাফলের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।");
       return false;
     } finally {

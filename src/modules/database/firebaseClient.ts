@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { logger } from "@/src/shared/utils/logger";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
@@ -13,7 +14,7 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 if (firebaseConfig.apiKey === "dummy-api-key") {
-  console.warn(
+  logger.warn(
     "🔥 FIREBASE WARNING: NEXT_PUBLIC_FIREBASE_API_KEY is missing in your environment variables! " +
     "Using dummy keys for build. Please check your .env file before starting the app."
   );

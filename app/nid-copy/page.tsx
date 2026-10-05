@@ -259,7 +259,7 @@ export default function NidCopyPage() {
               />
               <span>
                 I confirm that I have lawful authorization or consent to verify
-                this person's birth registration information.
+                this person&apos;s birth registration information.
               </span>
             </label>
 

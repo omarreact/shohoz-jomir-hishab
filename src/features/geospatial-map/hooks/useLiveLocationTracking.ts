@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import { Marker, type Map as MapLibreInstance } from "maplibre-gl";
 import { createAccuracyPolygon, updateSourceData } from "@/src/features/geospatial-map/maplibre/mapUtils";
 import { VECTOR_SOURCES } from "@/src/features/geospatial-map/maplibre/types";
+import { logger } from "@/src/shared/utils/logger";
 
 type Props = {
   mapRef: MutableRefObject<MapLibreInstance | null>;
@@ -140,7 +141,7 @@ export function useLiveLocationTracking({ mapRef, mapReady, notify }: Props) {
         setLocating(false);
       },
       (error) => {
-        console.error("Live geolocation failed", error);
+        logger.warn("Live geolocation failed", error);
         setLocating(false);
         notify(error.message || "অবস্থান নির্ণয় করা যায়নি");
       },

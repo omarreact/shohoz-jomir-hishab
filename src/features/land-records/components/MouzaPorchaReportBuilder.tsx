@@ -6,6 +6,7 @@ import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
+import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
@@ -379,7 +380,7 @@ export default function MouzaPorchaReportBuilder() {
         };
       } catch (verificationError) {
         if (verificationError instanceof DOMException && verificationError.name === "AbortError") throw verificationError;
-        console.warn("LandBD report verification registration unavailable", verificationError);
+        logger.warn("LandBD report verification registration unavailable", verificationError);
         setVerificationWarning(
           "রিপোর্ট তৈরি হয়েছে, তবে QR verification record সংরক্ষণ করা যায়নি। PDF-তে Report ID থাকবে, QR যাচাই দেখানো হবে না।",
         );
