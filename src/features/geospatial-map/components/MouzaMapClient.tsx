@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isAdminRole } from "@/src/modules/auth/roles";
 import VisitorMouzaShareDownload from "./VisitorMouzaShareDownload";
 
 const MouzaExportMap = dynamic(() => import("../maplibre/MouzaExportMap"), {
@@ -20,7 +19,7 @@ const MouzaExportMap = dynamic(() => import("../maplibre/MouzaExportMap"), {
  */
 export default function MouzaMapClient() {
   const { user, isLoggedIn, loading } = useAuth();
-  const isAdmin = isLoggedIn && isAdminRole(user?.role);
+  const isAdmin = isLoggedIn;
 
   if (loading) {
     return (
