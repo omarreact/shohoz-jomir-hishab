@@ -1,4 +1,4 @@
-const DEFAULT_LOGIN_TARGET = "/";
+const DEFAULT_LOGIN_TARGET = "/admin";
 
 function isSafeLocalTarget(value: string): boolean {
   if (!value.startsWith("/") || value.startsWith("//")) return false;
