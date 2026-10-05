@@ -8,6 +8,7 @@ import type { FaraezInput } from "@/src/modules/faraez/contracts";
 import { toUiResults } from "@/src/modules/faraez/ui-adapter";
 import { consumePendingPlot } from "@/src/modules/khatiyan/gis-bridge";
 import { useHistoryStore } from "@/src/shared/stores/useHistoryStore";
+import { logger } from "@/src/shared/utils/logger";
 import type { Religion, DeceasedGender, HeirsInput, HeirResult, AssetsInput } from "@/src/modules/faraez/types";
 
 export const initialFaraezAssets: AssetsInput = {
@@ -194,7 +195,7 @@ export function useFaraezCalculator() {
 
       setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 100);
     } catch (error) {
-      console.error("Faraez calculation failed:", error);
+      logger.warn("Faraez calculation failed", error);
       setResults([]);
       alert("হিসাব করা যায়নি। অনুগ্রহ করে ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
     }
