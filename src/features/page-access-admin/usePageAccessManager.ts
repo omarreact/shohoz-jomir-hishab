@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import {
   PAGE_ACCESS_PAGES,
   getDefaultPageAccessRules,
@@ -37,7 +36,7 @@ export function usePageAccessManager() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [updatedBy, setUpdatedBy] = useState<string | null>(null);
 
-  const allowed = isLoggedIn && isSuperAdminRole(user?.role);
+  const allowed = isLoggedIn;
 
   const loadRules = useCallback(async () => {
     if (!allowed) {
