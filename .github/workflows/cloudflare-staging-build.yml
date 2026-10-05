@@ -1,0 +1,52 @@
+name: Cloudflare staging build
+
+on:
+  push:
+    branches:
+      - infra/cloudflare-landbd-migration
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Cloudflare adapter tooling
+        run: npm install --no-save --no-package-lock @opennextjs/cloudflare@latest wrangler@latest
+
+      - name: Build OpenNext Worker bundle
+        run: npx opennextjs-cloudflare build
+        env:
+          NODE_ENV: production
+          LAND_EXPORT_STORAGE_PROVIDER: firebase
+
+      - name: Verify expected bundle
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+
+      - name: Package staging artifact
+        run: tar -czf landbd-open-next.tar.gz .open-next wrangler.jsonc open-next.config.ts
+
+      - name: Upload staging artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-open-next
+          path: landbd-open-next.tar.gz
+          if-no-files-found: error
+          retention-days: 7
