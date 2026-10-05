@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type RefObject } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
+import { logger } from "@/src/shared/utils/logger";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import type { FullKhatian, FullKhatianDag, FullKhatianOwner } from "../full-khatian";
 import type { KhatianDetails } from "../types";
@@ -355,7 +356,7 @@ export default function AuthoritativeKhatianDetailsView({
           });
         }
       } catch (error) {
-        console.warn("[dlrms-khatian] LandBD verification registration unavailable", error);
+        logger.warn("[dlrms-khatian] LandBD verification registration unavailable", error);
       }
     })();
 
