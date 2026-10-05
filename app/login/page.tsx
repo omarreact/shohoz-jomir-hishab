@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -18,10 +18,10 @@ import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
 function resolveLoginTarget(from: string | null): string {
-  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/";
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/admin";
 
   const pathname = from.split(/[?#]/, 1)[0] || "/";
-  if (pathname === "/login" || pathname.startsWith("/login/")) return "/";
+  if (pathname === "/login" || pathname.startsWith("/login/")) return "/admin";
 
   return from;
 }
@@ -31,7 +31,6 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { login, loading, isLoggedIn } = useAuth();
 
@@ -47,9 +46,9 @@ function LoginForm() {
   useEffect(() => {
     if (!loading && isLoggedIn) {
       const target = resolveLoginTarget(searchParams.get("from"));
-      router.replace(target);
+      window.location.replace(target);
     }
-  }, [loading, isLoggedIn, router, searchParams]);
+  }, [loading, isLoggedIn, searchParams]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -63,7 +62,7 @@ function LoginForm() {
     try {
       await login(emailToUse, password);
       const target = resolveLoginTarget(searchParams.get("from"));
-      router.replace(target);
+      window.location.replace(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("লক")) {
