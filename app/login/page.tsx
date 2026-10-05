@@ -17,6 +17,15 @@ import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
+function resolveLoginTarget(from: string | null): string {
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/";
+
+  const pathname = from.split(/[?#]/, 1)[0] || "/";
+  if (pathname === "/login" || pathname.startsWith("/login/")) return "/";
+
+  return from;
+}
+
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +46,8 @@ function LoginForm() {
 
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      const from = searchParams.get("from") || "/admin";
-      router.replace(from);
+      const target = resolveLoginTarget(searchParams.get("from"));
+      router.replace(target);
     }
   }, [loading, isLoggedIn, router, searchParams]);
 
@@ -53,8 +62,8 @@ function LoginForm() {
 
     try {
       await login(emailToUse, password);
-      const from = searchParams.get("from") || "/admin";
-      router.push(from);
+      const target = resolveLoginTarget(searchParams.get("from"));
+      router.replace(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("লক")) {
