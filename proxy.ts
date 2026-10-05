@@ -304,6 +304,19 @@ export async function proxy(request: NextRequest) {
     return user;
   }
 
+  const authenticatedFullAccess =
+    process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
+  let hasAuthenticatedFullAccess = false;
+
+  if (authenticatedFullAccess && userPayload) {
+    try {
+      await authoritativeUser();
+      hasAuthenticatedFullAccess = true;
+    } catch {
+      hasAuthenticatedFullAccess = false;
+    }
+  }
+
   const maintenanceEssential = isMaintenanceEssentialPath(pathname);
 
   // Essential maintenance/login/auth endpoints must stay available even when
@@ -339,7 +352,7 @@ export async function proxy(request: NextRequest) {
     try {
       const user = await authoritativeUser();
 
-      if (!isStaffRole(user.role)) {
+      if (!authenticatedFullAccess && !isStaffRole(user.role)) {
         return forbiddenRedirect(request, securityHeaders);
       }
     } catch {
@@ -354,7 +367,7 @@ export async function proxy(request: NextRequest) {
     pathname !== "/403" &&
     !pathname.startsWith("/admin");
 
-  if (shouldApplyPagePolicy && policy) {
+  if (shouldApplyPagePolicy && policy && !hasAuthenticatedFullAccess) {
     const required = getPageAccessLevel(pathname, policy.pageAccess);
 
     if (required === "hidden") {
