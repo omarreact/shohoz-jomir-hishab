@@ -54,3 +54,6 @@ prisma/*.db-wal
 
 # Scratch/debug text files
 *.txt
+
+# Cloudflare OpenNext build output
+/.open-next/
