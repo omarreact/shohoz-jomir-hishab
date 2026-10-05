@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/src/shared/ui/button";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isStaffRole } from "@/src/modules/auth/roles";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -45,10 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace(`/login?from=${encodeURIComponent(pathname || "/admin")}`);
       return;
     }
-    if (!isStaffRole(user?.role)) {
-      router.replace("/403");
-    }
-  }, [authChecking, isLoggedIn, user?.role, pathname, router]);
+  }, [authChecking, isLoggedIn, pathname, router]);
 
   const userRole = user?.role ?? null;
   const userName = user?.name ?? user?.email?.split("@")[0] ?? "";
@@ -66,9 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: ["Super Admin", "Admin"] },
   ];
 
-  const navItems = allNavItems.filter(
-    (item) => userRole && item.roles.some((role) => role.toLowerCase() === userRole.toLowerCase()),
-  );
+  const navItems = allNavItems;
 
   const currentTitle =
     navItems.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))?.name ||
@@ -83,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.replace("/login");
   };
 
-  if (!isMounted || authChecking || !isLoggedIn || !isStaffRole(userRole)) {
+  if (!isMounted || authChecking || !isLoggedIn) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <div className="h-9 w-9 animate-spin rounded-full border-4 border-[var(--brand-gold-soft)] border-t-[var(--brand-gold)]" />
