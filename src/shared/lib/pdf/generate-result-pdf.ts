@@ -1,4 +1,5 @@
 import { LANDBD_PDF, applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox, type LandBdPdfOrientation } from "@/src/shared/lib/pdf/branding";
+import { logger } from "@/src/shared/utils/logger";
 
 export type GenerateResultPdfOptions = {
   source: HTMLElement;
@@ -542,14 +543,14 @@ export async function generateResultPdf({
         };
       } catch (error) {
         lastError = error;
-        console.warn(`PDF render failed at scale ${scale}; retrying`, error);
+        logger.warn(`PDF render failed at scale ${scale}; retrying`, error);
       }
     }
 
-    console.error("Result PDF generation failed at all scales", lastError);
+    logger.error("Result PDF generation failed at all scales", lastError);
     return { ok: false, error: "ফলাফলের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
   } catch (error) {
-    console.error("Result PDF generation failed", error);
+    logger.error("Result PDF generation failed", error);
     return { ok: false, error: "ফলাফলের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
   } finally {
     host.remove();
