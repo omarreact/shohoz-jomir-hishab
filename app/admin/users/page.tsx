@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import {
   Trash2,
   Edit,
@@ -69,6 +71,8 @@ function AvatarCircle({ name, role }: { name: string | null; role: string }) {
 }
 
 export default function UserManagement() {
+  const { user: currentUser } = useAuth();
+  const canManageSuperAdmin = isSuperAdminRole(currentUser?.role);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState("");
@@ -346,7 +350,9 @@ export default function UserManagement() {
                 onChange={(e) => setEditRole(e.target.value)}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
               >
-                <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
+                {canManageSuperAdmin ? (
+                  <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
+                ) : null}
                 <option value="Admin">🛡️ অ্যাডমিন</option>
                 <option value="Editor">✍️ এডিটর</option>
                 <option value="Basic User">👤 বেসিক ইউজার</option>
@@ -428,7 +434,7 @@ export default function UserManagement() {
                   value={createPassword}
                   onChange={(e) => setCreatePassword(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
-                  placeholder="At least 8 characters"
+                  placeholder="At least 10 characters with letters and numbers"
                 />
               </div>
 
@@ -441,7 +447,9 @@ export default function UserManagement() {
                   onChange={(e) => setCreateRole(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                 >
-                  <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
+                  {canManageSuperAdmin ? (
+                    <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
+                  ) : null}
                   <option value="Admin">🛡️ অ্যাডমিন</option>
                   <option value="Editor">✍️ এডিটর</option>
                   <option value="Basic User">👤 বেসিক ইউজার</option>
