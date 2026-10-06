@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { STATIC_BLOG_POSTS, getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import { blogWriteSchema } from "@/src/features/blog/adminBlogSchema";
 import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   makeExcerpt,
@@ -214,28 +215,29 @@ export async function POST(req: NextRequest) {
       return jsonError("Request body must be valid JSON", 400, requestId);
     }
 
-    const { title, coverImage, category, author, content } = body || {};
-    if (typeof title !== "string" || !title.trim() || typeof content !== "string" || !content.trim()) {
-      return jsonError("title and content are required", 400, requestId);
+    const parsed = blogWriteSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError("Invalid blog data", 400, requestId);
     }
 
+    const { title, coverImage, category, author, content } = parsed.data;
     const cleanedContent = sanitizeBlogHtml(content);
-    const slug = generateSlug(title.trim()) || `post-${Date.now()}`;
+    const slug = generateSlug(title) || `post-${Date.now()}`;
     if (!slug) return jsonError("A valid title is required to generate the blog slug", 400, requestId);
 
     const existingSnapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
     if (!existingSnapshot.empty) return jsonError("A blog with this title already exists", 409, requestId);
 
-    const categoryValue = typeof category === "string" && category.trim() ? category.trim() : "সাধারণ";
-    const authorValue = typeof author === "string" && author.trim() ? author.trim() : "মো. ওমর ফারুক";
+    const categoryValue = category;
+    const authorValue = author;
     const excerpt = makeExcerpt(cleanedContent, 150);
     const now = new Date().toISOString();
     const data = {
-      title: title.trim(),
+      title,
       slug,
       excerpt,
       content: cleanedContent,
-      coverImage: typeof coverImage === "string" && coverImage.trim() ? coverImage.trim() : null,
+      coverImage: coverImage || null,
       author: authorValue,
       category: categoryValue,
       categorySlug: generateSlug(categoryValue || "general") || "general",
