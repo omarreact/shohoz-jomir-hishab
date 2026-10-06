@@ -16,6 +16,9 @@ let keysCacheTime = 0;
 
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
 
+/** Product decision: maintenance mode is disabled. Site always serves traffic. */
+const MAINTENANCE_MODE_ENABLED = false;
+
 async function getFirebasePublicKeys() {
   const now = Date.now();
 
@@ -275,7 +278,10 @@ export async function proxy(request: NextRequest) {
   let userPayload: Record<string, unknown> | null = null;
 
   if (rawToken) {
-    userPayload = (await verifyFirebaseToken(rawToken)) as Record<string, unknown> | null;
+    userPayload = (await verifyFirebaseToken(rawToken)) as Record<
+      string,
+      unknown
+    > | null;
 
     if (userPayload) {
       requestHeaders.set(
@@ -284,7 +290,9 @@ export async function proxy(request: NextRequest) {
       );
       requestHeaders.set(
         "x-user-role",
-        String(userPayload.role || (userPayload.admin === true ? "Admin" : "User")),
+        String(
+          userPayload.role || (userPayload.admin === true ? "Admin" : "User"),
+        ),
       );
     }
   }
@@ -319,20 +327,21 @@ export async function proxy(request: NextRequest) {
 
   const maintenanceEssential = isMaintenanceEssentialPath(pathname);
 
-  // Essential maintenance/login/auth endpoints must stay available even when
-  // the policy backend itself is unavailable.
+  // Always load policy for page-access rules; maintenance gate is hard-disabled.
   const policy = maintenanceEssential ? null : await getSiteAccessPolicy();
 
-  // Maintenance is the first application access rule.
-  if (policy?.maintenanceMode && !maintenanceEssential) {
+  // Maintenance mode is intentionally disabled (MAINTENANCE_MODE_ENABLED=false).
+  if (
+    MAINTENANCE_MODE_ENABLED &&
+    policy?.maintenanceMode &&
+    !maintenanceEssential
+  ) {
     if (!userPayload) {
       return pathname.startsWith("/api/")
         ? maintenanceApiResponse(requestId, securityHeaders)
         : maintenancePageResponse(request, securityHeaders);
     }
 
-    // A cryptographically valid ID token alone is not enough to bypass
-    // maintenance. Confirm the account still exists/is active server-side.
     try {
       await authoritativeUser();
     } catch {
