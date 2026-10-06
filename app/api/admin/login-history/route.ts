@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 // GET /api/admin/login-history?page=1&limit=50
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +18,7 @@ export async function GET(request: NextRequest) {
     );
 
     const result = await adminService.getLoginHistory(page, limit);
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error: any) {
     console.error("Failed to fetch login history:", error);
     if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
