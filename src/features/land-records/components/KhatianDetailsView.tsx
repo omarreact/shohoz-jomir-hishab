@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
+import { Download } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
+import { exportKhatianPdf } from "../lib/khatian-pdf-export";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
@@ -17,17 +18,68 @@ type Props = {
 
 export type KhatianPageOrientation = "portrait" | "landscape";
 
-function resolveKhatianPageOrientation(surveyKey: string | undefined, surveyName: string): KhatianPageOrientation {
+function resolveKhatianPageOrientation(
+  surveyKey: string | undefined,
+  surveyName: string,
+): KhatianPageOrientation {
   const normalized = (surveyKey || surveyName || "").toUpperCase().replace(/[^A-Z]/g, "");
   return normalized === "BRS" || normalized === "SA" ? "landscape" : "portrait";
 }
 
-export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, captureRef }: Props) {
+function buildFileName(khatian: KhatianDetails, surveyKey?: string): string {
+  const parts = [
+    "LandBD",
+    surveyKey || khatian.SURVEY_NAME || "Khatian",
+    khatian.MOUZA_NAME,
+    khatian.KHATIAN_NO,
+  ]
+    .map((p) => String(p || "").trim())
+    .filter(Boolean);
+  return parts.join("-") || "LandBD-Khatian";
+}
+
+export default function KhatianDetailsView({
+  khatian,
+  fullKhatian,
+  surveyKey,
+  captureRef,
+}: Props) {
   const internalCaptureRef = useRef<HTMLDivElement | null>(null);
   const resolvedCaptureRef = captureRef ?? internalCaptureRef;
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
-  const resolvedFullKhatian = fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
+  const resolvedFullKhatian =
+    fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
+
+  const handleDownloadPdf = useCallback(async () => {
+    const source = resolvedCaptureRef.current;
+    if (!source) {
+      setExportError("রিপোর্ট এলিমেন্ট পাওয়া যায়নি।");
+      return;
+    }
+
+    setExporting(true);
+    setExportError(null);
+
+    try {
+      const result = await exportKhatianPdf({
+        source,
+        fileName: buildFileName(khatian, surveyKey),
+      });
+
+      if (!result.ok) {
+        setExportError(result.error);
+      }
+    } catch (error) {
+      console.error("[KhatianDetailsView] PDF export failed", error);
+      setExportError("উচ্চমানের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setExporting(false);
+    }
+  }, [khatian, resolvedCaptureRef, surveyKey]);
 
   return (
     <div
@@ -86,11 +138,41 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
         }
       `}</style>
 
-      <div className="mb-2 flex justify-end gap-2 print:hidden" data-exclude-export="1">
-        <ResultPrintButton />
+      <div
+        className="mb-2 flex flex-wrap items-center justify-end gap-2 print:hidden"
+        data-exclude-export="1"
+      >
+        <button
+          type="button"
+          onClick={() => void handleDownloadPdf()}
+          disabled={exporting}
+          data-exclude-export="1"
+          className="landbd-secondary-button inline-flex min-h-10 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {exporting ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span>পিডিএফ তৈরি হচ্ছে…</span>
+            </>
+          ) : (
+            <>
+              <Download size={16} />
+              <span>উচ্চমানের পিডিএফ ডাউনলোড</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Repeated by Chromium on every physical printed page. */}
+      {exportError ? (
+        <p
+          className="mb-2 text-right text-sm font-semibold text-red-600 print:hidden"
+          data-exclude-export="1"
+          role="alert"
+        >
+          {exportError}
+        </p>
+      ) : null}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         className="dlrms-fixed-print-watermark"
@@ -110,7 +192,10 @@ export default function KhatianDetailsView({ khatian, fullKhatian, surveyKey, ca
 
       {resolvedFullKhatian ? (
         <div className="print:hidden" data-exclude-export="1">
-          <FullKhatianSupplement fullKhatian={resolvedFullKhatian} pageOrientation={pageOrientation} />
+          <FullKhatianSupplement
+            fullKhatian={resolvedFullKhatian}
+            pageOrientation={pageOrientation}
+          />
         </div>
       ) : null}
     </div>
