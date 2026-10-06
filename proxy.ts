@@ -145,9 +145,12 @@ function securityResponseHeaders(requestId: string): Record<string, string> {
     "x-request-id": requestId,
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Permitted-Cross-Domain-Policies": "none",
     "Permissions-Policy":
       "camera=(), microphone=(), geolocation=(self), payment=(self), usb=()",
   };
