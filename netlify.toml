@@ -1,9 +1,0 @@
-[build]
-  command = "npm run build"
-
-[build.environment]
-  NODE_VERSION = "22"
-  LOG_LEVEL = "info"
-  # These values are intentionally public/non-secret configuration.
-  # Keep Netlify secret scanning enabled for all truly sensitive server-side variables.
-  SECRETS_SCAN_OMIT_KEYS = "LOG_LEVEL,NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID"
