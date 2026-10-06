@@ -1,18 +1,27 @@
-import { applyLandBdPdfMetadata, drawLandBdPdfChrome, getLandBdA4ContentBox } from "@/src/shared/lib/pdf/branding";
 import {
-  PDF_EXPORT_WIDTH_PX,
+  applyLandBdPdfMetadata,
+  drawLandBdPdfChrome,
+  getLandBdA4ContentBox,
+} from "@/src/shared/lib/pdf/branding";
+import {
   PDF_MARGIN_MM,
-  planPortraitSlices,
-  portraitContentSizeMm,
+  contentSizeMm,
+  exportWidthPxFor,
+  planA4Slices,
+  type KhatianPdfOrientation,
 } from "./khatian-pdf-layout";
+
+export type { KhatianPdfOrientation };
 
 export type KhatianPdfExportOptions = {
   source: HTMLElement;
   fileName: string;
+  /** Always A4. User chooses portrait or landscape. Default: portrait */
+  orientation?: KhatianPdfOrientation;
 };
 
 export type KhatianPdfExportResult =
-  | { ok: true; pages: number; scale: number }
+  | { ok: true; pages: number; scale: number; orientation: KhatianPdfOrientation }
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
@@ -69,11 +78,11 @@ function setImportant(node: HTMLElement | null | undefined, property: string, va
   node?.style.setProperty(property, value, "important");
 }
 
-function compactPdfClone(clone: HTMLElement): void {
+function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
   const fontFamily = exportFontFamily();
-  clone.style.width = `${PDF_EXPORT_WIDTH_PX}px`;
-  clone.style.maxWidth = `${PDF_EXPORT_WIDTH_PX}px`;
-  clone.style.minWidth = `${PDF_EXPORT_WIDTH_PX}px`;
+  clone.style.width = `${exportWidthPx}px`;
+  clone.style.maxWidth = `${exportWidthPx}px`;
+  clone.style.minWidth = `${exportWidthPx}px`;
   clone.style.margin = "0";
   clone.style.padding = "12px";
   clone.style.boxSizing = "border-box";
@@ -117,97 +126,6 @@ function compactPdfClone(clone: HTMLElement): void {
   setImportant(clone, "color", "#13261b");
   setImportant(clone, "border-top", "4px solid #17663a");
 
-  const documentCard = clone.children[0] as HTMLElement | undefined;
-  if (documentCard) {
-    setImportant(documentCard, "border", "1px solid #a9cdb9");
-    setImportant(documentCard, "border-radius", "12px");
-    setImportant(documentCard, "overflow", "hidden");
-    setImportant(documentCard, "background-color", "#ffffff");
-
-    const brandHeader = documentCard.children[0] as HTMLElement | undefined;
-    if (brandHeader) {
-      setImportant(brandHeader, "background-color", "#eef8f2");
-      setImportant(brandHeader, "border-bottom", "2px solid #b9d6c7");
-      setImportant(brandHeader, "padding", "10px 12px");
-
-      const brandGroup = brandHeader.children[0] as HTMLElement | undefined;
-      const logo = brandGroup?.children[0] as HTMLElement | undefined;
-      if (logo) {
-        setImportant(logo, "background-color", "#17663a");
-        setImportant(logo, "color", "#ffffff");
-        setImportant(logo, "border-color", "#17663a");
-      }
-    }
-
-    const details = documentCard.children[1] as HTMLElement | undefined;
-    if (details) {
-      setImportant(details, "background-color", "#ffffff");
-      setImportant(details, "padding", "11px 12px");
-
-      const summaryGrid = details.children[2] as HTMLElement | undefined;
-      if (summaryGrid) {
-        setImportant(summaryGrid, "gap", "7px");
-        setImportant(summaryGrid, "margin-top", "9px");
-        Array.from(summaryGrid.children).forEach((child) => {
-          const card = child as HTMLElement;
-          setImportant(card, "background-color", "#f4faf6");
-          setImportant(card, "border", "1px solid #cfe3d8");
-          setImportant(card, "border-radius", "8px");
-          setImportant(card, "padding", "7px 10px");
-          setImportant(card, "min-height", "40px");
-
-          const paragraphs = card.querySelectorAll<HTMLElement>("p");
-          if (paragraphs[0]) {
-            setImportant(paragraphs[0], "color", "#5d7065");
-            setImportant(paragraphs[0], "font-size", "11px");
-            setImportant(paragraphs[0], "font-weight", "600");
-          }
-          if (paragraphs[1]) {
-            setImportant(paragraphs[1], "color", "#0f5132");
-            setImportant(paragraphs[1], "font-size", "14px");
-            setImportant(paragraphs[1], "font-weight", "800");
-          }
-        });
-      }
-    }
-  }
-
-  clone.querySelectorAll<HTMLElement>("h1, h2, h3").forEach((heading) => {
-    setImportant(heading, "color", "#10251a");
-    setImportant(heading, "font-weight", "800");
-  });
-
-  clone.querySelectorAll<HTMLElement>("a, svg").forEach((node) => {
-    setImportant(node, "color", "#17663a");
-  });
-
-  clone.querySelectorAll<HTMLElement>("[class~='tabular-nums'], [data-bangla-number='1']").forEach((node) => {
-    setImportant(node, "font-family", fontFamily);
-    setImportant(node, "font-variant-numeric", "tabular-nums");
-    setImportant(node, "font-weight", "700");
-  });
-
-  clone.querySelectorAll<HTMLElement>("section").forEach((section) => {
-    setImportant(section, "margin", "8px 0 0");
-    setImportant(section, "border", "1px solid #d6e4dc");
-    setImportant(section, "border-radius", "10px");
-    setImportant(section, "background-color", "#ffffff");
-    setImportant(section, "overflow", "hidden");
-  });
-
-  clone.querySelectorAll<HTMLElement>("section > header").forEach((header) => {
-    setImportant(header, "padding", "7px 10px");
-    setImportant(header, "background-color", "#eef7f2");
-    setImportant(header, "border-bottom", "1px solid #cfe3d8");
-    header.querySelectorAll<HTMLElement>("*").forEach((child) => {
-      setImportant(child, "color", "#184d32");
-    });
-  });
-
-  clone.querySelectorAll<HTMLElement>("section > div").forEach((body) => {
-    setImportant(body, "padding", "8px 10px");
-  });
-
   clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
     setImportant(table, "width", "100%");
     setImportant(table, "max-width", "100%");
@@ -224,12 +142,6 @@ function compactPdfClone(clone: HTMLElement): void {
     setImportant(cell, "border-bottom", "1px solid #bfd8c9");
   });
 
-  clone.querySelectorAll<HTMLElement>("tbody th").forEach((cell) => {
-    setImportant(cell, "background-color", "#f3f8f5");
-    setImportant(cell, "color", "#395447");
-    setImportant(cell, "font-weight", "700");
-  });
-
   clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
     setImportant(cell, "padding", "5px 7px");
     setImportant(cell, "line-height", "1.35");
@@ -237,25 +149,9 @@ function compactPdfClone(clone: HTMLElement): void {
     setImportant(cell, "vertical-align", "top");
   });
 
-  clone.querySelectorAll<HTMLElement>("tbody tr:nth-child(even) td").forEach((cell) => {
-    setImportant(cell, "background-color", "#fbfdfc");
-  });
-
   clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
     setImportant(node, "overflow", "visible");
   });
-
-  const sealWrapper = clone.querySelector<HTMLElement>("[data-landbd-seal='1']");
-  const seal = sealWrapper?.firstElementChild as HTMLElement | undefined;
-  if (seal) {
-    setImportant(seal, "background-color", "#f4fbf7");
-    setImportant(seal, "border", "4px double #17663a");
-    setImportant(seal, "color", "#17663a");
-    seal.querySelectorAll<HTMLElement>("*").forEach((node) => {
-      setImportant(node, "color", "#17663a");
-      setImportant(node, "border-color", "#8db9a0");
-    });
-  }
 }
 
 function collectBreakpoints(root: HTMLElement): number[] {
@@ -319,23 +215,34 @@ async function buildPdfAtScale(
   clone: HTMLElement,
   fileName: string,
   scale: number,
+  orientation: KhatianPdfOrientation,
+  exportWidthPx: number,
 ): Promise<{ pages: number; scale: number }> {
   const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
-  const slices = planPortraitSlices(totalHeight, collectBreakpoints(clone));
+  const slices = planA4Slices(totalHeight, collectBreakpoints(clone), orientation, exportWidthPx);
   if (!slices.length || slices.length > MAX_PAGES) {
     throw new Error(`Unsafe PDF page count: ${slices.length}`);
   }
 
-  const pdf = new JsPdf({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  // Always A4 — orientation is the only variable.
+  const pdf = new JsPdf({
+    orientation,
+    unit: "mm",
+    format: "a4",
+    compress: true,
+  });
+
   applyLandBdPdfMetadata(pdf, {
     title: fileName,
-    subject: "LandBD branded A4 khatian report",
-    keywords: ["LandBD", "khatian", "Bangladesh", "A4"],
+    subject: `LandBD A4 ${orientation} khatian report`,
+    keywords: ["LandBD", "khatian", "Bangladesh", "A4", orientation],
   });
-  const content = portraitContentSizeMm(PDF_MARGIN_MM);
-  const contentBox = getLandBdA4ContentBox("portrait", PDF_MARGIN_MM);
+
+  const content = contentSizeMm(orientation, PDF_MARGIN_MM);
+  const contentBox = getLandBdA4ContentBox(orientation, PDF_MARGIN_MM);
   const contentWidth = content.width;
   const contentHeight = content.height;
+  const orientationLabel = orientation === "landscape" ? "ল্যান্ডস্কেপ" : "পোর্ট্রেট";
 
   for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
     const slice = slices[pageIndex];
@@ -353,9 +260,9 @@ async function buildPdfAtScale(
       logging: false,
       imageTimeout: 8000,
       foreignObjectRendering: false,
-      width: PDF_EXPORT_WIDTH_PX,
+      width: exportWidthPx,
       height: slice.height,
-      windowWidth: PDF_EXPORT_WIDTH_PX,
+      windowWidth: exportWidthPx,
       windowHeight: slice.height,
       scrollX: 0,
       scrollY: 0,
@@ -375,7 +282,7 @@ async function buildPdfAtScale(
     const pageBlob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
     const renderedHeight = Math.min(
       contentHeight,
-      (slice.height * contentWidth) / PDF_EXPORT_WIDTH_PX,
+      (slice.height * contentWidth) / exportWidthPx,
     );
     canvas.width = 1;
     canvas.height = 1;
@@ -384,7 +291,7 @@ async function buildPdfAtScale(
       throw new Error(`PDF page encoding failed at page ${pageIndex + 1}`);
     }
 
-    if (pageIndex > 0) pdf.addPage("a4", "portrait");
+    if (pageIndex > 0) pdf.addPage("a4", orientation);
     const imageBytes = await blobToBytes(pageBlob);
     pdf.addImage(
       imageBytes,
@@ -399,7 +306,7 @@ async function buildPdfAtScale(
 
     drawLandBdPdfChrome(pdf, {
       title: fileName,
-      subtitle: "Khatian / land-record report",
+      subtitle: `A4 ${orientationLabel} · খতিয়ান রিপোর্ট`,
       source: "DLRMS / LandBD data workspace",
       pageNumber: pageIndex + 1,
       pageCount: slices.length,
@@ -416,7 +323,8 @@ async function buildPdfAtScale(
     throw new Error("Empty PDF blob");
   }
 
-  triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}.pdf`);
+  const suffix = orientation === "landscape" ? "-A4-Landscape" : "-A4-Portrait";
+  triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}${suffix}.pdf`);
   return { pages: slices.length, scale };
 }
 
@@ -426,6 +334,9 @@ export async function exportKhatianPdf(
   if (typeof window === "undefined") {
     return { ok: false, error: "ব্রাউজার পরিবেশ পাওয়া যায়নি।" };
   }
+
+  const orientation: KhatianPdfOrientation = options.orientation === "landscape" ? "landscape" : "portrait";
+  const exportWidthPx = exportWidthPxFor(orientation);
 
   let html2canvas: typeof import("html2canvas").default;
   let JsPdf: typeof import("jspdf").jsPDF;
@@ -448,7 +359,7 @@ export async function exportKhatianPdf(
     "position:fixed",
     "left:-20000px",
     "top:0",
-    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    `width:${exportWidthPx}px`,
     "background:#ffffff",
     "color:#13261b",
     "z-index:-1",
@@ -459,7 +370,7 @@ export async function exportKhatianPdf(
   const viewport = document.createElement("div");
   viewport.style.cssText = [
     "position:relative",
-    `width:${PDF_EXPORT_WIDTH_PX}px`,
+    `width:${exportWidthPx}px`,
     "overflow:hidden",
     "background:#ffffff",
     "color:#13261b",
@@ -471,7 +382,7 @@ export async function exportKhatianPdf(
   document.body.appendChild(host);
 
   try {
-    compactPdfClone(clone);
+    compactPdfClone(clone, exportWidthPx);
     viewport.style.height = "auto";
     viewport.style.overflow = "visible";
     await waitForAssets(clone);
@@ -490,8 +401,10 @@ export async function exportKhatianPdf(
           clone,
           options.fileName,
           scale,
+          orientation,
+          exportWidthPx,
         );
-        return { ok: true, ...result };
+        return { ok: true, ...result, orientation };
       } catch (error) {
         lastError = error;
         clone.style.transform = "none";
@@ -499,14 +412,17 @@ export async function exportKhatianPdf(
       }
     }
 
-    console.error("Khatian A4 portrait PDF failed at all safe scales", lastError);
+    console.error(`Khatian A4 ${orientation} PDF failed at all safe scales`, lastError);
     return {
       ok: false,
-      error: "A4 পোর্ট্রেট পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।",
+      error:
+        orientation === "landscape"
+          ? "A4 ল্যান্ডস্কেপ পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।"
+          : "A4 পোর্ট্রেট পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।",
     };
   } catch (error) {
     console.error("Khatian PDF export failed", error);
-    return { ok: false, error: "A4 পোর্ট্রেট পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
+    return { ok: false, error: "A4 পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
   } finally {
     host.remove();
   }
