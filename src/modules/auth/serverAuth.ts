@@ -190,7 +190,7 @@ export async function verifyServerAuth(
 }
 
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
