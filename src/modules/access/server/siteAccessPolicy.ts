@@ -44,11 +44,17 @@ function parseMaintenanceMode(value: unknown): boolean | null {
   return null;
 }
 
-function failClosed(reason: string): SiteAccessPolicy {
+/**
+ * Fail OPEN for public availability.
+ * Previously fail-closed set maintenanceMode:true whenever Firestore was slow
+ * or the maintenance doc was missing — which permanently locked the whole site
+ * behind the maintenance page for every visitor.
+ */
+function failOpen(reason: string): SiteAccessPolicy {
   const previous = cachedPolicy?.value;
 
   return {
-    maintenanceMode: true,
+    maintenanceMode: false,
     pageAccess: previous?.pageAccess ?? getDefaultPageAccessRules(),
     pageAccessUpdatedAt: previous?.pageAccessUpdatedAt ?? null,
     degraded: true,
@@ -94,27 +100,24 @@ async function loadPolicyFromFirestore(): Promise<SiteAccessPolicy> {
     POLICY_TIMEOUT_MS,
   );
 
-  if (!maintenanceDoc.exists) {
-    throw new Error("maintenance-setting-missing");
+  // Missing or invalid maintenance doc → treat as OFF (site stays online).
+  let maintenanceMode = false;
+  if (maintenanceDoc.exists) {
+    const parsed = parseMaintenanceMode(maintenanceDoc.data()?.value);
+    if (parsed !== null) maintenanceMode = parsed;
   }
 
-  if (!pageAccessDoc.exists) {
-    throw new Error("page-access-setting-missing");
-  }
-
-  const maintenanceData = maintenanceDoc.data();
-  const pageAccessData = pageAccessDoc.data();
-
-  const maintenanceMode = parseMaintenanceMode(maintenanceData?.value);
-  if (maintenanceMode === null) {
-    throw new Error("maintenance-setting-invalid");
-  }
+  const pageAccess = pageAccessDoc.exists
+    ? normalizeStoredPageAccess(pageAccessDoc.data())
+    : getDefaultPageAccessRules();
 
   return {
     maintenanceMode,
-    pageAccess: normalizeStoredPageAccess(pageAccessData),
+    pageAccess,
     pageAccessUpdatedAt:
-      typeof pageAccessData?.updatedAt === "string" ? pageAccessData.updatedAt : null,
+      typeof pageAccessDoc.data()?.updatedAt === "string"
+        ? pageAccessDoc.data()!.updatedAt
+        : null,
     degraded: false,
     loadedAt: Date.now(),
   };
@@ -144,14 +147,14 @@ export async function getSiteAccessPolicy(
 
     console.error("[SiteAccessPolicy]", reason);
 
-    const closedPolicy = failClosed(reason);
+    const openPolicy = failOpen(reason);
 
     cachedPolicy = {
-      value: closedPolicy,
+      value: openPolicy,
       expiresAt: now + POLICY_TTL_MS,
     };
 
-    return closedPolicy;
+    return openPolicy;
   }
 }
 
