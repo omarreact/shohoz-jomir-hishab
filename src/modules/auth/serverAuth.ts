@@ -198,7 +198,7 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
 }
 
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
@@ -206,7 +206,7 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
 }
 
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
