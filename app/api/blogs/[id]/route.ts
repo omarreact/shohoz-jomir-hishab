@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAdminAuth, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   makeExcerpt,
   sanitizeBlogHtml,
@@ -99,7 +100,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    await verifyAdminAuth(req);
+    await protectAdminMutation(req, "blog-update", {
+      max: 30,
+      windowSeconds: 60,
+      maxBodyBytes: 1_500_000,
+    });
+    const actor = await verifyStaffAuth(req);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const body = await req.json();
     const { title, coverImage, category, author, content } = body;
@@ -137,9 +143,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
     revalidatePath("/", "layout");
     revalidatePath("/blog", "page");
+    await recordAdminAudit(req, actor, "blog.update", "blog", id, {
+      title: String(updatedDocData.title || ""),
+      slug: String(updatedDocData.slug || ""),
+    });
     return NextResponse.json({ success: true, data: { blog } }, { status: 200 });
   } catch (error: unknown) {
-    const { message, status } = authError(error);
+    const status = adminErrorStatus(error);
+    const message =
+      status < 500 && error instanceof Error ? error.message : "Request failed";
     return NextResponse.json({ success: false, message }, { status });
   }
 }
@@ -148,7 +160,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    await verifyAdminAuth(_req);
+    await protectAdminMutation(_req, "blog-delete", { max: 15, windowSeconds: 60 });
+    const actor = await verifyAdminAuth(_req);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const docRef = collections.blogs.doc(id);
     const docSnap = await docRef.get();
@@ -156,6 +169,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await docRef.delete();
     revalidatePath("/", "layout");
     revalidatePath("/blog", "page");
+    await recordAdminAudit(_req, actor, "blog.delete", "blog", id, {
+      title: String(docSnap.data()?.title || ""),
+    });
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: unknown) {
     const { message, status } = authError(error);
