@@ -17,6 +17,7 @@ export interface ServerUser {
 
 interface VerifyServerAuthOptions {
   checkRevoked?: boolean;
+  requireAdminBackend?: boolean;
 }
 
 let publicKeysCache: Record<string, string> | null = null;
@@ -125,6 +126,9 @@ export async function verifyServerAuth(
   const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
 
   if (!isFirebaseAdminReady()) {
+    if (options.requireAdminBackend) {
+      throw new Error("Firebase Admin unavailable");
+    }
     const payload = await verifyFirebaseIdTokenWithoutAdmin(token);
     return userFromClaims(payload as Record<string, unknown>, payload.sub!);
   }
@@ -186,24 +190,24 @@ export async function verifyServerAuth(
 }
 
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isSuperAdminRole(user.role)) {
+  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  if (!isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
   return user;
 }
 
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isAdminRole(user.role)) {
+  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
   return user;
 }
 
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isStaffRole(user.role)) {
+  const user = await verifyServerAuth(req, { requireAdminBackend: true });
+  if (!isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
   return user;
