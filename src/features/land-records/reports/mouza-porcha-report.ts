@@ -172,13 +172,12 @@ export function paginateMouzaReportRows(
 ): MouzaReportRowSegment[][] {
   if (!segments.length) return [];
 
-  // Portrait has more vertical room; landscape has more horizontal room and
-  // therefore fewer wrapped lines. These budgets are tuned to keep the table
-  // visually dense while still reserving the first-page metadata and footer.
+  // Denser packing: previous budgets left ~half the sheet empty and, combined
+  // with min-height A4 pages, produced many near-blank PDF sheets.
   const resolvedFirstBudget =
-    firstPageBudget ?? (orientation === "landscape" ? 20 : 28);
+    firstPageBudget ?? (orientation === "landscape" ? 36 : 42);
   const resolvedLaterBudget =
-    laterPageBudget ?? (orientation === "landscape" ? 30 : 46);
+    laterPageBudget ?? (orientation === "landscape" ? 52 : 64);
 
   const pages: MouzaReportRowSegment[][] = [];
   let current: MouzaReportRowSegment[] = [];
@@ -210,7 +209,7 @@ export function paginateMouzaReportRows(
   }
 
   if (current.length) pages.push(current);
-  return pages;
+  return pages.filter((page) => page.length > 0);
 }
 
 /**
