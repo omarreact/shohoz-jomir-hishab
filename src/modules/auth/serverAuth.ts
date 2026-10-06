@@ -183,8 +183,11 @@ export async function verifyServerAuth(
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
     name: userData.name ?? (decodedToken.name as string) ?? null,
+    // Firebase Auth custom claims are authoritative for privileged roles.
+    // Firestore remains a profile/fallback source for legacy non-privileged
+    // users, but cannot override a signed Admin/Editor/Super Admin claim.
     role: normalizeRole(
-      userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
+      claimRole || (claimIsAdmin ? "Admin" : userData.role || "User"),
     ),
   };
 }
