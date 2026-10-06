@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/src/modules/database/firebaseAdmin";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
@@ -35,6 +34,19 @@ function bearerToken(req: NextRequest): string | null {
   return header?.startsWith("Bearer ") ? header.slice(7).trim() || null : null;
 }
 
+function tokenExpiry(token: string): number | null {
+  try {
+    const encoded = token.split(".")[1];
+    if (!encoded) return null;
+    const payload = JSON.parse(
+      Buffer.from(encoded, "base64url").toString("utf8"),
+    ) as { exp?: unknown };
+    return typeof payload.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
@@ -45,14 +57,6 @@ function json(data: unknown, status = 200) {
   });
 }
 
-/**
- * Exchanges a Firebase ID token for LandBD's server-readable auth cookie.
- *
- * The cookie intentionally stores the short-lived Firebase ID token because
- * proxy.ts verifies that token with Google's public keys before privileged
- * routing decisions. The important hardening here is that the browser can no
- * longer read or overwrite the cookie through document.cookie.
- */
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) {
     return json({ error: "Invalid request origin" }, 403);
@@ -69,15 +73,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Check Firebase Auth revocation/disable state when the browser refreshes
-    // the server session. Route-level auth remains server-authoritative.
-    const decoded = await auth.verifyIdToken(token, true);
-    const user = await verifyServerAuth(req);
+    const user = await verifyServerAuth(req, { checkRevoked: true });
 
     const now = Math.floor(Date.now() / 1000);
+    const exp = tokenExpiry(token) ?? now + MAX_COOKIE_AGE_SECONDS;
     const maxAge = Math.max(
       1,
-      Math.min(MAX_COOKIE_AGE_SECONDS, decoded.exp - now),
+      Math.min(MAX_COOKIE_AGE_SECONDS, exp - now),
     );
 
     const response = json({ ok: true, user }, 200);
