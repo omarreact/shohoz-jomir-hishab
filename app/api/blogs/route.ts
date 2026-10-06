@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { STATIC_BLOG_POSTS, getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   makeExcerpt,
   sanitizeBlogHtml,
@@ -198,7 +199,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
-    await verifyAdminAuth(req);
+    await protectAdminMutation(req, "blog-create", {
+      max: 20,
+      windowSeconds: 60,
+      maxBodyBytes: 1_500_000,
+    });
+    const actor = await verifyStaffAuth(req);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: any;
@@ -255,14 +261,18 @@ export async function POST(req: NextRequest) {
     });
     revalidatePath("/", "layout");
     revalidatePath("/blog", "page");
+    await recordAdminAudit(req, actor, "blog.create", "blog", ref.id, {
+      title: data.title,
+      slug: data.slug,
+    });
     return json({ success: true, data: { blog } }, 201, requestId);
   } catch (error: any) {
     console.error("POST /api/blogs failed:", { requestId, error });
-    const status =
-      error?.message === "Unauthorized" ? 401
-        : error?.message === "Account locked" || error?.message === "Account disabled" ? 403
-        : error?.message?.startsWith("Forbidden") ? 403
-        : 500;
-    return jsonError(error?.message || "Failed to create blog", status, requestId);
+    const status = adminErrorStatus(error);
+    return jsonError(
+      status < 500 && error instanceof Error ? error.message : "Failed to create blog",
+      status,
+      requestId,
+    );
   }
 }
