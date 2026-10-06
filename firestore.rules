@@ -27,6 +27,10 @@ service cloud.firestore {
         && claimRole() in ['Editor', 'Admin', 'Super Admin'];
     }
 
+    function isSuperAdmin() {
+      return isSignedIn() && claimRole() == 'Super Admin';
+    }
+
     function isOwner(userId) {
       return isSignedIn() && uid() == userId;
     }
@@ -43,18 +47,21 @@ service cloud.firestore {
         && request.resource.data.role in ['User', 'Basic User']
         && request.resource.data.email == request.auth.token.email;
 
-      allow update: if (isOwner(userId) && roleUnchanged()
-          && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(['role', 'lockedUntil', 'status']))
-        || isAdmin();
+      // Privileged user management is server-only through Firebase Admin.
+      // A signed-in Admin must never be able to self-promote or change another
+      // user's role/status directly through the Firestore client API.
+      allow update: if isOwner(userId) && roleUnchanged()
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'lockedUntil', 'status', 'failedAttempts', 'isVerified']);
 
-      allow delete: if claimRole() == 'Super Admin';
+      allow delete: if false;
     }
 
     match /blogs/{blogId} {
       allow read: if true;
-      allow create, update: if isEditor();
-      allow delete: if isAdmin();
+      // Content mutations are mediated by server routes that enforce RBAC,
+      // validation, sanitization and audit logging.
+      allow create, update, delete: if false;
     }
 
     match /blogComments/{commentId} {
@@ -66,13 +73,13 @@ service cloud.firestore {
 
     match /customPages/{pageId} {
       allow read: if resource.data.published == true || isEditor();
-      allow create, update: if isEditor();
-      allow delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /siteSettings/{settingId} {
       allow read: if resource.data.public == true || isAdmin();
-      allow write: if isAdmin();
+      // Site settings, maintenance and page-access policy are server-only.
+      allow write: if false;
     }
 
     match /sessions/{sessionId} {
@@ -96,7 +103,7 @@ service cloud.firestore {
 
     match /rajukPlots/{plotId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if false;
     }
 
     match /{document=**} {
