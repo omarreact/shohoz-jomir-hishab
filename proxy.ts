@@ -108,7 +108,7 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/api/public/maintenance",
 ]);
 
-const SUPER_ADMIN_ADMIN_PREFIXES = ["/admin/page-access"] as const;
+const SUPER_ADMIN_ADMIN_PREFIXES = ["/admin/page-access", "/admin/audit-log"] as const;
 const ADMIN_ONLY_ADMIN_PREFIXES = [
   "/admin/users",
   "/admin/data-monitor",
