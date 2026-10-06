@@ -55,6 +55,28 @@ function triggerDownload(blob: Blob, fileName: string): void {
   }, 5 * 60_000);
 }
 
+function isNearlyBlankCanvas(canvas: HTMLCanvasElement): boolean {
+  try {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return false;
+    const stepX = Math.max(1, Math.floor(canvas.width / 40));
+    const stepY = Math.max(1, Math.floor(canvas.height / 40));
+    let ink = 0;
+    let samples = 0;
+    for (let y = 0; y < canvas.height; y += stepY) {
+      for (let x = 0; x < canvas.width; x += stepX) {
+        const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data;
+        samples += 1;
+        if (a > 8 && (r < 250 || g < 250 || b < 250)) ink += 1;
+      }
+    }
+    if (!samples) return true;
+    return ink / samples < 0.004;
+  } catch {
+    return false;
+  }
+}
+
 async function waitForAssets(root: HTMLElement): Promise<void> {
   if ("fonts" in document) {
     await Promise.race([
@@ -82,10 +104,7 @@ async function waitForAssets(root: HTMLElement): Promise<void> {
 
 /**
  * Converts already-laid-out report pages directly to PDF pages.
- *
- * Unlike window.print(), this never asks the browser to paginate full-height
- * CSS pages again, which avoids the alternating blank-page bug caused by
- * print viewport rounding. Each matching DOM page becomes exactly one PDF page.
+ * Skips near-blank DOM captures so alternating empty sheets are not written.
  */
 export async function generatePagedReportPdf({
   source,
@@ -122,9 +141,17 @@ export async function generatePagedReportPdf({
     });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+    let writtenPages = 0;
 
     for (let index = 0; index < pages.length; index += 1) {
       const page = pages[index];
+      const hasTableRows = page.querySelectorAll("tbody tr").length > 0;
+      const hasSummary =
+        page.querySelector(".report-summary-table, .report-document-header") != null;
+      if (!hasTableRows && !hasSummary && index > 0) {
+        continue;
+      }
+
       const width = Math.max(page.scrollWidth, page.clientWidth, 1);
       const height = Math.max(page.scrollHeight, page.clientHeight, 1);
 
@@ -159,7 +186,14 @@ export async function generatePagedReportPdf({
         return { ok: false, error: `পিডিএফ পৃষ্ঠা ${index + 1} তৈরি করা যায়নি।` };
       }
 
-      if (index > 0) pdf.addPage("a4", orientation);
+      if (isNearlyBlankCanvas(canvas)) {
+        canvas.width = 1;
+        canvas.height = 1;
+        continue;
+      }
+
+      if (writtenPages > 0) pdf.addPage("a4", orientation);
+      writtenPages += 1;
 
       const sourceRatio = canvas.width / canvas.height;
       const targetRatio = pageWidth / pageHeight;
@@ -168,12 +202,13 @@ export async function generatePagedReportPdf({
       let x = 0;
       let y = 0;
 
+      // Top-left align so short pages do not float as a blank-looking band.
       if (sourceRatio > targetRatio) {
         drawHeight = pageWidth / sourceRatio;
-        y = (pageHeight - drawHeight) / 2;
+        y = 0;
       } else if (sourceRatio < targetRatio) {
         drawWidth = pageHeight * sourceRatio;
-        x = (pageWidth - drawWidth) / 2;
+        x = 0;
       }
 
       const imageData = canvas.toDataURL("image/jpeg", jpegQuality);
@@ -182,11 +217,13 @@ export async function generatePagedReportPdf({
       canvas.height = 1;
     }
 
+    if (!writtenPages) return { ok: false, error: "পিডিএফে কোনো পৃষ্ঠা লেখা যায়নি।" };
+
     const blob = pdf.output("blob");
     if (!blob.size) return { ok: false, error: "তৈরি হওয়া পিডিএফটি খালি।" };
 
     triggerDownload(blob, `${sanitizeFileName(fileName)}.pdf`);
-    return { ok: true, pages: pages.length };
+    return { ok: true, pages: writtenPages };
   } catch (error) {
     console.error("Paged report PDF generation failed", error);
     return { ok: false, error: "রিপোর্টের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
