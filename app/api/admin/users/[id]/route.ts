@@ -1,58 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { claimsForRole, isSuperAdminRole } from "@/src/modules/auth/roles";
-import { auth, collections } from "@/src/modules/database/firebaseAdmin";
 import { z } from "zod";
 
-const updateUserSchema = z.object({
-  name: z.string().min(1).optional(),
-  role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).optional(),
-});
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { claimsForRole, isSuperAdminRole, normalizeRole } from "@/src/modules/auth/roles";
+import {
+  adminErrorStatus,
+  protectAdminMutation,
+  recordAdminAudit,
+} from "@/src/modules/security/adminSecurity";
+
+const firebaseUidSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .refine((value) => !value.includes("/"), "Invalid Firebase UID");
+
+const updateUserSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).optional(),
+  })
+  .refine((value) => value.name !== undefined || value.role !== undefined, {
+    message: "No changes supplied",
+  });
+
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await protectAdminMutation(request, "user-update", { max: 20, windowSeconds: 60 });
     const actor = await verifyAdminAuth(request);
-    const { id } = await params;
-
-    const body = await request.json();
-    const validated = updateUserSchema.parse(body);
+    const { id: rawId } = await params;
+    const id = firebaseUidSchema.parse(rawId);
+    const validated = updateUserSchema.parse(await request.json());
+    const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
 
     const docRef = collections.users.doc(id);
     const docSnap = await docRef.get();
-
     if (!docSnap.exists) {
-      return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+      return json({ success: false, message: "User not found" }, 404);
     }
 
-    const existingRole = docSnap.data()?.role as string | undefined;
+    const existingRole = normalizeRole(docSnap.data()?.role);
 
-    if (validated.role === "Super Admin" && !isSuperAdminRole(actor.role)) {
-      return NextResponse.json(
-        { success: false, message: "শুধুমাত্র Super Admin এই রোল দিতে পারেন।" },
-        { status: 403 },
+    if (validated.role && id === actor.id && validated.role !== existingRole) {
+      return json(
+        { success: false, message: "নিজের রোল পরিবর্তন করা যাবে না।" },
+        400,
       );
     }
 
-    // Prevent non–Super Admin from demoting an existing Super Admin
     if (
-      existingRole === "Super Admin" &&
-      validated.role &&
-      validated.role !== "Super Admin" &&
+      (existingRole === "Super Admin" || validated.role === "Super Admin") &&
       !isSuperAdminRole(actor.role)
     ) {
-      return NextResponse.json(
-        { success: false, message: "Super Admin রোল পরিবর্তনের অনুমতি নেই।" },
-        { status: 403 },
+      return json(
+        { success: false, message: "শুধুমাত্র Super Admin এই রোল পরিবর্তন করতে পারেন।" },
+        403,
       );
     }
 
     if (validated.name) {
-      await auth.updateUser(id, {
-        displayName: validated.name,
-      });
+      await auth.updateUser(id, { displayName: validated.name });
     }
 
     if (validated.role) {
@@ -62,34 +80,47 @@ export async function PUT(
     const dataToUpdate: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
-
     if (validated.name) dataToUpdate.name = validated.name;
     if (validated.role) dataToUpdate.role = validated.role;
 
     await docRef.update(dataToUpdate);
 
-    const updatedDoc = await docRef.get();
-
-    return NextResponse.json(
+    await recordAdminAudit(
+      request,
+      actor,
+      "user.update",
+      "user",
+      id,
       {
-        success: true,
-        data: { id: updatedDoc.id, ...updatedDoc.data() },
+        changedName: Boolean(validated.name),
+        fromRole: existingRole,
+        toRole: validated.role || existingRole,
       },
-      { status: 200 },
     );
-  } catch (error: any) {
-    console.error("Error updating user:", error);
 
+    const updatedDoc = await docRef.get();
+    return json({
+      success: true,
+      data: { id: updatedDoc.id, ...updatedDoc.data() },
+    });
+  } catch (error: unknown) {
+    console.error("Error updating user:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
+      return json(
         { success: false, message: "Invalid input data", error: error.issues },
-        { status: 400 },
+        400,
       );
     }
-
-    return NextResponse.json(
-      { success: false, message: error.message || "Failed to update user" },
-      { status: error.message === "Unauthorized" ? 403 : 500 },
+    const status = adminErrorStatus(error);
+    return json(
+      {
+        success: false,
+        message:
+          status < 500 && error instanceof Error
+            ? error.message
+            : "Failed to update user",
+      },
+      status,
     );
   }
 }
@@ -99,37 +130,41 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await protectAdminMutation(request, "user-delete", { max: 10, windowSeconds: 60 });
     const actor = await verifyAdminAuth(request);
-    const { id } = await params;
+    const { id: rawId } = await params;
+    const id = firebaseUidSchema.parse(rawId);
+    const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
 
-    const docRef = collections.users.doc(id);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) {
-      return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
-    }
-
-    const targetRole = docSnap.data()?.role as string | undefined;
-    if (targetRole === "Super Admin" && !isSuperAdminRole(actor.role)) {
-      return NextResponse.json(
-        { success: false, message: "Super Admin মুছে ফেলার অনুমতি নেই।" },
-        { status: 403 },
+    if (id === actor.id) {
+      return json(
+        { success: false, message: "নিজের অ্যাকাউন্ট মুছতে পারবেন না।" },
+        400,
       );
     }
 
-    if (id === actor.id) {
-      return NextResponse.json(
-        { success: false, message: "নিজের অ্যাকাউন্ট মুছতে পারবেন না।" },
-        { status: 400 },
+    const docRef = collections.users.doc(id);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      return json({ success: false, message: "User not found" }, 404);
+    }
+
+    const targetRole = normalizeRole(docSnap.data()?.role);
+    if (targetRole === "Super Admin" && !isSuperAdminRole(actor.role)) {
+      return json(
+        { success: false, message: "Super Admin মুছে ফেলার অনুমতি নেই।" },
+        403,
       );
     }
 
     try {
       await auth.deleteUser(id);
-    } catch (authError: any) {
-      if (authError.code !== "auth/user-not-found") {
-        throw authError;
-      }
+    } catch (authError: unknown) {
+      const code =
+        typeof authError === "object" && authError && "code" in authError
+          ? String((authError as { code?: unknown }).code || "")
+          : "";
+      if (code !== "auth/user-not-found") throw authError;
     }
 
     await docRef.update({
@@ -137,13 +172,31 @@ export async function DELETE(
       updatedAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error: any) {
-    console.error("Error deleting user:", error);
+    await recordAdminAudit(
+      request,
+      actor,
+      "user.delete",
+      "user",
+      id,
+      { targetRole, email: String(docSnap.data()?.email || "") },
+    );
 
-    return NextResponse.json(
-      { success: false, message: error.message || "Failed to delete user" },
-      { status: error.message === "Unauthorized" ? 403 : 500 },
+    return json({ success: true });
+  } catch (error: unknown) {
+    console.error("Error deleting user:", error);
+    if (error instanceof z.ZodError) {
+      return json({ success: false, message: "Invalid user id" }, 400);
+    }
+    const status = adminErrorStatus(error);
+    return json(
+      {
+        success: false,
+        message:
+          status < 500 && error instanceof Error
+            ? error.message
+            : "Failed to delete user",
+      },
+      status,
     );
   }
 }
