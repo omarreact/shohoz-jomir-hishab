@@ -292,7 +292,7 @@ export async function proxy(request: NextRequest) {
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
-  const rawToken = cookieToken ?? bearerToken;
+  const rawToken = bearerToken ?? cookieToken;
 
   let userPayload: Record<string, unknown> | null = null;
 
