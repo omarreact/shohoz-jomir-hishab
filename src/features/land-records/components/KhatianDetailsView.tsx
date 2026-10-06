@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useRef, useState, type RefObject } from "react";
-import { Download } from "lucide-react";
+import { Download, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import { exportKhatianPdf } from "../lib/khatian-pdf-export";
+import {
+  exportKhatianPdf,
+  type KhatianPdfOrientation,
+} from "../lib/khatian-pdf-export";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
@@ -46,7 +49,7 @@ export default function KhatianDetailsView({
 }: Props) {
   const internalCaptureRef = useRef<HTMLDivElement | null>(null);
   const resolvedCaptureRef = captureRef ?? internalCaptureRef;
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<KhatianPdfOrientation | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
@@ -54,32 +57,38 @@ export default function KhatianDetailsView({
     fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
 
-  const handleDownloadPdf = useCallback(async () => {
-    const source = resolvedCaptureRef.current;
-    if (!source) {
-      setExportError("রিপোর্ট এলিমেন্ট পাওয়া যায়নি।");
-      return;
-    }
-
-    setExporting(true);
-    setExportError(null);
-
-    try {
-      const result = await exportKhatianPdf({
-        source,
-        fileName: buildFileName(khatian, surveyKey),
-      });
-
-      if (!result.ok) {
-        setExportError(result.error);
+  const handleDownloadPdf = useCallback(
+    async (orientation: KhatianPdfOrientation) => {
+      const source = resolvedCaptureRef.current;
+      if (!source) {
+        setExportError("রিপোর্ট এলিমেন্ট পাওয়া যায়নি।");
+        return;
       }
-    } catch (error) {
-      console.error("[KhatianDetailsView] PDF export failed", error);
-      setExportError("উচ্চমানের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।");
-    } finally {
-      setExporting(false);
-    }
-  }, [khatian, resolvedCaptureRef, surveyKey]);
+
+      setExporting(orientation);
+      setExportError(null);
+
+      try {
+        const result = await exportKhatianPdf({
+          source,
+          fileName: buildFileName(khatian, surveyKey),
+          orientation,
+        });
+
+        if (!result.ok) {
+          setExportError(result.error);
+        }
+      } catch (error) {
+        console.error("[KhatianDetailsView] PDF export failed", error);
+        setExportError("A4 পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।");
+      } finally {
+        setExporting(null);
+      }
+    },
+    [khatian, resolvedCaptureRef, surveyKey],
+  );
+
+  const isBusy = exporting !== null;
 
   return (
     <div
@@ -139,25 +148,51 @@ export default function KhatianDetailsView({
       `}</style>
 
       <div
-        className="mb-2 flex flex-wrap items-center justify-end gap-2 print:hidden"
+        className="mb-3 flex flex-col items-stretch gap-2 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
         data-exclude-export="1"
       >
+        <p className="text-xs font-semibold text-[var(--muted-foreground)] sm:mr-auto sm:self-center">
+          A4 সাইজ · পোর্ট্রেট বা ল্যান্ডস্কেপ বেছে নিন
+        </p>
+
         <button
           type="button"
-          onClick={() => void handleDownloadPdf()}
-          disabled={exporting}
+          onClick={() => void handleDownloadPdf("portrait")}
+          disabled={isBusy}
           data-exclude-export="1"
-          className="landbd-secondary-button inline-flex min-h-10 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="landbd-secondary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {exporting ? (
+          {exporting === "portrait" ? (
             <>
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span>পিডিএফ তৈরি হচ্ছে…</span>
+              <span>পোর্ট্রেট তৈরি হচ্ছে…</span>
             </>
           ) : (
             <>
-              <Download size={16} />
-              <span>উচ্চমানের পিডিএফ ডাউনলোড</span>
+              <RectangleVertical size={16} />
+              <Download size={15} className="opacity-70" />
+              <span>A4 পোর্ট্রেট ডাউনলোড</span>
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void handleDownloadPdf("landscape")}
+          disabled={isBusy}
+          data-exclude-export="1"
+          className="landbd-secondary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {exporting === "landscape" ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span>ল্যান্ডস্কেপ তৈরি হচ্ছে…</span>
+            </>
+          ) : (
+            <>
+              <RectangleHorizontal size={16} />
+              <Download size={15} className="opacity-70" />
+              <span>A4 ল্যান্ডস্কেপ ডাউনলোড</span>
             </>
           )}
         </button>
