@@ -119,7 +119,7 @@ export async function verifyServerAuth(
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : null;
-  const token = cookieToken ?? bearerToken;
+  const token = bearerToken ?? cookieToken;
 
   if (!token) throw new Error("Unauthorized");
 
