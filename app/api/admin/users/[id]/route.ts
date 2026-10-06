@@ -75,6 +75,7 @@ export async function PUT(
 
     if (validated.role) {
       await auth.setCustomUserClaims(id, claimsForRole(validated.role));
+      await auth.revokeRefreshTokens(id);
     }
 
     const dataToUpdate: Record<string, unknown> = {
