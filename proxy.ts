@@ -108,6 +108,25 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/api/public/maintenance",
 ]);
 
+const SUPER_ADMIN_ADMIN_PREFIXES = ["/admin/page-access"] as const;
+const ADMIN_ONLY_ADMIN_PREFIXES = [
+  "/admin/users",
+  "/admin/data-monitor",
+  "/admin/map-visits",
+  "/admin/test-api",
+  "/admin/settings",
+] as const;
+
+function adminPathAllowed(pathname: string, role: unknown): boolean {
+  if (SUPER_ADMIN_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
+    return isSuperAdminRole(role);
+  }
+  if (ADMIN_ONLY_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
+    return isAdminRole(role);
+  }
+  return isStaffRole(role);
+}
+
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -343,7 +362,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // Admin is excluded from the configurable page registry so a bad page rule
-  // can never lock the control plane itself.
+  // can never lock the control plane itself. Full authenticated access never
+  // bypasses admin RBAC.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!userPayload) {
       return loginRedirect(request, securityHeaders);
@@ -351,8 +371,7 @@ export async function proxy(request: NextRequest) {
 
     try {
       const user = await authoritativeUser();
-
-      if (!authenticatedFullAccess && !isStaffRole(user.role)) {
+      if (!adminPathAllowed(pathname, user.role)) {
         return forbiddenRedirect(request, securityHeaders);
       }
     } catch {
