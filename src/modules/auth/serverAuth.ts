@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { importX509, jwtVerify, type JWTPayload } from "jose";
 import {
   isAdminRole,
   isStaffRole,
@@ -14,57 +15,151 @@ export interface ServerUser {
   role: AppRole;
 }
 
-/**
- * Operational switch: when enabled, every valid active Firebase session gets
- * the full authenticated LandBD surface. Anonymous access remains policy-driven.
- */
+interface VerifyServerAuthOptions {
+  checkRevoked?: boolean;
+}
+
+let publicKeysCache: Record<string, string> | null = null;
+let publicKeysCacheTime = 0;
+const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
+
 export function authenticatedFullAccessEnabled(): boolean {
   return process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
 }
 
-/**
- * Firebase Admin is loaded lazily so a serverless route can still return a
- * JSON error when Admin credentials are invalid.
- */
 async function getAdminServices() {
   return import("@/src/modules/database/firebaseAdmin");
 }
 
+async function getFirebasePublicKeys(): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (publicKeysCache && now - publicKeysCacheTime < FIREBASE_KEYS_TTL_MS) {
+    return publicKeysCache;
+  }
+
+  const response = await fetch(
+    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new Error("Unable to load Firebase signing keys");
+  }
+
+  publicKeysCache = (await response.json()) as Record<string, string>;
+  publicKeysCacheTime = now;
+  return publicKeysCache;
+}
+
+function decodeJwtHeader(token: string): Record<string, unknown> | null {
+  try {
+    const encoded = token.split(".")[0];
+    if (!encoded) return null;
+    return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+async function verifyFirebaseIdTokenWithoutAdmin(token: string): Promise<JWTPayload> {
+  const header = decodeJwtHeader(token);
+  const kid = typeof header?.kid === "string" ? header.kid : null;
+  if (!kid) throw new Error("Unauthorized");
+
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  if (!projectId) throw new Error("Firebase project ID is not configured");
+
+  const keys = await getFirebasePublicKeys();
+  const certificate = keys[kid];
+  if (!certificate) throw new Error("Unauthorized");
+
+  const publicKey = await importX509(certificate, "RS256");
+  const { payload } = await jwtVerify(token, publicKey, {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
+  });
+
+  if (!payload.sub) throw new Error("Unauthorized");
+  return payload;
+}
+
+function userFromClaims(
+  claims: Record<string, unknown>,
+  uid: string,
+): ServerUser {
+  const claimRole = typeof claims.role === "string" ? claims.role : undefined;
+  const claimIsAdmin = claims.admin === true;
+
+  return {
+    id: uid,
+    email: typeof claims.email === "string" ? claims.email : "",
+    name: typeof claims.name === "string" ? claims.name : null,
+    role: normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User")),
+  };
+}
+
 /**
  * Validates access_token cookie or Bearer token and enforces account state.
- * Firestore users/{uid}.role is authoritative when present.
+ *
+ * When Firebase Admin credentials are available, Firestore users/{uid} remains
+ * authoritative. If Admin credentials are unavailable during a hosting
+ * migration, LandBD still verifies the Firebase ID token cryptographically
+ * against Google's signing keys so a valid Firebase login is not rejected.
  */
-export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
+export async function verifyServerAuth(
+  req: NextRequest,
+  options: VerifyServerAuthOptions = {},
+): Promise<ServerUser> {
   const cookieToken = req.cookies.get("access_token")?.value ?? null;
   const authHeader = req.headers.get("authorization");
-  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
   const token = cookieToken ?? bearerToken;
 
   if (!token) throw new Error("Unauthorized");
 
   const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
+
   if (!isFirebaseAdminReady()) {
-    // Still attempt verifyIdToken — may work with ADC in some environments
+    const payload = await verifyFirebaseIdTokenWithoutAdmin(token);
+    return userFromClaims(payload as Record<string, unknown>, payload.sub!);
   }
 
-  const decodedToken = await auth.verifyIdToken(token);
-  const userDoc = await collections.users.doc(decodedToken.uid).get();
+  const decodedToken = await auth.verifyIdToken(
+    token,
+    options.checkRevoked === true,
+  );
+
+  let userDoc;
+  try {
+    userDoc = await collections.users.doc(decodedToken.uid).get();
+  } catch (error) {
+    console.error(
+      "[serverAuth] Firestore user lookup unavailable; using verified Firebase claims.",
+      error instanceof Error ? error.message : String(error),
+    );
+    return userFromClaims(
+      decodedToken as unknown as Record<string, unknown>,
+      decodedToken.uid,
+    );
+  }
 
   const claimRole = decodedToken.role as string | undefined;
   const claimIsAdmin = decodedToken.admin === true;
 
   if (!userDoc.exists) {
-    return {
-      id: decodedToken.uid,
-      email: decodedToken.email || "",
-      name: (decodedToken.name as string) || null,
-      role: normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User")),
-    };
+    return userFromClaims(
+      decodedToken as unknown as Record<string, unknown>,
+      decodedToken.uid,
+    );
   }
 
   const userData = userDoc.data()!;
 
-  // Account state is server-authoritative. A client-side lock check is only UX.
   if (userData.status === "deleted") {
     throw new Error("Account disabled");
   }
@@ -90,7 +185,6 @@ export async function verifyServerAuth(req: NextRequest): Promise<ServerUser> {
   };
 }
 
-/** Super Admin only (sensitive platform-wide controls). */
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
   if (!authenticatedFullAccessEnabled() && !isSuperAdminRole(user.role)) {
@@ -99,7 +193,6 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
   return user;
 }
 
-/** Admin or Super Admin only (users, settings, metrics). */
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
   if (!authenticatedFullAccessEnabled() && !isAdminRole(user.role)) {
@@ -108,7 +201,6 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   return user;
 }
 
-/** Editor+ (blog / pages). */
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
   if (!authenticatedFullAccessEnabled() && !isStaffRole(user.role)) {
