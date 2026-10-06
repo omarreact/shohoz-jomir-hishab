@@ -16,7 +16,6 @@ export type { KhatianPdfOrientation };
 export type KhatianPdfExportOptions = {
   source: HTMLElement;
   fileName: string;
-  /** Always A4. User chooses portrait or landscape. Default: portrait */
   orientation?: KhatianPdfOrientation;
 };
 
@@ -27,6 +26,27 @@ export type KhatianPdfExportResult =
 const RENDER_SCALES = [1.35, 1.15, 1];
 const JPEG_QUALITY = 0.95;
 const MAX_PAGES = 80;
+
+function isNearlyBlankCanvas(canvas: HTMLCanvasElement): boolean {
+  try {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return false;
+    const stepX = Math.max(1, Math.floor(canvas.width / 48));
+    const stepY = Math.max(1, Math.floor(canvas.height / 48));
+    let ink = 0;
+    let samples = 0;
+    for (let y = 0; y < canvas.height; y += stepY) {
+      for (let x = 0; x < canvas.width; x += stepX) {
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        samples += 1;
+        if (pixel[3] > 8 && (pixel[0] < 250 || pixel[1] < 250 || pixel[2] < 250)) ink += 1;
+      }
+    }
+    return samples > 0 && ink / samples < 0.004;
+  } catch {
+    return false;
+  }
+}
 
 function sanitizeFileName(name: string): string {
   return (
@@ -158,7 +178,7 @@ function collectBreakpoints(root: HTMLElement): number[] {
   const rootRect = root.getBoundingClientRect();
   const candidates: Element[] = [
     ...Array.from(root.children),
-    ...Array.from(root.querySelectorAll("section, tr")),
+    ...Array.from(root.querySelectorAll("section, tr, table")),
   ];
 
   return candidates
@@ -224,7 +244,6 @@ async function buildPdfAtScale(
     throw new Error(`Unsafe PDF page count: ${slices.length}`);
   }
 
-  // Always A4 — orientation is the only variable.
   const pdf = new JsPdf({
     orientation,
     unit: "mm",
@@ -243,9 +262,14 @@ async function buildPdfAtScale(
   const contentWidth = content.width;
   const contentHeight = content.height;
   const orientationLabel = orientation === "landscape" ? "ল্যান্ডস্কেপ" : "পোর্ট্রেট";
+  const pageImages: Array<{ bytes: Uint8Array; height: number }> = [];
 
   for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
     const slice = slices[pageIndex];
+    if (slice.height < 48 && pageIndex === slices.length - 1 && pageImages.length > 0) {
+      continue;
+    }
+
     viewport.style.height = `${slice.height}px`;
     clone.style.transform = `translateY(-${slice.offsetY}px)`;
     clone.style.transformOrigin = "top left";
@@ -279,6 +303,12 @@ async function buildPdfAtScale(
       throw new Error(`Empty PDF page canvas at page ${pageIndex + 1}`);
     }
 
+    if (isNearlyBlankCanvas(canvas)) {
+      canvas.width = 1;
+      canvas.height = 1;
+      continue;
+    }
+
     const pageBlob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
     const renderedHeight = Math.min(
       contentHeight,
@@ -291,32 +321,38 @@ async function buildPdfAtScale(
       throw new Error(`PDF page encoding failed at page ${pageIndex + 1}`);
     }
 
-    if (pageIndex > 0) pdf.addPage("a4", orientation);
-    const imageBytes = await blobToBytes(pageBlob);
-    pdf.addImage(
-      imageBytes,
-      "JPEG",
-      contentBox.x,
-      contentBox.y,
-      contentWidth,
-      renderedHeight,
-      undefined,
-      "FAST",
-    );
-
-    drawLandBdPdfChrome(pdf, {
-      title: fileName,
-      subtitle: `A4 ${orientationLabel} · খতিয়ান রিপোর্ট`,
-      source: "DLRMS / LandBD data workspace",
-      pageNumber: pageIndex + 1,
-      pageCount: slices.length,
-    });
-
+    pageImages.push({ bytes: await blobToBytes(pageBlob), height: renderedHeight });
     await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
   }
 
   clone.style.transform = "none";
   viewport.style.height = "auto";
+
+  if (!pageImages.length) {
+    throw new Error("No non-blank PDF pages produced");
+  }
+
+  for (let i = 0; i < pageImages.length; i += 1) {
+    if (i > 0) pdf.addPage("a4", orientation);
+    const image = pageImages[i];
+    pdf.addImage(
+      image.bytes,
+      "JPEG",
+      contentBox.x,
+      contentBox.y,
+      contentWidth,
+      image.height,
+      undefined,
+      "FAST",
+    );
+    drawLandBdPdfChrome(pdf, {
+      title: fileName,
+      subtitle: `A4 ${orientationLabel} · খতিয়ান রিপোর্ট`,
+      source: "DLRMS / LandBD data workspace",
+      pageNumber: i + 1,
+      pageCount: pageImages.length,
+    });
+  }
 
   const pdfBlob = pdf.output("blob");
   if (!(pdfBlob instanceof Blob) || pdfBlob.size === 0) {
@@ -325,7 +361,7 @@ async function buildPdfAtScale(
 
   const suffix = orientation === "landscape" ? "-A4-Landscape" : "-A4-Portrait";
   triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}${suffix}.pdf`);
-  return { pages: slices.length, scale };
+  return { pages: pageImages.length, scale };
 }
 
 export async function exportKhatianPdf(
@@ -335,7 +371,8 @@ export async function exportKhatianPdf(
     return { ok: false, error: "ব্রাউজার পরিবেশ পাওয়া যায়নি।" };
   }
 
-  const orientation: KhatianPdfOrientation = options.orientation === "landscape" ? "landscape" : "portrait";
+  const orientation: KhatianPdfOrientation =
+    options.orientation === "landscape" ? "landscape" : "portrait";
   const exportWidthPx = exportWidthPxFor(orientation);
 
   let html2canvas: typeof import("html2canvas").default;
