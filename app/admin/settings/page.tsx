@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import {
   Settings as SettingsIcon,
   Save,
@@ -32,6 +34,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const canChangeMaintenance = isSuperAdminRole(user?.role);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,10 +73,18 @@ export default function SettingsPage() {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...settings,
-          maintenanceMode: String(settings.maintenanceMode),
-        }),
+        body: JSON.stringify(
+          canChangeMaintenance
+            ? settings
+            : {
+                siteName: settings.siteName,
+                contactEmail: settings.contactEmail,
+                contactPhone: settings.contactPhone,
+                facebookUrl: settings.facebookUrl,
+                youtubeUrl: settings.youtubeUrl,
+                announcement: settings.announcement,
+              },
+        ),
       });
       if (!res.ok) throw new Error("Failed to save");
       alert("সেটিংস সফলভাবে আপডেট হয়েছে!");
@@ -179,6 +191,7 @@ export default function SettingsPage() {
                   name="maintenanceMode"
                   checked={settings.maintenanceMode}
                   onChange={handleChange}
+                  disabled={!canChangeMaintenance}
                   className="sr-only peer"
                 />
                 <div className="w-14 h-7 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-500" />
@@ -186,6 +199,7 @@ export default function SettingsPage() {
               </label>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-3 leading-relaxed">
                 এটি চালু করলে সাধারণ ইউজাররা ওয়েবসাইট অ্যাক্সেস করতে পারবে না।
+                {!canChangeMaintenance ? " এই কন্ট্রোল শুধুমাত্র Super Admin পরিবর্তন করতে পারেন।" : ""}
               </p>
             </div>
 
