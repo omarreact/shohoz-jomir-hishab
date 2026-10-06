@@ -96,6 +96,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     await auth.setCustomUserClaims(validated.userId, claimsForRole(validated.role));
+    await auth.revokeRefreshTokens(validated.userId);
     await ref.update({
       role: validated.role,
       updatedAt: new Date().toISOString(),
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
     await protectAdminMutation(request, "users-state", { max: 20, windowSeconds: 60 });
     const actor = await verifyAdminAuth(request);
     const validated = userActionSchema.parse(await request.json());
-    const { collections } = await import("@/src/modules/database/firebaseAdmin");
+    const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
 
     if (validated.userId === actor.id) {
       return json(
@@ -168,6 +169,7 @@ export async function POST(request: NextRequest) {
       const lockedUntil = new Date(
         Date.now() + validated.durationHours * 60 * 60 * 1000,
       );
+      await auth.revokeRefreshTokens(validated.userId);
       await ref.update({
         lockedUntil,
         failedAttempts: 5,
