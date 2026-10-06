@@ -91,46 +91,66 @@ export class AdminService {
    * Get login history with pagination.
    */
   async getLoginHistory(page: number = 1, limit: number = 50) {
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(1, Math.trunc(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Math.trunc(limit) || 50));
+    const skip = (safePage - 1) * safeLimit;
 
-    const totalRes = await collections.loginHistory.count().get();
+    const [totalRes, loginsSnapshot] = await Promise.all([
+      collections.loginHistory.count().get(),
+      collections.loginHistory
+        .orderBy("createdAt", "desc")
+        .offset(skip)
+        .limit(safeLimit)
+        .get(),
+    ]);
     const total = totalRes.data().count;
 
-    const loginsSnapshot = await collections.loginHistory
-      .orderBy("createdAt", "desc")
-      .offset(skip)
-      .limit(Number(limit))
-      .get();
+    const userIds = Array.from(
+      new Set(
+        loginsSnapshot.docs
+          .map((doc) => doc.data()?.userId)
+          .filter((value): value is string => typeof value === "string" && value.length > 0),
+      ),
+    );
 
-    const logins = [];
-    for (const doc of loginsSnapshot.docs) {
-      const data = doc.data();
-      let user = null;
-      if (data.userId) {
-        const userDoc = await collections.users.doc(data.userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          user = {
-            id: userDoc.id,
-            email: userData?.email,
-            name: userData?.name,
-          };
-        }
+    const userMap = new Map<
+      string,
+      { id: string; email?: string; name?: string | null }
+    >();
+
+    if (userIds.length) {
+      const refs = userIds.map((id) => collections.users.doc(id));
+      const userDocs = await collections.users.firestore.getAll(...refs);
+      for (const userDoc of userDocs) {
+        if (!userDoc.exists) continue;
+        const userData = userDoc.data();
+        userMap.set(userDoc.id, {
+          id: userDoc.id,
+          email: userData?.email,
+          name: userData?.name ?? null,
+        });
       }
-      logins.push({
+    }
+
+    const logins = loginsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
         id: doc.id,
         ...data,
-        user,
-      });
-    }
+        user:
+          typeof data.userId === "string"
+            ? userMap.get(data.userId) ?? null
+            : null,
+      };
+    });
 
     return {
       data: logins,
       meta: {
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
       },
     };
   }
@@ -139,7 +159,9 @@ export class AdminService {
    * Get all users with pagination and basic info.
    */
   async getUsers(page: number = 1, limit: number = 50) {
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(1, Math.trunc(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Math.trunc(limit) || 50));
+    const skip = (safePage - 1) * safeLimit;
 
     const totalRes = await collections.users.count().get();
     const total = totalRes.data().count;
@@ -147,7 +169,7 @@ export class AdminService {
     const usersSnapshot = await collections.users
       .orderBy("createdAt", "desc")
       .offset(skip)
-      .limit(Number(limit))
+      .limit(safeLimit)
       .get();
 
     const users = usersSnapshot.docs.map((doc: any) => {
@@ -169,9 +191,9 @@ export class AdminService {
       data: users,
       meta: {
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
       },
     };
   }
