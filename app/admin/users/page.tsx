@@ -168,6 +168,38 @@ export default function UserManagement() {
     }
   };
 
+  const handleDelete = async (user: AdminUser) => {
+    if (user.id === currentUser?.id) {
+      alert("নিজের অ্যাকাউন্ট মুছতে পারবেন না।");
+      return;
+    }
+    if (user.role === "Super Admin" && !canManageSuperAdmin) {
+      alert("Super Admin মুছে ফেলার অনুমতি নেই।");
+      return;
+    }
+    if (
+      !confirm(
+        `"${user.name || user.email}" অ্যাকাউন্টটি স্থায়ীভাবে Firebase Auth থেকে মুছে ফেলতে চান?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed to delete");
+      showSuccess(`✅ "${user.name || user.email}" মুছে ফেলা হয়েছে।`);
+      fetchUsers();
+    } catch (error: unknown) {
+      alert(
+        `ডিলিট করতে সমস্যা: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  };
+
   const handleCreateUser = async () => {
     setIsCreateSubmitting(true);
     try {
@@ -282,13 +314,25 @@ export default function UserManagement() {
                       </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => openEdit(user)}
-                        className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#006a4e] flex items-center justify-center hover:bg-[#006a4e] hover:text-white hover:border-[#006a4e] transition-colors shadow-sm"
-                        title="রোল পরিবর্তন করুন"
-                      >
-                        <Edit size={18} />
-                      </button>
+                      {user.id !== currentUser?.id &&
+                      (user.role !== "Super Admin" || canManageSuperAdmin) ? (
+                        <>
+                          <button
+                            onClick={() => openEdit(user)}
+                            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#006a4e] flex items-center justify-center hover:bg-[#006a4e] hover:text-white hover:border-[#006a4e] transition-colors shadow-sm"
+                            title="রোল পরিবর্তন করুন"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user)}
+                            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors shadow-sm"
+                            title="ইউজার মুছুন"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </div>
 
@@ -298,6 +342,8 @@ export default function UserManagement() {
                     >
                       {ROLE_ICONS[user.role]} {user.role}
                     </span>
+                    {user.id !== currentUser?.id &&
+                    (user.role !== "Super Admin" || canManageSuperAdmin) ? (
                     <button
                       onClick={() => handleSuspend(user)}
                       className={`border rounded-full px-4 py-2 font-bold text-sm flex items-center transition-colors ${
@@ -309,6 +355,7 @@ export default function UserManagement() {
                       <KeyRound size={16} className="mr-2" />
                       {isSuspended ? "আনসাসপেন্ড করুন" : "সাসপেন্ড করুন"}
                     </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
