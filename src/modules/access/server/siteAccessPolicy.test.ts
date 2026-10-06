@@ -3,7 +3,7 @@ describe("site access policy", () => {
     jest.resetModules();
   });
 
-  it("fails closed when Firebase Admin is unavailable", async () => {
+  it("fails open (site stays online) when Firebase Admin is unavailable", async () => {
     jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
       isFirebaseAdminReady: () => false,
       collections: {
@@ -19,12 +19,12 @@ describe("site access policy", () => {
     const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
     const result = await getSiteAccessPolicy({ fresh: true });
 
-    expect(result.maintenanceMode).toBe(true);
+    expect(result.maintenanceMode).toBe(false);
     expect(result.degraded).toBe(true);
     expect(result.reason).toBe("firebase-admin-unavailable");
   });
 
-  it("fails closed when the maintenance document is missing", async () => {
+  it("treats missing maintenance document as OFF (site stays online)", async () => {
     const maintenanceRef = { id: "maintenanceMode" };
     const pageAccessRef = { id: "pageAccess" };
 
@@ -53,9 +53,8 @@ describe("site access policy", () => {
     const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
     const result = await getSiteAccessPolicy({ fresh: true });
 
-    expect(result.maintenanceMode).toBe(true);
-    expect(result.degraded).toBe(true);
-    expect(result.reason).toBe("maintenance-setting-missing");
+    expect(result.maintenanceMode).toBe(false);
+    expect(result.degraded).toBe(false);
   });
 
   it("loads maintenance and page access together when Firestore is healthy", async () => {
