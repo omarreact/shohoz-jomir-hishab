@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAdminAuth, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import { blogUpdateSchema } from "@/src/features/blog/adminBlogSchema";
 import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   makeExcerpt,
@@ -108,7 +109,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const actor = await verifyStaffAuth(req);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
     const body = await req.json();
-    const { title, coverImage, category, author, content } = body;
+    const parsed = blogUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, message: "Invalid blog data", error: parsed.error.issues },
+        { status: 400 },
+      );
+    }
+    const { title, coverImage, category, author, content } = parsed.data;
     const slug = title ? generateSlug(title) : undefined;
     const categorySlug = category ? generateSlug(category) : undefined;
     const cleanedContent = content ? sanitizeBlogHtml(content) : undefined;
