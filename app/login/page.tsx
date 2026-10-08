@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
-import { resolveLoginTarget } from "@/src/modules/auth/loginRedirect";
+import { resolvePostLoginTarget } from "@/src/modules/auth/loginRedirect";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -24,18 +24,18 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const searchParams = useSearchParams();
-  const { login, loading, isLoggedIn } = useAuth();
+  const { login, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
-  const target = resolveLoginTarget(searchParams.get("from"));
+  const fromTarget = searchParams.get("from");
 
-  const redirectToTarget = useCallback(() => {
+  const redirectToTarget = useCallback((role: unknown) => {
     if (redirectingRef.current) return;
     redirectingRef.current = true;
 
     // Use a full navigation after authentication so the first request to the
     // protected destination definitely includes the freshly-written auth cookie.
-    window.location.replace(target);
-  }, [target]);
+    window.location.replace(resolvePostLoginTarget(fromTarget, role));
+  }, [fromTarget]);
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -48,9 +48,9 @@ function LoginForm() {
 
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      redirectToTarget();
+      redirectToTarget(user?.role);
     }
-  }, [loading, isLoggedIn, redirectToTarget]);
+  }, [loading, isLoggedIn, user?.role, redirectToTarget]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -62,8 +62,8 @@ function LoginForm() {
       : `${username.toLowerCase().trim()}@landbd.com`;
 
     try {
-      await login(emailToUse, password);
-      redirectToTarget();
+      const profile = await login(emailToUse, password);
+      redirectToTarget(profile.role);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("লক")) {
@@ -103,7 +103,7 @@ function LoginForm() {
               আবার স্বাগতম 👋
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-              শুধুমাত্র অনুমোদিত স্টাফ, এডিটর ও অ্যাডমিনের জন্য।
+              আপনার LandBD অ্যাকাউন্টে প্রবেশ করুন। অনুমোদিত স্টাফদের অ্যাডমিন ড্যাশবোর্ডে নেওয়া হবে।
             </p>
           </div>
 
@@ -170,7 +170,7 @@ function LoginForm() {
           </form>
 
           <div className="mt-8 max-w-md border-t border-[var(--border-color)] pt-5 text-xs leading-6 text-[var(--muted-foreground)]">
-            আপনার অ্যাক্সেস রোল অনুযায়ী Admin Panel-এর অনুমোদিত অংশগুলো দেখানো হবে।
+            সাধারণ সদস্যরা LandBD সেবা ব্যবহার করবেন; স্টাফদের জন্য আলাদা অ্যাডমিন ওয়ার্কস্পেস রয়েছে।
           </div>
         </section>
 

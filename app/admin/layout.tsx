@@ -25,6 +25,7 @@ import {
 import { Button } from "@/src/shared/ui/button";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
+import { getAdminNavigationRoles } from "@/src/shared/routing/route-registry";
 
 type NavItem = {
   name: string;
@@ -34,17 +35,17 @@ type NavItem = {
 };
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { name: "ড্যাশবোর্ড", path: "/admin", icon: LayoutDashboard, roles: ["Super Admin", "Admin", "Editor"] },
-  { name: "ব্লগ ম্যানেজমেন্ট", path: "/admin/blog", icon: PenTool, roles: ["Super Admin", "Admin", "Editor"] },
-  { name: "কাস্টম পেজ", path: "/admin/custom-pages", icon: FileText, roles: ["Super Admin", "Admin", "Editor"] },
-  { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users", icon: Users, roles: ["Super Admin", "Admin"] },
-  { name: "ডেটা মনিটর", path: "/admin/data-monitor", icon: BarChart3, roles: ["Super Admin", "Admin"] },
-  { name: "মানচিত্র ভিজিটর", path: "/admin/map-visits", icon: MapPin, roles: ["Super Admin", "Admin"] },
-  { name: "QR ভেরিফিকেশন", path: "/admin/qr-verification", icon: QrCode, roles: ["Super Admin", "Admin", "Editor"] },
-  { name: "পেইজ অ্যাক্সেস", path: "/admin/page-access", icon: ShieldAlert, roles: ["Super Admin"] },
-  { name: "অডিট লগ", path: "/admin/audit-log", icon: History, roles: ["Super Admin"] },
-  { name: "টেস্ট এপিআই", path: "/admin/test-api", icon: Globe, roles: ["Super Admin", "Admin"] },
-  { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: ["Super Admin", "Admin"] },
+  { name: "ড্যাশবোর্ড", path: "/admin", icon: LayoutDashboard, roles: [...getAdminNavigationRoles("/admin")] },
+  { name: "ব্লগ ম্যানেজমেন্ট", path: "/admin/blog", icon: PenTool, roles: [...getAdminNavigationRoles("/admin/blog")] },
+  { name: "কাস্টম পেজ", path: "/admin/custom-pages", icon: FileText, roles: [...getAdminNavigationRoles("/admin/custom-pages")] },
+  { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users", icon: Users, roles: [...getAdminNavigationRoles("/admin/users")] },
+  { name: "ডেটা মনিটর", path: "/admin/data-monitor", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/data-monitor")] },
+  { name: "মানচিত্র ভিজিটর", path: "/admin/map-visits", icon: MapPin, roles: [...getAdminNavigationRoles("/admin/map-visits")] },
+  { name: "QR ভেরিফিকেশন", path: "/admin/qr-verification", icon: QrCode, roles: [...getAdminNavigationRoles("/admin/qr-verification")] },
+  { name: "পেইজ অ্যাক্সেস", path: "/admin/page-access", icon: ShieldAlert, roles: [...getAdminNavigationRoles("/admin/page-access")] },
+  { name: "অডিট লগ", path: "/admin/audit-log", icon: History, roles: [...getAdminNavigationRoles("/admin/audit-log")] },
+  { name: "টেস্ট এপিআই", path: "/admin/test-api", icon: Globe, roles: [...getAdminNavigationRoles("/admin/test-api")] },
+  { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: [...getAdminNavigationRoles("/admin/settings")] },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

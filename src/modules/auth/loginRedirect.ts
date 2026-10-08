@@ -1,4 +1,6 @@
-const DEFAULT_LOGIN_TARGET = "/admin";
+import { isStaffRole } from "@/src/modules/auth/roles";
+
+const DEFAULT_LOGIN_TARGET = "/";
 
 function isSafeLocalTarget(value: string): boolean {
   if (!value.startsWith("/") || value.startsWith("//")) return false;
@@ -31,4 +33,20 @@ export function resolveLoginTarget(
 export function buildLoginHref(target: string | null | undefined): string {
   const safeTarget = resolveLoginTarget(target, "/");
   return `/login?from=${encodeURIComponent(safeTarget)}`;
+}
+
+/** Prefer the original safe destination, otherwise send staff to their workspace
+ * and regular accounts to the public landing page. Never send a nonstaff user
+ * into the Admin console just because login succeeded. */
+export function resolvePostLoginTarget(
+  rawTarget: string | null | undefined,
+  role: unknown,
+): string {
+  const staff = isStaffRole(role);
+  const destination = resolveLoginTarget(rawTarget, staff ? "/admin" : "/");
+  const pathname = destination.split(/[?#]/, 1)[0];
+  if (!staff && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    return "/403";
+  }
+  return destination;
 }

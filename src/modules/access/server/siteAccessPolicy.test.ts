@@ -76,6 +76,29 @@ describe("site access policy", () => {
     expect(result.degraded).toBe(false);
   });
 
+  it("preserves a known maintenance lock while Firestore is temporarily unavailable", async () => {
+    let fail = false;
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      collections: { settings: { doc: jest.fn((id: string) => ({ id })) } },
+      db: { getAll: jest.fn(async () => {
+        if (fail) throw new Error("Firestore unavailable");
+        return [
+          { exists: true, data: () => ({ value: "true" }) },
+          { exists: false, data: () => undefined },
+        ];
+      }) },
+    }));
+    const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
+    const before = await getSiteAccessPolicy({ fresh: true });
+    expect(before.maintenanceMode).toBe(true);
+    fail = true;
+    const during = await getSiteAccessPolicy({ fresh: true });
+    expect(during.maintenanceMode).toBe(true);
+    expect(during.degraded).toBe(true);
+    expect(during.reason).toBe("Firestore unavailable");
+  });
+
   it("loads maintenance and page access together when Firestore is healthy", async () => {
     const maintenanceRef = { id: "maintenanceMode" };
     const pageAccessRef = { id: "pageAccess" };

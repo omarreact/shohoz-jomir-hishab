@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import { requireMemberApiAccess } from "@/src/modules/auth/requireMemberApiAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -209,6 +210,9 @@ function parseRecord(html: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const accessError = await requireMemberApiAccess(request);
+  if (accessError) return accessError;
+
   if (!(await allowRateLimit(key(request, "challenge"), 12, 60))) {
     return NextResponse.json(
       { ok: false, code: "RATE_LIMITED", error: "Too many captcha requests." },
@@ -256,6 +260,9 @@ export async function POST(request: NextRequest) {
       { status: 403, headers: commonHeaders },
     );
   }
+
+  const accessError = await requireMemberApiAccess(request);
+  if (accessError) return accessError;
 
   if (!(await allowRateLimit(key(request, "verify"), 6, 60))) {
     return NextResponse.json(

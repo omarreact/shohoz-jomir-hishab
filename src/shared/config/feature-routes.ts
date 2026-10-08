@@ -102,6 +102,7 @@ export const FOOTER_LEGAL_LINKS: FeatureRouteKey[] = [
 ];
 
 /** Routes safe to list in public sitemap.xml */
+/** Sitemap contains only indexable, publicly accessible routes. */
 export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "home",
   "records",
@@ -112,9 +113,6 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "inheritance",
   "landMap",
   "mouzaDownload",
-  "documents",
-  "warish",
-  "warishSanad",
   "blog",
   "faq",
   "contact",

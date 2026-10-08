@@ -45,16 +45,19 @@ function parseMaintenanceMode(value: unknown): boolean | null {
 }
 
 /**
- * Fail OPEN for public availability.
- * Previously fail-closed set maintenanceMode:true whenever Firestore was slow
- * or the maintenance doc was missing — which permanently locked the whole site
- * behind the maintenance page for every visitor.
+ * Preserve the last observed maintenance decision during a transient outage.
+ * With no trustworthy previous value, keep public availability; privileged
+ * routes remain independently protected by Firebase authentication. This
+ * cannot guarantee the intended remote setting on a brand-new cold instance,
+ * so the degraded condition must be monitored in production.
  */
 function failOpen(reason: string): SiteAccessPolicy {
   const previous = cachedPolicy?.value;
 
   return {
-    maintenanceMode: false,
+    // If Firestore is temporarily unavailable, preserve the last known
+    // maintenance decision. Never silently reopen a known locked site.
+    maintenanceMode: previous?.maintenanceMode ?? false,
     pageAccess: previous?.pageAccess ?? getDefaultPageAccessRules(),
     pageAccessUpdatedAt: previous?.pageAccessUpdatedAt ?? null,
     degraded: true,

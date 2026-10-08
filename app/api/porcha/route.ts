@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import { requireMemberApiAccess } from "@/src/modules/auth/requireMemberApiAccess";
 
 export const runtime = "nodejs";
 
@@ -69,6 +70,9 @@ function matchesQuery(item: PorchaRecord, query: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  const accessError = await requireMemberApiAccess(request);
+  if (accessError) return accessError;
+
   const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
   const { searchParams } = request.nextUrl;
   const rawQuery = searchParams.get("q")?.trim() ?? "";

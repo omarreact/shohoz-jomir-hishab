@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { LEGACY_ROUTE_REDIRECTS } from "./src/shared/routing/route-registry";
 
 /**
  * Build-time performance knobs for Vercel / `next build`.
@@ -7,6 +8,9 @@ import type { NextConfig } from "next";
  */
 const nextConfig: NextConfig = {
   devIndicators: false,
+  async redirects() {
+    return [...LEGACY_ROUTE_REDIRECTS];
+  },
 
   turbopack: {
     root: process.cwd(),

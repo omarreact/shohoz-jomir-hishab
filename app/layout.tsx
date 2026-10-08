@@ -7,6 +7,7 @@ import "./font-system.css";
 import "./result-export-policy.css";
 import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ConditionalShell from "@/src/shared/components/ConditionalShell";
+import { AuthProvider } from "@/src/modules/auth/hooks/AuthProvider";
 import VisitTracker from "@/src/shared/components/VisitTracker";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -118,9 +119,11 @@ export default function RootLayout({
           enableColorScheme={false}
           disableTransitionOnChange
         >
-          <ConditionalShell>{children}</ConditionalShell>
-          <BanglaUiEnforcer />
-          <VisitTracker />
+          <AuthProvider>
+            <ConditionalShell>{children}</ConditionalShell>
+            <BanglaUiEnforcer />
+            <VisitTracker />
+          </AuthProvider>
           {enableVercelTelemetry ? (
             <>
               <Analytics />
