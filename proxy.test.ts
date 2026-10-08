@@ -46,6 +46,74 @@ describe("LandBD request-boundary access policy", () => {
     mockVerifyServerAuth.mockReset();
   });
 
+  it("restores /admin for a verified Admin when Google's proxy X509 check is unavailable", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "staff-uid",
+      email: "staff@example.test",
+      name: "Staff",
+      role: "Admin",
+    });
+    const req = new NextRequest("https://landbd.example/admin", {
+      headers: { cookie: "access_token=valid-session-token" },
+    });
+
+    const response = await proxy(req);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(mockVerifyServerAuth).toHaveBeenCalledWith(
+      req,
+      { requireAdminBackend: true, checkRevoked: true },
+    );
+  });
+
+  it("allows a verified Editor dashboard but not Admin-only paths", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "editor-uid", email: "editor@example.test", name: "Editor", role: "Editor",
+    });
+    const headers = { cookie: "access_token=valid-session-token" };
+    const dashboard = await proxy(new NextRequest("https://landbd.example/admin", { headers }));
+    expect(dashboard.status).toBe(200);
+    const settings = await proxy(new NextRequest("https://landbd.example/admin/settings", { headers }));
+    expect(settings.status).toBeGreaterThanOrEqual(300);
+    expect(settings.headers.get("location")).toContain("/403");
+  });
+
+  it("rejects users without signed staff claims even when a cookie exists", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "user-uid", email: "user@example.test", name: "User", role: "Basic User",
+    });
+    const res = await proxy(new NextRequest("https://landbd.example/admin", {
+      headers: { cookie: "access_token=valid-session-token" },
+    }));
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(res.headers.get("location")).toContain("/403");
+  });
+
+  it("does not turn temporary Admin SDK failure into a login loop", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    mockVerifyServerAuth.mockRejectedValue(new Error("Firebase Admin unavailable"));
+    const res = await proxy(new NextRequest("https://landbd.example/admin", {
+      headers: { cookie: "access_token=valid-session-token" },
+    }));
+    expect(res.status).toBe(503);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("lets a verified Admin reach the dashboard during maintenance", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(true));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "staff-uid", email: "staff@example.test", name: "Staff", role: "Super Admin",
+    });
+    const res = await proxy(new NextRequest("https://landbd.example/admin", {
+      headers: { cookie: "access_token=valid-session-token" },
+    }));
+    expect(res.status).toBe(200);
+  });
+
   it("returns a 503 maintenance rewrite for an anonymous page", async () => {
     mockGetSiteAccessPolicy.mockResolvedValue(policy(true));
 
