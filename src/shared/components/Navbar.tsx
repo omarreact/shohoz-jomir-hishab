@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isStaffRole } from "@/src/modules/auth/roles";
 import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import {
   FEATURE_LABELS,
@@ -154,6 +155,7 @@ export default function Navbar() {
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
   const canSeeMapQa = isLoggedIn;
+  const canAccessAdmin = isLoggedIn && isStaffRole(user?.role);
 
   const visibleGroups = useMemo(
     () =>
@@ -364,6 +366,15 @@ export default function Navbar() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {canAccessAdmin ? (
+              <Link
+                href={FEATURE_ROUTES.admin}
+                className="hidden min-h-10 items-center gap-2 rounded-xl bg-[var(--brand-gold)] px-3 text-xs font-bold text-[var(--primary-foreground)] no-underline hover:opacity-90 sm:inline-flex"
+                aria-label="LandBD Admin Dashboard খুলুন"
+              >
+                <ShieldCheck size={16} /> ড্যাশবোর্ড
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -549,6 +560,7 @@ export default function Navbar() {
                     </div>
 
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {canAccessAdmin ? (
                       <Link
                         href={FEATURE_ROUTES.admin}
                         onClick={() => setSidebarOpen(false)}
@@ -556,6 +568,7 @@ export default function Navbar() {
                       >
                         <ShieldCheck size={15} /> ড্যাশবোর্ড
                       </Link>
+                      ) : null}
                       <button
                         type="button"
                         onClick={handleLogout}
