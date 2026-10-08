@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+import { MOBILE_MENU_KEYS, NAV_SECTIONS, isFeatureRouteActive, navRoute } from "@/src/shared/config/navigation";
 
 type Tab = {
   href?: string;
@@ -25,51 +26,41 @@ type Tab = {
   action?: "menu";
 };
 
+const MOBILE_SECTION_MATCHES = {
+  records: NAV_SECTIONS.find(s => s.id === "records")!.keys,
+  calculations: NAV_SECTIONS.find(s => s.id === "calculations")!.keys,
+  maps: NAV_SECTIONS.find(s => s.id === "maps")!.keys,
+} as const;
+
 const TABS: Tab[] = [
-  { href: FEATURE_ROUTES.home, label: "হোম", icon: Home, match: (p) => p === "/" },
-  {
-    href: FEATURE_ROUTES.records,
-    label: "রেকর্ড",
-    icon: FileSearch,
-    match: (p) =>
-      p.startsWith("/khatiyan") ||
-      p.startsWith("/dlrms-khatian") ||
-      p.startsWith("/settlement-khatian") ||
-      p.startsWith("/history"),
-  },
-  {
-    href: FEATURE_ROUTES.landMeasurement,
-    label: "হিসাব",
-    icon: Ruler,
-    match: (p) => p.startsWith("/land-measurement") || p.startsWith("/faraez"),
-  },
-  {
-    href: FEATURE_ROUTES.landMap,
-    label: "ম্যাপ",
-    icon: Map,
-    match: (p) =>
-      p.startsWith("/dap-map") ||
-      p.startsWith("/mouza-map") ||
-      p.startsWith("/geospatial-map") ||
-      p.startsWith("/map"),
-  },
+  { href: FEATURE_ROUTES.home, label: "হোম", icon: Home, match: p => isFeatureRouteActive(p, "/") },
+  { href: FEATURE_ROUTES.records, label: "রেকর্ড", icon: FileSearch,
+    match: p => MOBILE_SECTION_MATCHES.records.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
+  { href: FEATURE_ROUTES.landMeasurement, label: "হিসাব", icon: Ruler,
+    match: p => MOBILE_SECTION_MATCHES.calculations.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
+  { href: FEATURE_ROUTES.landMap, label: "ম্যাপ", icon: Map,
+    match: p => MOBILE_SECTION_MATCHES.maps.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
   { label: "মেনু", icon: Menu, action: "menu" },
 ];
 
-const MENU_ITEMS = [
-  { href: FEATURE_ROUTES.dlrmsKhatian, label: "DLRMS খতিয়ান", icon: FileSearch, group: "রেকর্ড" },
-  { href: FEATURE_ROUTES.landMeasurement, label: "জমি পরিমাপ", icon: Ruler, group: "হিসাব" },
-  { href: FEATURE_ROUTES.inheritance, label: "ফারায়েজ", icon: Scale, group: "হিসাব" },
-  { href: FEATURE_ROUTES.mouzaDownload, label: "মৌজা ম্যাপ", icon: Map, group: "মানচিত্র" },
-  { href: FEATURE_ROUTES.mouzaPorchaReport, label: "মৌজা পর্চা রিপোর্ট", icon: FileText, group: "ডকুমেন্ট" },
-  { href: FEATURE_ROUTES.warishSanad, label: "ওয়ারিশ সনদ", icon: FileText, group: "ডকুমেন্ট" },
-  { href: FEATURE_ROUTES.blog, label: "ব্লগ ও গাইড", icon: BookOpen, group: "গাইড" },
-] as const;
+const MENU_ICONS: Partial<Record<typeof MOBILE_MENU_KEYS[number], LucideIcon>> = {
+  dlrmsKhatian: FileSearch,
+  landMeasurement: Ruler,
+  inheritance: Scale,
+  mouzaDownload: Map,
+  mouzaPorchaReport: FileText,
+  warishSanad: FileText,
+  blog: BookOpen,
+};
+const MENU_ITEMS = MOBILE_MENU_KEYS.map(key => ({
+  ...navRoute(key),
+  icon: MENU_ICONS[key] ?? FileText,
+}));
 
 function isActive(pathname: string, tab: Tab) {
   if (tab.action === "menu") return false;
   if (tab.match) return tab.match(pathname);
-  return Boolean(tab.href && (pathname === tab.href || pathname.startsWith(`${tab.href}/`)));
+  return Boolean(tab.href && isFeatureRouteActive(pathname, tab.href));
 }
 
 export default function MobileFloatingNav() {
@@ -86,7 +77,7 @@ export default function MobileFloatingNav() {
   }
 
   const menuRouteActive = MENU_ITEMS.some(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+    (item) => isFeatureRouteActive(pathname, item.href),
   );
 
   return (

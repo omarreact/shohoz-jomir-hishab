@@ -6,6 +6,7 @@ import { getPageAccessLevel } from "@/src/shared/config/pageAccess";
 import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
 import { verifyServerAuth, type ServerUser } from "@/src/modules/auth/serverAuth";
 import { getAdminMinimumRole } from "@/src/shared/routing/route-registry";
+import { isAnonymousApiRequest } from "@/src/shared/routing/api-route-registry";
 import {
   isAdminRole,
   isStaffRole,
@@ -82,28 +83,6 @@ async function verifyFirebaseToken(token: string) {
 
 const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
-const PUBLIC_API_PREFIXES = [
-  "/api/auth",
-  "/api/metrics",
-  "/api/rajuk/health",
-  "/api/public",
-  "/api/search",
-  "/api/porcha",
-  "/api/reports/mouza-porcha/qr",
-  "/api/rajuk",
-  "/api/mouza-map",
-  "/api/unified",
-  "/api/pages",
-  "/api/blogs",
-  "/api/comments",
-  "/api/land-records",
-  "/api/ward-data",
-  "/api/wards",
-  "/api/zones",
-  "/api/authorities",
-  "/api/dncc-directory",
-] as const;
-
 const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/login",
   "/maintenance",
@@ -124,10 +103,6 @@ function matchesPrefix(pathname: string, prefix: string): boolean {
 function isMaintenanceEssentialPath(pathname: string): boolean {
   if (MAINTENANCE_ESSENTIAL_PATHS.has(pathname)) return true;
   return matchesPrefix(pathname, "/api/auth");
-}
-
-function isPublicApi(pathname: string): boolean {
-  return PUBLIC_API_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
 function securityResponseHeaders(requestId: string, pathname: string): Record<string, string> {
@@ -454,8 +429,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Sensitive handlers still perform their own authoritative authorization.
-  if (pathname.startsWith("/api/") && !isPublicApi(pathname) && !userPayload) {
+  // Route-method classifications are exact, not broad /api/* prefix exemptions.
+  // Presence of a session only permits routing onward: handlers verify signed
+  // identity and permissions authoritatively, avoiding duplicate SDK calls here.
+  if (pathname.startsWith("/api/") && !isAnonymousApiRequest(pathname, request.method) && !rawToken) {
     return unauthorizedApiResponse(requestId, securityHeaders);
   }
 

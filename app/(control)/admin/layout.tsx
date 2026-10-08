@@ -93,7 +93,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [userRole]);
 
   const currentTitle =
-    navItems.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))?.name ||
+    [...navItems].sort((a, b) => b.path.length - a.path.length)
+      .find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))?.name ||
     "ড্যাশবোর্ড";
 
   const adminSearchResults = navItems.filter(
