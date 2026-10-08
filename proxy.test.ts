@@ -79,6 +79,30 @@ describe("LandBD request-boundary access policy", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("allows only same-origin PDF frames on the report pages", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+
+    for (const route of ["/dlrms-khatian", "/mouza-porcha-report"]) {
+      const response = await proxy(request(route));
+      expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+      expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
+      expect(response.headers.get("content-security-policy")).toContain("frame-src 'self' blob:");
+    }
+
+    const otherPage = await proxy(request("/"));
+    expect(otherPage.headers.get("x-frame-options")).toBe("DENY");
+    expect(otherPage.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+  });
+
+  it("serves public report QR images without requiring login when maintenance is off", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+
+    const response = await proxy(request("/api/reports/mouza-porcha/qr?target=dlrms-khatian"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("keeps the maintenance status endpoint available without loading policy", async () => {
     const response = await proxy(request("/api/public/maintenance"));
 

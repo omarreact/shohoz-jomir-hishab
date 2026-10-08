@@ -1165,20 +1165,20 @@ export default function MouzaPorchaDocument({
           }
         }
 
-        /* Official khatian-inspired black-and-white presentation */
+        /* LandBD branded khatian-inspired report presentation */
         #mouza-porcha-report,
         #mouza-porcha-report * {
           font-family: "Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif !important;
         }
 
         #mouza-porcha-report .report-page {
-          --report-ink: #000;
-          --report-muted: #222;
-          --report-border: #000;
-          color: #000;
-          border: 0.25mm solid #b8b8b8;
-          border-radius: 0;
-          box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
+          --report-ink: #143a28;
+          --report-muted: #557063;
+          --report-border: #9fc6ad;
+          color: #153c29;
+          border: 0.25mm solid #b5d2bf;
+          border-radius: 2mm;
+          box-shadow: 0 8px 22px rgba(11, 93, 59, 0.10);
           background: #fff;
         }
 
@@ -1217,7 +1217,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-official-right p,
         #mouza-porcha-report .report-official-center p {
           margin: 0.3mm 0 0;
-          color: #000;
+          color: #153c29;
           font-size: inherit;
           font-weight: 400;
         }
@@ -1229,9 +1229,9 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-official-center h1 {
           margin: 0;
-          color: #000;
-          font-size: 19pt;
-          font-weight: 400;
+          color: #006a45;
+          font-size: 18pt;
+          font-weight: 800;
           line-height: 1.05;
         }
 
@@ -1243,7 +1243,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-qr-box {
           width: 28mm;
           padding: 1mm;
-          border: 0.22mm solid #000;
+          border: 0.22mm solid #96bea5;
           border-radius: 1mm;
           background: #fff;
           font-size: 6.5pt;
@@ -1265,7 +1265,8 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-location-row strong {
-          font-weight: 400;
+          color: #0b5d3b;
+          font-weight: 750;
         }
 
         #mouza-porcha-report .report-summary-table {
@@ -1278,12 +1279,15 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-summary-table td {
           padding: 1mm 1.2mm;
-          border: 0.22mm solid #000;
+          border: 0.22mm solid #96bea5;
           background: #fff;
-          color: #000;
+          color: #153c29;
         }
 
         #mouza-porcha-report .report-summary-table td:nth-child(odd) {
+          background: #eaf4ee;
+          color: #0b5d3b;
+          font-weight: 700;
           width: 11%;
           text-align: center;
         }
@@ -1293,12 +1297,12 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-summary-table strong {
-          font-weight: 400;
+          font-weight: 700;
         }
 
         #mouza-porcha-report .report-collection-note {
           margin: 1mm 0;
-          color: #000;
+          color: #153c29;
           font-size: 8.8pt;
           line-height: 1.35;
         }
@@ -1307,10 +1311,10 @@ export default function MouzaPorchaDocument({
           display: block;
           margin: 1.6mm 0 2mm;
           padding: 1.4mm 1.8mm;
-          border: 0.22mm solid #000;
+          border: 0.22mm solid #96bea5;
           border-radius: 0;
           background: #fff;
-          color: #000;
+          color: #153c29;
           line-height: 1.35;
         }
 
@@ -1321,7 +1325,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-legal-disclaimer strong,
         #mouza-porcha-report .report-legal-disclaimer p,
         #mouza-porcha-report .report-legal-disclaimer p[lang="en"] {
-          color: #000;
+          color: #153c29;
         }
 
         #mouza-porcha-report .report-legal-disclaimer strong {
@@ -1341,20 +1345,20 @@ export default function MouzaPorchaDocument({
           gap: 6mm;
           margin-bottom: 2.5mm;
           padding-bottom: 1.5mm;
-          border-bottom: 0.25mm solid #000;
+          border-bottom: 0.25mm solid #96bea5;
         }
 
         #mouza-porcha-report .report-repeat-title {
           display: block;
-          color: #000 !important;
-          font-size: 13pt;
-          font-weight: 400;
+          color: #0b5d3b !important;
+          font-size: 12pt;
+          font-weight: 800;
         }
 
         #mouza-porcha-report .report-repeat-header small,
         #mouza-porcha-report .report-repeat-meta span,
         #mouza-porcha-report .report-repeat-id {
-          color: #000;
+          color: #153c29;
           font-size: 9pt;
           font-weight: 400;
         }
@@ -1363,19 +1367,19 @@ export default function MouzaPorchaDocument({
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          border: 0.28mm solid #000;
-          font-size: 12.35pt;
-          line-height: 1.36;
+          border: 0.28mm solid #96bea5;
+          font-size: 9.2pt;
+          line-height: 1.3;
         }
 
         #mouza-porcha-report .report-table th,
         #mouza-porcha-report .report-table th:first-child {
-          padding: 1.45mm 1.25mm;
-          border: 0.22mm solid #000;
+          padding: 1.1mm 1.1mm;
+          border: 0.22mm solid #96bea5;
           box-shadow: none;
-          background: #fff;
-          color: #000;
-          font-weight: 400;
+          background: #e8f3ec;
+          color: #0b5d3b;
+          font-weight: 750;
           text-align: center;
           vertical-align: middle;
         }
@@ -1386,28 +1390,28 @@ export default function MouzaPorchaDocument({
 
         #mouza-porcha-report .report-table .report-column-numbers th {
           padding: 0.65mm 0.7mm;
-          font-size: 11.45pt;
+          font-size: 7.8pt;
         }
 
         #mouza-porcha-report .report-table td,
         #mouza-porcha-report .report-table tbody tr:nth-child(even) td {
-          padding: 1.3mm 1.25mm;
-          border: 0.22mm solid #000;
+          padding: 1.15mm 1.2mm;
+          border: 0.22mm solid #96bea5;
           background: #fff;
-          color: #000;
+          color: #153c29;
           vertical-align: top;
         }
 
         #mouza-porcha-report .report-table tbody tr:nth-child(5n) td:first-child {
-          border-left: 0.22mm solid #000;
+          border-left: 0.22mm solid #96bea5;
         }
 
         #mouza-porcha-report .report-serial-number,
         #mouza-porcha-report .report-khatian-number,
         #mouza-porcha-report .report-dag-cell,
         #mouza-porcha-report .report-land-area {
-          color: #000 !important;
-          font-weight: 400;
+          color: #153c29 !important;
+          font-weight: 650;
           font-variant-numeric: tabular-nums;
         }
 
@@ -1420,7 +1424,7 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-history-label,
         #mouza-porcha-report .report-history-arrow,
         #mouza-porcha-report .report-empty {
-          color: #000;
+          color: #153c29;
           font-weight: 400;
         }
 
@@ -1432,9 +1436,9 @@ export default function MouzaPorchaDocument({
           grid-template-columns: 1fr auto 1fr;
           gap: 4mm;
           padding-top: 1.2mm;
-          border-top: 0.2mm solid #000;
+          border-top: 0.2mm solid #96bea5;
           background: #fff;
-          color: #000;
+          color: #153c29;
           font-size: 8.1pt;
         }
 
@@ -1442,14 +1446,14 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-footer-center strong,
         #mouza-porcha-report .report-footer-source strong {
           display: block;
-          color: #000;
+          color: #153c29;
           font-size: 8.4pt;
           font-weight: 400;
         }
 
         #mouza-porcha-report .report-page-footer span,
         #mouza-porcha-report .report-latin-id {
-          color: #000;
+          color: #153c29;
           font-size: 7.8pt;
           font-weight: 400;
         }
@@ -1461,8 +1465,8 @@ export default function MouzaPorchaDocument({
         #mouza-porcha-report .report-footer-disclaimer {
           grid-column: 1 / -1;
           padding-top: 0.6mm;
-          border-top: 0.15mm solid #000;
-          color: #000;
+          border-top: 0.15mm solid #96bea5;
+          color: #153c29;
           font-size: 7.7pt;
           font-weight: 400;
           text-align: center;
@@ -1477,7 +1481,7 @@ export default function MouzaPorchaDocument({
         }
 
         #mouza-porcha-report .report-page-landscape .report-table {
-          font-size: 12.5pt;
+          font-size: 9.4pt;
         }
 
         #mouza-porcha-report .report-page-landscape .report-location-row {

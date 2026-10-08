@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, type RefObject } from "react";
-import { Download, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { Download, Eye, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import {
@@ -9,6 +9,7 @@ import {
   type KhatianPdfOrientation,
 } from "../lib/khatian-pdf-export";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
+import PdfPreviewDialog, { type PdfPreviewDocument } from "@/src/shared/components/PdfPreviewDialog";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
 
@@ -51,6 +52,7 @@ export default function KhatianDetailsView({
   const resolvedCaptureRef = captureRef ?? internalCaptureRef;
   const [exporting, setExporting] = useState<KhatianPdfOrientation | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<PdfPreviewDocument | null>(null);
 
   const embeddedFull = FullKhatianSchema.safeParse(khatian.PUBLIC_RECORD?.LANDBD_FULL_KHATIAN);
   const resolvedFullKhatian =
@@ -58,7 +60,7 @@ export default function KhatianDetailsView({
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
 
   const handleDownloadPdf = useCallback(
-    async (orientation: KhatianPdfOrientation) => {
+    async (orientation: KhatianPdfOrientation, delivery: "download" | "return" = "download") => {
       const source = resolvedCaptureRef.current;
       if (!source) {
         setExportError("রিপোর্ট এলিমেন্ট পাওয়া যায়নি।");
@@ -73,10 +75,13 @@ export default function KhatianDetailsView({
           source,
           fileName: buildFileName(khatian, surveyKey),
           orientation,
+          delivery,
         });
 
         if (!result.ok) {
           setExportError(result.error);
+        } else if (delivery === "return") {
+          setPdfPreview({ blob: result.blob, fileName: result.fileName, pages: result.pages });
         }
       } catch (error) {
         console.error("[KhatianDetailsView] PDF export failed", error);
@@ -152,8 +157,21 @@ export default function KhatianDetailsView({
         data-exclude-export="1"
       >
         <p className="text-xs font-semibold text-[var(--muted-foreground)] sm:mr-auto sm:self-center">
-          A4 সাইজ · পোর্ট্রেট বা ল্যান্ডস্কেপ বেছে নিন
+          A4 {pageOrientation === "landscape" ? "ল্যান্ডস্কেপ" : "পোর্ট্রেট"} প্রস্তাবিত · PDF দেখুন বা ডাউনলোড করুন
         </p>
+
+        <button
+          type="button"
+          onClick={() => void handleDownloadPdf(pageOrientation, "return")}
+          disabled={isBusy}
+          data-exclude-export="1"
+          className="landbd-primary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {exporting === pageOrientation ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : <Eye size={17} />}
+          <span>PDF প্রিভিউ দেখুন</span>
+        </button>
 
         <button
           type="button"
@@ -232,6 +250,9 @@ export default function KhatianDetailsView({
             pageOrientation={pageOrientation}
           />
         </div>
+      ) : null}
+      {pdfPreview ? (
+        <PdfPreviewDialog document={pdfPreview} onClose={() => setPdfPreview(null)} />
       ) : null}
     </div>
   );

@@ -17,10 +17,12 @@ export type KhatianPdfExportOptions = {
   source: HTMLElement;
   fileName: string;
   orientation?: KhatianPdfOrientation;
+  /** Existing callers can still download automatically; preview callers request the Blob. */
+  delivery?: "download" | "return";
 };
 
 export type KhatianPdfExportResult =
-  | { ok: true; pages: number; scale: number; orientation: KhatianPdfOrientation }
+  | { ok: true; pages: number; scale: number; orientation: KhatianPdfOrientation; blob: Blob; fileName: string }
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
@@ -142,6 +144,22 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
     }
   });
 
+  // Restore intentional branded surfaces after normalizing Tailwind v4 colors
+  // into html2canvas-safe RGB values (html2canvas 1.4 cannot parse OKLCH).
+  const pdfSurfaces: Record<string, string> = {
+    soft: "#f0f6f1",
+    "table-head": "#e8f3ec",
+    "top-green": "#006a45",
+    "top-gold": "#d7a327",
+    "top-red": "#c52d43",
+  };
+  clone.querySelectorAll<HTMLElement>("[data-pdf-surface]").forEach((node) => {
+    const tone = node.dataset.pdfSurface;
+    if (tone && pdfSurfaces[tone]) {
+      setImportant(node, "background-color", pdfSurfaces[tone]);
+    }
+  });
+
   setImportant(clone, "background-color", "#ffffff");
   setImportant(clone, "color", "#13261b");
   setImportant(clone, "border-top", "4px solid #17663a");
@@ -237,7 +255,8 @@ async function buildPdfAtScale(
   scale: number,
   orientation: KhatianPdfOrientation,
   exportWidthPx: number,
-): Promise<{ pages: number; scale: number }> {
+  delivery: "download" | "return",
+): Promise<{ pages: number; scale: number; blob: Blob; fileName: string }> {
   const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
   const slices = planA4Slices(totalHeight, collectBreakpoints(clone), orientation, exportWidthPx);
   if (!slices.length || slices.length > MAX_PAGES) {
@@ -276,7 +295,9 @@ async function buildPdfAtScale(
 
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-    const canvas = await html2canvas(viewport, {
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(viewport, {
       backgroundColor: "#ffffff",
       scale,
       useCORS: true,
@@ -295,7 +316,21 @@ async function buildPdfAtScale(
         (element.dataset.excludeExport === "1" ||
           element.dataset.pdfExclude === "1" ||
           element.dataset.printExclude === "1"),
-    });
+      });
+    } catch (captureError) {
+      const reason = captureError instanceof Error ? captureError.message : String(captureError);
+      if (!/unsupported color function|oklch|oklab/i.test(reason)) throw captureError;
+      // html2canvas 1.4.x cannot parse all Tailwind 4 color functions.
+      // The existing html-to-image dependency uses the browser's CSS renderer.
+      const { toCanvas } = await import("html-to-image");
+      canvas = await toCanvas(viewport, {
+        backgroundColor: "#ffffff",
+        width: exportWidthPx,
+        height: slice.height,
+        pixelRatio: scale,
+        cacheBust: true,
+      });
+    }
 
     if (!canvas.width || !canvas.height) {
       canvas.width = 1;
@@ -360,8 +395,9 @@ async function buildPdfAtScale(
   }
 
   const suffix = orientation === "landscape" ? "-A4-Landscape" : "-A4-Portrait";
-  triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}${suffix}.pdf`);
-  return { pages: pageImages.length, scale };
+  const outputName = `${sanitizeFileName(fileName)}${suffix}.pdf`;
+  if (delivery === "download") triggerPdfDownload(pdfBlob, outputName);
+  return { pages: pageImages.length, scale, blob: pdfBlob, fileName: outputName };
 }
 
 export async function exportKhatianPdf(
@@ -440,6 +476,7 @@ export async function exportKhatianPdf(
           scale,
           orientation,
           exportWidthPx,
+          options.delivery ?? "download",
         );
         return { ok: true, ...result, orientation };
       } catch (error) {

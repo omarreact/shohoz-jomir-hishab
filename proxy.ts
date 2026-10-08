@@ -88,6 +88,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/public",
   "/api/search",
   "/api/porcha",
+  "/api/reports/mouza-porcha/qr",
   "/api/rajuk",
   "/api/mouza-map",
   "/api/unified",
@@ -140,14 +141,19 @@ function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
-function securityResponseHeaders(requestId: string): Record<string, string> {
+function securityResponseHeaders(requestId: string, pathname: string): Record<string, string> {
+  // Browser PDF blobs inherit the viewer page's CSP. Keep reports same-origin
+  // frameable for their local PDF viewer, without allowing external embedding.
+  const pdfViewerPage = pathname === "/dlrms-khatian" || pathname === "/mouza-porcha-report";
   return {
     "x-request-id": requestId,
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
+    "X-Frame-Options": pdfViewerPage ? "SAMEORIGIN" : "DENY",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy": "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+    "Content-Security-Policy": pdfViewerPage
+      ? "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; frame-src 'self' blob:; form-action 'self'"
+      : "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
     "Cross-Origin-Opener-Policy": "same-origin",
     "X-DNS-Prefetch-Control": "off",
     "X-Permitted-Cross-Domain-Policies": "none",
@@ -254,7 +260,7 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-request-id", requestId);
 
-  const securityHeaders = securityResponseHeaders(requestId);
+  const securityHeaders = securityResponseHeaders(requestId, pathname);
 
   // Best-effort per-instance burst protection only. Route-level distributed
   // limits remain authoritative where configured.

@@ -10,10 +10,12 @@ export type GeneratePagedReportPdfOptions = {
   scale?: number;
   jpegQuality?: number;
   maxPages?: number;
+  /** Download (legacy) or return a Blob for in-page preview. */
+  delivery?: "download" | "return";
 };
 
 export type GeneratePagedReportPdfResult =
-  | { ok: true; pages: number }
+  | { ok: true; pages: number; blob: Blob; fileName: string }
   | { ok: false; error: string };
 
 const EMBEDDED_BROWSER_RE = /(?:;\s*wv\)|\bWebView\b|\bFBAN\/|\bFBAV\/|\bInstagram\b|\bLine\/)/i;
@@ -114,6 +116,7 @@ export async function generatePagedReportPdf({
   scale = 1.35,
   jpegQuality = 0.9,
   maxPages = 160,
+  delivery = "download",
 }: GeneratePagedReportPdfOptions): Promise<GeneratePagedReportPdfResult> {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { ok: false, error: "পিডিএফ ডাউনলোড শুধুমাত্র ব্রাউজারে ব্যবহার করা যায়।" };
@@ -155,7 +158,9 @@ export async function generatePagedReportPdf({
       const width = Math.max(page.scrollWidth, page.clientWidth, 1);
       const height = Math.max(page.scrollHeight, page.clientHeight, 1);
 
-      const canvas = await html2canvas(page, {
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await html2canvas(page, {
         backgroundColor: "#ffffff",
         scale,
         useCORS: true,
@@ -180,7 +185,19 @@ export async function generatePagedReportPdf({
             node.style.setProperty("margin", "0", "important");
           });
         },
-      });
+        });
+      } catch (captureError) {
+        const reason = captureError instanceof Error ? captureError.message : String(captureError);
+        if (!/unsupported color function|oklch|oklab/i.test(reason)) throw captureError;
+        const { toCanvas } = await import("html-to-image");
+        canvas = await toCanvas(page, {
+          backgroundColor: "#ffffff",
+          width,
+          height,
+          pixelRatio: scale,
+          cacheBust: true,
+        });
+      }
 
       if (!canvas.width || !canvas.height) {
         return { ok: false, error: `পিডিএফ পৃষ্ঠা ${index + 1} তৈরি করা যায়নি।` };
@@ -222,8 +239,9 @@ export async function generatePagedReportPdf({
     const blob = pdf.output("blob");
     if (!blob.size) return { ok: false, error: "তৈরি হওয়া পিডিএফটি খালি।" };
 
-    triggerDownload(blob, `${sanitizeFileName(fileName)}.pdf`);
-    return { ok: true, pages: writtenPages };
+    const outputName = `${sanitizeFileName(fileName)}.pdf`;
+    if (delivery === "download") triggerDownload(blob, outputName);
+    return { ok: true, pages: writtenPages, blob, fileName: outputName };
   } catch (error) {
     console.error("Paged report PDF generation failed", error);
     return { ok: false, error: "রিপোর্টের পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।" };
