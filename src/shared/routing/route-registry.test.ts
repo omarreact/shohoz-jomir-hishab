@@ -49,7 +49,7 @@ describe("LandBD routing inventory", () => {
   });
 
   it("keeps permanent redirects canonical and avoids redirect chains", () => {
-    const sources = new Set(LEGACY_ROUTE_REDIRECTS.map(r => r.source));
+    const sources = new Set<string>(LEGACY_ROUTE_REDIRECTS.map(r => r.source));
     for (const entry of LEGACY_ROUTE_REDIRECTS) {
       expect(entry.permanent).toBe(true);
       expect(sources.has(entry.destination)).toBe(false);
