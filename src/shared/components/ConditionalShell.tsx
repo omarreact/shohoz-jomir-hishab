@@ -62,7 +62,7 @@ export default function ConditionalShell({
 
   // Access has already been decided by proxy.ts. These routes bypass normal
   // application chrome only for layout/geometry reasons.
-  if (isGeospatialMap || isWarishSanad || isMaintenanceRoute) {
+  if (isGeospatialMap || isWarishSanad || isMaintenanceRoute || isAdminRoute) {
     return <>{children}</>;
   }
 

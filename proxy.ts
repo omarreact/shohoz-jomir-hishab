@@ -255,6 +255,7 @@ function unauthorizedApiResponse(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const requestId = crypto.randomUUID();
 
   const requestHeaders = new Headers(request.headers);
@@ -302,7 +303,9 @@ export async function proxy(request: NextRequest) {
 
   let userPayload: Record<string, unknown> | null = null;
 
-  if (rawToken) {
+  // Admin routes rely on Firebase Admin verification, not an extra Google X509
+  // network request that can fail while the signed server session is valid.
+  if (rawToken && !isAdminPath) {
     userPayload = (await verifyFirebaseToken(rawToken)) as Record<
       string,
       unknown
@@ -323,6 +326,7 @@ export async function proxy(request: NextRequest) {
   }
 
   let authoritativeUserPromise: Promise<ServerUser> | null = null;
+  let privilegedAdminUserPromise: Promise<ServerUser> | null = null;
 
   async function authoritativeUser(): Promise<ServerUser> {
     if (!rawToken) throw new Error("Unauthorized");
@@ -332,6 +336,22 @@ export async function proxy(request: NextRequest) {
     }
 
     const user = await authoritativeUserPromise;
+    requestHeaders.set("x-user-id", user.id);
+    requestHeaders.set("x-user-role", user.role);
+    return user;
+  }
+
+  async function privilegedAdminUser(): Promise<ServerUser> {
+    if (!rawToken) throw new Error("Unauthorized");
+    if (!privilegedAdminUserPromise) {
+      // Fail closed: require Admin SDK, current account state, and non-revoked
+      // Firebase session on all privileged pages (including Editor dashboard).
+      privilegedAdminUserPromise = verifyServerAuth(request, {
+        requireAdminBackend: true,
+        checkRevoked: true,
+      });
+    }
+    const user = await privilegedAdminUserPromise;
     requestHeaders.set("x-user-id", user.id);
     requestHeaders.set("x-user-role", user.role);
     return user;
@@ -357,14 +377,15 @@ export async function proxy(request: NextRequest) {
   const policy = maintenanceEssential ? null : await getSiteAccessPolicy();
 
   if (policy?.maintenanceMode && !maintenanceEssential) {
-    if (!userPayload) {
+    if (!rawToken) {
       return pathname.startsWith("/api/")
         ? maintenanceApiResponse(requestId, securityHeaders)
         : maintenancePageResponse(request, securityHeaders);
     }
 
     try {
-      await authoritativeUser();
+      if (isAdminPath) await privilegedAdminUser();
+      else await authoritativeUser();
     } catch {
       return pathname.startsWith("/api/")
         ? maintenanceApiResponse(requestId, securityHeaders)
@@ -374,19 +395,25 @@ export async function proxy(request: NextRequest) {
 
   // Admin is excluded from the configurable page registry so a bad page rule
   // can never lock the control plane itself.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    if (!userPayload) {
+  if (isAdminPath) {
+    if (!rawToken) {
       return loginRedirect(request, securityHeaders);
     }
 
     try {
-      const user = await authoritativeUser();
+      const user = await privilegedAdminUser();
 
-      // A full-access feature flag must never bypass administrative RBAC.
+      // Never trust unverified client roles or the general full-access flag.
       if (!adminPathAllowed(pathname, user.role)) {
         return forbiddenRedirect(request, securityHeaders);
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Firebase Admin unavailable") {
+        return new NextResponse("Admin authentication is temporarily unavailable.", {
+          status: 503,
+          headers: { ...securityHeaders, "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }
       return loginRedirect(request, securityHeaders);
     }
   }
