@@ -295,7 +295,9 @@ async function buildPdfAtScale(
 
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-    const canvas = await html2canvas(viewport, {
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(viewport, {
       backgroundColor: "#ffffff",
       scale,
       useCORS: true,
@@ -314,7 +316,21 @@ async function buildPdfAtScale(
         (element.dataset.excludeExport === "1" ||
           element.dataset.pdfExclude === "1" ||
           element.dataset.printExclude === "1"),
-    });
+      });
+    } catch (captureError) {
+      const reason = captureError instanceof Error ? captureError.message : String(captureError);
+      if (!/unsupported color function|oklch|oklab/i.test(reason)) throw captureError;
+      // html2canvas 1.4.x cannot parse all Tailwind 4 color functions.
+      // The existing html-to-image dependency uses the browser's CSS renderer.
+      const { toCanvas } = await import("html-to-image");
+      canvas = await toCanvas(viewport, {
+        backgroundColor: "#ffffff",
+        width: exportWidthPx,
+        height: slice.height,
+        pixelRatio: scale,
+        cacheBust: true,
+      });
+    }
 
     if (!canvas.width || !canvas.height) {
       canvas.width = 1;
