@@ -53,6 +53,22 @@ function safeLabel(value: string | undefined, fallback: string): string {
   return normalized ? normalized.slice(0, 110) : fallback;
 }
 
+/**
+ * jsPDF's built-in Helvetica font does not contain Bengali glyphs. Never send
+ * Bengali metadata or UI labels to doc.text with a core font: it produces
+ * corrupt control characters in the PDF stream. Bengali remains in the
+ * html2canvas-rendered report body, which uses the browser's Bengali font.
+ */
+export function toPdfCoreFontText(value: string | undefined, fallback: string): string {
+  const input = safeLabel(value, fallback);
+  const ascii = input
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/-\s+-/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  return ascii || fallback;
+}
+
 export function drawLandBdPdfChrome(
   doc: jsPDF,
   options: {
@@ -96,7 +112,7 @@ export function drawLandBdPdfChrome(
     LANDBD_PDF.headerTopMm + 7.35,
   );
 
-  const title = safeLabel(options.title, "LandBD Report");
+  const title = toPdfCoreFontText(options.title, "LandBD Report");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.2);
   doc.setTextColor(...LANDBD_PDF.ink);
@@ -109,7 +125,7 @@ export function drawLandBdPdfChrome(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(5.1);
     doc.setTextColor(...LANDBD_PDF.muted);
-    doc.text(safeLabel(options.subtitle, ""), right, LANDBD_PDF.headerTopMm + 7.35, {
+    doc.text(toPdfCoreFontText(options.subtitle, "LandBD A4 report"), right, LANDBD_PDF.headerTopMm + 7.35, {
       align: "right",
       maxWidth: Math.max(70, width * 0.42),
     });

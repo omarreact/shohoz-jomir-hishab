@@ -120,6 +120,46 @@ export function planA4Slices(
   return slices;
 }
 
+/**
+ * Fit a short trailing LandBD ribbon onto the preceding landscape page
+ * rather than generating a mostly-empty second A4 sheet. The renderer must
+ * reduce BOTH drawing dimensions proportionally; never stretch the text.
+ *
+ * Long records, pages without the ribbon, and large trailing data slices
+ * retain normal multi-page pagination.
+ */
+export function shouldFitTrailingRibbonOnOnePage(
+  totalHeight: number,
+  slices: PdfSlice[],
+  orientation: KhatianPdfOrientation,
+  exportWidthPx: number,
+  hasRibbon: boolean,
+): boolean {
+  if (!hasRibbon || slices.length !== 2 || totalHeight <= 0) return false;
+  const idealHeight = idealPageCssHeight(orientation, exportWidthPx);
+  return (
+    totalHeight <= idealHeight * 1.22 &&
+    slices[1].height <= idealHeight * 0.24
+  );
+}
+
+/** Uniform PDF image scale needed to preserve font and QR aspect ratios. */
+export function fitImageToA4Content(
+  sourceHeightPx: number,
+  sourceWidthPx: number,
+  contentWidthMm: number,
+  contentHeightMm: number,
+): { widthMm: number; heightMm: number; insetMm: number } {
+  const naturalHeight = (sourceHeightPx * contentWidthMm) / sourceWidthPx;
+  const factor = Math.min(1, contentHeightMm / naturalHeight);
+  const widthMm = contentWidthMm * factor;
+  return {
+    widthMm,
+    heightMm: naturalHeight * factor,
+    insetMm: (contentWidthMm - widthMm) / 2,
+  };
+}
+
 /** @deprecated use planA4Slices(..., "portrait") */
 export function planPortraitSlices(
   totalHeight: number,

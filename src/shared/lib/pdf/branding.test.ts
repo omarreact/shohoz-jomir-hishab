@@ -1,6 +1,7 @@
 import {
   LANDBD_PDF,
   getLandBdA4ContentBox,
+  toPdfCoreFontText,
 } from "./branding";
 
 describe("LandBD PDF branding standard", () => {
@@ -26,4 +27,11 @@ describe("LandBD PDF branding standard", () => {
       height: 175,
     });
   });
+  test("never passes Bengali to jsPDF Helvetica header rendering", () => {
+    expect(toPdfCoreFontText("LandBD-BRS-পাতিরা-349", "LandBD Report")).toBe("LandBD-BRS-349");
+    expect(toPdfCoreFontText("A4 ল্যান্ডস্কেপ · খতিয়ান রিপোর্ট", "LandBD A4 report")).toBe("A4");
+    expect(toPdfCoreFontText("খতিয়ান রিপোর্ট", "LandBD Report")).toBe("LandBD Report");
+    expect(toPdfCoreFontText("LandBD RS 123", "Other")).toBe("LandBD RS 123");
+  });
+
 });
