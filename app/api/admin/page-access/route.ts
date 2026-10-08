@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
 import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
+import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   PAGE_ACCESS_PAGES,
   isPageAccessLevel,
@@ -44,6 +45,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await protectAdminMutation(req, "page-access", {
+      max: 15,
+      windowSeconds: 60,
+      maxBodyBytes: 50_000,
+    });
     const user = await verifySuperAdminAuth(req);
     const body = await req.json();
     const source = body?.access ?? body;
@@ -83,6 +89,15 @@ export async function POST(req: NextRequest) {
     );
     invalidateSiteAccessPolicyCache();
 
+    await recordAdminAudit(
+      req,
+      user,
+      "page-access.update",
+      "siteSettings",
+      "pageAccess",
+      { ruleCount: Object.keys(rules).length },
+    );
+
     return NextResponse.json(
       { success: true, access: rules, updatedAt, updatedBy },
       {
@@ -95,6 +110,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "এই সেটিংস শুধুমাত্র সুপার অ্যাডমিন পরিবর্তন করতে পারবেন।" }, { status: 403 });
     }
     console.error("Page access POST failed", error);
-    return NextResponse.json({ error: "পেজ অনুমতি সংরক্ষণ করা যায়নি।" }, { status: 500 });
+    const status = adminErrorStatus(error);
+    return NextResponse.json(
+      { error: status < 500 && error instanceof Error ? error.message : "পেজ অনুমতি সংরক্ষণ করা যায়নি।" },
+      { status },
+    );
   }
 }

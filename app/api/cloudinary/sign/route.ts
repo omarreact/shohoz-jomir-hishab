@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import { adminErrorStatus, protectAdminMutation } from "@/src/modules/security/adminSecurity";
 
 const ALLOWED_SIGNING_KEYS = new Set([
   "timestamp",
@@ -14,7 +15,12 @@ const ALLOWED_SIGNING_KEYS = new Set([
 
 export async function POST(req: NextRequest) {
   try {
-    await verifyAdminAuth(req);
+    await protectAdminMutation(req, "cloudinary-sign", {
+      max: 30,
+      windowSeconds: 60,
+      maxBodyBytes: 20_000,
+    });
+    await verifyStaffAuth(req);
 
     if (!process.env.CLOUDINARY_API_SECRET) {
       return NextResponse.json(
@@ -58,7 +64,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ signature });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to generate signature";
-    const status = message === "Unauthorized" ? 401 : message.startsWith("Forbidden") ? 403 : 500;
-    return NextResponse.json({ success: false, error: status === 500 ? "Failed to generate signature" : message }, { status });
+    const status = adminErrorStatus(error);
+    return NextResponse.json(
+      { success: false, error: status >= 500 ? "Failed to generate signature" : message },
+      { status },
+    );
   }
 }

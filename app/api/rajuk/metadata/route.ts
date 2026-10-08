@@ -14,6 +14,7 @@ import {
 } from "@/src/services/rajuk/rajukProxyDiagnostics";
 import { DATA_MONITOR_SERVICES } from "@/src/features/admin/data-monitor/api-registry";
 import { RAJUK_DB, RAJUK_LAYERS } from "@/src/services/rajuk/rajukLayers.service";
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -80,6 +81,12 @@ async function requestUpstream(url: URL, token?: string): Promise<MetadataAttemp
 }
 
 export async function GET(request: NextRequest) {
+  try {
+    await verifyAdminAuth(request);
+  } catch {
+    return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+  }
+
   const id = request.nextUrl.searchParams.get("service");
   const service = DATA_MONITOR_SERVICES.find((item) => item.id === id);
   if (!service) return NextResponse.json({ error: "Unknown service" }, { status: 404 });

@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminService } from "@/src/modules/admin/admin.service";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 // GET /api/admin/metrics - User metrics
 export async function GET(req: NextRequest) {
   try {
     await verifyAdminAuth(req);
     const adminService = new AdminService();
     const metrics = await adminService.getUserMetrics();
-    return NextResponse.json(metrics);
+    return NextResponse.json(metrics, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error: any) {
     console.error("Admin metrics fetch failed:", error);
     if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {

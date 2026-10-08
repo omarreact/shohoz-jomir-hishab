@@ -17,6 +17,7 @@ export interface ServerUser {
 
 interface VerifyServerAuthOptions {
   checkRevoked?: boolean;
+  requireAdminBackend?: boolean;
 }
 
 let publicKeysCache: Record<string, string> | null = null;
@@ -118,13 +119,16 @@ export async function verifyServerAuth(
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : null;
-  const token = cookieToken ?? bearerToken;
+  const token = bearerToken ?? cookieToken;
 
   if (!token) throw new Error("Unauthorized");
 
   const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
 
   if (!isFirebaseAdminReady()) {
+    if (options.requireAdminBackend) {
+      throw new Error("Firebase Admin unavailable");
+    }
     const payload = await verifyFirebaseIdTokenWithoutAdmin(token);
     return userFromClaims(payload as Record<string, unknown>, payload.sub!);
   }
@@ -179,14 +183,16 @@ export async function verifyServerAuth(
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
     name: userData.name ?? (decodedToken.name as string) ?? null,
+    // Privileged roles must come from signed Firebase Auth custom claims.
+    // Firestore stores profile/state only and can never grant elevation.
     role: normalizeRole(
-      userData.role || claimRole || (claimIsAdmin ? "Admin" : "User"),
+      claimRole || (claimIsAdmin ? "Admin" : "Basic User"),
     ),
   };
 }
 
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
@@ -194,7 +200,7 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
 }
 
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
@@ -202,7 +208,7 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
 }
 
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req);
+  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
   if (!isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
