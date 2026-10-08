@@ -79,6 +79,15 @@ describe("LandBD request-boundary access policy", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("serves public report QR images without requiring login when maintenance is off", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+
+    const response = await proxy(request("/api/reports/mouza-porcha/qr?target=dlrms-khatian"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("keeps the maintenance status endpoint available without loading policy", async () => {
     const response = await proxy(request("/api/public/maintenance"));
 
