@@ -144,6 +144,22 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
     }
   });
 
+  // Restore intentional branded surfaces after normalizing Tailwind v4 colors
+  // into html2canvas-safe RGB values (html2canvas 1.4 cannot parse OKLCH).
+  const pdfSurfaces: Record<string, string> = {
+    soft: "#f0f6f1",
+    "table-head": "#e8f3ec",
+    "top-green": "#006a45",
+    "top-gold": "#d7a327",
+    "top-red": "#c52d43",
+  };
+  clone.querySelectorAll<HTMLElement>("[data-pdf-surface]").forEach((node) => {
+    const tone = node.dataset.pdfSurface;
+    if (tone && pdfSurfaces[tone]) {
+      setImportant(node, "background-color", pdfSurfaces[tone]);
+    }
+  });
+
   setImportant(clone, "background-color", "#ffffff");
   setImportant(clone, "color", "#13261b");
   setImportant(clone, "border-top", "4px solid #17663a");
