@@ -17,10 +17,12 @@ export type KhatianPdfExportOptions = {
   source: HTMLElement;
   fileName: string;
   orientation?: KhatianPdfOrientation;
+  /** Existing callers can still download automatically; preview callers request the Blob. */
+  delivery?: "download" | "return";
 };
 
 export type KhatianPdfExportResult =
-  | { ok: true; pages: number; scale: number; orientation: KhatianPdfOrientation }
+  | { ok: true; pages: number; scale: number; orientation: KhatianPdfOrientation; blob: Blob; fileName: string }
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
@@ -237,7 +239,8 @@ async function buildPdfAtScale(
   scale: number,
   orientation: KhatianPdfOrientation,
   exportWidthPx: number,
-): Promise<{ pages: number; scale: number }> {
+  delivery: "download" | "return",
+): Promise<{ pages: number; scale: number; blob: Blob; fileName: string }> {
   const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
   const slices = planA4Slices(totalHeight, collectBreakpoints(clone), orientation, exportWidthPx);
   if (!slices.length || slices.length > MAX_PAGES) {
@@ -360,8 +363,9 @@ async function buildPdfAtScale(
   }
 
   const suffix = orientation === "landscape" ? "-A4-Landscape" : "-A4-Portrait";
-  triggerPdfDownload(pdfBlob, `${sanitizeFileName(fileName)}${suffix}.pdf`);
-  return { pages: pageImages.length, scale };
+  const outputName = `${sanitizeFileName(fileName)}${suffix}.pdf`;
+  if (delivery === "download") triggerPdfDownload(pdfBlob, outputName);
+  return { pages: pageImages.length, scale, blob: pdfBlob, fileName: outputName };
 }
 
 export async function exportKhatianPdf(
@@ -440,6 +444,7 @@ export async function exportKhatianPdf(
           scale,
           orientation,
           exportWidthPx,
+          options.delivery ?? "download",
         );
         return { ok: true, ...result, orientation };
       } catch (error) {
