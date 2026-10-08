@@ -84,7 +84,14 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     name: "পর্চা",
     description: "পর্চা সম্পর্কিত সেবা ও তথ্য।",
     category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
+    defaultAccess: "logged_in",
+  },
+  {
+    id: "/nid-copy",
+    name: "জন্মনিবন্ধন যাচাই",
+    description: "অনুমোদিত সদস্যের জন্য সংবেদনশীল নিবন্ধন যাচাই।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "logged_in",
   },
   {
     id: "/warishsanad",
@@ -110,7 +117,7 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   {
     id: "/dap-map",
     name: "রাজউক ড্যাপ ম্যাপ",
-    description: "প্রোডাক্ট প্রাইমারি ম্যাপ — প্লট সার্চ, identify, DAP লেয়ার।",
+    description: "/geospatial-map-এ রিডাইরেক্ট হওয়া পুরনো DAP ম্যাপ URL।",
     category: "মানচিত্র ও জিআইএস",
     defaultAccess: "public",
   },
@@ -131,7 +138,7 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   {
     id: "/map",
     name: "মানচিত্র (পুরনো লিংক)",
-    description: "/dap-map-এ রিডাইরেক্ট।",
+    description: "/geospatial-map-এ সরাসরি রিডাইরেক্ট।",
     category: "মানচিত্র ও জিআইএস",
     defaultAccess: "public",
   },
@@ -224,6 +231,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
 const PAGE_ACCESS_IDS = new Set(PAGE_ACCESS_PAGES.map((page) => page.id));
 const PAGE_ACCESS_LEVEL_SET = new Set<string>(PAGE_ACCESS_LEVELS);
 
+// Sensitive tools require a signed member session even if a stale Firestore
+// page-access override accidentally tries to make their route public.
+const MEMBER_MINIMUM_ROUTES = new Set(["/porcha", "/nid-copy"]);
+function enforceMinimumAccess(route: string, level: PageAccessLevel): PageAccessLevel {
+  return MEMBER_MINIMUM_ROUTES.has(route) && level === "public" ? "logged_in" : level;
+}
+
 export function isPageAccessLevel(value: unknown): value is PageAccessLevel {
   return typeof value === "string" && PAGE_ACCESS_LEVEL_SET.has(value);
 }
@@ -240,7 +254,7 @@ export function sanitizePageAccessRules(input: unknown): Record<string, PageAcce
 
   for (const [pageId, level] of Object.entries(input as Record<string, unknown>)) {
     if (!PAGE_ACCESS_IDS.has(pageId) || !isPageAccessLevel(level)) continue;
-    defaults[pageId] = level;
+    defaults[pageId] = enforceMinimumAccess(pageId, level);
   }
   return defaults;
 }
@@ -289,7 +303,7 @@ export function getPageAccessLevel(
 ): PageAccessLevel {
   const page = resolvePageDefinition(pathname);
   if (!page) return "public";
-  return rules[page.id] ?? page.defaultAccess;
+  return enforceMinimumAccess(page.id, rules[page.id] ?? page.defaultAccess);
 }
 
 export function isSystemPageAccessBypass(pathname: string): boolean {

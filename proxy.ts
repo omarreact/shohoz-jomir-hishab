@@ -5,6 +5,7 @@ import { importX509, jwtVerify } from "jose";
 import { getPageAccessLevel } from "@/src/shared/config/pageAccess";
 import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
 import { verifyServerAuth, type ServerUser } from "@/src/modules/auth/serverAuth";
+import { getAdminMinimumRole } from "@/src/shared/routing/route-registry";
 import {
   isAdminRole,
   isStaffRole,
@@ -109,22 +110,10 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/api/public/maintenance",
 ]);
 
-const SUPER_ADMIN_ADMIN_PREFIXES = ["/admin/page-access", "/admin/audit-log"] as const;
-const ADMIN_ONLY_ADMIN_PREFIXES = [
-  "/admin/users",
-  "/admin/data-monitor",
-  "/admin/map-visits",
-  "/admin/test-api",
-  "/admin/settings",
-] as const;
-
 function adminPathAllowed(pathname: string, role: unknown): boolean {
-  if (SUPER_ADMIN_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
-    return isSuperAdminRole(role);
-  }
-  if (ADMIN_ONLY_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
-    return isAdminRole(role);
-  }
+  const minimum = getAdminMinimumRole(pathname);
+  if (minimum === "super_admin") return isSuperAdminRole(role);
+  if (minimum === "admin") return isAdminRole(role);
   return isStaffRole(role);
 }
 

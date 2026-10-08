@@ -34,6 +34,17 @@ describe("page access registry", () => {
     ].forEach((route) => expect(ids.has(route)).toBe(true));
   });
 
+  it("registers sensitive record workspaces and enforces a member-only minimum", () => {
+    const rules = getDefaultPageAccessRules();
+    expect(rules["/nid-copy"]).toBe("logged_in");
+    expect(rules["/porcha"]).toBe("logged_in");
+    rules["/nid-copy"] = "public";
+    rules["/porcha"] = "public";
+    expect(getPageAccessLevel("/nid-copy", rules)).toBe("logged_in");
+    expect(getPageAccessLevel("/porcha", rules)).toBe("logged_in");
+    expect(sanitizePageAccessRules({ "/nid-copy": "public", "/porcha": "public" })["/nid-copy"]).toBe("logged_in");
+  });
+
   it("defaults QA routes to staff-only access", () => {
     const rules = getDefaultPageAccessRules();
     expect(rules["/rajuk-test"]).toBe("admin");
