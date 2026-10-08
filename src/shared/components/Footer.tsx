@@ -1,51 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
+import { NAV_SECTIONS, navRoute } from "@/src/shared/config/navigation";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
-const GROUPS = [
-  {
-    title: "রেকর্ড",
-    links: [
-      [FEATURE_ROUTES.dlrmsKhatian, "DLRMS খতিয়ান"],
-      [FEATURE_ROUTES.records, "খতিয়ান হিসাব"],
-      [FEATURE_ROUTES.settlementKhatian, "সেটেলমেন্ট খতিয়ান"],
-      [FEATURE_ROUTES.history, "ইতিহাস"],
-    ],
-  },
-  {
-    title: "হিসাব",
-    links: [
-      [FEATURE_ROUTES.landMeasurement, "জমি পরিমাপ"],
-      [FEATURE_ROUTES.inheritance, "ফারায়েজ"],
-    ],
-  },
-  {
-    title: "মানচিত্র",
-    links: [
-      [FEATURE_ROUTES.landMap, "RAJUK GIS"],
-      [FEATURE_ROUTES.mouzaDownload, "মৌজা ম্যাপ"],
-    ],
-  },
-  {
-    title: "ডকুমেন্ট",
-    links: [
-      [FEATURE_ROUTES.documents, "পর্চা"],
-      [FEATURE_ROUTES.mouzaPorchaReport, "মৌজা পর্চা রিপোর্ট"],
-      [FEATURE_ROUTES.warishSanad, "ওয়ারিশ সনদ"],
-    ],
-  },
-  {
-    title: "গাইড",
-    links: [
-      [FEATURE_ROUTES.blog, "ব্লগ"],
-      [FEATURE_ROUTES.faq, "প্রশ্নোত্তর"],
-      [FEATURE_ROUTES.contact, "যোগাযোগ"],
-      [FEATURE_ROUTES.privacy, "গোপনীয়তা"],
-      [FEATURE_ROUTES.terms, "শর্তাবলি"],
-    ],
-  },
-] as const;
+const FOOTER_EXCLUSIONS = new Set(["mapQa", "warish"]);
+const GROUPS = NAV_SECTIONS.map(section => ({
+  title: section.label,
+  links: section.keys
+    .filter(key => !FOOTER_EXCLUSIONS.has(key))
+    .map(key => {
+      const link = navRoute(key);
+      return [link.href, link.label] as const;
+    }),
+}));
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();

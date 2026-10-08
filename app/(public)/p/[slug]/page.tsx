@@ -18,7 +18,11 @@ interface PageData {
  * This is a server-side function that runs on the server, not in the browser.
  */
 async function getPage(slug: string): Promise<PageData | null> {
-  const snapshot = await collections.pages.where("slug", "==", slug).limit(1).get();
+  const snapshot = await collections.pages
+    .where("slug", "==", slug)
+    .where("published", "==", true)
+    .limit(1)
+    .get();
 
   if (snapshot.empty) {
     return null;
@@ -47,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    title: `${page.title} | Shohoz Jomir Hishab`,
+    title: `${page.title} | LandBD`,
     description: `Information about ${page.title}`,
   };
 }

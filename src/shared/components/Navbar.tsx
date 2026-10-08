@@ -23,7 +23,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
-import { isStaffRole } from "@/src/modules/auth/roles";
+import { isAdminRole, isStaffRole } from "@/src/modules/auth/roles";
+import { NAV_SECTIONS, isFeatureRouteActive } from "@/src/shared/config/navigation";
 import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import {
   FEATURE_LABELS,
@@ -81,68 +82,23 @@ function navItem(key: FeatureRouteKey, options?: { adminOnly?: boolean }): NavIt
   };
 }
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    id: "records",
-    label: "রেকর্ড",
-    icon: FileSearch,
-    items: [
-      navItem("records"),
-      navItem("dlrmsKhatian"),
-      navItem("settlementKhatian"),
-      navItem("history"),
-    ],
-  },
-  {
-    id: "calculations",
-    label: "হিসাব",
-    icon: Calculator,
-    items: [navItem("landMeasurement"), navItem("inheritance")],
-  },
-  {
-    id: "maps",
-    label: "মানচিত্র",
-    icon: Map,
-    items: [
-      navItem("landMap"),
-      navItem("mouzaDownload"),
-      navItem("mapQa", { adminOnly: true }),
-    ],
-  },
-  {
-    id: "documents",
-    label: "ডকুমেন্ট",
-    icon: FileText,
-    items: [
-      navItem("documents"),
-      navItem("mouzaPorchaReport"),
-      navItem("warish"),
-      navItem("warishSanad"),
-    ],
-  },
-  {
-    id: "guides",
-    label: "গাইড",
-    icon: BookOpen,
-    items: [
-      navItem("blog"),
-      navItem("faq"),
-      navItem("contact"),
-      navItem("terms"),
-      navItem("privacy"),
-    ],
-  },
-]
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  records: FileSearch,
+  calculations: Calculator,
+  maps: Map,
+  documents: FileText,
+  guides: BookOpen,
+};
 
-function normalizePath(value: string) {
-  if (!value || value === "/") return "/";
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-}
+const NAV_GROUPS: NavGroup[] = NAV_SECTIONS.map((section) => ({
+  id: section.id,
+  label: section.label,
+  icon: SECTION_ICONS[section.id] ?? FileText,
+  items: section.keys.map(key => navItem(key, { adminOnly: key === "mapQa" })),
+}));
 
 function activePath(pathname: string, href: string) {
-  const current = normalizePath(pathname);
-  const target = normalizePath(href);
-  return target === "/" ? current === "/" : current === target || current.startsWith(`${target}/`);
+  return isFeatureRouteActive(pathname, href);
 }
 
 function groupIsActive(pathname: string, group: NavGroup) {
@@ -154,7 +110,7 @@ export default function Navbar() {
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
-  const canSeeMapQa = isLoggedIn;
+  const canSeeMapQa = isLoggedIn && isAdminRole(user?.role);
   const canAccessAdmin = isLoggedIn && isStaffRole(user?.role);
 
   const visibleGroups = useMemo(

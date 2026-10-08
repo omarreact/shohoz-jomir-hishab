@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
 import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
+import { protectPublicVerificationWrite } from "@/src/modules/security/publicVerificationSecurity";
 import { normalizeReportText } from "@/src/features/land-records/reports/mouza-porcha-report";
 
 export const runtime = "nodejs";
@@ -22,6 +23,9 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const securityError = await protectPublicVerificationWrite(request, "mouza-porcha");
+  if (securityError) return securityError;
+
   if (!isFirebaseAdminReady()) {
     return Response.json(
       { error: "রিপোর্ট যাচাই সেবা বর্তমানে প্রস্তুত নয়। PDF তৈরি করা যাবে, তবে QR যাচাই থাকবে না।" },
