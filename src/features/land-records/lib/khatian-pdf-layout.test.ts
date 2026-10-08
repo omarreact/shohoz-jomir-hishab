@@ -4,6 +4,8 @@ import {
   contentSizeMm,
   exportWidthPxFor,
   idealPageCssHeight,
+  fitImageToA4Content,
+  shouldFitTrailingRibbonOnOnePage,
   planA4Slices,
   planPortraitSlices,
   portraitContentSizeMm,
@@ -71,5 +73,32 @@ describe("khatian A4 landscape PDF layout", () => {
         slices[index - 1].offsetY + slices[index - 1].height,
       );
     }
+  });
+});
+
+describe("single-page BRS ribbon regression", () => {
+  test("keeps a short trailing branding ribbon with its khatian details", () => {
+    const slices = planA4Slices(960, [560, 770, 870], "landscape");
+    expect(slices.length).toBe(2);
+    expect(shouldFitTrailingRibbonOnOnePage(960, slices, "landscape", 1380, true)).toBe(true);
+    expect(shouldFitTrailingRibbonOnOnePage(960, slices, "landscape", 1380, false)).toBe(false);
+  });
+
+  test("preserves pagination for genuinely long khatian records", () => {
+    const slices = planA4Slices(2800, [1000, 1600, 2200], "landscape");
+    expect(shouldFitTrailingRibbonOnOnePage(2800, slices, "landscape", 1380, true)).toBe(false);
+    expect(slices.length).toBeGreaterThan(2);
+  });
+
+  test("fits taller images proportionally without clipping or distorting fonts and QR", () => {
+    const result = fitImageToA4Content(960, 1380, 277, 175);
+    expect(result.heightMm).toBeCloseTo(175, 3);
+    expect(result.widthMm).toBeLessThan(277);
+    expect(result.insetMm).toBeGreaterThan(0);
+    expect(result.widthMm / result.heightMm).toBeCloseTo(1380 / 960, 6);
+
+    const short = fitImageToA4Content(800, 1380, 277, 175);
+    expect(short.widthMm).toBe(277);
+    expect(short.insetMm).toBe(0);
   });
 });
