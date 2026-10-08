@@ -158,7 +158,9 @@ export async function generatePagedReportPdf({
       const width = Math.max(page.scrollWidth, page.clientWidth, 1);
       const height = Math.max(page.scrollHeight, page.clientHeight, 1);
 
-      const canvas = await html2canvas(page, {
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await html2canvas(page, {
         backgroundColor: "#ffffff",
         scale,
         useCORS: true,
@@ -183,7 +185,19 @@ export async function generatePagedReportPdf({
             node.style.setProperty("margin", "0", "important");
           });
         },
-      });
+        });
+      } catch (captureError) {
+        const reason = captureError instanceof Error ? captureError.message : String(captureError);
+        if (!/unsupported color function|oklch|oklab/i.test(reason)) throw captureError;
+        const { toCanvas } = await import("html-to-image");
+        canvas = await toCanvas(page, {
+          backgroundColor: "#ffffff",
+          width,
+          height,
+          pixelRatio: scale,
+          cacheBust: true,
+        });
+      }
 
       if (!canvas.width || !canvas.height) {
         return { ok: false, error: `পিডিএফ পৃষ্ঠা ${index + 1} তৈরি করা যায়নি।` };
