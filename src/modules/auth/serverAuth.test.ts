@@ -1,5 +1,11 @@
 import { NextRequest } from "next/server";
 
+// Firebase Admin is mocked for this test; do not load ESM-only jose in Jest.
+jest.mock("jose", () => ({
+  importX509: jest.fn(),
+  jwtVerify: jest.fn(),
+}));
+
 describe("privileged authentication", () => {
   beforeEach(() => {
     jest.resetModules();
