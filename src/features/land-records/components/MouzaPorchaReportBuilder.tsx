@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
+import { Download, Eye, FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
 import ResultPrintButton from "@/src/shared/components/ResultPrintButton";
+import PdfPreviewDialog, { type PdfPreviewDocument } from "@/src/shared/components/PdfPreviewDialog";
+import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-report-pdf";
 import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
@@ -119,6 +121,8 @@ export default function MouzaPorchaReportBuilder() {
   const [mappedRecords, setMappedRecords] = useState(0);
   const [localError, setLocalError] = useState<string | null>(null);
   const [verificationWarning, setVerificationWarning] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState<"preview" | "download" | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<PdfPreviewDocument | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
@@ -168,6 +172,7 @@ export default function MouzaPorchaReportBuilder() {
     setMappedRecords(0);
     setLocalError(null);
     setVerificationWarning(null);
+    setPdfPreview(null);
   };
 
   const changeDivision = (value: string) => {
@@ -229,6 +234,7 @@ export default function MouzaPorchaReportBuilder() {
     setMappedRecords(0);
     setLocalError(null);
     setVerificationWarning(null);
+    setPdfPreview(null);
 
     try {
       const collectedById = new Map<number, KhatianIndex>();
@@ -417,6 +423,44 @@ export default function MouzaPorchaReportBuilder() {
   };
 
 
+  const handlePdf = async (action: "preview" | "download") => {
+    if (!rows.length || phase !== "done" || generating || pdfBusy) return;
+    const source = document.getElementById("mouza-porcha-report");
+    if (!source) {
+      setLocalError("রিপোর্টের প্রিভিউ পাওয়া যায়নি। আবার রিপোর্ট তৈরি করুন।");
+      return;
+    }
+
+    setPdfBusy(action);
+    setLocalError(null);
+    try {
+      const result = await generatePagedReportPdf({
+        source,
+        pageSelector: ".report-page",
+        fileName: [
+          "LandBD-Mouza-Porcha",
+          selectedMouza?.MOUZA_NAME,
+          selectedSurvey?.LOCAL_NAME,
+          reportMeta?.reportId,
+        ].filter(Boolean).join("-"),
+        orientation: pageOrientation,
+        scale: 1.3,
+        delivery: action === "preview" ? "return" : "download",
+      });
+
+      if (!result.ok) {
+        setLocalError(result.error);
+      } else if (action === "preview") {
+        setPdfPreview({ blob: result.blob, fileName: result.fileName, pages: result.pages });
+      }
+    } catch (cause) {
+      logger.error("[MouzaPorchaReportBuilder] PDF export failed", cause);
+      setLocalError("PDF তৈরি বা খুলতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setPdfBusy(null);
+    }
+  };
+
   const displayedError = localError || locationError;
   const progressTotal = expectedRecords ?? Math.max(loadedRecords, rows.length);
   const phaseLabel =
@@ -595,14 +639,32 @@ export default function MouzaPorchaReportBuilder() {
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <ResultPrintButton disabled={generating || phase !== "done"} className="rounded-[12px]" />
+                <button
+                  type="button"
+                  onClick={() => void handlePdf("preview")}
+                  disabled={generating || phase !== "done" || pdfBusy !== null}
+                  className="landbd-primary-button inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pdfBusy === "preview" ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
+                  {pdfBusy === "preview" ? "PDF প্রস্তুত হচ্ছে…" : "PDF প্রিভিউ"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handlePdf("download")}
+                  disabled={generating || phase !== "done" || pdfBusy !== null}
+                  className="landbd-secondary-button inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pdfBusy === "download" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {pdfBusy === "download" ? "ডাউনলোড তৈরি হচ্ছে…" : "PDF ডাউনলোড"}
+                </button>
+                <ResultPrintButton disabled={generating || phase !== "done" || pdfBusy !== null} className="rounded-[12px]" />
               </div>
             </div>
 
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের preview-টাই A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} Print layout হিসেবে ব্যবহার হবে।
+                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} রিপোর্টটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
               </p>
             </div>
 
@@ -624,6 +686,9 @@ export default function MouzaPorchaReportBuilder() {
           </section>
         ) : null}
       </main>
+      {pdfPreview ? (
+        <PdfPreviewDialog document={pdfPreview} onClose={() => setPdfPreview(null)} />
+      ) : null}
     </>
   );
 }
