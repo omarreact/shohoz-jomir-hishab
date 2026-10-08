@@ -63,9 +63,9 @@ export default function AuthoritativeKhatianDetailsView({
       style={{ backgroundColor: "#ffffff", borderColor: "#d0e0d5", fontFamily: 'var(--font-report), "Nirmala UI", sans-serif' }}
     >
       <div className="flex h-1.5 w-full" aria-hidden="true">
-        <span className="w-3/5" style={{ backgroundColor: "#006a45" }} />
-        <span className="w-1/5" style={{ backgroundColor: "#d7a327" }} />
-        <span className="w-1/5" style={{ backgroundColor: "#c52d43" }} />
+        <span className="w-3/5" data-pdf-surface="top-green" style={{ backgroundColor: "#006a45" }} />
+        <span className="w-1/5" data-pdf-surface="top-gold" style={{ backgroundColor: "#d7a327" }} />
+        <span className="w-1/5" data-pdf-surface="top-red" style={{ backgroundColor: "#c52d43" }} />
       </div>
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center print:hidden" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
