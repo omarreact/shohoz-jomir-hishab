@@ -66,6 +66,18 @@ jobs:
       # Vercel remains free to use its normal Next.js production pipeline.
       - name: Production build
         if: ${{ always() && !cancelled() }}
-        run: npm run build -- --webpack
+        shell: bash
+        run: |
+          set -o pipefail
+          for attempt in 1 2 3; do
+            if npm run build -- --webpack 2>&1 | tee next-build.log; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ] || ! grep -Eq 'next/font|Failed to fetch.*font|ECONNRESET|ENOTFOUND|ETIMEDOUT' next-build.log; then
+              exit 1
+            fi
+            echo "Transient next/font build error; retrying attempt $((attempt + 1)) of 3" >&2
+            sleep $((attempt * 5))
+          done
         env:
           NEXT_TELEMETRY_DISABLED: "1"
