@@ -108,6 +108,25 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/api/public/maintenance",
 ]);
 
+const SUPER_ADMIN_ADMIN_PREFIXES = ["/admin/page-access", "/admin/audit-log"] as const;
+const ADMIN_ONLY_ADMIN_PREFIXES = [
+  "/admin/users",
+  "/admin/data-monitor",
+  "/admin/map-visits",
+  "/admin/test-api",
+  "/admin/settings",
+] as const;
+
+function adminPathAllowed(pathname: string, role: unknown): boolean {
+  if (SUPER_ADMIN_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
+    return isSuperAdminRole(role);
+  }
+  if (ADMIN_ONLY_ADMIN_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
+    return isAdminRole(role);
+  }
+  return isStaffRole(role);
+}
+
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -126,9 +145,12 @@ function securityResponseHeaders(requestId: string): Record<string, string> {
     "x-request-id": requestId,
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Permitted-Cross-Domain-Policies": "none",
     "Permissions-Policy":
       "camera=(), microphone=(), geolocation=(self), payment=(self), usb=()",
   };
@@ -270,7 +292,7 @@ export async function proxy(request: NextRequest) {
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
-  const rawToken = cookieToken ?? bearerToken;
+  const rawToken = bearerToken ?? cookieToken;
 
   let userPayload: Record<string, unknown> | null = null;
 
@@ -355,7 +377,7 @@ export async function proxy(request: NextRequest) {
       const user = await authoritativeUser();
 
       // A full-access feature flag must never bypass administrative RBAC.
-      if (!isStaffRole(user.role)) {
+      if (!adminPathAllowed(pathname, user.role)) {
         return forbiddenRedirect(request, securityHeaders);
       }
     } catch {

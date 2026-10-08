@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticatedFullAccessEnabled, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 
@@ -41,7 +41,7 @@ async function safeDocGet(
 export async function GET(req: NextRequest) {
   try {
     const user = await verifyStaffAuth(req);
-    const admin = authenticatedFullAccessEnabled() || isAdminRole(user.role);
+    const admin = isAdminRole(user.role);
 
     let collections: typeof import("@/src/modules/database/firebaseAdmin").collections;
     try {

@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { collections } from "@/src/modules/database/firebaseAdmin";
-import { verifyAdminAuth, verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
-import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
+import { z } from "zod";
 
-// Keys we persist in SiteSetting
+import { collections } from "@/src/modules/database/firebaseAdmin";
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { isSuperAdminRole } from "@/src/modules/auth/roles";
+import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
+import {
+  adminErrorStatus,
+  protectAdminMutation,
+  recordAdminAudit,
+} from "@/src/modules/security/adminSecurity";
+
 const ALLOWED_KEYS = [
   "siteName",
   "contactEmail",
@@ -12,14 +19,61 @@ const ALLOWED_KEYS = [
   "youtubeUrl",
   "maintenanceMode",
   "announcement",
-];
+] as const;
 
-// GET /api/admin/settings — returns all settings as a flat object
+const httpUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) => {
+      if (!value) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch {
+        return false;
+      }
+    },
+    "Invalid URL",
+  );
+
+const maintenanceSchema = z.preprocess((value) => {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}, z.boolean());
+
+const settingsSchema = z
+  .object({
+    siteName: z.string().trim().min(1).max(100).optional(),
+    contactEmail: z.union([z.literal(""), z.string().trim().email().max(254)]).optional(),
+    contactPhone: z
+      .string()
+      .trim()
+      .max(40)
+      .regex(/^[0-9+()\-\s]*$/, "Invalid phone number")
+      .optional(),
+    facebookUrl: httpUrl.optional(),
+    youtubeUrl: httpUrl.optional(),
+    maintenanceMode: maintenanceSchema.optional(),
+    announcement: z.string().trim().max(2000).optional(),
+  })
+  .strict();
+
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
+}
+
 export async function GET(req: NextRequest) {
   try {
     await verifyAdminAuth(req);
-    const settingsSnapshot = await collections.settings.where("key", "in", ALLOWED_KEYS).get();
-    const rows = settingsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const settingsSnapshot = await collections.settings
+      .where("key", "in", [...ALLOWED_KEYS])
+      .get();
 
     const result: Record<string, string | boolean> = {
       siteName: "LandBD",
@@ -31,64 +85,92 @@ export async function GET(req: NextRequest) {
       announcement: "",
     };
 
-    for (const row of rows) {
-      if (row.key === "maintenanceMode") {
-        result[row.key] = row.value === "true";
-      } else {
-        result[row.key] = row.value;
-      }
+    for (const doc of settingsSnapshot.docs) {
+      const row = doc.data();
+      if (!ALLOWED_KEYS.includes(row.key)) continue;
+      result[row.key] =
+        row.key === "maintenanceMode" ? row.value === "true" : String(row.value ?? "");
     }
 
-    return NextResponse.json({ settings: result }, { status: 200 });
-  } catch (error: any) {
+    return json({ settings: result });
+  } catch (error: unknown) {
     console.error("Failed to fetch settings:", error);
-    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
-      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: "সেটিংস লোড করা যায়নি।" },
-      { status: 500 },
+    const status = adminErrorStatus(error);
+    return json(
+      { error: status < 500 ? "আপনার অনুমতি নেই।" : "সেটিংস লোড করা যায়নি।" },
+      status,
     );
   }
 }
 
-// POST /api/admin/settings — upsert multiple settings at once
 export async function POST(req: NextRequest) {
   try {
-    await verifyAdminAuth(req);
-    const body: unknown = await req.json();
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json({ error: "Invalid settings payload" }, { status: 400 });
-    }
-    const updates = body as Record<string, unknown>;
-    if (Object.prototype.hasOwnProperty.call(updates, "maintenanceMode")) {
-      await verifySuperAdminAuth(req);
-      if (typeof updates.maintenanceMode !== "boolean") {
-        return NextResponse.json({ error: "Invalid maintenance mode" }, { status: 400 });
-      }
-    }
+    await protectAdminMutation(req, "settings", {
+      max: 20,
+      windowSeconds: 60,
+      maxBodyBytes: 20_000,
+    });
+    const actor = await verifyAdminAuth(req);
+    const validated = settingsSchema.parse(await req.json());
 
-    const ops = Object.entries(updates)
-      .filter(([key]) => ALLOWED_KEYS.includes(key))
-      .map(([key, val]) =>
-        collections.settings.doc(key).set(
-          { key, value: String(val) },
-          { merge: true }
-        )
+    if (
+      Object.prototype.hasOwnProperty.call(validated, "maintenanceMode") &&
+      !isSuperAdminRole(actor.role)
+    ) {
+      return json(
+        { error: "মেইনটেন্যান্স মোড শুধুমাত্র Super Admin পরিবর্তন করতে পারবেন।" },
+        403,
       );
+    }
 
-    await Promise.all(ops);
+    const entries = Object.entries(validated);
+    if (!entries.length) {
+      return json({ error: "কোনো বৈধ সেটিংস পাঠানো হয়নি।" }, 400);
+    }
+
+    const batch = collections.settings.firestore.batch();
+    for (const [key, value] of entries) {
+      batch.set(
+        collections.settings.doc(key),
+        {
+          key,
+          value: String(value),
+          updatedAt: new Date().toISOString(),
+          updatedBy: actor.email || actor.id,
+        },
+        { merge: true },
+      );
+    }
+    await batch.commit();
     invalidateSiteAccessPolicyCache();
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error: any) {
+    await recordAdminAudit(
+      req,
+      actor,
+      "settings.update",
+      "siteSettings",
+      null,
+      { keys: entries.map(([key]) => key).join(",") },
+    );
+
+    return json({ success: true, updatedKeys: entries.map(([key]) => key) });
+  } catch (error: unknown) {
     console.error("Failed to update settings:", error);
-    if (error.message === "Unauthorized" || error.message?.includes("Forbidden")) {
-      return NextResponse.json({ error: "আপনার অনুমতি নেই।" }, { status: 403 });
+    if (error instanceof z.ZodError) {
+      return json(
+        { error: "সেটিংসের তথ্য সঠিক নয়।", issues: error.issues },
+        400,
+      );
     }
-    return NextResponse.json(
-      { error: "সেটিংস আপডেট করা যায়নি।" },
-      { status: 500 },
+    const status = adminErrorStatus(error);
+    return json(
+      {
+        error:
+          status < 500 && error instanceof Error
+            ? error.message
+            : "সেটিংস আপডেট করা যায়নি।",
+      },
+      status,
     );
   }
 }

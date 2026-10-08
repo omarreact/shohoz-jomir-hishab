@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 import Link from "next/link";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "@/src/shared/ui/button";
@@ -28,6 +30,8 @@ type Blog = {
 };
 
 export default function BlogManagementPage() {
+  const { user } = useAuth();
+  const canDelete = isAdminRole(user?.role);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -139,14 +143,16 @@ export default function BlogManagementPage() {
                               <Edit size={14} />
                             </Button>
                           </Link>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => deleteBlog(blog.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          {canDelete ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => deleteBlog(blog.id)}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>

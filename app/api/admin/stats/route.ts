@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 // GET /api/admin/stats — data monitor dashboard stats
 export async function GET(req: NextRequest) {
   try {
@@ -35,7 +38,7 @@ export async function GET(req: NextRequest) {
         maintenanceMode: maintenanceSetting?.value === "true",
         announcement: announcement?.value ?? "",
       },
-      { status: 200 },
+      { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   } catch (error: any) {
     console.error("Failed to load stats:", error);

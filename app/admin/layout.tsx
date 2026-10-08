@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FileText,
   Globe,
+  History,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/src/shared/ui/button";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isStaffRole } from "@/src/modules/auth/roles";
 
 type NavItem = {
   name: string;
@@ -40,6 +42,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { name: "মানচিত্র ভিজিটর", path: "/admin/map-visits", icon: MapPin, roles: ["Super Admin", "Admin"] },
   { name: "QR ভেরিফিকেশন", path: "/admin/qr-verification", icon: QrCode, roles: ["Super Admin", "Admin", "Editor"] },
   { name: "পেইজ অ্যাক্সেস", path: "/admin/page-access", icon: ShieldAlert, roles: ["Super Admin"] },
+  { name: "অডিট লগ", path: "/admin/audit-log", icon: History, roles: ["Super Admin"] },
   { name: "টেস্ট এপিআই", path: "/admin/test-api", icon: Globe, roles: ["Super Admin", "Admin"] },
   { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: ["Super Admin", "Admin"] },
 ];
@@ -66,8 +69,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (authChecking) return;
     if (!isLoggedIn) {
       router.replace(`/login?from=${encodeURIComponent(pathname || "/admin")}`);
+      return;
     }
-  }, [authChecking, isLoggedIn, pathname, router]);
+    if (user?.role && !isStaffRole(user.role)) {
+      router.replace("/403");
+    }
+  }, [authChecking, isLoggedIn, pathname, router, user?.role]);
 
   // Close mobile drawer after route change
   useEffect(() => {
@@ -80,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const userName = user?.name ?? user?.email?.split("@")[0] ?? "";
 
   const navItems = useMemo(() => {
-    if (!userRole) return ALL_NAV_ITEMS;
+    if (!userRole) return [];
     return ALL_NAV_ITEMS.filter((item) => item.roles.includes(userRole));
   }, [userRole]);
 

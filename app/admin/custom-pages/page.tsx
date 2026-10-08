@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 import {
   Trash2,
   Edit,
@@ -26,6 +28,8 @@ interface CustomPage {
 const MAX_HTML_FILE_SIZE = 2 * 1024 * 1024;
 
 export default function CustomPagesDashboard() {
+  const { user } = useAuth();
+  const canDelete = isAdminRole(user?.role);
   const [pages, setPages] = useState<CustomPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -315,7 +319,9 @@ export default function CustomPagesDashboard() {
                     <td className="px-6 py-4"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getCategoryColor(page.category)}`}><Tag size={12} className="mr-1.5" />{page.category || "সাধারণ"}</span></td>
                     <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
                       <button onClick={() => handleEdit(page)} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[#006a4e] flex items-center justify-center hover:bg-[#006a4e] hover:text-white hover:border-[#006a4e] transition-colors shadow-sm" title="এডিট করুন"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(page.id, page.title)} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors shadow-sm" title="ডিলিট করুন"><Trash2 size={18} /></button>
+                      {canDelete ? (
+                        <button onClick={() => handleDelete(page.id, page.title)} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors shadow-sm" title="ডিলিট করুন"><Trash2 size={18} /></button>
+                      ) : null}
                     </div></td>
                   </tr>
                 ))}

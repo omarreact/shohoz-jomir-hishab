@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
+import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +10,14 @@ export const dynamic = "force-dynamic";
 /** Admin-only one-time helper for populating the dashboard with clearly labelled demo records. */
 export async function POST(req: NextRequest) {
   try {
-    await verifyAdminAuth(req);
+    await protectAdminMutation(req, "map-visits-seed", { max: 3, windowSeconds: 3600 });
+    const actor = await verifySuperAdminAuth(req);
+    if (process.env.ALLOW_ADMIN_DEMO_SEED !== "true") {
+      return NextResponse.json(
+        { success: false, message: "Production demo seeding is disabled." },
+        { status: 403 },
+      );
+    }
     if (!isFirebaseAdminReady()) {
       return NextResponse.json({ success: false, message: "Database not ready" }, { status: 503 });
     }
@@ -68,6 +76,9 @@ export async function POST(req: NextRequest) {
       batch.set(ref, { ...row, createdAt: FieldValue.serverTimestamp() });
     }
     await batch.commit();
+    await recordAdminAudit(req, actor, "map-visits.demo-seed", "mapVisits", null, {
+      created: demo.length,
+    });
 
     return NextResponse.json({ success: true, created: demo.length, message: "ডেমো ডেটা তৈরি হয়েছে।" });
   } catch (error: unknown) {
@@ -76,6 +87,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "অনুমতি নেই" }, { status: 403 });
     }
     console.error("[admin/map-visits/seed-demo]", error);
-    return NextResponse.json({ success: false, message: "ডেমো ডেটা তৈরি ব্যর্থ" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: adminErrorStatus(error) < 500 && error instanceof Error ? error.message : "ডেমো ডেটা তৈরি ব্যর্থ" },
+      { status: adminErrorStatus(error) },
+    );
   }
 }

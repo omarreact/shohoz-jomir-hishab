@@ -1,12 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth, verifyStaffAuth } from "@/src/modules/auth/serverAuth";
+import {
+  adminErrorStatus,
+  protectAdminMutation,
+  recordAdminAudit,
+} from "@/src/modules/security/adminSecurity";
+import { sanitizeBlogHtml } from "@/src/features/blog/sanitizeBlogText";
+
+const pageIdSchema = z.string().trim().min(1).max(150).refine((value) => !value.includes("/"));
+const updatePageSchema = z
+  .object({
+    title: z.string().trim().min(1).max(180).optional(),
+    slug: z.string().trim().min(1).max(140).optional(),
+    category: z.string().trim().max(100).optional(),
+    content: z.string().min(1).max(2_000_000).optional(),
+    published: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "No changes supplied");
+
+function cleanSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0980-\u09ff_-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "")
+    .slice(0, 140);
+}
 
 function serializePage(id: string, pageData: Record<string, any>) {
   return {
     id,
     ...pageData,
+    content: sanitizeBlogHtml(String(pageData.content || "")),
     createdAt:
       typeof pageData.createdAt?.toDate === "function"
         ? pageData.createdAt.toDate().toISOString()
@@ -18,97 +48,160 @@ function serializePage(id: string, pageData: Record<string, any>) {
   };
 }
 
-// GET /api/pages/[id] — public only for published pages; staff may preview drafts
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
+    const { id: rawId } = await params;
+    const id = pageIdSchema.parse(rawId);
     const doc = await collections.pages.doc(id).get();
-    if (!doc.exists) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    if (!doc.exists) return json({ success: false, message: "Not found" }, 404);
 
     const pageData = doc.data() as Record<string, any>;
     if (pageData.published !== true) {
       try {
         await verifyStaffAuth(req);
       } catch {
-        return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+        return json({ success: false, message: "Not found" }, 404);
       }
     }
 
-    return NextResponse.json(
-      { success: true, data: { page: serializePage(doc.id, pageData) } },
-      { status: 200 },
-    );
+    return json({ success: true, data: { page: serializePage(doc.id, pageData) } });
   } catch (error: unknown) {
-    return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    );
+    if (error instanceof z.ZodError) {
+      return json({ success: false, message: "Not found" }, 404);
+    }
+    return json({ success: false, message: "Failed to load page" }, 500);
   }
 }
 
-// PUT /api/pages/[id] — admin update
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    await verifyAdminAuth(req);
-    const body = await req.json();
-    const { title, slug, category, content, published } = body;
-    const data: Record<string, unknown> = {
-      ...(typeof title === "string" && title.trim() ? { title: title.trim() } : {}),
-      ...(typeof slug === "string" && slug.trim() ? { slug: slug.toLowerCase().replace(/\s+/g, "-") } : {}),
-      ...(typeof category === "string" && category.trim() ? { category: category.trim() } : {}),
-      ...(typeof content === "string" && content.trim() ? { content } : {}),
-      ...(typeof published === "boolean" ? { published } : {}),
-      updatedAt: new Date().toISOString(),
-    };
+    await protectAdminMutation(req, "page-update", {
+      max: 25,
+      windowSeconds: 60,
+      maxBodyBytes: 2_500_000,
+    });
+    const actor = await verifyStaffAuth(req);
+    const { id: rawId } = await params;
+    const id = pageIdSchema.parse(rawId);
+    const validated = updatePageSchema.parse(await req.json());
 
     const docRef = collections.pages.doc(id);
     const docSnap = await docRef.get();
-    if (!docSnap.exists) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    const oldPageData = docSnap.data();
+    if (!docSnap.exists) return json({ success: false, message: "Not found" }, 404);
+
+    const oldPageData = docSnap.data() as Record<string, any>;
+    const nextSlug =
+      validated.slug !== undefined ? cleanSlug(validated.slug) : String(oldPageData.slug || "");
+
+    if (!nextSlug) {
+      return json({ success: false, message: "A valid slug is required" }, 400);
+    }
+
+    if (nextSlug !== oldPageData.slug) {
+      const duplicate = await collections.pages.where("slug", "==", nextSlug).limit(2).get();
+      if (duplicate.docs.some((doc) => doc.id !== id)) {
+        return json({ success: false, message: "A page with this slug already exists" }, 409);
+      }
+    }
+
+    const data: Record<string, unknown> = {
+      ...(validated.title !== undefined ? { title: validated.title } : {}),
+      ...(validated.slug !== undefined ? { slug: nextSlug } : {}),
+      ...(validated.category !== undefined ? { category: validated.category } : {}),
+      ...(validated.content !== undefined
+        ? { content: sanitizeBlogHtml(validated.content) }
+        : {}),
+      ...(validated.published !== undefined ? { published: validated.published } : {}),
+      updatedAt: new Date().toISOString(),
+      updatedBy: actor.email || actor.id,
+    };
 
     await docRef.update(data);
     const updatedDoc = await docRef.get();
     const updatedDocData = updatedDoc.data() as Record<string, any>;
-    const page = serializePage(updatedDoc.id, updatedDocData);
 
     revalidatePath("/", "layout");
-    if (oldPageData?.slug && oldPageData.slug !== updatedDocData.slug) {
+    if (oldPageData.slug && oldPageData.slug !== updatedDocData.slug) {
       revalidatePath(`/p/${oldPageData.slug}`);
     }
-    if (updatedDocData.slug) {
-      revalidatePath(`/p/${updatedDocData.slug}`);
-    }
-    return NextResponse.json({ success: true, data: { page } }, { status: 200 });
+    if (updatedDocData.slug) revalidatePath(`/p/${updatedDocData.slug}`);
+
+    await recordAdminAudit(req, actor, "page.update", "customPage", id, {
+      title: String(updatedDocData.title || ""),
+      slug: String(updatedDocData.slug || ""),
+      published: updatedDocData.published === true,
+    });
+
+    return json({
+      success: true,
+      data: { page: serializePage(updatedDoc.id, updatedDocData) },
+    });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const status =
-      message === "Unauthorized" ? 401 :
-      message === "Account locked" || message === "Account disabled" ? 403 :
-      message.startsWith("Forbidden") ? 403 : 500;
-    return NextResponse.json({ success: false, message }, { status });
+    if (error instanceof z.ZodError) {
+      return json({ success: false, message: "Invalid page data", error: error.issues }, 400);
+    }
+    const status = adminErrorStatus(error);
+    return json(
+      {
+        success: false,
+        message:
+          status < 500 && error instanceof Error ? error.message : "Failed to update page",
+      },
+      status,
+    );
   }
 }
 
-// DELETE /api/pages/[id] — admin delete
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    await verifyAdminAuth(_req);
+    await protectAdminMutation(req, "page-delete", { max: 10, windowSeconds: 60 });
+    const actor = await verifyAdminAuth(req);
+    const { id: rawId } = await params;
+    const id = pageIdSchema.parse(rawId);
+
     const docRef = collections.pages.doc(id);
     const docSnap = await docRef.get();
-    if (!docSnap.exists) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    if (!docSnap.exists) return json({ success: false, message: "Not found" }, 404);
     const pageData = docSnap.data();
+
     await docRef.delete();
     revalidatePath("/", "layout");
     if (pageData?.slug) revalidatePath(`/p/${pageData.slug}`);
-    return NextResponse.json({ success: true }, { status: 200 });
+
+    await recordAdminAudit(req, actor, "page.delete", "customPage", id, {
+      title: String(pageData?.title || ""),
+      slug: String(pageData?.slug || ""),
+    });
+
+    return json({ success: true });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const status =
-      message === "Unauthorized" ? 401 :
-      message === "Account locked" || message === "Account disabled" ? 403 :
-      message.startsWith("Forbidden") ? 403 : 500;
-    return NextResponse.json({ success: false, message }, { status });
+    if (error instanceof z.ZodError) {
+      return json({ success: false, message: "Not found" }, 404);
+    }
+    const status = adminErrorStatus(error);
+    return json(
+      {
+        success: false,
+        message:
+          status < 500 && error instanceof Error ? error.message : "Failed to delete page",
+      },
+      status,
+    );
   }
 }

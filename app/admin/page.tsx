@@ -15,6 +15,7 @@ import {
   Map,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 
 type Tone = "green" | "amber" | "red" | "slate" | "blue";
 
@@ -115,7 +116,7 @@ function StatusSkeleton() {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const admin = Boolean(user);
+  const admin = isAdminRole(user?.role);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KpiCard[]>([]);

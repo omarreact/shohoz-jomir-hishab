@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifyStaffAuth } from "@/src/modules/auth/serverAuth";
 import { STATIC_BLOG_POSTS, getStaticBlogBySlug } from "@/src/features/blog/content/static-posts";
+import { blogWriteSchema } from "@/src/features/blog/adminBlogSchema";
+import { adminErrorStatus, protectAdminMutation, recordAdminAudit } from "@/src/modules/security/adminSecurity";
 import {
   makeExcerpt,
   sanitizeBlogHtml,
@@ -198,7 +200,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
-    await verifyAdminAuth(req);
+    await protectAdminMutation(req, "blog-create", {
+      max: 20,
+      windowSeconds: 60,
+      maxBodyBytes: 1_500_000,
+    });
+    const actor = await verifyStaffAuth(req);
     const { collections } = await import("@/src/modules/database/firebaseAdmin");
 
     let body: any;
@@ -208,28 +215,29 @@ export async function POST(req: NextRequest) {
       return jsonError("Request body must be valid JSON", 400, requestId);
     }
 
-    const { title, coverImage, category, author, content } = body || {};
-    if (typeof title !== "string" || !title.trim() || typeof content !== "string" || !content.trim()) {
-      return jsonError("title and content are required", 400, requestId);
+    const parsed = blogWriteSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError("Invalid blog data", 400, requestId);
     }
 
+    const { title, coverImage, category, author, content } = parsed.data;
     const cleanedContent = sanitizeBlogHtml(content);
-    const slug = generateSlug(title.trim()) || `post-${Date.now()}`;
+    const slug = generateSlug(title) || `post-${Date.now()}`;
     if (!slug) return jsonError("A valid title is required to generate the blog slug", 400, requestId);
 
     const existingSnapshot = await collections.blogs.where("slug", "==", slug).limit(1).get();
     if (!existingSnapshot.empty) return jsonError("A blog with this title already exists", 409, requestId);
 
-    const categoryValue = typeof category === "string" && category.trim() ? category.trim() : "সাধারণ";
-    const authorValue = typeof author === "string" && author.trim() ? author.trim() : "মো. ওমর ফারুক";
+    const categoryValue = category;
+    const authorValue = author;
     const excerpt = makeExcerpt(cleanedContent, 150);
     const now = new Date().toISOString();
     const data = {
-      title: title.trim(),
+      title,
       slug,
       excerpt,
       content: cleanedContent,
-      coverImage: typeof coverImage === "string" && coverImage.trim() ? coverImage.trim() : null,
+      coverImage: coverImage || null,
       author: authorValue,
       category: categoryValue,
       categorySlug: generateSlug(categoryValue || "general") || "general",
@@ -255,14 +263,18 @@ export async function POST(req: NextRequest) {
     });
     revalidatePath("/", "layout");
     revalidatePath("/blog", "page");
+    await recordAdminAudit(req, actor, "blog.create", "blog", ref.id, {
+      title: data.title,
+      slug: data.slug,
+    });
     return json({ success: true, data: { blog } }, 201, requestId);
   } catch (error: any) {
     console.error("POST /api/blogs failed:", { requestId, error });
-    const status =
-      error?.message === "Unauthorized" ? 401
-        : error?.message === "Account locked" || error?.message === "Account disabled" ? 403
-        : error?.message?.startsWith("Forbidden") ? 403
-        : 500;
-    return jsonError(error?.message || "Failed to create blog", status, requestId);
+    const status = adminErrorStatus(error);
+    return jsonError(
+      status < 500 && error instanceof Error ? error.message : "Failed to create blog",
+      status,
+      requestId,
+    );
   }
 }

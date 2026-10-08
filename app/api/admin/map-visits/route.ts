@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, count: data.length, data });
+    return NextResponse.json(
+      { success: true, count: data.length, data },
+      { headers: { "Cache-Control": "no-store, max-age=0" } },
+    );
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     if (msg === "Unauthorized" || msg.includes("Forbidden")) return NextResponse.json({ success: false, message: "অনুমতি নেই" }, { status: 403 });
