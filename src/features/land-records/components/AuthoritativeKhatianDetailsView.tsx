@@ -92,7 +92,7 @@ export default function AuthoritativeKhatianDetailsView({
             style={{ backgroundColor: "#f4f8f5", borderColor: "#d9e9dd" }} data-pdf-surface="soft">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/api/reports/mouza-porcha/qr?target=dlrms-khatian"
-              alt="LandBD khatian search page QR" className="h-16 w-16 bg-white object-contain" />
+              alt="LandBD khatian search page QR" className="h-24 w-24 bg-white object-contain" />
             <span className="max-w-24 text-[10px] font-semibold leading-4" style={{ color: "#426651" }}>
               LandBD-তে খুলুন
             </span>
