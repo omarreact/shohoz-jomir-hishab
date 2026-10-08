@@ -70,6 +70,22 @@ describe("LandBD request-boundary access policy", () => {
     });
   });
 
+  it("keeps public APIs accessible when maintenance is disabled", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+
+    const response = await proxy(request("/api/rajuk/query?action=districts&kind=rs"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("keeps the maintenance status endpoint available without loading policy", async () => {
+    const response = await proxy(request("/api/public/maintenance"));
+
+    expect(response.status).toBe(200);
+    expect(mockGetSiteAccessPolicy).not.toHaveBeenCalled();
+  });
+
   it("does not block login while maintenance is enabled", async () => {
     const response = await proxy(request("/login"));
 

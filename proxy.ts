@@ -16,9 +16,6 @@ let keysCacheTime = 0;
 
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
 
-/** Product decision: maintenance mode is disabled. Site always serves traffic. */
-const MAINTENANCE_MODE_ENABLED = false;
-
 async function getFirebasePublicKeys() {
   const now = Date.now();
 
@@ -327,15 +324,11 @@ export async function proxy(request: NextRequest) {
 
   const maintenanceEssential = isMaintenanceEssentialPath(pathname);
 
-  // Always load policy for page-access rules; maintenance gate is hard-disabled.
+  // Firestore is authoritative: OFF keeps public pages available; ON blocks
+  // anonymous traffic while allowing verified users and essential auth routes.
   const policy = maintenanceEssential ? null : await getSiteAccessPolicy();
 
-  // Maintenance mode is intentionally disabled (MAINTENANCE_MODE_ENABLED=false).
-  if (
-    MAINTENANCE_MODE_ENABLED &&
-    policy?.maintenanceMode &&
-    !maintenanceEssential
-  ) {
+  if (policy?.maintenanceMode && !maintenanceEssential) {
     if (!userPayload) {
       return pathname.startsWith("/api/")
         ? maintenanceApiResponse(requestId, securityHeaders)
@@ -361,7 +354,8 @@ export async function proxy(request: NextRequest) {
     try {
       const user = await authoritativeUser();
 
-      if (!authenticatedFullAccess && !isStaffRole(user.role)) {
+      // A full-access feature flag must never bypass administrative RBAC.
+      if (!isStaffRole(user.role)) {
         return forbiddenRedirect(request, securityHeaders);
       }
     } catch {

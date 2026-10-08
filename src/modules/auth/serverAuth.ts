@@ -187,7 +187,7 @@ export async function verifyServerAuth(
 
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isSuperAdminRole(user.role)) {
+  if (!isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
   return user;
@@ -195,7 +195,7 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
 
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isAdminRole(user.role)) {
+  if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
   return user;
@@ -203,7 +203,7 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
 
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
   const user = await verifyServerAuth(req);
-  if (!authenticatedFullAccessEnabled() && !isStaffRole(user.role)) {
+  if (!isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
   return user;

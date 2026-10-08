@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import {
   Settings as SettingsIcon,
   Save,
@@ -33,6 +35,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const canChangeMaintenance = isSuperAdminRole(user?.role);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,8 +51,7 @@ export default function SettingsPage() {
           setSettings((prev) => ({
             ...prev,
             ...data.settings,
-            // Product decision: maintenance mode is retired / hard-disabled.
-            maintenanceMode: false,
+            maintenanceMode: data.settings.maintenanceMode === true,
           }));
         }
       })
@@ -74,14 +77,23 @@ export default function SettingsPage() {
     e.preventDefault();
     setIsSaving(true);
     setSaveOk(false);
+    setErrorMsg("");
     try {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...settings,
-          maintenanceMode: "false",
-        }),
+        body: JSON.stringify(
+          canChangeMaintenance
+            ? settings
+            : {
+                siteName: settings.siteName,
+                contactEmail: settings.contactEmail,
+                contactPhone: settings.contactPhone,
+                facebookUrl: settings.facebookUrl,
+                youtubeUrl: settings.youtubeUrl,
+                announcement: settings.announcement,
+              },
+        ),
       });
       if (!res.ok) throw new Error("Failed to save");
       setSaveOk(true);
@@ -211,13 +223,26 @@ export default function SettingsPage() {
               <h5 className="mb-4 flex items-center text-lg font-extrabold text-emerald-700 sm:text-xl">
                 <ShieldOff size={22} className="mr-2" /> সিস্টেম স্ট্যাটাস
               </h5>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-sm font-bold text-emerald-900">মেইনটেন্যান্স মোড বন্ধ</p>
-                <p className="mt-2 text-sm leading-relaxed text-emerald-800">
-                  Maintenance mode বর্তমানে প্রজেক্ট থেকে নিষ্ক্রিয় করা হয়েছে। সাইট সবসময়
-                  স্বাভাবিক ট্রাফিক সার্ভ করবে। পরে আবার প্রয়োজন হলে কোডে
-                  <code className="mx-1 rounded bg-white px-1">MAINTENANCE_MODE_ENABLED</code>
-                  চালু করা যাবে।
+              <div className="rounded-xl border border-[var(--border-color)] bg-[var(--canvas)] p-4">
+                <label className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-[var(--foreground)]">
+                    মেইনটেন্যান্স মোড {settings.maintenanceMode ? "চালু" : "বন্ধ"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label="মেইনটেন্যান্স মোড"
+                    name="maintenanceMode"
+                    checked={settings.maintenanceMode}
+                    onChange={handleChange}
+                    disabled={!canChangeMaintenance}
+                    className="h-5 w-5 accent-red-600 disabled:opacity-50"
+                  />
+                </label>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  চালু থাকলে লগইন না করা ব্যবহারকারীরা মেইনটেন্যান্স পেজ দেখবেন;
+                  বৈধ লগইন করা ব্যবহারকারীরা প্রবেশ করতে পারবেন।
+                  {!canChangeMaintenance ? " এই সেটিং শুধু Super Admin পরিবর্তন করতে পারেন।" : ""}
                 </p>
               </div>
             </div>

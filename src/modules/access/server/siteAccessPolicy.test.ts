@@ -57,6 +57,25 @@ describe("site access policy", () => {
     expect(result.degraded).toBe(false);
   });
 
+  it("honors an enabled maintenance flag from Firestore", async () => {
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      collections: { settings: { doc: jest.fn((id: string) => ({ id })) } },
+      db: {
+        getAll: jest.fn(async () => [
+          { exists: true, data: () => ({ value: "true" }) },
+          { exists: false, data: () => undefined },
+        ]),
+      },
+    }));
+
+    const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
+    const result = await getSiteAccessPolicy({ fresh: true });
+
+    expect(result.maintenanceMode).toBe(true);
+    expect(result.degraded).toBe(false);
+  });
+
   it("loads maintenance and page access together when Firestore is healthy", async () => {
     const maintenanceRef = { id: "maintenanceMode" };
     const pageAccessRef = { id: "pageAccess" };
