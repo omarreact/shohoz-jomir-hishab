@@ -142,6 +142,11 @@ export async function verifyServerAuth(
   try {
     userDoc = await collections.users.doc(decodedToken.uid).get();
   } catch (error) {
+    // Privileged routes also require a successful account-state lookup.
+    // Otherwise suspended or locked users could regain access during outages.
+    if (options.requireAdminBackend) {
+      throw new Error("Firebase Admin unavailable");
+    }
     console.error(
       "[serverAuth] Firestore user lookup unavailable; using verified Firebase claims.",
       error instanceof Error ? error.message : String(error),
