@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collections } from "@/src/modules/database/firebaseAdmin";
-import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
+import { verifyAdminAuth, verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
 import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
 
 // Keys we persist in SiteSetting
@@ -56,9 +56,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await verifyAdminAuth(req);
-    const body = await req.json();
+    const body: unknown = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid settings payload" }, { status: 400 });
+    }
+    const updates = body as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(updates, "maintenanceMode")) {
+      await verifySuperAdminAuth(req);
+      if (typeof updates.maintenanceMode !== "boolean") {
+        return NextResponse.json({ error: "Invalid maintenance mode" }, { status: 400 });
+      }
+    }
 
-    const ops = Object.entries(body)
+    const ops = Object.entries(updates)
       .filter(([key]) => ALLOWED_KEYS.includes(key))
       .map(([key, val]) =>
         collections.settings.doc(key).set(
