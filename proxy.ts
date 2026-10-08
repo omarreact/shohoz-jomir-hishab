@@ -88,6 +88,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/public",
   "/api/search",
   "/api/porcha",
+  "/api/reports/mouza-porcha/qr",
   "/api/rajuk",
   "/api/mouza-map",
   "/api/unified",
