@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type RefObject } from "react";
+import { useMemo, type ReactNode, type RefObject } from "react";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
@@ -29,32 +29,7 @@ const tableSoft = "#f7faf8";
 const ink = "#173427";
 const muted = "#526b5d";
 
-function Cell({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number | undefined | null;
-}) {
-  return (
-    <tr>
-      <th
-        className="w-[24%] border px-2.5 py-1.5 text-left text-[12px] font-extrabold"
-        style={{ borderColor: tableBorder, backgroundColor: tableHeader, color: ink }}
-      >
-        {label}
-      </th>
-      <td
-        className="w-[26%] border px-2.5 py-1.5 text-[12px] font-semibold"
-        style={{ borderColor: tableBorder, color: ink }}
-      >
-        {value || "—"}
-      </td>
-    </tr>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
     <h2
       className="mt-4 border px-3 py-1.5 text-center text-[14px] font-black tracking-tight"
