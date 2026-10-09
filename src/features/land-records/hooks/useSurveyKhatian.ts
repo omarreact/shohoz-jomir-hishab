@@ -13,6 +13,11 @@ function normalizePlace(value: string | undefined): string {
     .toLocaleLowerCase("bn-BD");
 }
 
+function includeMutationSurveyByRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname.includes("/dlrms-khatian");
+}
+
 export function useSurveyKhatian() {
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -41,7 +46,7 @@ export function useSurveyKhatian() {
   useEffect(() => { void run("divisions", landRecordsApi.divisions, setDivisions); }, [run]);
   const loadDistricts = useCallback((code: string) => run("districts", () => landRecordsApi.districts(code), setDistricts), [run]);
   const loadUpazilas = useCallback((code: string) => run("upazilas", () => landRecordsApi.upazilas(code), setUpazilas), [run]);
-  const loadSurveys = useCallback((district: string, upazila: string) => run("surveys", () => landRecordsApi.surveys(district, upazila), setSurveys), [run]);
+  const loadSurveys = useCallback((district: string, upazila: string) => run("surveys", () => landRecordsApi.surveys(district, upazila, includeMutationSurveyByRoute()), setSurveys), [run]);
   const loadMouzas = useCallback((input: Parameters<typeof landRecordsApi.mouzas>[0]) => run("mouzas", () => landRecordsApi.mouzas(input), setMouzas), [run]);
   const loadKhatians = useCallback((input: KhatianSearchInput) => {
     lastKhatianSearch.current = input;
