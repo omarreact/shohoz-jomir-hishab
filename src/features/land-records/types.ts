@@ -120,6 +120,10 @@ export interface MouzaMapProvider {
   downloadUrl(fileId: string): string;
 }
 
+export const MUTATION_SURVEY_ID = 99;
+export const MUTATION_SURVEY_KEY = "MUTATION";
+export const MUTATION_SURVEY_LABEL = "নামজারি খতিয়ান";
+
 export const SURVEY_KEY_BY_ID: Record<number, string> = {
   1: "CS",
   2: "RS",
@@ -129,4 +133,5 @@ export const SURVEY_KEY_BY_ID: Record<number, string> = {
   6: "PETY",
   7: "BRS",
   8: "BDS",
+  [MUTATION_SURVEY_ID]: MUTATION_SURVEY_KEY,
 };

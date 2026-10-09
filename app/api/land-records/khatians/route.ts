@@ -3,7 +3,7 @@ import { providers } from "@/src/features/land-records/server/provider";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { z } from "zod";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
+const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 
 export async function GET(request: Request) {
   try {

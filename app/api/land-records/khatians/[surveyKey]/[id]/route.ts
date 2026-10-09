@@ -5,7 +5,7 @@ import { ok, providerError } from "@/src/features/land-records/server/http";
 import type { KhatianPage } from "@/src/features/land-records/types";
 import { z } from "zod";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
+const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 
 async function safeSearch(input: Parameters<typeof providers.landRecords.listKhatians>[0], signal: AbortSignal): Promise<KhatianPage | null> {
   try {

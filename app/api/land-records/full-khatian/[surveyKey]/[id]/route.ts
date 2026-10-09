@@ -4,7 +4,7 @@ import { getFullKhatian } from "@/src/features/land-records/server/full-khatian-
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { z } from "zod";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
+const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 const bbsCodeSchema = z.string().regex(/^\d{1,3}$/);
 const verificationUuidSchema = z.string().regex(
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
