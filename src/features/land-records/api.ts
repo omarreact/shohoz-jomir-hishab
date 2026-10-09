@@ -121,10 +121,11 @@ export const landRecordsApi = {
     get<District[]>("/districts", DistrictSchema.array(), { divisionBbsCode }),
   upazilas: (districtBbsCode: string) =>
     get<Upazila[]>("/upazilas", UpazilaSchema.array(), { districtBbsCode }),
-  surveys: (districtBbsCode: string, upazilaBbsCode: string) =>
+  surveys: (districtBbsCode: string, upazilaBbsCode: string, includeMutation = false) =>
     get<Survey[]>("/surveys", SurveySchema.array(), {
       districtBbsCode,
       upazilaBbsCode,
+      ...(includeMutation ? { includeMutation: 1 } : {}),
     }),
   mouzas: (input: {
     districtBbsCode: string;
