@@ -45,7 +45,10 @@ export async function getService(id:ServiceId):Promise<ServiceRecord>{
  return normalize(id,snapshot.exists?snapshot.data():undefined);
 }
 export async function getServiceCatalog():Promise<ServiceRecord[]>{
- if(!isFirebaseAdminReady())return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));
+ if(!isFirebaseAdminReady()){
+  if(process.env.NODE_ENV==="production")throw new Error("Service catalog unavailable");
+  return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));
+ }
  const references=SERVICE_DEFINITIONS.map(s=>db.collection("landbdServicePricing").doc(s.id));
  const snapshots=await db.getAll(...references);
  return SERVICE_DEFINITIONS.map((s,i)=>normalize(s.id,snapshots[i].exists?snapshots[i].data():undefined));
