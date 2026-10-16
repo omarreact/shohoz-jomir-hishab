@@ -13,7 +13,7 @@ export default function PaymentAdmin(){
   setStatus(res.ok?v.message||"সংযোগ সফল":v.error||"পরীক্ষা ব্যর্থ");
  }catch{setStatus("সংযোগ ব্যর্থ");}
 }
- async function save(){if(!form)return;setStatus("সংরক্ষণ চলছে");const r=await fetch("/api/admin/settings/payment",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const d=await r.json() as {error?:string};setStatus(r.ok?"সেটিংস সংরক্ষিত হয়েছে":d.error||"ব্যর্থ");}
+ async function save(){if(!form)return;setStatus("সংরক্ষণ চলছে");const r=await fetch("/api/admin/settings/payment",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:form.enabled,live:form.live,storeId:form.storeId,password:form.password,successUrl:form.successUrl,failUrl:form.failUrl,cancelUrl:form.cancelUrl,ipnUrl:form.ipnUrl})});const d=await r.json() as {error?:string};setStatus(r.ok?"সেটিংস সংরক্ষিত হয়েছে":d.error||"ব্যর্থ");}
  return <main className="mx-auto max-w-3xl space-y-4 p-5"><h2 className="text-2xl font-black">SSLCommerz সেটিংস</h2>
  {form&&<div className="space-y-4 rounded-2xl border bg-white p-5">
  <label className="flex gap-2"><input type="checkbox" checked={form.enabled} onChange={e=>update({enabled:e.target.checked})}/> গেটওয়ে সক্রিয়</label>
