@@ -6,14 +6,16 @@ import { ChevronDown, ArrowRight } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 
 const FAQS = [
-  { question: "সহজ জমির হিসাব কী?", answer: "সহজ জমির হিসাব একটি বিনামূল্যের ডিজিটাল সহায়ক—খতিয়ানের আনা-গন্ডা হিসাব, জমি পরিমাপ, ফারায়েজ বণ্টন এবং RS/MS মৌজা মানচিত্র এক জায়গায়।" },
+  { question: "সহজ জমির হিসাব কী?", answer: "LandBD-তে খতিয়ানের আনা-গন্ডা হিসাব, জমি পরিমাপ, ফারায়েজ বণ্টন এবং RS/MS মৌজা মানচিত্র একই জায়গায়। কিছু সেবা বিনামূল্যে; পেইড সেবার মূল্য ব্যবহার করার আগে দেখানো হয়।" },
   { question: "খতিয়ান ক্যালকুলেটর কীভাবে ব্যবহার করব?", answer: "খতিয়ান পেজে গিয়ে আপনার দাগ/খতিয়ান সংক্রান্ত মান ইনপুট করুন। টুল আনা, গন্ডা, শতাংশ ও কাঠা হিসাব দেখাবে। এটি প্রাথমিক সহায়ক হিসাব; আইনি কাজে মূল নথি যাচাই করুন।" },
   { question: "ফারায়েজ ক্যালকুলেটর কীভাবে কাজ করে?", answer: "ইসলামি উত্তরাধিকার নিয়ম অনুযায়ী ওয়ারিশদের তথ্য দিলে অংশ স্বয়ংক্রিয়ভাবে হিসাব হয়। জটিল মামলা বা বিরোধে আইনজীবীর পরামর্শ নিন।" },
   { question: "মানচিত্রে কী দেখা যায়?", answer: "RS ও MS মৌজা, উপলভ্য প্লট তথ্য এবং স্যাটেলাইটসহ বিভিন্ন মানচিত্র স্তর দেখা যায়। কিছু সুরক্ষিত তথ্যের জন্য লগইন প্রয়োজন হতে পারে।" },
   { question: "তথ্য কতটা নির্ভুল?", answer: "এই সাইটের হিসাব ও তথ্য সাধারণ সহায়তার জন্য। সরকারি মূল নথি, রেকর্ড বা আইনি সিদ্ধান্তের বিকল্প হিসেবে ব্যবহার করবেন না। গুরুত্বপূর্ণ কাজে সংশ্লিষ্ট সরকারি নথি যাচাই করুন।" },
 ];
 
-export default function FaqSection() {
+export type HomepageFaqItem={question:string;answer:string};
+export default function FaqSection({items}:{items?:HomepageFaqItem[]}) {
+  const questions=items&&items.length?items:FAQS;
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -26,7 +28,7 @@ export default function FaqSection() {
         </div>
 
         <div className="space-y-3" role="list">
-          {FAQS.map((faq, index) => {
+          {questions.map((faq, index) => {
             const isOpen = openIndex === index;
             const panelId = `faq-panel-${index}`;
             return (

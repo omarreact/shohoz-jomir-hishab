@@ -4,11 +4,14 @@ import EasyToolsHub from "@/src/features/home/components/EasyToolsHub";
 import FaqSection from "@/src/features/home/components/FaqSection";
 import LiveHomeContent from "@/src/components/cms/LiveHomeContent";
 import LandBDStructuredData from "@/src/components/seo/LandBDStructuredData";
-import { cmsMetadata } from "@/src/lib/cms-store";
+import { cmsMetadata,getCmsPage } from "@/src/lib/cms-store";
 export const dynamic="force-dynamic";
 export async function generateMetadata(){return cmsMetadata("homepage");}
 
-export default function HomePage() {
+export default async function HomePage() {
+  const faq=await getCmsPage("faq");
+  const items=faq.published&&faq.revision>0&&faq.sections.length
+    ?faq.sections.map(section=>({question:section.heading,answer:section.body})):undefined;
   return (
     <div className="flex w-full flex-col">
       <LandBDStructuredData />
@@ -16,7 +19,7 @@ export default function HomePage() {
       <AnnouncementBanner />
       <HeroSection />
       <EasyToolsHub />
-      <FaqSection />
+      <FaqSection items={items}/>
     </div>
   );
 }
