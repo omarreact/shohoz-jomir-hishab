@@ -40,4 +40,25 @@ describe("privileged authentication", () => {
     await expect(verifyAdminAuth(req)).rejects.toThrow("Firebase Admin unavailable");
     expect(verifyIdToken).toHaveBeenCalledWith("test-id-token", true);
   });
+  it("recognizes the owner UID after Firebase verifies a password token", async () => {
+    const uid = "408LTqriBAPIMIe37pXPVehfPIe2";
+    const verifyIdToken = jest.fn(async () => ({
+      uid, sub: uid, email: "owner@example.com",
+      firebase: { sign_in_provider: "password" },
+    }));
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      auth: { verifyIdToken },
+      collections: { users: { doc: jest.fn(() => ({
+        get: jest.fn(async () => ({ exists: false })),
+      })) } },
+    }));
+    const { verifySuperAdminAuth } = await import("./serverAuth");
+    const req = new NextRequest("https://landbd.example/admin", {
+      headers: { authorization: "Bearer owner-token" },
+    });
+    await expect(verifySuperAdminAuth(req)).resolves.toMatchObject({ id: uid, role: "Super Admin" });
+    expect(verifyIdToken).toHaveBeenCalledWith("owner-token", true);
+  });
+
 });

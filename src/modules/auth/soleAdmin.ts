@@ -6,6 +6,10 @@
  * email, existing Firebase custom claims, and any username supplied by clients.
  * Must be called ONLY with cryptographically verified Firebase ID-token claims.
  */
+// Account UID supplied by the project owner. Only compare with the subject of
+// a token verified for this application's Firebase project, never request input.
+export const SUPER_ADMIN_FIREBASE_UID = "408LTqriBAPIMIe37pXPVehfPIe2";
+
 export const SOLE_ADMIN_GITHUB_ID = "91119648";
 export const SOLE_ADMIN_GITHUB_LOGIN = "omarreact";
 
@@ -21,5 +25,7 @@ export function isSoleAdminFirebaseIdentity(claims:Record<string,unknown>):boole
 }
 
 export function soleAdminRoleFromClaims(claims:Record<string,unknown>):"Super Admin"|"User" {
-  return isSoleAdminFirebaseIdentity(claims)?"Super Admin":"User";
+  return claims.sub === SUPER_ADMIN_FIREBASE_UID || isSoleAdminFirebaseIdentity(claims)
+    ? "Super Admin"
+    : "User";
 }

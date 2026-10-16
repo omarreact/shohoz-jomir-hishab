@@ -93,7 +93,7 @@ async function verifyFirebaseIdTokenWithoutAdmin(token: string): Promise<JWTPayl
 /**
  * Resolve application role from cryptographically verified Firebase token claims.
  * - Explicit custom claim `role` / `admin` is the normal path for staff.
- * - The immutable sole GitHub administrator identity always maps to Super Admin.
+ * - The verified owner Firebase UID (or legacy GitHub identity) maps to Super Admin.
  * - Firestore must never elevate privileges.
  */
 function roleFromVerifiedClaims(claims: Record<string, unknown>): AppRole {
@@ -121,7 +121,7 @@ function userFromClaims(claims: Record<string, unknown>, uid: string): ServerUse
  *
  * When Firebase Admin credentials are available, Firestore users/{uid} remains
  * authoritative for account status (deleted / locked). Privileged roles still
- * come only from signed Firebase Auth claims (plus sole GitHub admin identity).
+ * come only from signed Firebase Auth claims (plus the verified owner identity).
  */
 export async function verifyServerAuth(
   req: NextRequest,

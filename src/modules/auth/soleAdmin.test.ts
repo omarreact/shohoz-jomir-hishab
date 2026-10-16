@@ -16,3 +16,19 @@ describe("one GitHub administrator",()=>{
   expect(soleAdminRoleFromClaims(claims)).toBe("User");
  });
 });
+
+ describe("owner Firebase account", () => {
+  const uid = "408LTqriBAPIMIe37pXPVehfPIe2";
+  it("recognizes the verified token subject with password sign-in", () => {
+    expect(soleAdminRoleFromClaims({ sub: uid, firebase: { sign_in_provider: "password" } })).toBe("Super Admin");
+  });
+  it.each([
+    { sub: "another-user" },
+    { uid },
+    { email: uid },
+    { sub: `${uid}x` },
+    {},
+  ])("rejects other subjects and profile fields", claims => {
+    expect(soleAdminRoleFromClaims(claims)).toBe("User");
+  });
+ });
