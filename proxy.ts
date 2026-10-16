@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLockoutState } from "@/src/lib/security-store";
 import type { NextRequest } from "next/server";
 import { importX509, jwtVerify } from "jose";
 
@@ -86,6 +87,8 @@ const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/login",
   "/maintenance",
+  "/security-locked",
+  "/api/security/lockout",
   "/api/public/maintenance",
 ]);
 
@@ -226,6 +229,16 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set("x-request-id", requestId);
 
   const securityHeaders = securityResponseHeaders(requestId, pathname);
+  if (pathname !== "/security-locked" && pathname !== "/api/security/lockout") {
+    const restriction = await getLockoutState(request);
+    if (restriction.locked) {
+      const lockHeaders = { ...securityHeaders, "Cache-Control": "no-store", "Retry-After": String(restriction.remainingSeconds) };
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "security_locked", message: "নিরাপত্তার কারণে প্রবেশ সাময়িকভাবে বন্ধ।", retryAfter: restriction.remainingSeconds }, { status: 423, headers: lockHeaders });
+      }
+      return NextResponse.redirect(new URL("/security-locked", request.url), { headers: lockHeaders });
+    }
+  }
 
   // Best-effort per-instance burst protection only. Route-level distributed
   // limits remain authoritative where configured.

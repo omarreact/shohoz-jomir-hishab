@@ -1,5 +1,5 @@
 /**
- * Exhaustive list of 73 Next.js API routes and their expected minimum access.
+ * Exhaustive list of 74 Next.js API routes and their expected minimum access.
  * Handlers remain the authoritative authorization boundary.
  */
 export type ApiAccess = "public" | "signed_token" | "member" | "staff" | "admin" | "super_admin";
@@ -27,6 +27,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/comments", get: "public", mutate: "public" },
   { path: "/api/dncc-directory", get: "public", mutate: "public" },
   { path: "/api/health", get: "public", mutate: "public" },
+  { path: "/api/security/lockout", get: "public", mutate: "public" },
   { path: "/api/land-records/dag-map-area", get: "public", mutate: "public" },
   { path: "/api/land-records/dag-map-areas", get: "public", mutate: "public" },
   { path: "/api/land-records/districts", get: "public", mutate: "public" },

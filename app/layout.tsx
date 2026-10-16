@@ -9,6 +9,7 @@ import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ClientPlatformEffects from "@/src/shared/components/ClientPlatformEffects";
 import { AuthProvider } from "@/src/modules/auth/hooks/AuthProvider";
 import VisitTracker from "@/src/shared/components/VisitTracker";
+import SecurityShield from "@/src/components/security/SecurityShield";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
@@ -121,6 +122,10 @@ export default function RootLayout({
         >
           <AuthProvider>
             <ClientPlatformEffects />
+            <SecurityShield
+              enabled={process.env.NEXT_PUBLIC_LANDBD_SECURITY_SHIELD_ENABLED === "true"}
+              detectDockedDevtools={process.env.NEXT_PUBLIC_LANDBD_DETECT_DOCKED_DEVTOOLS === "true"}
+            />
             {children}
             <BanglaUiEnforcer />
             <VisitTracker />
