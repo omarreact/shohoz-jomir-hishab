@@ -400,8 +400,6 @@ export default function UserManagement() {
                 onChange={(e) => setEditRole(e.target.value)}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
               >
-                {canManageSuperAdmin ? (
-                  ) : null}
                 <option value="Basic User">👤 বেসিক ইউজার</option>
               </select>
             </div>
@@ -494,8 +492,6 @@ export default function UserManagement() {
                   onChange={(e) => setCreateRole(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                 >
-                  {canManageSuperAdmin ? (
-                    ) : null}
                   <option value="Basic User">👤 বেসিক ইউজার</option>
                 </select>
               </div>
