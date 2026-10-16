@@ -29,12 +29,13 @@ export const ADMIN_ROUTE_REGISTRY: readonly {
   { path: "/admin/test-api", name: "টেস্ট এপিআই", minimumRole: "admin" },
   { path: "/admin/cms", name: "কনটেন্ট CMS", minimumRole: "admin" },
   { path: "/admin/services", name: "সেবার মূল্য", minimumRole: "admin" },
+  { path: "/admin/settings/payment", name: "পেমেন্ট সেটিংস", minimumRole: "admin" },
   { path: "/admin/settings", name: "সেটিংস", minimumRole: "admin" },
   { path: "/admin/page-access", name: "পেইজ অ্যাক্সেস", minimumRole: "super_admin" },
   { path: "/admin/audit-log", name: "অডিট লগ", minimumRole: "super_admin" },
 ];
 
-export const SYSTEM_ROUTES = ["/login", "/maintenance", "/403", "/security-locked"] as const;
+export const SYSTEM_ROUTES = ["/login", "/maintenance", "/403", "/security-locked", "/checkout/result"] as const;
 
 export function getAdminMinimumRole(pathname: string): AdminMinimumRole {
   const path = normalizePagePath(pathname);
