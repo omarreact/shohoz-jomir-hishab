@@ -10,7 +10,8 @@ export async function GET(req:NextRequest){
   const orders=snapshot.docs.map(doc=>{const d=doc.data();
    return {id:doc.id,serviceId:String(d.serviceId||""),amountBdt:Number(d.amountBdt||0),
     status:String(d.status||""),riskLevel:d.riskLevel??null,createdAt:String(d.createdAt||""),
-    paidAt:d.paidAt||null};
+    paidAt:d.paidAt||null,refundStatus:d.refundStatus||null,refundReference:d.refundReference||null,
+    reconciliationStatus:d.reconciliationStatus||null,refundRequiresEntitlementReview:d.refundRequiresEntitlementReview===true};
   });
   return NextResponse.json({orders},{headers:{"Cache-Control":"private, no-store"}});
  }catch{return NextResponse.json({error:"অর্ডারের তথ্য পাওয়া যায়নি"},{status:503});}

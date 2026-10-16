@@ -42,7 +42,7 @@ export async function handlePaymentCallback(req:NextRequest,mode:CallbackMode):P
         const current=await tx.get(orderRef);
         if(!current.exists||current.data()?.status==="paid")return;
         tx.update(orderRef,{status:"risk_hold",riskLevel:verified.riskLevel,
-          verifiedAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+          bankTranId:verified.bankTranId,validationId,verifiedAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       });
       if(mode==="ipn")return NextResponse.json({ok:true,reviewRequired:true});
       return receiptRedirect(req,tran);
@@ -63,7 +63,7 @@ export async function handlePaymentCallback(req:NextRequest,mode:CallbackMode):P
       tx.set(entitlementRef,{uid:original.uid,serviceId:original.serviceId,active:true,
         remaining,lastTransactionId:tran,updatedAt:new Date().toISOString()},{merge:true});
       tx.update(orderRef,{status:"paid",riskLevel:0,bankTranId:verified.bankTranId,
-        paidAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+        validationId,paidAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
     });
     if(mode==="ipn")return NextResponse.json({ok:true});
     return receiptRedirect(req,tran);

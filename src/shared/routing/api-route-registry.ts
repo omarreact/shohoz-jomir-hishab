@@ -6,6 +6,8 @@ export type ApiAccess = "public" | "signed_token" | "member" | "staff" | "admin"
 export type ApiRoutePolicy = { path: string; get: ApiAccess; mutate: ApiAccess; delete?: ApiAccess };
 export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/account/orders", get: "member", mutate: "member" },
+  { path: "/api/admin/commerce/reconcile", get: "admin", mutate: "admin" },
+  { path: "/api/admin/commerce/refunds", get: "super_admin", mutate: "super_admin" },
   { path: "/api/admin/commerce/orders", get: "admin", mutate: "admin" },
   { path: "/api/admin/commerce/stats", get: "admin", mutate: "admin" },
   { path: "/api/admin/security", get: "super_admin", mutate: "super_admin" },
