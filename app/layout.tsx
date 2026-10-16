@@ -9,6 +9,7 @@ import BanglaUiEnforcer from "@/src/shared/components/BanglaUiEnforcer";
 import ClientPlatformEffects from "@/src/shared/components/ClientPlatformEffects";
 import { AuthProvider } from "@/src/modules/auth/hooks/AuthProvider";
 import VisitTracker from "@/src/shared/components/VisitTracker";
+import VisitorChatWidget from "@/src/components/ai/VisitorChatWidget";
 import SecurityShield from "@/src/components/security/SecurityShield";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -129,6 +130,7 @@ export default function RootLayout({
             {children}
             <BanglaUiEnforcer />
             <VisitTracker />
+            <VisitorChatWidget />
           </AuthProvider>
           {enableVercelTelemetry ? (
             <>
