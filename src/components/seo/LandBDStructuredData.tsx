@@ -1,7 +1,7 @@
 import { getServiceCatalog,servicePrice } from "@/src/lib/services-registry";
 import { getCmsPage } from "@/src/lib/cms-store";
 export default async function LandBDStructuredData(){
- const [services,home]=await Promise.all([getServiceCatalog(),getCmsPage("homepage")]);
+ const [services,home]=await Promise.all([getServiceCatalog().catch(()=>{console.warn("[LandBD homepage] Catalog unavailable; paid offers omitted");return [];}),getCmsPage("homepage")]);
  const base="https://landbd.pincodeit.com";
  const data={
   "@context":"https://schema.org",

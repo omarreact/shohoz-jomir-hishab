@@ -3,7 +3,7 @@ import {getServiceCatalog,servicePrice} from "@/src/lib/services-registry";
 import {formatBdtPrice} from "@/src/lib/bangla-formatter";
 import Link from "next/link";
 export default async function LiveHomeContent(){
- const [page,notice,catalog]=await Promise.all([getCmsPage("homepage"),getCmsPage("notice"),getServiceCatalog()]);
+ const [page,notice,catalog]=await Promise.all([getCmsPage("homepage"),getCmsPage("notice"),getServiceCatalog().catch(()=>{console.warn("[LandBD homepage] Catalog unavailable; paid offers omitted");return [];})]);
  const priced=catalog.filter(service=>service.enabled&&service.paid);
  return <div lang="bn">
   {notice.published&&<div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-bold text-amber-950">{notice.title} — {notice.description}</div>}
