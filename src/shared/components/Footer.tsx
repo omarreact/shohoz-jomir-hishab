@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { getCmsPage } from "@/src/lib/cms-store";
+import { toBanglaDigits } from "@/src/shared/i18n/bangla";
 import Link from "next/link";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { NAV_SECTIONS, navRoute } from "@/src/shared/config/navigation";
@@ -15,8 +17,18 @@ const GROUPS = NAV_SECTIONS.map(section => ({
     }),
 }));
 
-export default function Footer() {
-  const currentYear = new Date().getFullYear();
+export default async function Footer() {
+ const content=await getCmsPage("footer");
+ const currentYear=toBanglaDigits(new Date().getFullYear());
+ const groups=content.published&&content.sections.length?content.sections.map(section=>({
+  title:section.heading,
+  links:section.body.split("\n").map(line=>{
+   const at=line.indexOf("|");if(at<1)return null;
+   const label=line.slice(0,at).trim(),href=line.slice(at+1).trim();
+   if(!label||!href.startsWith("/")||href.startsWith("//"))return null;
+   return [href,label] as const;
+  }).filter((x):x is readonly [string,string]=>x!==null)
+ })) : GROUPS;
 
   return (
     <footer className="mt-auto border-t border-[var(--border-color)] bg-white text-[var(--foreground)] print:hidden">
@@ -33,12 +45,12 @@ export default function Footer() {
                 className="h-12 w-12 shrink-0"
               />
               <div>
-                <p className="m-0 text-lg font-black text-[var(--primary)]">LandBD</p>
+                <p className="m-0 text-lg font-black text-[var(--primary)]">{content.published?content.title:"LandBD"}</p>
                 <p className="mt-0.5 text-xs font-bold text-[var(--muted-foreground)]">ভূমি তথ্য, হিসাব ও মানচিত্রের ডিজিটাল সহায়ক</p>
               </div>
             </Link>
             <p className="mt-4 max-w-md text-sm leading-7 text-[var(--muted-foreground)]">
-              খতিয়ান, জমির হিসাব, GIS মানচিত্র ও ডকুমেন্ট ওয়ার্কস্পেস—একটি Bangla-first পণ্য অভিজ্ঞতায়।
+              {content.description}
             </p>
             <div className="mt-4 landbd-trust-note max-w-max">
               দাপ্তরিক সিদ্ধান্তের আগে সরকারি মূল নথি যাচাই করুন
@@ -46,7 +58,7 @@ export default function Footer() {
           </div>
 
           <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:grid-cols-5">
-            {GROUPS.map((group) => (
+            {groups.map((group) => (
               <div key={group.title}>
                 <p className="text-xs font-black uppercase tracking-[.12em] text-[var(--foreground)]">{group.title}</p>
                 <div className="mt-3 grid gap-2.5">
