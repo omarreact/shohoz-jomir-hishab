@@ -34,7 +34,7 @@ import {
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
 type NavItem = {
-  key: FeatureRouteKey;
+  key: FeatureRouteKey | "cms";
   href: string;
   label: string;
   icon: LucideIcon;
@@ -113,13 +113,25 @@ export default function Navbar() {
   const canSeeMapQa = isLoggedIn && isAdminRole(user?.role);
   const canAccessAdmin = isLoggedIn && isStaffRole(user?.role);
 
+  const [cmsGroups,setCmsGroups]=useState<NavGroup[]>([]);
+  useEffect(()=>{
+    let alive=true;
+    void fetch("/api/public/navigation",{cache:"no-store"}).then(r=>r.json()).then((data:{sections?:Array<{title:string;links:Array<{href:string;label:string}>}>})=>{
+      if(!alive)return;
+      setCmsGroups((data.sections??[]).map((section,i)=>({
+        id:"cms-"+i,label:section.title,icon:FileText,
+        items:section.links.map(link=>({key:"cms" as const,href:link.href,label:link.label,icon:FileText}))
+      })));
+    }).catch(()=>undefined);
+    return()=>{alive=false;};
+  },[]);
   const visibleGroups = useMemo(
     () =>
-      NAV_GROUPS.map((group) => ({
+      [...NAV_GROUPS,...cmsGroups].map((group) => ({
         ...group,
         items: group.items.filter((item) => !item.adminOnly || canSeeMapQa),
       })).filter((group) => group.items.length > 0),
-    [canSeeMapQa],
+    [canSeeMapQa,cmsGroups],
   );
 
   const searchableNav = useMemo<NavItem[]>(
