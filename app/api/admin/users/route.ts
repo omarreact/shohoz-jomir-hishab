@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
 
     const currentRole = normalizeRole(snapshot.data()?.role);
     if (
-      (currentRole === "Super Admin" || validated.role === "Super Admin") &&
+      currentRole === "Super Admin" &&
       !isSuperAdminRole(actor.role)
     ) {
       return json(

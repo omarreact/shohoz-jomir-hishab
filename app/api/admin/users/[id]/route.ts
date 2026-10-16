@@ -60,7 +60,7 @@ export async function PUT(
     }
 
     if (
-      (existingRole === "Super Admin" || validated.role === "Super Admin") &&
+      existingRole === "Super Admin" &&
       !isSuperAdminRole(actor.role)
     ) {
       return json(

@@ -241,6 +241,9 @@ export default function UserManagement() {
             ইউজার ম্যানেজমেন্ট
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
+            একমাত্র অ্যাডমিন: GitHub @omarreact (ID 91119648)। এখানে শুধু সাধারণ সদস্য তৈরি বা সম্পাদনা করা যায়।
+          </p>
+          <p className="text-slate-500 dark:text-slate-400">
             সিস্টেমে মোট {users.length} জন ইউজার আছেন
           </p>
         </div>
@@ -398,10 +401,7 @@ export default function UserManagement() {
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
               >
                 {canManageSuperAdmin ? (
-                  <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
-                ) : null}
-                <option value="Admin">🛡️ অ্যাডমিন</option>
-                <option value="Editor">✍️ এডিটর</option>
+                  ) : null}
                 <option value="Basic User">👤 বেসিক ইউজার</option>
               </select>
             </div>
@@ -495,10 +495,7 @@ export default function UserManagement() {
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:border-[#006a4e] focus:ring-1 focus:ring-[#006a4e] transition-colors shadow-sm"
                 >
                   {canManageSuperAdmin ? (
-                    <option value="Super Admin">👑 সুপার অ্যাডমিন</option>
-                  ) : null}
-                  <option value="Admin">🛡️ অ্যাডমিন</option>
-                  <option value="Editor">✍️ এডিটর</option>
+                    ) : null}
                   <option value="Basic User">👤 বেসিক ইউজার</option>
                 </select>
               </div>

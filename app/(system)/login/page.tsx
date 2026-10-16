@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
-  Github,
   Home,
   Layers3,
   LockKeyhole,
@@ -131,7 +130,7 @@ function LoginForm() {
             <button type="button" onClick={() => void handleGithubLogin()}
               disabled={loading || submitting}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">
-              <Github size={21} /> GitHub দিয়ে Admin Login (@omarreact)
+              <ShieldCheck size={21} /> GitHub দিয়ে Admin Login (@omarreact)
             </button>
             <p className="text-center text-xs text-[var(--muted-foreground)]">
               GitHub-এ প্রমাণীকৃত নির্দিষ্ট একটি অ্যাকাউন্ট ছাড়া কোনো Admin বা Editor অনুমতি নেই।
