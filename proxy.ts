@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLockoutState } from "@/src/lib/security-store";
 import type { NextRequest } from "next/server";
-import { importX509, jwtVerify } from "jose";
 
 import { getPageAccessLevel } from "@/src/shared/config/pageAccess";
 import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
@@ -13,74 +12,6 @@ import {
   isStaffRole,
   isSuperAdminRole,
 } from "@/src/modules/auth/roles";
-
-let publicKeysCache: Record<string, string> | null = null;
-let keysCacheTime = 0;
-
-const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
-
-async function getFirebasePublicKeys() {
-  const now = Date.now();
-
-  if (publicKeysCache && now - keysCacheTime < FIREBASE_KEYS_TTL_MS) {
-    return publicKeysCache;
-  }
-
-  try {
-    const response = await fetch(
-      "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com",
-      { next: { revalidate: 3600 } },
-    );
-
-    if (!response.ok) return null;
-
-    publicKeysCache = (await response.json()) as Record<string, string>;
-    keysCacheTime = now;
-    return publicKeysCache;
-  } catch {
-    return null;
-  }
-}
-
-function decodeJwtHeader(token: string): Record<string, unknown> | null {
-  try {
-    const encoded = token.split(".")[0];
-    if (!encoded) return null;
-
-    const normalized = encoded
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(Math.ceil(encoded.length / 4) * 4, "=");
-
-    return JSON.parse(atob(normalized)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-async function verifyFirebaseToken(token: string) {
-  try {
-    const header = decodeJwtHeader(token);
-    const kid = typeof header?.kid === "string" ? header.kid : null;
-    if (!kid) return null;
-
-    const keys = await getFirebasePublicKeys();
-    if (!keys?.[kid]) return null;
-
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    if (!projectId) return null;
-
-    const publicKey = await importX509(keys[kid], "RS256");
-    const { payload } = await jwtVerify(token, publicKey, {
-      issuer: `https://securetoken.google.com/${projectId}`,
-      audience: projectId,
-    });
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
@@ -290,26 +221,14 @@ export async function proxy(request: NextRequest) {
 
   let userPayload: Record<string, unknown> | null = null;
 
-  // Admin routes rely on Firebase Admin verification, not an extra Google X509
-  // network request that can fail while the signed server session is valid.
+  // Only the signed owner session is accepted; Firebase sign-in is disabled.
   if (rawToken && !isAdminPath) {
-    userPayload = (await verifyFirebaseToken(rawToken)) as Record<
-      string,
-      unknown
-    > | null;
-
-    if (userPayload) {
-      requestHeaders.set(
-        "x-user-id",
-        String(userPayload.user_id || userPayload.sub || ""),
-      );
-      requestHeaders.set(
-        "x-user-role",
-        String(
-          userPayload.role || (userPayload.admin === true ? "Admin" : "User"),
-        ),
-      );
-    }
+    try {
+      const verified = await verifyServerAuth(request);
+      userPayload = { sub: verified.id, role: verified.role };
+      requestHeaders.set("x-user-id", verified.id);
+      requestHeaders.set("x-user-role", verified.role);
+    } catch { userPayload = null; }
   }
 
   let authoritativeUserPromise: Promise<ServerUser> | null = null;
@@ -331,8 +250,7 @@ export async function proxy(request: NextRequest) {
   async function privilegedAdminUser(): Promise<ServerUser> {
     if (!rawToken) throw new Error("Unauthorized");
     if (!privilegedAdminUserPromise) {
-      // Fail closed: require Admin SDK, current account state, and non-revoked
-      // Firebase session on all privileged pages (including Editor dashboard).
+      // Verify the signed, expiring owner session on every privileged page.
       privilegedAdminUserPromise = verifyServerAuth(request, {
         requireAdminBackend: true,
         checkRevoked: true,

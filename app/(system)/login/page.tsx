@@ -62,12 +62,9 @@ function LoginForm() {
     setError("");
     setSubmitting(true);
 
-    const emailToUse = username.includes("@")
-      ? username.toLowerCase().trim()
-      : `${username.toLowerCase().trim()}@landbd.com`;
 
     try {
-      const profile = await login(emailToUse, password);
+      const profile = await login(username.trim(), password);
       redirectToTarget(profile.role);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -123,10 +120,10 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} aria-busy={submitting} aria-describedby={error ? "login-error" : undefined} className="mt-7 space-y-5">
             <div>
-              <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold">ইমেইল বা ইউজারনেম</label>
+              <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold">অ্যাডমিন ইউজারনেম</label>
               <div className="relative">
                 <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
-                <input id="landbd-login-user" name="username" type="text" placeholder="আপনার ইমেইল বা ইউজারনেম" value={username} onChange={event => setUsername(event.target.value)} required autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={submitting} className="landbd-input h-14 w-full pl-11 pr-4 text-base disabled:opacity-60" />
+                <input id="landbd-login-user" name="username" type="text" placeholder="আপনার অ্যাডমিন ইউজারনেম" value={username} onChange={event => setUsername(event.target.value)} required autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={submitting} className="landbd-input h-14 w-full pl-11 pr-4 text-base disabled:opacity-60" />
               </div>
             </div>
             <div>
@@ -143,7 +140,7 @@ function LoginForm() {
             </button>
           </form>
           <div className="mt-7 flex items-start gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" /><p className="text-xs leading-6 text-[var(--muted-foreground)]">শুধুমাত্র Admin ও Super Admin প্রবেশ করতে পারবেন। আপনার অ্যাকাউন্টের ইমেইল ও পাসওয়ার্ড ব্যবহার করুন।</p>
+            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" /><p className="text-xs leading-6 text-[var(--muted-foreground)]">এই প্রবেশপথ শুধুমাত্র Super Admin-এর জন্য। সার্ভারে নির্ধারিত ইউজারনেম ও পাসওয়ার্ড ব্যবহার করুন।</p>
           </div>
         </section>
       </div>
