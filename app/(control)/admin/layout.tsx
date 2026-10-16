@@ -39,6 +39,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { name: "ব্লগ ম্যানেজমেন্ট", path: "/admin/blog", icon: PenTool, roles: [...getAdminNavigationRoles("/admin/blog")] },
   { name: "কাস্টম পেজ", path: "/admin/custom-pages", icon: FileText, roles: [...getAdminNavigationRoles("/admin/custom-pages")] },
   { name: "ইউজার ম্যানেজমেন্ট", path: "/admin/users", icon: Users, roles: [...getAdminNavigationRoles("/admin/users")] },
+  { name: "অপারেশন ও স্বাস্থ্য", path: "/admin/operations", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/operations")] },
   { name: "ডেটা মনিটর", path: "/admin/data-monitor", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/data-monitor")] },
   { name: "মানচিত্র ভিজিটর", path: "/admin/map-visits", icon: MapPin, roles: [...getAdminNavigationRoles("/admin/map-visits")] },
   { name: "QR ভেরিফিকেশন", path: "/admin/qr-verification", icon: QrCode, roles: [...getAdminNavigationRoles("/admin/qr-verification")] },

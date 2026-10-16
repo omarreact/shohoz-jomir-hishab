@@ -31,6 +31,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/services", get: "public", mutate: "public" },
   { path: "/api/admin/audit-log", get: "super_admin", mutate: "super_admin" },
   { path: "/api/admin/dashboard-kpis", get: "staff", mutate: "staff" },
+  { path: "/api/admin/operations", get: "admin", mutate: "admin" },
   { path: "/api/admin/health", get: "admin", mutate: "admin" },
   { path: "/api/admin/login-history", get: "admin", mutate: "admin" },
   { path: "/api/admin/map-visits", get: "admin", mutate: "admin" },

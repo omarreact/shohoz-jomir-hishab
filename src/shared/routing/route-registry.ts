@@ -24,6 +24,7 @@ export const ADMIN_ROUTE_REGISTRY: readonly {
   { path: "/admin/custom-pages", name: "কাস্টম পেজ", minimumRole: "staff" },
   { path: "/admin/qr-verification", name: "QR ভেরিফিকেশন", minimumRole: "staff" },
   { path: "/admin/users", name: "ইউজার ম্যানেজমেন্ট", minimumRole: "admin" },
+  { path: "/admin/operations", name: "সিস্টেম অপারেশন", minimumRole: "admin" },
   { path: "/admin/data-monitor", name: "ডেটা মনিটর", minimumRole: "admin" },
   { path: "/admin/map-visits", name: "মানচিত্র ভিজিটর", minimumRole: "admin" },
   { path: "/admin/test-api", name: "টেস্ট এপিআই", minimumRole: "admin" },
