@@ -8,7 +8,7 @@ export type CmsPage={
  slug:CmsSlug;title:string;description:string;sections:CmsSection[];revision:number;
  published:boolean;seoTitle:string;seoDescription:string;updatedAt:string|null
 };
-const CONTENT:Record<CmsSlug,Omit<CmsPage,"slug"|"updatedAt">>={
+const CONTENT:Record<CmsSlug,Omit<CmsPage,"slug"|"updatedAt"|"revision">>={
  about:{title:"LandBD সম্পর্কে",description:"বাংলাদেশের জমির পরিমাপ ও রেকর্ড বুঝতে ডিজিটাল সহায়তা।",
  sections:[{heading:"আমাদের সেবা",body:"LandBD জমির পরিমাপ, খতিয়ানের হিসাব, ফারায়েজ এবং মৌজা মানচিত্রের জন্য অনলাইন টুলস প্রদান করে।"},{heading:"তথ্য যাচাই",body:"ডিজিটাল হিসাব ও তথ্য সহায়ক; আইনগত মালিকানা বা সরকারি রেকর্ডের বিকল্প নয়। সিদ্ধান্তের আগে অনুমোদিত রেকর্ড ও সংশ্লিষ্ট পেশাজীবীর সঙ্গে যাচাই করুন।"}],published:true,seoTitle:"LandBD সম্পর্কে",seoDescription:"LandBD-এর ভূমি পরিমাপ, খতিয়ান ও ডিজিটাল সেবা সম্পর্কে জানুন।"},
  privacy:{title:"গোপনীয়তা নীতি",description:"LandBD-এ তথ্যের ব্যবহার ও সুরক্ষা",
