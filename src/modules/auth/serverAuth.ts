@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { importX509, jwtVerify, type JWTPayload } from "jose";
+import { soleAdminRoleFromClaims } from "@/src/modules/auth/soleAdmin";
 import {
   isAdminRole,
   isStaffRole,
   isSuperAdminRole,
-  normalizeRole,
   type AppRole,
 } from "@/src/modules/auth/roles";
 
@@ -91,14 +91,12 @@ function userFromClaims(
   claims: Record<string, unknown>,
   uid: string,
 ): ServerUser {
-  const claimRole = typeof claims.role === "string" ? claims.role : undefined;
-  const claimIsAdmin = claims.admin === true;
 
   return {
     id: uid,
     email: typeof claims.email === "string" ? claims.email : "",
     name: typeof claims.name === "string" ? claims.name : null,
-    role: normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User")),
+    role: soleAdminRoleFromClaims(claims),
   };
 }
 
@@ -157,9 +155,6 @@ export async function verifyServerAuth(
     );
   }
 
-  const claimRole = decodedToken.role as string | undefined;
-  const claimIsAdmin = decodedToken.admin === true;
-
   if (!userDoc.exists) {
     return userFromClaims(
       decodedToken as unknown as Record<string, unknown>,
@@ -188,11 +183,9 @@ export async function verifyServerAuth(
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
     name: userData.name ?? (decodedToken.name as string) ?? null,
-    // Privileged roles must come from signed Firebase Auth custom claims.
-    // Firestore stores profile/state only and can never grant elevation.
-    role: normalizeRole(
-      claimRole || (claimIsAdmin ? "Admin" : "Basic User"),
-    ),
+    // Only the authenticated, allowlisted GitHub identity grants privileged access.
+    // Legacy Firebase custom role claims and Firestore profile labels are ignored.
+    role: soleAdminRoleFromClaims(decodedToken as unknown as Record<string,unknown>),
   };
 }
 

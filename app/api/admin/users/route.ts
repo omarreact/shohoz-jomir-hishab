@@ -22,7 +22,7 @@ const firebaseUidSchema = z
 
 const roleSchema = z.object({
   userId: firebaseUidSchema,
-  role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]),
+  role: z.enum(["Basic User"]),
 });
 
 const userActionSchema = z.object({

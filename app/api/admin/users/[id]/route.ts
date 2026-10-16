@@ -19,7 +19,7 @@ const firebaseUidSchema = z
 const updateUserSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
-    role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).optional(),
+    role: z.enum(["Basic User"]).optional(),
   })
   .refine((value) => value.name !== undefined || value.role !== undefined, {
     message: "No changes supplied",

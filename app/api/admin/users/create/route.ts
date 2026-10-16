@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { claimsForRole, isSuperAdminRole } from "@/src/modules/auth/roles";
+import { claimsForRole } from "@/src/modules/auth/roles";
 import {
   adminErrorStatus,
   protectAdminMutation,
@@ -21,7 +21,7 @@ const createUserSchema = z.object({
     .regex(/[A-Za-z]/, "Password must contain a letter")
     .regex(/[0-9]/, "Password must contain a number"),
   name: z.string().trim().max(100).optional().default(""),
-  role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).default("Basic User"),
+  role: z.enum(["Basic User"]).default("Basic User"),
 });
 
 function json(data: unknown, status = 200, requestId?: string) {
@@ -55,14 +55,6 @@ export async function POST(request: NextRequest) {
     }
 
     const validated = createUserSchema.parse(body);
-
-    if (validated.role === "Super Admin" && !isSuperAdminRole(actor.role)) {
-      return json(
-        { success: false, message: "শুধুমাত্র Super Admin নতুন Super Admin তৈরি করতে পারেন।" },
-        403,
-        requestId,
-      );
-    }
 
     const { auth, collections } = await import("@/src/modules/database/firebaseAdmin");
     const userRecord = await auth.createUser({

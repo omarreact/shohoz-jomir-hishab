@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   signInWithEmailAndPassword,
+  GithubAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onIdTokenChanged,
   getIdToken,
@@ -33,6 +37,7 @@ export type SessionUser = {
 
 export function useProvideAuth(): AuthState & {
   login: (email: string, password: string) => Promise<SessionUser>;
+  loginWithGithub: () => Promise<SessionUser | null>;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
 } {
@@ -131,6 +136,8 @@ export function useProvideAuth(): AuthState & {
   );
 
   useEffect(() => {
+    // Redirect authentication is used on mobile browsers where popups can be blocked.
+    void getRedirectResult(auth).catch(() => undefined);
     const unsubscribe = onIdTokenChanged(auth, (user) => {
       void loadFromToken(user).catch(() => undefined);
     });
@@ -160,6 +167,30 @@ export function useProvideAuth(): AuthState & {
     },
     [loadFromToken],
   );
+
+  const loginWithGithub = useCallback(async (): Promise<SessionUser | null> => {
+    const provider = new GithubAuthProvider();
+    provider.setCustomParameters({ allow_signup: "false" });
+    try {
+      const credential = await signInWithPopup(auth, provider);
+      const profile = await loadFromToken(credential.user);
+      if (profile?.role !== "Super Admin") {
+        await signOut(auth).catch(() => undefined);
+        await clearServerSession().catch(() => undefined);
+        clearClientState();
+        throw new Error("শুধুমাত্র অনুমোদিত GitHub অ্যাডমিন প্রবেশ করতে পারবেন।");
+      }
+      return profile;
+    } catch (error: unknown) {
+      const code = error && typeof error === "object" && "code" in error
+        ? String((error as {code?:unknown}).code) : "";
+      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+      throw error;
+    }
+  }, [loadFromToken,clearClientState,clearServerSession]);
 
   const logout = useCallback(async () => {
     try {
@@ -200,5 +231,5 @@ export function useProvideAuth(): AuthState & {
     }
   }, [establishServerSession]);
 
-  return { ...state, login, logout, refresh };
+  return { ...state, login, loginWithGithub, logout, refresh };
 }

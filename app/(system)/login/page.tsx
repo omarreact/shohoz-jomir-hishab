@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
+  Github,
   Home,
   Layers3,
   LockKeyhole,
@@ -24,7 +25,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const searchParams = useSearchParams();
-  const { login, loading, isLoggedIn, user } = useAuth();
+  const { login, loginWithGithub, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
   const fromTarget = searchParams.get("from");
 
@@ -51,6 +52,19 @@ function LoginForm() {
       redirectToTarget(user?.role);
     }
   }, [loading, isLoggedIn, user?.role, redirectToTarget]);
+
+  const handleGithubLogin = async () => {
+    setError("");
+    setSubmitting(true);
+    try {
+      const profile = await loginWithGithub();
+      if (profile) redirectToTarget(profile.role);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "GitHub লগইন সম্ভব হয়নি। Firebase GitHub provider কনফিগারেশন যাচাই করুন।");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -97,13 +111,13 @@ function LoginForm() {
 
           <div className="max-w-md">
             <span className="landbd-section-kicker inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold">
-              <ShieldCheck size={14} /> স্টাফ নিরাপদ প্রবেশ
+              <ShieldCheck size={14} /> একক GitHub অ্যাডমিন প্রবেশ
             </span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-4xl">
               আবার স্বাগতম 👋
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-              আপনার LandBD অ্যাকাউন্টে প্রবেশ করুন। অনুমোদিত স্টাফদের অ্যাডমিন ড্যাশবোর্ডে নেওয়া হবে।
+              শুধুমাত্র GitHub @omarreact অ্যাকাউন্ট অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করতে পারবে। অন্যান্য সদস্যরা সাধারণ লগইন ব্যবহার করতে পারবেন।
             </p>
           </div>
 
@@ -113,7 +127,20 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="mt-7 max-w-md space-y-5">
+          <div className="mt-7 max-w-md space-y-3">
+            <button type="button" onClick={() => void handleGithubLogin()}
+              disabled={loading || submitting}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">
+              <Github size={21} /> GitHub দিয়ে Admin Login (@omarreact)
+            </button>
+            <p className="text-center text-xs text-[var(--muted-foreground)]">
+              GitHub-এ প্রমাণীকৃত নির্দিষ্ট একটি অ্যাকাউন্ট ছাড়া কোনো Admin বা Editor অনুমতি নেই।
+            </p>
+            <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
+              <span className="h-px flex-1 bg-[var(--border-color)]" /> সাধারণ সদস্যদের লগইন <span className="h-px flex-1 bg-[var(--border-color)]" />
+            </div>
+          </div>
+          <form onSubmit={handleLogin} className="mt-5 max-w-md space-y-5">
             <div>
               <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold text-[var(--foreground)]">
                 ইমেইল বা ইউজারনেম
@@ -170,7 +197,7 @@ function LoginForm() {
           </form>
 
           <div className="mt-8 max-w-md border-t border-[var(--border-color)] pt-5 text-xs leading-6 text-[var(--muted-foreground)]">
-            সাধারণ সদস্যরা LandBD সেবা ব্যবহার করবেন; স্টাফদের জন্য আলাদা অ্যাডমিন ওয়ার্কস্পেস রয়েছে।
+            সাধারণ সদস্যরা পূর্বের মতো সেবা ব্যবহার করবেন। Admin প্রবেশ শুধু GitHub @omarreact-এর জন্য নির্ধারিত।
           </div>
         </section>
 

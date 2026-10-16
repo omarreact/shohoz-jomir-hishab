@@ -10,25 +10,24 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    function claimRole() {
-      return isSignedIn() && 'role' in request.auth.token
-        ? request.auth.token.role
-        : null;
+    // The GitHub identity ID is immutable; claims like "role" or "admin"
+    // and GitHub usernames/emails must not be used for privileged access.
+    function isSoleGithubAdmin() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'github.com'
+        && request.auth.token.firebase.identities.get('github.com', []).hasAny(['91119648']);
     }
 
     function isAdmin() {
-      return isSignedIn()
-        && (claimRole() in ['Admin', 'Super Admin']
-            || request.auth.token.admin == true);
+      return isSoleGithubAdmin();
     }
 
     function isEditor() {
-      return isSignedIn()
-        && claimRole() in ['Editor', 'Admin', 'Super Admin'];
+      return isSoleGithubAdmin();
     }
 
     function isSuperAdmin() {
-      return isSignedIn() && claimRole() == 'Super Admin';
+      return isSoleGithubAdmin();
     }
 
     function isOwner(userId) {

@@ -79,7 +79,7 @@ export default function UserManagement() {
 
   // Edit Modal State
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
-  const [editRole, setEditRole] = useState("Admin");
+  const [editRole, setEditRole] = useState("Basic User");
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -119,7 +119,7 @@ export default function UserManagement() {
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user);
-    setEditRole(user.role || "Admin");
+    setEditRole("Basic User");
   };
 
   const handleEditSave = async () => {
