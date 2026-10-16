@@ -3,7 +3,7 @@ import {useEffect,useState} from "react";
 import {formatBdtPrice,formatDisplayValue} from "@/src/lib/bangla-formatter";
 type Order={id:string;serviceId:string;amountBdt:number;status:string;riskLevel:number|null;
  createdAt:string;paidAt:string|null;refundStatus:string|null;refundReference:string|null;
- reconciliationStatus:string|null;refundRequiresEntitlementReview:boolean};
+ reconciliationStatus:string|null;reconciliationIntegrity:string|null;refundRequiresEntitlementReview:boolean};
 export default function OrdersAdmin(){
  const [orders,setOrders]=useState<Order[]>([]);
  const [filter,setFilter]=useState("all");
