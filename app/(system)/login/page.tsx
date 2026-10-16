@@ -4,14 +4,10 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowRight,
   Copy,
   ExternalLink,
   Home,
   Layers3,
-  LockKeyhole,
-  LogIn,
-  Mail,
   MapPinned,
   ShieldCheck,
 } from "lucide-react";
@@ -22,14 +18,12 @@ import { resolvePostLoginTarget } from "@/src/modules/auth/loginRedirect";
 import { androidChromeIntent, isMobileUserAgent } from "@/src/modules/auth/githubBrowser";
 
 function LoginForm() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mobileBrowserLink, setMobileBrowserLink] = useState<string | null>(null);
   const [copiedLoginLink, setCopiedLoginLink] = useState(false);
   const searchParams = useSearchParams();
-  const { login, loginWithGithub, githubError, loading, isLoggedIn, user } = useAuth();
+  const { loginWithGithub, githubError, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
   const fromTarget = searchParams.get("from");
 
@@ -90,31 +84,6 @@ function LoginForm() {
     }
   };
 
-  const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    const emailToUse = username.includes("@")
-      ? username.toLowerCase().trim()
-      : `${username.toLowerCase().trim()}@landbd.com`;
-
-    try {
-      const profile = await login(emailToUse, password);
-      redirectToTarget(profile.role);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("লক")) {
-        setError(msg);
-      } else if (msg.includes("credentials") || msg.includes("password") || msg.includes("auth/")) {
-        setError("ভুল ইমেইল বা পাসওয়ার্ড।");
-      } else {
-        setError(msg || "লগিন করতে সমস্যা হয়েছে।");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4 py-8 sm:px-6 lg:px-8">
@@ -141,7 +110,7 @@ function LoginForm() {
               আবার স্বাগতম 👋
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-              শুধুমাত্র GitHub @omarreact অ্যাকাউন্ট অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করতে পারবে। অন্যান্য সদস্যরা সাধারণ লগইন ব্যবহার করতে পারবেন।
+              শুধুমাত্র অনুমোদিত GitHub @omarreact অ্যাকাউন্ট দিয়ে LandBD অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করা যাবে।
             </p>
           </div>
 
@@ -155,7 +124,7 @@ function LoginForm() {
             <button type="button" onClick={() => void handleGithubLogin()}
               disabled={loading || submitting}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">
-              <ShieldCheck size={21} /> GitHub দিয়ে Admin Login (@omarreact)
+              <ShieldCheck size={21} /> GitHub দিয়ে অ্যাডমিন লগইন (@omarreact)
             </button>
             <p className="text-center text-xs text-[var(--muted-foreground)]">
               GitHub-এ প্রমাণীকৃত নির্দিষ্ট একটি অ্যাকাউন্ট ছাড়া কোনো Admin বা Editor অনুমতি নেই।
@@ -181,68 +150,10 @@ function LoginForm() {
                 <p className="mt-2 text-xs">Chrome না খুললে ⋮ মেনু থেকে “Open in browser” ব্যবহার করুন।</p>
               </div>
             )}
-            <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-              <span className="h-px flex-1 bg-[var(--border-color)]" /> সাধারণ সদস্যদের লগইন <span className="h-px flex-1 bg-[var(--border-color)]" />
-            </div>
           </div>
-          <form onSubmit={handleLogin} className="mt-5 max-w-md space-y-5">
-            <div>
-              <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold text-[var(--foreground)]">
-                ইমেইল বা ইউজারনেম
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
-                <input
-                  id="landbd-login-user"
-                  type="text"
-                  placeholder="আপনার ইমেইল লিখুন"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  required
-                  autoComplete="username"
-                  className="landbd-input h-12 w-full pl-11 pr-4 text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="landbd-login-password" className="mb-2 block text-sm font-bold text-[var(--foreground)]">
-                পাসওয়ার্ড
-              </label>
-              <div className="relative">
-                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
-                <input
-                  id="landbd-login-password"
-                  type="password"
-                  placeholder="পাসওয়ার্ড দিন"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="landbd-input h-12 w-full pl-11 pr-4 text-sm"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || submitting}
-              className="landbd-primary-button flex h-12 w-full items-center justify-center gap-2 px-5 text-base font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading || submitting ? (
-                <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary-foreground)] border-t-transparent" />
-              ) : (
-                <>
-                  <LogIn size={19} />
-                  লগইন করুন
-                  <ArrowRight size={17} />
-                </>
-              )}
-            </button>
-          </form>
 
           <div className="mt-8 max-w-md border-t border-[var(--border-color)] pt-5 text-xs leading-6 text-[var(--muted-foreground)]">
-            সাধারণ সদস্যরা পূর্বের মতো সেবা ব্যবহার করবেন। Admin প্রবেশ শুধু GitHub @omarreact-এর জন্য নির্ধারিত।
+            এই পেজে অন্য কোনো লগইন পদ্ধতি নেই। অ্যাডমিন প্রবেশ শুধু অনুমোদিত GitHub @omarreact অ্যাকাউন্টের জন্য নির্ধারিত।
           </div>
         </section>
 

@@ -49,14 +49,14 @@ export default function RequireLogin({
             <strong className="font-semibold text-slate-700 dark:text-slate-200">
               {featureName}
             </strong>{" "}
-            শুধুমাত্র লগইন করা ব্যবহারকারী বা অ্যাডমিন দেখতে পারেন। অনুগ্রহ করে
-            স্টাফ/ইউজার অ্যাকাউন্ট দিয়ে লগইন করুন।
+            এই সেবা ব্যবহারের জন্য বর্তমানে অনুমোদিত GitHub অ্যাডমিন
+            অ্যাকাউন্ট দিয়ে প্রবেশ করতে হবে।
           </p>
           <Link
             href={loginHref}
             className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#006a4e] px-8 text-sm font-bold text-white no-underline transition hover:opacity-90"
           >
-            লগইন করুন
+            GitHub অ্যাডমিন লগইন
           </Link>
         </div>
       </div>

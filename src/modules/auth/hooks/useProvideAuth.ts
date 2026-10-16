@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  signInWithEmailAndPassword,
   GithubAuthProvider,
   signInWithPopup,
   signInWithRedirect,
@@ -57,14 +56,13 @@ function githubOAuthError(error: unknown): string {
     return "Firebase Authorized domains-এ landbd.pincodeit.com যোগ করতে হবে।";
   }
   if (code === "auth/account-exists-with-different-credential") {
-    return "এই ইমেইলে অন্য লগইন পদ্ধতির অ্যাকাউন্ট আছে। আগে সেটিতে প্রবেশ করে GitHub সংযুক্ত করুন।";
+    return "এই ইমেইলে আগে থেকে অন্য লগইন পদ্ধতির অ্যাকাউন্ট আছে। অ্যাডমিন GitHub অ্যাকাউন্ট সংযুক্ত করতে Firebase অ্যাকাউন্টের সেটিংস যাচাই করুন।";
   }
   return error instanceof Error ? error.message : "GitHub লগইন সম্পন্ন করা যায়নি।";
 }
 
 export function useProvideAuth(): AuthState & {
   githubError: string | null;
-  login: (email: string, password: string) => Promise<SessionUser>;
   loginWithGithub: () => Promise<SessionUser | null>;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
@@ -207,30 +205,6 @@ export function useProvideAuth(): AuthState & {
     return () => unsubscribe();
   }, [loadFromToken, clearClientState, clearServerSession]);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password,
-        );
-        const profile = await loadFromToken(userCredential.user);
-        if (!auth.currentUser || !profile) {
-          throw new Error(
-            "লগিন ব্যর্থ হয়েছে অথবা অ্যাকাউন্ট লক/মুছে ফেলা হয়েছে।",
-          );
-        }
-        return profile;
-      } catch (error: unknown) {
-        const msg =
-          error instanceof Error ? error.message : "লগিন ব্যর্থ হয়েছে";
-        throw new Error(msg);
-      }
-    },
-    [loadFromToken],
-  );
-
   const loginWithGithub = useCallback(async (): Promise<SessionUser | null> => {
     setGithubError(null);
     const provider = new GithubAuthProvider();
@@ -324,5 +298,5 @@ export function useProvideAuth(): AuthState & {
     }
   }, [establishServerSession]);
 
-  return { ...state, login, loginWithGithub, logout, refresh, githubError };
+  return { ...state, loginWithGithub, logout, refresh, githubError };
 }
