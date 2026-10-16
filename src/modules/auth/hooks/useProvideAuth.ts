@@ -262,7 +262,9 @@ export function useProvideAuth(): AuthState & {
       // Desktop and ordinary external browsers retain popup sign-in until
       // the GitHub callback has been switched to the same-origin helper.
       const credential = await signInWithPopup(auth, provider);
-      return await loadFromToken(credential.user, true);
+      const profile = await loadFromToken(credential.user, true);
+      if (!profile) throw new Error("GitHub লগইন সম্পন্ন হয়নি।");
+      return profile;
     } catch (error: unknown) {
       const code = error && typeof error === "object" && "code" in error
         ? String((error as { code?: unknown }).code) : "";
