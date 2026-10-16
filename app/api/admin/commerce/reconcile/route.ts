@@ -4,6 +4,7 @@ import {verifyAdminAuth} from "@/src/modules/auth/serverAuth";
 import {db} from "@/src/modules/database/firebaseAdmin";
 import {getGateway} from "@/src/lib/sslcommerz";
 import {queryMerchantTransaction} from "@/src/lib/commerce-gateway";
+import {assessReconciliation} from "@/src/lib/reconciliation-integrity";
 import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const schema=z.object({transactionId:z.string().regex(/^LBD[A-F0-9]{24}$/)}).strict();
@@ -20,13 +21,18 @@ export async function POST(req:NextRequest){
   if(!config.storeId||!config.password)return NextResponse.json({error:"মার্চেন্ট কনফিগারেশন অসম্পূর্ণ"},{status:503});
   const result=await queryMerchantTransaction(config,parsed.data.transactionId);
   if(result.transactionId!==parsed.data.transactionId)return NextResponse.json({error:"Provider transaction mismatch"},{status:502});
+  const assessment=assessReconciliation({
+    amountBdt:snapshot.data()?.amountBdt,
+    bankTranId:snapshot.data()?.bankTranId,
+  },result);
   await reference.update({reconciledAt:new Date().toISOString(),
     reconciliationStatus:result.gatewayStatus,reconciliationRiskLevel:result.riskLevel,
+    reconciliationIntegrity:assessment,
     reconciledBy:admin.id});
   // Inquiry deliberately NEVER activates an entitlement or marks an order paid.
   // Only the fully validated payment callback may do so.
   return NextResponse.json({ok:true,transactionId:result.transactionId,gatewayStatus:result.gatewayStatus,
-    amountBdt:result.amountBdt,riskLevel:result.riskLevel},{headers:{"Cache-Control":"private, no-store"}});
+    amountBdt:result.amountBdt,riskLevel:result.riskLevel,integrity:assessment},{headers:{"Cache-Control":"private, no-store"}});
  }catch(e){
   return NextResponse.json({error:e instanceof Error?e.message:"পেমেন্ট যাচাই করা যায়নি"},{status:503});
  }
