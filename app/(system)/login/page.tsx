@@ -24,7 +24,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const searchParams = useSearchParams();
-  const { login, loginWithGithub, loading, isLoggedIn, user } = useAuth();
+  const { login, loginWithGithub, githubError, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
   const fromTarget = searchParams.get("from");
 
@@ -45,6 +45,10 @@ function LoginForm() {
       setError("আপনার একাউন্টটি সাময়িকভাবে বন্ধ করা হয়েছে।");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (githubError) setError(githubError);
+  }, [githubError]);
 
   useEffect(() => {
     if (!loading && isLoggedIn) {

@@ -234,6 +234,12 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set("x-request-id", requestId);
 
   const securityHeaders = securityResponseHeaders(requestId, pathname);
+
+  // OAuth helper callbacks must remain accessible even during maintenance;
+  // next.config.ts proxies these paths to the trusted Firebase Hosting origin.
+  if (pathname.startsWith("/__/auth/") || pathname === "/__/firebase/init.json") {
+    return NextResponse.next({ headers: { "Cache-Control": "no-store" } });
+  }
   if (pathname !== "/security-locked" && pathname !== "/api/security/lockout") {
     const restriction = await getLockoutState(request);
     if (restriction.locked) {
