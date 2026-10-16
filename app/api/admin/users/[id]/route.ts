@@ -19,7 +19,7 @@ const firebaseUidSchema = z
 const updateUserSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
-    role: z.enum(["Basic User"]).optional(),
+    role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]).optional(),
   })
   .refine((value) => value.name !== undefined || value.role !== undefined, {
     message: "No changes supplied",
@@ -60,7 +60,7 @@ export async function PUT(
     }
 
     if (
-      existingRole === "Super Admin" &&
+      (existingRole === "Super Admin" || validated.role === "Super Admin") &&
       !isSuperAdminRole(actor.role)
     ) {
       return json(
