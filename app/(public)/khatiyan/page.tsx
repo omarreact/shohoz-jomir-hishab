@@ -1,3 +1,4 @@
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 "use client";
 
 import { useRef, useState } from "react";
@@ -32,7 +33,7 @@ export default function SmartKhatiyanApp() {
     handleQuickDataChange,
   } = useKhatiyanCalculator();
 
-  return <>
+  return <ServicePaywallGate serviceId="khatiyan">
     <HeroBanner align="center" badge="খতিয়ান ক্যালকুলেটর" title={<>স্মার্ট <span className="text-[#1A6B3C]">খতিয়ান</span> হিসাব</>} description="খতিয়ানের আনা, গন্ডা, কড়া, ক্রান্তি ও তিল দিয়ে জমির হিস্যা বের করুন।" pattern="none" />
     <div className="no-print mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -42,5 +43,5 @@ export default function SmartKhatiyanApp() {
       </Tabs>
       <ResultSection detailedResults={detailedResults} exportRef={exportRef} />
     </div>
-  </>;
+  </ServicePaywallGate>;
 }

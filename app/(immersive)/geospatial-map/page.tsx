@@ -1,3 +1,4 @@
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 import GeospatialMapClient from "@/src/features/geospatial-map/components/GeospatialMapClient";
 
 /**
@@ -8,5 +9,5 @@ import GeospatialMapClient from "@/src/features/geospatial-map/components/Geospa
  * advanced layer/control experience inside GeospatialMapClient/MapLibreMap.
  */
 export default function UrbanPlanningMapPage() {
-  return <GeospatialMapClient />;
+  return <ServicePaywallGate serviceId="geospatial-map"><GeospatialMapClient /></ServicePaywallGate>;
 }

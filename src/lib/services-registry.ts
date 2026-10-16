@@ -37,7 +37,10 @@ function normalize(id:ServiceId,doc:Record<string,unknown>|undefined):ServiceRec
 export function servicePrice(s:ServiceRecord){return !s.paid?0:(s.discountBdt??s.priceBdt);}
 export async function getService(id:ServiceId):Promise<ServiceRecord>{
  if(!SERVICE_DEFINITIONS.some(s=>s.id===id))throw new Error("Unknown service");
- if(!isFirebaseAdminReady())return defaultService(id);
+ if(!isFirebaseAdminReady()){
+  if(process.env.NODE_ENV==="production")throw new Error("Service registry unavailable");
+  return defaultService(id);
+ }
  const snapshot=await db.collection("landbdServicePricing").doc(id).get();
  return normalize(id,snapshot.exists?snapshot.data():undefined);
 }

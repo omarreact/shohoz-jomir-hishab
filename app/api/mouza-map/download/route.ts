@@ -1,3 +1,4 @@
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { exportMouzaRaster } from "@/src/services/rajuk/mouzaRasterExport.service";
@@ -272,11 +273,15 @@ async function handle(request: NextRequest, input: unknown): Promise<Response> {
 }
 
 export async function GET(request: NextRequest) {
+  const denied=await enforceServiceAccess(request,"mouza-map");
+  if(denied)return denied;
   const input = Object.fromEntries(request.nextUrl.searchParams.entries());
   return handle(request, input);
 }
 
 export async function POST(request: NextRequest) {
+  const denied=await enforceServiceAccess(request,"mouza-map");
+  if(denied)return denied;
   let input: unknown;
   try {
     input = await request.json();

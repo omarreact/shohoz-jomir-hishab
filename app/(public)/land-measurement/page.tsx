@@ -1,10 +1,11 @@
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import LandMeasurementCalculator from "@/src/features/land-measurement/components/LandMeasurementCalculator";
 
 export default function LandMeasurementPage() {
   return (
-    <>
+    <ServicePaywallGate serviceId="land-area">
       <HeroBanner
         align="center"
         badge="ভূমি পরিমাপ"
@@ -22,6 +23,6 @@ export default function LandMeasurementPage() {
           <LatestBlogs />
         </div>
       </div>
-    </>
+    </ServicePaywallGate>
   );
 }

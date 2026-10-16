@@ -1,3 +1,4 @@
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 "use client";
 
 import { useState } from "react";
@@ -39,7 +40,7 @@ export default function FaraezPage() {
   } = useFaraezCalculator();
 
   return (
-    <>
+    <ServicePaywallGate serviceId="faraez">
       <HeroBanner
         align="center"
         badge="উত্তরাধিকার ক্যালকুলেটর"
@@ -154,6 +155,6 @@ export default function FaraezPage() {
 
         <div className="mt-20"><LatestBlogs /></div>
       </div>
-    </>
+    </ServicePaywallGate>
   );
 }

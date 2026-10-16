@@ -1,3 +1,5 @@
+import type { NextRequest as LandBDNextRequest } from "next/server";
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { FullKhatianSchema } from "@/src/features/land-records/full-khatian";
 import { idParam } from "@/src/features/land-records/schemas";
 import { getFullKhatian } from "@/src/features/land-records/server/full-khatian-service";
@@ -25,6 +27,8 @@ function parsePositiveId(raw: string | null, label: string): number | Response |
 }
 
 export async function GET(request: Request) {
+  const denied=await enforceServiceAccess(request as LandBDNextRequest,"dlrms-khatian");
+  if(denied)return denied;
   try {
     const sp = new URL(request.url).searchParams;
 

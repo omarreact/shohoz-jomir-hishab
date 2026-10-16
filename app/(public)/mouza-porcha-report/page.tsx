@@ -1,3 +1,4 @@
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 import type { Metadata } from "next";
 import MouzaPorchaReportBuilder from "@/src/features/land-records/components/MouzaPorchaReportBuilder";
 import DynamicPageGate from "@/src/shared/components/DynamicPageGate";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function MouzaPorchaReportPage() {
   return (
     <DynamicPageGate pageId="/mouza-porcha-report" featureName="মৌজা পর্চা রিপোর্ট">
+      <ServicePaywallGate serviceId="mouza-porcha">
       <MouzaPorchaReportBuilder />
+          </ServicePaywallGate>
     </DynamicPageGate>
   );
 }

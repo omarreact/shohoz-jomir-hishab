@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/src/modules/database/firebaseAdmin";
 import { NextRequest } from "next/server";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
+import { isAdminRole } from "@/src/modules/auth/roles";
 import { getService,servicePrice,isServiceId,type ServiceId } from "@/src/lib/services-registry";
 export async function accessFor(serviceId:ServiceId,uid?:string){
  const service=await getService(serviceId);
@@ -15,7 +16,9 @@ export async function accessFor(serviceId:ServiceId,uid?:string){
 export async function accessForRequest(req:NextRequest,id:unknown){
  if(!isServiceId(id))return null;
  let uid:string|undefined;
- try{uid=(await verifyServerAuth(req)).id;}catch{}
+ let admin=false;
+ try{const user=await verifyServerAuth(req);uid=user.id;admin=isAdminRole(user.role);}catch{}
+ if(admin){const config=await getService(id);return {serviceId:id,paid:config.paid,enabled:config.enabled,priceBdt:servicePrice(config),allowed:config.enabled,requiresLogin:false};}
  return accessFor(id,uid);
 }
 export async function enforceServiceAccess(req:NextRequest,id:ServiceId):Promise<Response|null>{

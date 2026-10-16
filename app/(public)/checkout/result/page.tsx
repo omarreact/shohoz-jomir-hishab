@@ -1,5 +1,6 @@
 "use client";
 import { Suspense,useEffect,useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatBdtPrice } from "@/src/lib/bangla-formatter";
 type Order={id:string;status:string;amountBdt:number;serviceId:string;createdAt:string};
@@ -13,6 +14,6 @@ function Result(){
  {order&&<div className="space-y-3 py-6"><p>{order.status==="paid"?"✅ যাচাইকৃত পেমেন্ট — সেবা সক্রিয়":"পেমেন্ট অবস্থা: "+order.status}</p>
  <p>সেবা: {order.serviceId}</p><p>পরিমাণ: {formatBdtPrice(order.amountBdt)}</p><p>Transaction: <code>{order.id}</code></p>
  {order.status==="paid"&&<button className="rounded-lg border px-4 py-2" onClick={()=>window.print()}>রসিদ প্রিন্ট</button>}</div>}
- <a href="/" className="text-emerald-700 underline">হোম</a></section></main>;
+ <Link href="/" className="text-emerald-700 underline">হোম</Link></section></main>;
 }
 export default function Page(){return <Suspense fallback={<p>পেমেন্ট যাচাই চলছে…</p>}><Result/></Suspense>;}

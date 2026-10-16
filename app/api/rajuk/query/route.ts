@@ -1,3 +1,5 @@
+import type { NextRequest as LandBDNextRequest } from "next/server";
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getDistricts, getMouzas, getPlots, getPlotsByExtent, getUpazilas, identifyByPoint, searchMouzas } from "@/src/services/rajuk/rajukQuery.service";
@@ -235,6 +237,8 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(request: NextRequest) {
+  const denied=await enforceServiceAccess(request,"geospatial-map");
+  if(denied)return denied;
   const params = request.nextUrl.searchParams;
   return observeRajukRequest(request, params.get("action"), params.get("kind"), () => handleGET(request));
 }
