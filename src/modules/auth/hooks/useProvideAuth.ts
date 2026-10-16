@@ -72,11 +72,13 @@ export function useProvideAuth(): AuthState & {
       }
 
       if (response.status === 403) {
-        throw new Error("অ্যাকাউন্ট সাময়িকভাবে লক করা আছে। পরে আবার চেষ্টা করুন।");
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।");
       }
 
       if (!response.ok) {
-        throw new Error("সার্ভার সেশন তৈরি করা যায়নি।");
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "সার্ভার সেশন তৈরি করা যায়নি।");
       }
 
       const body = (await response.json()) as { user?: SessionUser };

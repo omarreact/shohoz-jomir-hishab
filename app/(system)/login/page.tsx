@@ -97,13 +97,13 @@ function LoginForm() {
 
           <div className="max-w-md">
             <span className="landbd-section-kicker inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold">
-              <ShieldCheck size={14} /> স্টাফ নিরাপদ প্রবেশ
+              <ShieldCheck size={14} /> অ্যাডমিন নিরাপদ প্রবেশ
             </span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-4xl">
               আবার স্বাগতম 👋
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-              আপনার LandBD অ্যাকাউন্টে প্রবেশ করুন। অনুমোদিত স্টাফদের অ্যাডমিন ড্যাশবোর্ডে নেওয়া হবে।
+              শুধুমাত্র অনুমোদিত অ্যাডমিন লগইন করতে পারবেন। লগইনের পর অ্যাডমিন ড্যাশবোর্ড খুলবে।
             </p>
           </div>
 
@@ -170,7 +170,7 @@ function LoginForm() {
           </form>
 
           <div className="mt-8 max-w-md border-t border-[var(--border-color)] pt-5 text-xs leading-6 text-[var(--muted-foreground)]">
-            সাধারণ সদস্যরা LandBD সেবা ব্যবহার করবেন; স্টাফদের জন্য আলাদা অ্যাডমিন ওয়ার্কস্পেস রয়েছে।
+            সাধারণ ব্যবহারকারীদের লগইন বন্ধ রয়েছে। এই প্রবেশপথ শুধুমাত্র অ্যাডমিনদের জন্য।
           </div>
         </section>
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isAdminRole } from "@/src/modules/auth/roles";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
@@ -73,7 +74,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await verifyServerAuth(req, { checkRevoked: true });
+    const user = await verifyServerAuth(req, { checkRevoked: true, requireAdminBackend: true });
+
+    if (!isAdminRole(user.role)) {
+      const response = json({ error: "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।" }, 403);
+      response.cookies.set(COOKIE_NAME, "", { path: "/", maxAge: 0, httpOnly: true,
+        secure: process.env.NODE_ENV === "production", sameSite: "lax" });
+      return response;
+    }
 
     const now = Math.floor(Date.now() / 1000);
     const exp = tokenExpiry(token) ?? now + MAX_COOKIE_AGE_SECONDS;
@@ -96,6 +104,9 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unauthorized";
+    if (message === "Firebase Admin unavailable") {
+      return json({ error: "অ্যাডমিন যাচাই সেবা সাময়িকভাবে অনুপলব্ধ। আবার চেষ্টা করুন।" }, 503);
+    }
     const status =
       message === "Account disabled" || message === "Account locked" ? 403 : 401;
     return json({ error: status === 403 ? message : "Unauthorized" }, status);

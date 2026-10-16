@@ -22,18 +22,19 @@ describe("login redirect helpers", () => {
     expect(resolveLoginTarget("/login?from=%2Fadmin")).toBe("/");
   });
 
-  test("sends verified staff to the dashboard only if no destination was requested", () => {
+  test("allows only administrators into the dashboard", () => {
+    expect(resolvePostLoginTarget("/mouza-map", "Admin")).toBe("/admin");
     expect(resolvePostLoginTarget(null, "Admin")).toBe("/admin");
-    expect(resolvePostLoginTarget(null, "Editor")).toBe("/admin");
+    expect(resolvePostLoginTarget(null, "Editor")).toBe("/403");
     expect(resolvePostLoginTarget(null, "Super Admin")).toBe("/admin");
-    expect(resolvePostLoginTarget(null, "Basic User")).toBe("/");
-    expect(resolvePostLoginTarget(null, "User")).toBe("/");
+    expect(resolvePostLoginTarget(null, "Basic User")).toBe("/403");
+    expect(resolvePostLoginTarget(null, "User")).toBe("/403");
   });
 
-  test("preserves the original safe return path, but never sends nonstaff into admin", () => {
-    expect(resolvePostLoginTarget("/mouza-map?jl=5", "Basic User")).toBe("/mouza-map?jl=5");
+  test("ignores return paths and rejects nonadmin accounts", () => {
+    expect(resolvePostLoginTarget("/mouza-map?jl=5", "Basic User")).toBe("/403");
     expect(resolvePostLoginTarget("/admin/users", "Basic User")).toBe("/403");
-    expect(resolvePostLoginTarget("/admin/settings", "Admin")).toBe("/admin/settings");
+    expect(resolvePostLoginTarget("/admin/settings", "Admin")).toBe("/admin");
     expect(resolvePostLoginTarget("https://evil.example/path", "Admin")).toBe("/admin");
   });
 
