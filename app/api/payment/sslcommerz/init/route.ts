@@ -18,7 +18,7 @@ export async function POST(req:NextRequest){
  if(!service.enabled||!service.paid)return NextResponse.json({error:"এই সেবার পেমেন্ট প্রয়োজন নেই"},{status:409});
  const id="LBD"+randomBytes(12).toString("hex").toUpperCase(),amount=servicePrice(service);
  const ref=db.collection("landbdOrders").doc(id);
- await ref.create({uid:user.id,serviceId:service.id,amountBdt:amount,currency:"BDT",status:"initiated",createdAt:new Date().toISOString()});
+ await ref.create({uid:user.id,serviceId:service.id,amountBdt:amount,currency:"BDT",usageLimitAtPurchase:service.usageLimit,status:"initiated",createdAt:new Date().toISOString()});
  try{
   const url=await startGateway(await getGateway(),{id,service:service.name,serviceId:service.id,amount,name:user.name||"LandBD User",email:user.email||"support@landbd.pincodeit.com",phone:parsed.data.phone});
   await ref.update({status:"pending"});

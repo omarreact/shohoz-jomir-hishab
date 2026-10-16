@@ -20,7 +20,7 @@ export async function getGateway():Promise<GatewayConfig>{
 export async function saveGateway(v:GatewayConfig){
  const prior=await getGateway();
  const password=v.password||prior.password;
- await db.collection("landbdPrivateConfig").doc("sslcommerz").set({...v,password:undefined,passwordCipher:password?encrypt(password):"",updatedAt:new Date().toISOString()});
+ await db.collection("landbdPrivateConfig").doc("sslcommerz").set({enabled:v.enabled,live:v.live,storeId:v.storeId,successUrl:v.successUrl,failUrl:v.failUrl,cancelUrl:v.cancelUrl,ipnUrl:v.ipnUrl,passwordCipher:password?encrypt(password):"",updatedAt:new Date().toISOString()});
 }
 export function gatewayBase(c:GatewayConfig){return c.live?"https://securepay.sslcommerz.com":"https://sandbox.sslcommerz.com";}
 function safeCallback(v:string){const u=new URL(v);if(u.protocol!=="https:"||u.hostname!=="landbd.pincodeit.com")throw new Error("Callback must use landbd.pincodeit.com");return u.toString();}
@@ -46,5 +46,5 @@ export async function verifyGateway(c:GatewayConfig,valId:string){
  const r=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(15000)});
  if(!r.ok)throw new Error("Gateway validation failed");
  const p=await r.json() as Record<string,unknown>;
- return {valid:p.status==="VALID"||p.status==="VALIDATED",tranId:String(p.tran_id||""),amount:Number(p.amount),serviceId:String(p.value_a||""),currency:String(p.currency||p.currency_type||"BDT"),bankTranId:String(p.bank_tran_id||"")};
+ return {valid:p.status==="VALID"||p.status==="VALIDATED",tranId:String(p.tran_id||""),amount:Number(p.amount),serviceId:String(p.value_a||""),currency:String(p.currency||p.currency_type||"BDT"),bankTranId:String(p.bank_tran_id||""),riskLevel:Number(p.risk_level??1),gatewayConnected:p.APIConnect==="DONE"};
 }
