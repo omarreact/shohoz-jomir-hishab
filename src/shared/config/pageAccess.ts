@@ -191,6 +191,8 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     category: "কনটেন্ট ও সহায়তা",
     defaultAccess: "public",
   },
+  { id: "/about", name: "আমাদের সম্পর্কে", description: "LandBD সম্পর্কে তথ্য", category: "কনটেন্ট ও সহায়তা", defaultAccess: "public" },
+  { id: "/api-docs", name: "API ডকুমেন্টেশন", description: "API ব্যবহারের নীতি", category: "কনটেন্ট ও সহায়তা", defaultAccess: "public" },
   {
     id: "/faq",
     name: "প্রশ্নোত্তর",

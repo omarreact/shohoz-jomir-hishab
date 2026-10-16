@@ -45,6 +45,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { name: "পেইজ অ্যাক্সেস", path: "/admin/page-access", icon: ShieldAlert, roles: [...getAdminNavigationRoles("/admin/page-access")] },
   { name: "অডিট লগ", path: "/admin/audit-log", icon: History, roles: [...getAdminNavigationRoles("/admin/audit-log")] },
   { name: "টেস্ট এপিআই", path: "/admin/test-api", icon: Globe, roles: [...getAdminNavigationRoles("/admin/test-api")] },
+  { name: "কনটেন্ট CMS", path: "/admin/cms", icon: FileText, roles: [...getAdminNavigationRoles("/admin/cms")] },
+  { name: "সেবা ও মূল্য", path: "/admin/services", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/services")] },
   { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: [...getAdminNavigationRoles("/admin/settings")] },
 ];
 
