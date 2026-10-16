@@ -21,6 +21,15 @@ export async function accessForRequest(req:Request,id:unknown){
  if(admin){const config=await getService(id);return {serviceId:id,paid:config.paid,enabled:config.enabled,priceBdt:servicePrice(config),allowed:config.enabled,requiresLogin:false};}
  return accessFor(id,uid);
 }
+/** Non-consuming access check for search, browse and preview requests.
+ * Usage credits are spent only by an explicitly billable service operation. */
+export async function checkServiceAccess(req:Request,id:ServiceId):Promise<Response|null>{
+ const access=await accessForRequest(req,id);
+ if(access?.allowed)return null;
+ return Response.json({error:access?.enabled?"payment_required":"service_disabled",
+   serviceId:id,priceBdt:access?.priceBdt},{status:access?.enabled?402:503,
+   headers:{"Cache-Control":"no-store"}});
+}
 export async function enforceServiceAccess(req:Request,id:ServiceId):Promise<Response|null>{
  const access=await accessForRequest(req,id);
  if(!access?.allowed)return Response.json({error:access?.enabled?"payment_required":"service_disabled",serviceId:id,priceBdt:access?.priceBdt},{status:access?.enabled?402:503,headers:{"Cache-Control":"no-store"}});

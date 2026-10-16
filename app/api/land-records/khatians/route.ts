@@ -1,3 +1,4 @@
+import { checkServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianPageSchema, idParam, khatianSearchText, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { providers } from "@/src/features/land-records/server/provider";
 import { ok, providerError } from "@/src/features/land-records/server/http";
@@ -6,6 +7,8 @@ import { z } from "zod";
 const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 
 export async function GET(request: Request) {
+  const denied=await checkServiceAccess(request,"dlrms-khatian");
+  if(denied)return denied;
   try {
     const params = new URL(request.url).searchParams;
     const surveyKey = surveyKeySchema.parse(params.get("surveyKey"));

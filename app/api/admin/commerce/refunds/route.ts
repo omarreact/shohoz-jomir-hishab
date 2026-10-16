@@ -36,7 +36,7 @@ export async function POST(req:NextRequest){
     if(!data||data.refundReference!==order.refundReference)throw Error("Refund changed during check");
     // A settled refund may require manual credit reconciliation for legacy pooled entitlements.
     const next=decision==="refunded"?"refunded":decision==="processing"?"processing":"review";
-    tx.update(ref,{refundStatus:next,refundCheckedAt:new Date().toISOString(),
+    tx.update(ref,{refundStatus:next,status:next==="refunded"?"refunded":data.status,refundCheckedAt:new Date().toISOString(),
       refundRequiresEntitlementReview:next==="refunded"||data.refundRequiresEntitlementReview===true});
    });
    return NextResponse.json({ok:true,refundStatus:decision,refundReference:order.refundReference,

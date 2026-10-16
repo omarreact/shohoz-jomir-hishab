@@ -1,3 +1,4 @@
+import { checkServiceAccess } from "@/src/lib/service-entitlement";
 import { NextRequest, NextResponse } from "next/server";
 import { selectUniqueRsCandidate } from "@/src/features/land-records/lib/dag-map-areas";
 import { getPlots } from "@/src/services/rajuk/rajukQuery.service";
@@ -8,6 +9,8 @@ export const runtime = "nodejs";
 const digits = /^\d{1,10}$/;
 
 export async function GET(request: NextRequest) {
+  const denied=await checkServiceAccess(request,"dlrms-khatian");
+  if(denied)return denied;
   try {
     const p = request.nextUrl.searchParams;
     const dagNumber = p.get("dagNumber")?.trim() || "";

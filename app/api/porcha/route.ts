@@ -1,3 +1,4 @@
+import { checkServiceAccess } from "@/src/lib/service-entitlement";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -72,6 +73,8 @@ function matchesQuery(item: PorchaRecord, query: string): boolean {
 export async function GET(request: NextRequest) {
   const accessError = await requireMemberApiAccess(request);
   if (accessError) return accessError;
+  const denied=await checkServiceAccess(request,"porcha");
+  if(denied)return denied;
 
   const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
   const { searchParams } = request.nextUrl;

@@ -3,7 +3,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {formatBdtPrice,formatDisplayValue} from "@/src/lib/bangla-formatter";
 type Order={id:string;serviceId:string;amountBdt:number;status:string;createdAt:string;paidAt:string|null};
-const labels:Record<string,string>={paid:"পরিশোধিত",risk_hold:"ঝুঁকি যাচাই চলছে",pending:"অপেক্ষমাণ",initiated:"প্রক্রিয়াধীন",failed:"ব্যর্থ",cancelled:"বাতিল",gateway_error:"গেটওয়ে ত্রুটি"};
+const labels:Record<string,string>={refunded:"ফেরত সম্পন্ন",paid:"পরিশোধিত",risk_hold:"ঝুঁকি যাচাই চলছে",pending:"অপেক্ষমাণ",initiated:"প্রক্রিয়াধীন",failed:"ব্যর্থ",cancelled:"বাতিল",gateway_error:"গেটওয়ে ত্রুটি"};
 export default function MyPurchases(){
  const [orders,setOrders]=useState<Order[]>([]);
  const [error,setError]=useState("");
