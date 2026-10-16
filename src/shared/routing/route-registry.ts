@@ -32,7 +32,7 @@ export const ADMIN_ROUTE_REGISTRY: readonly {
   { path: "/admin/audit-log", name: "অডিট লগ", minimumRole: "super_admin" },
 ];
 
-export const SYSTEM_ROUTES = ["/login", "/maintenance", "/403"] as const;
+export const SYSTEM_ROUTES = ["/login", "/maintenance", "/403", "/security-locked"] as const;
 
 export function getAdminMinimumRole(pathname: string): AdminMinimumRole {
   const path = normalizePagePath(pathname);
