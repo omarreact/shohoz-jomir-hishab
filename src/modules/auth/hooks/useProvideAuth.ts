@@ -59,6 +59,7 @@ function githubOAuthError(error: unknown): string {
 }
 
 export function useProvideAuth(): AuthState & {
+  githubError: string | null;
   login: (email: string, password: string) => Promise<SessionUser>;
   loginWithGithub: () => Promise<SessionUser | null>;
   logout: () => Promise<void>;
