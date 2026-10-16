@@ -44,6 +44,7 @@ export default function OrdersAdmin(){
    <p className="text-sm">{formatBdtPrice(o.amountBdt)} · {o.createdAt?formatDisplayValue(new Date(o.createdAt),"date"):"—"} · ঝুঁকি: {o.riskLevel===null?"অজানা":formatDisplayValue(o.riskLevel)}</p>
    <code className="block break-all text-xs">{o.id}</code>
    {o.reconciliationStatus&&<p className="text-xs">Gateway inquiry: {o.reconciliationStatus}</p>}
+   {o.reconciliationIntegrity&&o.reconciliationIntegrity!=="matching"&&<p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-sm font-semibold text-amber-900">⚠️ রিকনসিলিয়েশন পার্থক্য: {o.reconciliationIntegrity}. মার্চেন্ট প্যানেলে যাচাই করুন।</p>}
    {o.refundStatus&&<p className="text-sm font-semibold">রিফান্ড: {o.refundStatus} {o.refundReference?" · "+o.refundReference:""} {o.refundRequiresEntitlementReview?"· ক্রেডিট যাচাই প্রয়োজন":""}</p>}
    <div className="flex flex-wrap gap-2">
     <button disabled={!!working} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" onClick={()=>void action("/api/admin/commerce/reconcile",{transactionId:o.id})}>Gateway-তে যাচাই</button>
