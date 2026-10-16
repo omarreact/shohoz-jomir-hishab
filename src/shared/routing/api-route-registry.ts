@@ -15,6 +15,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/admin/cms", get: "admin", mutate: "admin" },
   { path: "/api/admin/services", get: "admin", mutate: "admin" },
   { path: "/api/services/access", get: "public", mutate: "public" },
+  { path: "/api/admin/settings/payment/test", get: "admin", mutate: "admin" },
   { path: "/api/admin/settings/payment", get: "admin", mutate: "admin" },
   { path: "/api/payment/sslcommerz/init", get: "member", mutate: "member" },
   { path: "/api/payment/sslcommerz/success", get: "public", mutate: "public" },
