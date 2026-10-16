@@ -90,7 +90,7 @@ export function useProvideAuth(): AuthState & {
   );
 
   const loadFromToken = useCallback(
-    async (firebaseUser: User | null) => {
+    async (firebaseUser: User | null, forceRefresh = false) => {
       if (!firebaseUser) {
         await clearServerSession().catch(() => undefined);
         clearClientState();
@@ -98,9 +98,9 @@ export function useProvideAuth(): AuthState & {
       }
 
       try {
-        // Firebase refreshes ID tokens automatically. onIdTokenChanged runs
-        // again after a refresh so the HttpOnly server cookie stays in sync.
-        const token = await getIdToken(firebaseUser, false);
+        // Force-refresh after login so newly written custom claims appear in the
+        // ID token immediately (otherwise staff can be treated as Basic User).
+        const token = await getIdToken(firebaseUser, forceRefresh);
         const remote = await establishServerSession(token);
 
         setState({
@@ -132,7 +132,7 @@ export function useProvideAuth(): AuthState & {
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, (user) => {
-      void loadFromToken(user).catch(() => undefined);
+      void loadFromToken(user, false).catch(() => undefined);
     });
     return () => unsubscribe();
   }, [loadFromToken]);
@@ -145,7 +145,7 @@ export function useProvideAuth(): AuthState & {
           email,
           password,
         );
-        const profile = await loadFromToken(userCredential.user);
+        const profile = await loadFromToken(userCredential.user, true);
         if (!auth.currentUser || !profile) {
           throw new Error(
             "লগিন ব্যর্থ হয়েছে অথবা অ্যাকাউন্ট লক/মুছে ফেলা হয়েছে।",
