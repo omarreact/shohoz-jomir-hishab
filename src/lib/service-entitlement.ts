@@ -23,6 +23,23 @@ export async function accessForRequest(req:NextRequest,id:unknown){
 }
 export async function enforceServiceAccess(req:NextRequest,id:ServiceId):Promise<Response|null>{
  const access=await accessForRequest(req,id);
- if(access?.allowed)return null;
- return Response.json({error:access?.enabled?"payment_required":"service_disabled",serviceId:id,priceBdt:access?.priceBdt},{status:access?.enabled?402:503,headers:{"Cache-Control":"no-store"}});
+ if(!access?.allowed)return Response.json({error:access?.enabled?"payment_required":"service_disabled",serviceId:id,priceBdt:access?.priceBdt},{status:access?.enabled?402:503,headers:{"Cache-Control":"no-store"}});
+ if(!access.paid)return null;
+ const service=await getService(id);
+ if(service.usageLimit===null)return null;
+ try{
+  const user=await verifyServerAuth(req,{requireAdminBackend:true});
+  if(isAdminRole(user.role))return null;
+  const ref=db.collection("landbdEntitlements").doc(user.id+"_"+id);
+  const admitted=await db.runTransaction(async tx=>{
+   const snap=await tx.get(ref),d=snap.data();
+   if(!d||d.uid!==user.id||d.serviceId!==id||!d.active)return false;
+   if(d.remaining===null)return true;
+   if(typeof d.remaining!=="number"||d.remaining<=0)return false;
+   tx.update(ref,{remaining:d.remaining-1,updatedAt:new Date().toISOString()});
+   return true;
+  });
+  if(admitted)return null;
+ }catch{return Response.json({error:"entitlement_unavailable"},{status:503});}
+ return Response.json({error:"usage_limit_reached",serviceId:id},{status:402,headers:{"Cache-Control":"no-store"}});
 }
