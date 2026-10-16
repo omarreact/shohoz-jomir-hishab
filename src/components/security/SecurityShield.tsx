@@ -1,11 +1,18 @@
 "use client";
-import { useEffect,useRef } from "react";
+import { useEffect,useRef,useState } from "react";
 
 type Props={enabled?:boolean;detectDockedDevtools?:boolean};
 export default function SecurityShield({enabled=false,detectDockedDevtools=false}:Props){
   const triggered=useRef(false);
+  const [active,setActive]=useState(false);
   useEffect(()=>{
     if(!enabled)return;
+    let mounted=true;
+    void fetch("/api/public/security-settings",{cache:"no-store"}).then(r=>r.json()).then((d:{enabled?:boolean})=>{if(mounted)setActive(d.enabled===true);}).catch(()=>{if(mounted)setActive(false);});
+    return()=>{mounted=false;};
+  },[enabled]);
+  useEffect(()=>{
+    if(!active)return;
     let mounted=true;
     let ready=false;
     let dockSamples=0;
@@ -41,6 +48,6 @@ export default function SecurityShield({enabled=false,detectDockedDevtools=false
     window.addEventListener("keydown",keys,true);
     const timer=window.setInterval(inspect,1800);
     return ()=>{mounted=false;document.removeEventListener("contextmenu",contextMenu);window.removeEventListener("keydown",keys,true);window.clearInterval(timer);};
-  },[enabled,detectDockedDevtools]);
+  },[active,detectDockedDevtools]);
   return null;
 }

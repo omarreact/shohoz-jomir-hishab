@@ -49,6 +49,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { name: "সেবা ও মূল্য", path: "/admin/services", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/services")] },
   { name: "পেমেন্ট গেটওয়ে", path: "/admin/settings/payment", icon: Settings, roles: [...getAdminNavigationRoles("/admin/settings/payment")] },
   { name: "AI সহায়ক", path: "/admin/ai-assistant", icon: Globe, roles: [...getAdminNavigationRoles("/admin/ai-assistant")] },
+  { name: "নিরাপত্তা", path: "/admin/security", icon: ShieldAlert, roles: [...getAdminNavigationRoles("/admin/security")] },
   { name: "সেটিংস", path: "/admin/settings", icon: Settings, roles: [...getAdminNavigationRoles("/admin/settings")] },
 ];
 
