@@ -356,10 +356,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="fade-in visible" data-admin-panel="true">
-      <CommerceKpis />
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
+      <div className="mb-8 flex flex-col items-start justify-between gap-6 rounded-3xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-5 sm:p-8 lg:flex-row lg:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">LandBD / Admin workspace</p>
+          <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-2 sm:text-3xl">
             অ্যাডমিন ড্যাশবোর্ড
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
@@ -385,18 +385,16 @@ export default function AdminDashboard() {
           </button>
           {admin && (
             <Link href="/admin/data-monitor" className="text-decoration-none">
-              <button className="px-6 py-2.5 rounded-full font-bold bg-[#006a4e] text-white hover:bg-[#00523b] hover:-translate-y-0.5 transition-all shadow-md">
-                ডেটা মনিটর
-              </button>
+              <span className="landbd-primary-button inline-flex min-h-11 items-center justify-center px-5 text-sm font-bold">ডেটা মনিটর</span>
             </Link>
           )}
           <Link href="/" className="text-decoration-none">
-            <button className="px-6 py-2.5 rounded-full font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm">
-              ওয়েবসাইটে যান
-            </button>
+            <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-5 text-sm font-bold text-[var(--foreground)]">ওয়েবসাইটে যান</span>
           </Link>
         </div>
       </div>
+
+      <CommerceKpis />
 
       {error && (
         <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
