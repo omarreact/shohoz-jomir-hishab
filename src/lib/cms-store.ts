@@ -5,7 +5,7 @@ export const CMS_SLUGS=["about","privacy","terms","faq","api-docs","homepage","n
 export type CmsSlug=(typeof CMS_SLUGS)[number];
 export type CmsSection={heading:string;body:string};
 export type CmsPage={
- slug:CmsSlug;title:string;description:string;sections:CmsSection[];
+ slug:CmsSlug;title:string;description:string;sections:CmsSection[];revision:number;
  published:boolean;seoTitle:string;seoDescription:string;updatedAt:string|null
 };
 const CONTENT:Record<CmsSlug,Omit<CmsPage,"slug"|"updatedAt">>={
@@ -27,14 +27,14 @@ const CONTENT:Record<CmsSlug,Omit<CmsPage,"slug"|"updatedAt">>={
 export function isCmsSlug(value:unknown):value is CmsSlug{
  return typeof value==="string"&&CMS_SLUGS.some(s=>s===value);
 }
-export function defaultCmsPage(slug:CmsSlug):CmsPage{return {slug,...CONTENT[slug],updatedAt:null};}
+export function defaultCmsPage(slug:CmsSlug):CmsPage{return {slug,...CONTENT[slug],revision:0,updatedAt:null};}
 export async function getCmsPage(slug:CmsSlug):Promise<CmsPage>{
  const fallback=defaultCmsPage(slug);
  if(!isFirebaseAdminReady())return fallback;
  const snap=await db.collection("landbdCmsPages").doc(slug).get();
  if(!snap.exists)return fallback;
  const d=snap.data()??{};
- return {slug,title:typeof d.title==="string"?d.title:fallback.title,
+ return {slug,revision:typeof d.revision==="number"&&Number.isSafeInteger(d.revision)&&d.revision>=0?d.revision:0,title:typeof d.title,==="string"?d.title:fallback.title,
  description:typeof d.description==="string"?d.description:fallback.description,
  sections:Array.isArray(d.sections)?d.sections.filter((v:unknown)=>!!v&&typeof v==="object"&&typeof (v as CmsSection).heading==="string"&&typeof (v as CmsSection).body==="string").slice(0,40):fallback.sections,
  published:typeof d.published==="boolean"?d.published:fallback.published,
