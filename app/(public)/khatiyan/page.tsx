@@ -1,5 +1,5 @@
-import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 "use client";
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 
 import { useRef, useState } from "react";
 import { List, Zap, Calculator, Trash2 } from "lucide-react";
