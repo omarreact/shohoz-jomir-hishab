@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAdminRole } from "@/src/modules/auth/roles";
-import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
+import { ADMIN_SESSION_SECONDS, createPasswordAdminSession } from "@/src/modules/auth/passwordAdmin";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const COOKIE_NAME = "access_token";
-const MAX_COOKIE_AGE_SECONDS = 60 * 60;
 
 function clientIp(req: NextRequest): string {
   return (
@@ -30,24 +28,6 @@ function sameOrigin(req: NextRequest): boolean {
   }
 }
 
-function bearerToken(req: NextRequest): string | null {
-  const header = req.headers.get("authorization");
-  return header?.startsWith("Bearer ") ? header.slice(7).trim() || null : null;
-}
-
-function tokenExpiry(token: string): number | null {
-  try {
-    const encoded = token.split(".")[1];
-    if (!encoded) return null;
-    const payload = JSON.parse(
-      Buffer.from(encoded, "base64url").toString("utf8"),
-    ) as { exp?: unknown };
-    return typeof payload.exp === "number" ? payload.exp : null;
-  } catch {
-    return null;
-  }
-}
-
 function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
@@ -64,52 +44,26 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = clientIp(req).slice(0, 64);
-  if (!(await allowRateLimit(`auth-session:${ip}`, 30, 60))) {
+  if (!(await allowRateLimit(`auth-session:${ip}`, 5, 60))) {
     return json({ error: "Too many authentication requests" }, 429);
   }
 
-  const token = bearerToken(req);
-  if (!token) {
-    return json({ error: "Unauthorized" }, 401);
-  }
-
   try {
-    const user = await verifyServerAuth(req, { checkRevoked: true, requireAdminBackend: true });
-
-    if (!isAdminRole(user.role)) {
-      const response = json({ error: "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।" }, 403);
-      response.cookies.set(COOKIE_NAME, "", { path: "/", maxAge: 0, httpOnly: true,
-        secure: process.env.NODE_ENV === "production", sameSite: "lax" });
-      return response;
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-    const exp = tokenExpiry(token) ?? now + MAX_COOKIE_AGE_SECONDS;
-    const maxAge = Math.max(
-      1,
-      Math.min(MAX_COOKIE_AGE_SECONDS, exp - now),
-    );
-
-    const response = json({ ok: true, user }, 200);
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") return json({ error: "ভুল ইউজারনেম বা পাসওয়ার্ড।" }, 401);
+    const { token, user } = createPasswordAdminSession(body.username, body.password);
+    const response = json({ ok: true, user });
     response.cookies.set({
-      name: COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge,
-      priority: "high",
+      name: COOKIE_NAME, value: token, httpOnly: true,
+      secure: process.env.NODE_ENV === "production", sameSite: "lax",
+      path: "/", maxAge: ADMIN_SESSION_SECONDS, priority: "high",
     });
     return response;
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unauthorized";
-    if (message === "Firebase Admin unavailable") {
-      return json({ error: "অ্যাডমিন যাচাই সেবা সাময়িকভাবে অনুপলব্ধ। আবার চেষ্টা করুন।" }, 503);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Admin login not configured") {
+      return json({ error: "অ্যাডমিন লগইনের সার্ভার কনফিগারেশন সম্পূর্ণ করা হয়নি।" }, 503);
     }
-    const status =
-      message === "Account disabled" || message === "Account locked" ? 403 : 401;
-    return json({ error: status === 403 ? message : "Unauthorized" }, status);
+    return json({ error: "ভুল ইউজারনেম বা পাসওয়ার্ড।" }, 401);
   }
 }
 

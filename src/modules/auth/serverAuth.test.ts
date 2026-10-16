@@ -1,64 +1,22 @@
 import { NextRequest } from "next/server";
+import { verifyServerAuth, verifySuperAdminAuth } from "./serverAuth";
+import { createPasswordAdminSession } from "./passwordAdmin";
+const original = { ...process.env };
+beforeEach(() => {
+  process.env.LANDBD_SUPER_ADMIN_PASSWORD = "test-only-password-strong";
+  process.env.LANDBD_ADMIN_SESSION_SECRET = "test-only-signing-secret-at-least-32-characters";
+});
+afterEach(() => { process.env = { ...original }; });
 
-// Firebase Admin is mocked for this test; do not load ESM-only jose in Jest.
-jest.mock("jose", () => ({
-  importX509: jest.fn(),
-  jwtVerify: jest.fn(),
-}));
-
-describe("privileged authentication", () => {
-  beforeEach(() => {
-    jest.resetModules();
-  });
-
-  it("fails closed if the Firestore account-state lookup fails", async () => {
-    const verifyIdToken = jest.fn(async () => ({
-      uid: "test-admin",
-      email: "admin@example.com",
-      role: "Admin",
-    }));
-
-    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
-      isFirebaseAdminReady: () => true,
-      auth: { verifyIdToken },
-      collections: {
-        users: {
-          doc: jest.fn(() => ({
-            get: jest.fn(async () => {
-              throw new Error("Firestore unavailable");
-            }),
-          })),
-        },
-      },
-    }));
-
-    const { verifyAdminAuth } = await import("./serverAuth");
-    const req = new NextRequest("https://landbd.example/api/admin/settings", {
-      headers: { authorization: "Bearer test-id-token" },
-    });
-
-    await expect(verifyAdminAuth(req)).rejects.toThrow("Firebase Admin unavailable");
-    expect(verifyIdToken).toHaveBeenCalledWith("test-id-token", true);
-  });
-  it("recognizes the owner UID after Firebase verifies a password token", async () => {
-    const uid = "408LTqriBAPIMIe37pXPVehfPIe2";
-    const verifyIdToken = jest.fn(async () => ({
-      uid, sub: uid, email: "owner@example.com",
-      firebase: { sign_in_provider: "password" },
-    }));
-    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
-      isFirebaseAdminReady: () => true,
-      auth: { verifyIdToken },
-      collections: { users: { doc: jest.fn(() => ({
-        get: jest.fn(async () => ({ exists: false })),
-      })) } },
-    }));
-    const { verifySuperAdminAuth } = await import("./serverAuth");
-    const req = new NextRequest("https://landbd.example/admin", {
-      headers: { authorization: "Bearer owner-token" },
-    });
-    await expect(verifySuperAdminAuth(req)).resolves.toMatchObject({ id: uid, role: "Super Admin" });
-    expect(verifyIdToken).toHaveBeenCalledWith("owner-token", true);
-  });
-
+test("admin API accepts the owner cookie without contacting Firebase", async () => {
+  const { token } = createPasswordAdminSession("superadmin", "test-only-password-strong");
+  const req = new NextRequest("https://landbd.example/admin", { headers: { cookie: `access_token=${token}` } });
+  await expect(verifySuperAdminAuth(req)).resolves.toMatchObject({ role: "Super Admin" });
+});
+test("rejects old Firebase tokens and unsigned client headers", async () => {
+  const req = new NextRequest("https://landbd.example/admin", { headers: { authorization: "Bearer old.firebase.token", "x-user-role": "Super Admin" } });
+  await expect(verifyServerAuth(req)).rejects.toThrow("Unauthorized");
+});
+test("rejects anonymous requests", async () => {
+  await expect(verifyServerAuth(new NextRequest("https://landbd.example/admin"))).rejects.toThrow("Unauthorized");
 });

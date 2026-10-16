@@ -1,14 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  signInWithEmailAndPassword,
-  signOut,
-  onIdTokenChanged,
-  getIdToken,
-  type User,
-} from "firebase/auth";
-import { auth } from "@/src/modules/database/firebaseClient";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { normalizeRole } from "@/src/modules/auth/roles";
 
 export interface AuthUser {
@@ -17,190 +9,64 @@ export interface AuthUser {
   name: string | null;
   role: string;
 }
+interface AuthState { user: AuthUser | null; isLoggedIn: boolean; loading: boolean; }
+export type SessionUser = { id?: string; email?: string; name?: string | null; role?: string; };
+const EMPTY: AuthState = { user: null, isLoggedIn: false, loading: false };
 
-interface AuthState {
-  user: AuthUser | null;
-  isLoggedIn: boolean;
-  loading: boolean;
-}
-
-export type SessionUser = {
-  id?: string;
-  email?: string;
-  name?: string | null;
-  role?: string;
-};
-
+/** The temporary admin login uses an HttpOnly server session, not Firebase Auth. */
 export function useProvideAuth(): AuthState & {
-  login: (email: string, password: string) => Promise<SessionUser>;
+  login: (username: string, password: string) => Promise<SessionUser>;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
 } {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    isLoggedIn: false,
-    loading: true,
-  });
+  const [state, setState] = useState<AuthState>({ ...EMPTY, loading: true });
+  const generation = useRef(0);
 
-  const clearClientState = useCallback(() => {
-    setState({ user: null, isLoggedIn: false, loading: false });
+  const acceptUser = useCallback((user: SessionUser) => {
+    if (!user.id || user.role !== "Super Admin") throw new Error("Unauthorized");
+    setState({ user: { id: user.id, email: user.email || "", name: user.name || null, role: normalizeRole(user.role) }, isLoggedIn: true, loading: false });
   }, []);
-
-  const clearServerSession = useCallback(async () => {
-    await fetch("/api/auth/session", {
-      method: "DELETE",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-  }, []);
-
-  const establishServerSession = useCallback(
-    async (token: string): Promise<SessionUser> => {
-      const response = await fetch("/api/auth/session", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
-
-      if (response.status === 401) {
-        throw new Error("Unauthorized");
-      }
-
-      if (response.status === 403) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error || "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।");
-      }
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error || "সার্ভার সেশন তৈরি করা যায়নি।");
-      }
-
-      const body = (await response.json()) as { user?: SessionUser };
-      if (!body.user?.id) {
-        throw new Error("ব্যবহারকারীর তথ্য যাচাই করা যায়নি।");
-      }
-
-      return body.user;
-    },
-    [],
-  );
-
-  const loadFromToken = useCallback(
-    async (firebaseUser: User | null, forceRefresh = false) => {
-      if (!firebaseUser) {
-        await clearServerSession().catch(() => undefined);
-        clearClientState();
-        return;
-      }
-
-      try {
-        // Force-refresh after login so newly written custom claims appear in the
-        // ID token immediately (otherwise staff can be treated as Basic User).
-        const token = await getIdToken(firebaseUser, forceRefresh);
-        const remote = await establishServerSession(token);
-
-        setState({
-          user: {
-            id: remote.id || firebaseUser.uid,
-            email: remote.email || firebaseUser.email || "",
-            name:
-              typeof remote.name === "string" && remote.name.trim()
-                ? remote.name
-                : firebaseUser.displayName,
-            role: normalizeRole(remote.role || "User"),
-          },
-          isLoggedIn: true,
-          loading: false,
-        });
-        return remote;
-      } catch (error) {
-        await signOut(auth).catch(() => undefined);
-        await clearServerSession().catch(() => undefined);
-        clearClientState();
-
-        if (error instanceof Error) {
-          throw error;
-        }
-      }
-    },
-    [clearClientState, clearServerSession, establishServerSession],
-  );
-
-  useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, (user) => {
-      void loadFromToken(user, false).catch(() => undefined);
-    });
-    return () => unsubscribe();
-  }, [loadFromToken]);
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password,
-        );
-        const profile = await loadFromToken(userCredential.user, true);
-        if (!auth.currentUser || !profile) {
-          throw new Error(
-            "লগিন ব্যর্থ হয়েছে অথবা অ্যাকাউন্ট লক/মুছে ফেলা হয়েছে।",
-          );
-        }
-        return profile;
-      } catch (error: unknown) {
-        const msg =
-          error instanceof Error ? error.message : "লগিন ব্যর্থ হয়েছে";
-        throw new Error(msg);
-      }
-    },
-    [loadFromToken],
-  );
-
-  const logout = useCallback(async () => {
-    try {
-      await signOut(auth);
-    } catch {
-      /* ignore */
-    }
-
-    await clearServerSession().catch(() => undefined);
-    clearClientState();
-  }, [clearClientState, clearServerSession]);
 
   const refresh = useCallback(async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return false;
-
+    const current = ++generation.current;
     try {
-      const token = await getIdToken(currentUser, true);
-      const remote = await establishServerSession(token);
-
-      setState({
-        user: {
-          id: remote.id || currentUser.uid,
-          email: remote.email || currentUser.email || "",
-          name:
-            typeof remote.name === "string" && remote.name.trim()
-              ? remote.name
-              : currentUser.displayName,
-          role: normalizeRole(remote.role || "User"),
-        },
-        isLoggedIn: true,
-        loading: false,
-      });
-
+      const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Unauthorized");
+      const body = await response.json();
+      if (current !== generation.current) return false;
+      acceptUser(body.user);
       return true;
     } catch {
+      if (current === generation.current) setState(EMPTY);
       return false;
     }
-  }, [establishServerSession]);
+  }, [acceptUser]);
+
+  useEffect(() => {
+    const lifecycle = generation;
+    void refresh();
+    return () => { lifecycle.current++; };
+  }, [refresh]);
+
+  const login = useCallback(async (username: string, password: string) => {
+    ++generation.current;
+    const response = await fetch("/api/auth/session", {
+      method: "POST", credentials: "same-origin", cache: "no-store",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim(), password }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.error || "লগইন করা যায়নি।");
+    acceptUser(body.user);
+    return body.user as SessionUser;
+  }, [acceptUser]);
+
+  const logout = useCallback(async () => {
+    ++generation.current;
+    const response = await fetch("/api/auth/session", { method: "DELETE", credentials: "same-origin", cache: "no-store" });
+    if (!response.ok) throw new Error("লগআউট করা যায়নি। আবার চেষ্টা করুন।");
+    setState(EMPTY);
+  }, []);
 
   return { ...state, login, logout, refresh };
 }
