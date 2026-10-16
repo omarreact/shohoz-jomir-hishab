@@ -13,22 +13,23 @@ export async function accessFor(serviceId:ServiceId,uid?:string){
  const d=(await db.collection("landbdEntitlements").doc(uid+"_"+serviceId).get()).data();
  return {...common,allowed:!!d&&d.uid===uid&&d.serviceId===serviceId&&d.active===true&&(d.remaining===null||typeof d.remaining==="number"&&d.remaining>0),requiresLogin:false};
 }
-export async function accessForRequest(req:NextRequest,id:unknown){
+export async function accessForRequest(req:Request,id:unknown){
  if(!isServiceId(id))return null;
  let uid:string|undefined;
  let admin=false;
- try{const user=await verifyServerAuth(req);uid=user.id;admin=isAdminRole(user.role);}catch{}
+ try{const normalized=req instanceof NextRequest?req:new NextRequest(req.url,{method:req.method,headers:req.headers});const user=await verifyServerAuth(normalized);uid=user.id;admin=isAdminRole(user.role);}catch{}
  if(admin){const config=await getService(id);return {serviceId:id,paid:config.paid,enabled:config.enabled,priceBdt:servicePrice(config),allowed:config.enabled,requiresLogin:false};}
  return accessFor(id,uid);
 }
-export async function enforceServiceAccess(req:NextRequest,id:ServiceId):Promise<Response|null>{
+export async function enforceServiceAccess(req:Request,id:ServiceId):Promise<Response|null>{
  const access=await accessForRequest(req,id);
  if(!access?.allowed)return Response.json({error:access?.enabled?"payment_required":"service_disabled",serviceId:id,priceBdt:access?.priceBdt},{status:access?.enabled?402:503,headers:{"Cache-Control":"no-store"}});
  if(!access.paid)return null;
  const service=await getService(id);
  if(service.usageLimit===null)return null;
  try{
-  const user=await verifyServerAuth(req,{requireAdminBackend:true});
+  const normalized=req instanceof NextRequest?req:new NextRequest(req.url,{method:req.method,headers:req.headers});
+  const user=await verifyServerAuth(normalized,{requireAdminBackend:true});
   if(isAdminRole(user.role))return null;
   const ref=db.collection("landbdEntitlements").doc(user.id+"_"+id);
   const admitted=await db.runTransaction(async tx=>{

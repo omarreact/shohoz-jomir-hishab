@@ -28,6 +28,7 @@ export const ADMIN_ROUTE_REGISTRY: readonly {
   { path: "/admin/map-visits", name: "মানচিত্র ভিজিটর", minimumRole: "admin" },
   { path: "/admin/test-api", name: "টেস্ট এপিআই", minimumRole: "admin" },
   { path: "/admin/cms", name: "কনটেন্ট CMS", minimumRole: "admin" },
+  { path: "/admin/orders", name: "অর্ডার ও ঝুঁকি পর্যালোচনা", minimumRole: "admin" },
   { path: "/admin/services", name: "সেবার মূল্য", minimumRole: "admin" },
   { path: "/admin/settings/payment", name: "পেমেন্ট সেটিংস", minimumRole: "admin" },
   { path: "/admin/ai-assistant", name: "AI সহায়ক", minimumRole: "admin" },

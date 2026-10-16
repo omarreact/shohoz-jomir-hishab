@@ -1,3 +1,4 @@
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { NextRequest, NextResponse } from "next/server";
 import { getValidToken, invalidateToken, refreshToken, RAJUK_SERVER, REFERER } from "@/src/services/rajuk/rajukAuth.service";
 import {
@@ -41,6 +42,8 @@ function errorMessage(data: any): string {
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ layerId: string }> }) {
+  const denied=await enforceServiceAccess(request,"geospatial-map");
+  if(denied)return denied;
   try {
     const { layerId } = await context.params;
     const url = upstreamUrl(layerId);

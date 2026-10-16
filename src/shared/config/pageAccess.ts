@@ -163,6 +163,7 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     category: "হিসাব ও পরিমাপ",
     defaultAccess: "public",
   },
+  { id: "/my-purchases", name: "আমার কেনাকাটা", description: "অ্যাকাউন্টের ডিজিটাল সেবা পেমেন্ট ও রসিদ", category: "মূল", defaultAccess: "logged_in" },
   {
     id: "/history",
     name: "হিসাবের ইতিহাস",

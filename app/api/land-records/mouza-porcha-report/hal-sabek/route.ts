@@ -1,3 +1,4 @@
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { fetchPublicHalSabek } from "@/src/features/land-records/server/dlrms-public-extras";
 import { z } from "zod";
 
@@ -11,6 +12,8 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const denied=await enforceServiceAccess(request,"mouza-porcha");
+  if(denied)return denied;
   try {
     const input = requestSchema.parse(await request.json());
 

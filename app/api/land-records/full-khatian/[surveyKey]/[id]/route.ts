@@ -1,3 +1,4 @@
+import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { FullKhatianSchema } from "@/src/features/land-records/full-khatian";
 import { idParam, khatianSearchText } from "@/src/features/land-records/schemas";
 import { getFullKhatian } from "@/src/features/land-records/server/full-khatian-service";
@@ -29,7 +30,8 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ surveyKey: string; id: string }> },
 ) {
-  try {
+  const denied=await enforceServiceAccess(request,"dlrms-khatian");
+  if(denied)return denied;  try {
     const params = await context.params;
     const parsedSurvey = surveyKeySchema.safeParse(params.surveyKey);
     if (!parsedSurvey.success) return badRequest("Invalid survey key");
