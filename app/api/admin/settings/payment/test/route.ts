@@ -2,13 +2,13 @@ import { randomBytes } from "node:crypto";
 import { NextRequest,NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import { getGateway,startGateway } from "@/src/lib/sslcommerz";
-import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
 export const runtime="nodejs";
 export async function POST(req:NextRequest){
  try{
   const admin=await verifyAdminAuth(req);
   if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Invalid origin"},{status:403});
-  if(!await allowRateLimit("payment-connection-test:"+admin.id,3,60))return NextResponse.json({error:"অনেকবার পরীক্ষা করেছেন"},{status:429});
+  if(!await allowDurableRateLimit("payment-connection-test:"+admin.id,3,60))return NextResponse.json({error:"অনেকবার পরীক্ষা করেছেন"},{status:429});
   const c=await getGateway();
   if(c.live)return NextResponse.json({error:"লাইভ মোডে পরীক্ষা নয়; প্রথমে Sandbox নির্বাচন করুন"},{status:409});
   if(!c.storeId||!c.password)return NextResponse.json({error:"Store ID ও Password সংরক্ষণ করুন"},{status:409});

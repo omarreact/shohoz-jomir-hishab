@@ -5,7 +5,7 @@ import {db} from "@/src/modules/database/firebaseAdmin";
 import {getGateway} from "@/src/lib/sslcommerz";
 import {initiateMerchantRefund,queryMerchantRefund} from "@/src/lib/commerce-gateway";
 import {refundDecision,refundStatusDecision} from "@/src/lib/refund-policy";
-import {allowRateLimit} from "@/src/modules/security/redisRateLimit";
+import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const schema=z.discriminatedUnion("action",[
  z.object({action:z.literal("request"),orderId:z.string().regex(/^LBD[A-F0-9]{24}$/),
@@ -17,7 +17,7 @@ export async function POST(req:NextRequest){
  try{
   const actor=await verifySuperAdminAuth(req);
   if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Invalid origin"},{status:403});
-  if(!await allowRateLimit("refund-admin:"+actor.id,6,60))return NextResponse.json({error:"অনুরোধ সীমা অতিক্রম করেছে"},{status:429});
+  if(!await allowDurableRateLimit("refund-admin:"+actor.id,6,60))return NextResponse.json({error:"অনুরোধ সীমা অতিক্রম করেছে"},{status:429});
   const parsed=schema.safeParse(await req.json());
   if(!parsed.success)return NextResponse.json({error:"Invalid refund request"},{status:400});
   const command=parsed.data;

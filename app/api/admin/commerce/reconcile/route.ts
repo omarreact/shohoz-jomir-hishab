@@ -4,14 +4,14 @@ import {verifyAdminAuth} from "@/src/modules/auth/serverAuth";
 import {db} from "@/src/modules/database/firebaseAdmin";
 import {getGateway} from "@/src/lib/sslcommerz";
 import {queryMerchantTransaction} from "@/src/lib/commerce-gateway";
-import {allowRateLimit} from "@/src/modules/security/redisRateLimit";
+import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const schema=z.object({transactionId:z.string().regex(/^LBD[A-F0-9]{24}$/)}).strict();
 export async function POST(req:NextRequest){
  try{
   const admin=await verifyAdminAuth(req);
   if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Invalid origin"},{status:403});
-  if(!await allowRateLimit("commerce-inquiry:"+admin.id,12,60))return NextResponse.json({error:"অনুরোধ সীমা অতিক্রম করেছে"},{status:429});
+  if(!await allowDurableRateLimit("commerce-inquiry:"+admin.id,12,60))return NextResponse.json({error:"অনুরোধ সীমা অতিক্রম করেছে"},{status:429});
   const parsed=schema.safeParse(await req.json());if(!parsed.success)return NextResponse.json({error:"Invalid ID"},{status:400});
   const reference=db.collection("landbdOrders").doc(parsed.data.transactionId);
   const snapshot=await reference.get();

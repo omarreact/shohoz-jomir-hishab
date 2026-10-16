@@ -5,13 +5,13 @@ import { db } from "@/src/modules/database/firebaseAdmin";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { getService,servicePrice,isServiceId } from "@/src/lib/services-registry";
 import { getGateway,startGateway } from "@/src/lib/sslcommerz";
-import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
+import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 export async function POST(req:NextRequest){
  try{
  if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Origin denied"},{status:403});
  const user=await verifyServerAuth(req,{requireAdminBackend:true});
- if(!await allowRateLimit("checkout:"+user.id,5,60))return NextResponse.json({error:"অনেকবার চেষ্টা করেছেন"},{status:429});
+ if(!await allowDurableRateLimit("checkout:"+user.id,5,60))return NextResponse.json({error:"অনেকবার চেষ্টা করেছেন"},{status:429});
  const parsed=z.object({serviceId:z.string(),phone:z.string().regex(/^01[3-9]\d{8}$/)}).strict().safeParse(await req.json());
  if(!parsed.success||!isServiceId(parsed.data?.serviceId))return NextResponse.json({error:"ভুল সেবা বা মোবাইল নম্বর"},{status:400});
  const service=await getService(parsed.data.serviceId);
