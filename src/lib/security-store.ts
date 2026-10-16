@@ -78,6 +78,6 @@ export async function getLockoutState(req:NextRequest):Promise<LockoutState>{
   const remainingSeconds=Math.max(0,lock.exp-Math.floor(Date.now()/1000));
   if(!remainingSeconds)return empty;
   const client=redis();
-  if(client)try{if(!(await client.get(redisKey(lock.fingerprint))))return empty;}catch{}
+  if(client)try{if(!(await client.get(redisKey(lock.fingerprint))))return empty;}catch{ /* Use the signed cookie during a transient Redis outage. */ }
   return {locked:true,remainingSeconds,expiresAt:lock.exp*1000};
 }
