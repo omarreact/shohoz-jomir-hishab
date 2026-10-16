@@ -7,6 +7,7 @@ type Order={id:string;serviceId:string;amountBdt:number;status:string;riskLevel:
 export default function OrdersAdmin(){
  const [orders,setOrders]=useState<Order[]>([]);
  const [filter,setFilter]=useState("all");
+ const [canManageRefunds,setCanManageRefunds]=useState(false);
  const [working,setWorking]=useState("");
  const [message,setMessage]=useState("");
  const [reason,setReason]=useState("");
@@ -15,7 +16,7 @@ export default function OrdersAdmin(){
  async function reload(){
   try{const r=await fetch("/api/admin/commerce/orders",{cache:"no-store"});
    if(!r.ok)throw Error("Unable to load orders");
-   const data=await r.json() as {orders:Order[]};setOrders(data.orders);
+   const data=await r.json() as {orders:Order[];canManageRefunds:boolean};setOrders(data.orders);setCanManageRefunds(data.canManageRefunds===true);
   }catch{setMessage("অর্ডার লোড করা যায়নি।");}
  }
  useEffect(()=>{void reload();},[]);
@@ -47,7 +48,7 @@ export default function OrdersAdmin(){
    <div className="flex flex-wrap gap-2">
     <button disabled={!!working} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" onClick={()=>void action("/api/admin/commerce/reconcile",{transactionId:o.id})}>Gateway-তে যাচাই</button>
     {o.refundReference&&<button disabled={!!working} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" onClick={()=>void action("/api/admin/commerce/refunds",{action:"status",orderId:o.id})}>রিফান্ড স্ট্যাটাস</button>}
-    {(o.status==="paid"||o.status==="risk_hold")&&!o.refundStatus&&<button disabled={!!working} className="rounded-lg border border-amber-600 px-3 py-2 text-sm text-amber-800 disabled:opacity-50" onClick={()=>{setSelected(o.id);setReason("");setConfirmation("");}}>রিফান্ড অনুরোধ</button>}
+    {canManageRefunds&&(o.status==="paid"||o.status==="risk_hold")&&!o.refundStatus&&<button disabled={!!working} className="rounded-lg border border-amber-600 px-3 py-2 text-sm text-amber-800 disabled:opacity-50" onClick={()=>{setSelected(o.id);setReason("");setConfirmation("");}}>রিফান্ড অনুরোধ</button>}
    </div>
    {selected===o.id&&<section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
     <strong>সতর্কতা: এই কার্যক্রম SSLCommerz-এ বাস্তব রিফান্ড অনুরোধ পাঠাবে।</strong>

@@ -3,7 +3,7 @@ import { NextRequest,NextResponse } from "next/server";
 import { db } from "@/src/modules/database/firebaseAdmin";
 import { getGateway,verifyGateway } from "@/src/lib/sslcommerz";
 import { isServiceId } from "@/src/lib/services-registry";
-import { assessGatewayPayment } from "@/src/lib/payment-verification";
+import { assessGatewayPayment,mayFulfillOrder } from "@/src/lib/payment-verification";
 
 export type CallbackMode="success"|"fail"|"cancel"|"ipn";
 
@@ -40,7 +40,7 @@ export async function handlePaymentCallback(req:NextRequest,mode:CallbackMode):P
     if(decision==="hold"){
       await db.runTransaction(async tx=>{
         const current=await tx.get(orderRef);
-        if(!current.exists||current.data()?.status==="paid")return;
+        if(!current.exists||!mayFulfillOrder(current.data()!))return;
         tx.update(orderRef,{status:"risk_hold",riskLevel:verified.riskLevel,
           bankTranId:verified.bankTranId,validationId,verifiedAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       });
@@ -51,7 +51,7 @@ export async function handlePaymentCallback(req:NextRequest,mode:CallbackMode):P
     await db.runTransaction(async tx=>{
       const current=await tx.get(orderRef);
       if(!current.exists)throw Error("Order missing");
-      if(current.data()?.status==="paid")return;
+      if(!mayFulfillOrder(current.data()!))return;
       // Re-read the original terms inside the transaction and preserve original purchase limits.
       const original=current.data()!;
       const previous=await tx.get(entitlementRef);

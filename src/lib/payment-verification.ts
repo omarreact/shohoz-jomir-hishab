@@ -8,6 +8,12 @@ export type VerifiedGatewayResult={
  amount:number;currency:string;bankTranId:string;riskLevel:number;
 };
 export type PaymentDecision="accept"|"hold"|"reject";
+/** Previously paid or refunded transactions must never be credited again,
+ * including after delayed or duplicated IPNs arrive. */
+export function mayFulfillOrder(order:{status?:string;refundStatus?:unknown}):boolean {
+ return order.status!=="paid"&&order.status!=="refunded"
+   &&!(typeof order.refundStatus==="string"&&order.refundStatus.length>0);
+}
 export function assessGatewayPayment(
  order:PurchaseSnapshot,verification:VerifiedGatewayResult,transactionId:string
 ):PaymentDecision{
