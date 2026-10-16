@@ -7,6 +7,7 @@ import {
   normalizeRole,
   type AppRole,
 } from "@/src/modules/auth/roles";
+import { soleAdminRoleFromClaims } from "@/src/modules/auth/soleAdmin";
 
 export interface ServerUser {
   id: string;
@@ -56,7 +57,10 @@ function decodeJwtHeader(token: string): Record<string, unknown> | null {
   try {
     const encoded = token.split(".")[0];
     if (!encoded) return null;
-    return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Record<string, unknown>;
+    return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
   } catch {
     return null;
   }
@@ -68,8 +72,7 @@ async function verifyFirebaseIdTokenWithoutAdmin(token: string): Promise<JWTPayl
   if (!kid) throw new Error("Unauthorized");
 
   const projectId =
-    process.env.FIREBASE_PROJECT_ID ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
   if (!projectId) throw new Error("Firebase project ID is not configured");
 
@@ -87,18 +90,29 @@ async function verifyFirebaseIdTokenWithoutAdmin(token: string): Promise<JWTPayl
   return payload;
 }
 
-function userFromClaims(
-  claims: Record<string, unknown>,
-  uid: string,
-): ServerUser {
+/**
+ * Resolve application role from cryptographically verified Firebase token claims.
+ * - Explicit custom claim `role` / `admin` is the normal path for staff.
+ * - The immutable sole GitHub administrator identity always maps to Super Admin.
+ * - Firestore must never elevate privileges.
+ */
+function roleFromVerifiedClaims(claims: Record<string, unknown>): AppRole {
+  if (soleAdminRoleFromClaims(claims) === "Super Admin") {
+    return "Super Admin";
+  }
+
   const claimRole = typeof claims.role === "string" ? claims.role : undefined;
   const claimIsAdmin = claims.admin === true;
 
+  return normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User"));
+}
+
+function userFromClaims(claims: Record<string, unknown>, uid: string): ServerUser {
   return {
     id: uid,
     email: typeof claims.email === "string" ? claims.email : "",
     name: typeof claims.name === "string" ? claims.name : null,
-    role: normalizeRole(claimRole || (claimIsAdmin ? "Admin" : "User")),
+    role: roleFromVerifiedClaims(claims),
   };
 }
 
@@ -106,9 +120,8 @@ function userFromClaims(
  * Validates access_token cookie or Bearer token and enforces account state.
  *
  * When Firebase Admin credentials are available, Firestore users/{uid} remains
- * authoritative. If Admin credentials are unavailable during a hosting
- * migration, LandBD still verifies the Firebase ID token cryptographically
- * against Google's signing keys so a valid Firebase login is not rejected.
+ * authoritative for account status (deleted / locked). Privileged roles still
+ * come only from signed Firebase Auth claims (plus sole GitHub admin identity).
  */
 export async function verifyServerAuth(
   req: NextRequest,
@@ -133,16 +146,14 @@ export async function verifyServerAuth(
     return userFromClaims(payload as Record<string, unknown>, payload.sub!);
   }
 
-  const decodedToken = await auth.verifyIdToken(
-    token,
-    options.checkRevoked === true,
-  );
+  const decodedToken = await auth.verifyIdToken(token, options.checkRevoked === true);
+  const claims = decodedToken as unknown as Record<string, unknown>;
 
   let userDoc;
   try {
     userDoc = await collections.users.doc(decodedToken.uid).get();
   } catch (error) {
-    // Privileged routes also require a successful account-state lookup.
+    // Privileged routes require a successful account-state lookup.
     // Otherwise suspended or locked users could regain access during outages.
     if (options.requireAdminBackend) {
       throw new Error("Firebase Admin unavailable");
@@ -151,20 +162,11 @@ export async function verifyServerAuth(
       "[serverAuth] Firestore user lookup unavailable; using verified Firebase claims.",
       error instanceof Error ? error.message : String(error),
     );
-    return userFromClaims(
-      decodedToken as unknown as Record<string, unknown>,
-      decodedToken.uid,
-    );
+    return userFromClaims(claims, decodedToken.uid);
   }
 
-  const claimRole = decodedToken.role as string | undefined;
-  const claimIsAdmin = decodedToken.admin === true;
-
   if (!userDoc.exists) {
-    return userFromClaims(
-      decodedToken as unknown as Record<string, unknown>,
-      decodedToken.uid,
-    );
+    return userFromClaims(claims, decodedToken.uid);
   }
 
   const userData = userDoc.data()!;
@@ -188,16 +190,18 @@ export async function verifyServerAuth(
     id: userDoc.id,
     email: userData.email || decodedToken.email || "",
     name: userData.name ?? (decodedToken.name as string) ?? null,
-    // Privileged roles must come from signed Firebase Auth custom claims.
+    // Privileged roles must come from signed Firebase Auth custom claims
+    // (or the immutable sole GitHub administrator identity).
     // Firestore stores profile/state only and can never grant elevation.
-    role: normalizeRole(
-      claimRole || (claimIsAdmin ? "Admin" : "Basic User"),
-    ),
+    role: roleFromVerifiedClaims(claims),
   };
 }
 
 export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
+  const user = await verifyServerAuth(req, {
+    requireAdminBackend: true,
+    checkRevoked: true,
+  });
   if (!isSuperAdminRole(user.role)) {
     throw new Error("Forbidden: Super Admin access required");
   }
@@ -205,7 +209,10 @@ export async function verifySuperAdminAuth(req: NextRequest): Promise<ServerUser
 }
 
 export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
+  const user = await verifyServerAuth(req, {
+    requireAdminBackend: true,
+    checkRevoked: true,
+  });
   if (!isAdminRole(user.role)) {
     throw new Error("Forbidden: Admin access required");
   }
@@ -213,7 +220,10 @@ export async function verifyAdminAuth(req: NextRequest): Promise<ServerUser> {
 }
 
 export async function verifyStaffAuth(req: NextRequest): Promise<ServerUser> {
-  const user = await verifyServerAuth(req, { requireAdminBackend: true, checkRevoked: true });
+  const user = await verifyServerAuth(req, {
+    requireAdminBackend: true,
+    checkRevoked: true,
+  });
   if (!isStaffRole(user.role)) {
     throw new Error("Forbidden: Staff access required");
   }
