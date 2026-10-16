@@ -4,10 +4,12 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Copy,
-  ExternalLink,
+  ArrowRight,
   Home,
   Layers3,
+  LockKeyhole,
+  LogIn,
+  Mail,
   MapPinned,
   ShieldCheck,
 } from "lucide-react";
@@ -15,33 +17,16 @@ import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 import { resolvePostLoginTarget } from "@/src/modules/auth/loginRedirect";
-import { androidChromeIntent, isMobileUserAgent } from "@/src/modules/auth/githubBrowser";
 
 function LoginForm() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [mobileBrowserLink, setMobileBrowserLink] = useState<string | null>(null);
-  const [copiedLoginLink, setCopiedLoginLink] = useState(false);
   const searchParams = useSearchParams();
-  const { loginWithGithub, githubError, loading, isLoggedIn, user } = useAuth();
+  const { login, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
   const fromTarget = searchParams.get("from");
-
-  useEffect(() => {
-    if (!isMobileUserAgent(navigator.userAgent)) return;
-    setMobileBrowserLink(/Android/i.test(navigator.userAgent)
-      ? androidChromeIntent(window.location.href)
-      : window.location.href);
-  }, []);
-
-  const copyLoginLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopiedLoginLink(true);
-    } catch {
-      setError("লিংক কপি করা যায়নি। ব্রাউজারের ⋮ মেনু থেকে Open in browser নির্বাচন করুন।");
-    }
-  };
 
   const redirectToTarget = useCallback((role: unknown) => {
     if (redirectingRef.current) return;
@@ -62,28 +47,36 @@ function LoginForm() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (githubError) setError(githubError);
-  }, [githubError]);
-
-  useEffect(() => {
     if (!loading && isLoggedIn) {
       redirectToTarget(user?.role);
     }
   }, [loading, isLoggedIn, user?.role, redirectToTarget]);
 
-  const handleGithubLogin = async () => {
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
     setSubmitting(true);
+
+    const emailToUse = username.includes("@")
+      ? username.toLowerCase().trim()
+      : `${username.toLowerCase().trim()}@landbd.com`;
+
     try {
-      const profile = await loginWithGithub();
-      if (profile) redirectToTarget(profile.role);
+      const profile = await login(emailToUse, password);
+      redirectToTarget(profile.role);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "GitHub লগইন সম্ভব হয়নি। Firebase GitHub provider কনফিগারেশন যাচাই করুন।");
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("লক")) {
+        setError(msg);
+      } else if (msg.includes("credentials") || msg.includes("password") || msg.includes("auth/")) {
+        setError("ভুল ইমেইল বা পাসওয়ার্ড।");
+      } else {
+        setError(msg || "লগিন করতে সমস্যা হয়েছে।");
+      }
     } finally {
       setSubmitting(false);
     }
   };
-
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4 py-8 sm:px-6 lg:px-8">
@@ -104,13 +97,13 @@ function LoginForm() {
 
           <div className="max-w-md">
             <span className="landbd-section-kicker inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold">
-              <ShieldCheck size={14} /> একক GitHub অ্যাডমিন প্রবেশ
+              <ShieldCheck size={14} /> স্টাফ নিরাপদ প্রবেশ
             </span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-4xl">
               আবার স্বাগতম 👋
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-              শুধুমাত্র অনুমোদিত GitHub @omarreact অ্যাকাউন্ট দিয়ে LandBD অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করা যাবে।
+              আপনার LandBD অ্যাকাউন্টে প্রবেশ করুন। অনুমোদিত স্টাফদের অ্যাডমিন ড্যাশবোর্ডে নেওয়া হবে।
             </p>
           </div>
 
@@ -120,40 +113,64 @@ function LoginForm() {
             </div>
           )}
 
-          <div className="mt-7 max-w-md space-y-3">
-            <button type="button" onClick={() => void handleGithubLogin()}
-              disabled={loading || submitting}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-5 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">
-              <ShieldCheck size={21} /> GitHub দিয়ে অ্যাডমিন লগইন (@omarreact)
-            </button>
-            <p className="text-center text-xs text-[var(--muted-foreground)]">
-              GitHub-এ প্রমাণীকৃত নির্দিষ্ট একটি অ্যাকাউন্ট ছাড়া কোনো Admin বা Editor অনুমতি নেই।
-            </p>
-            {mobileBrowserLink && (
-              <div className="rounded-xl border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-                <p className="font-bold">মোবাইলে GitHub লগইন</p>
-                <p className="mt-1 leading-6">
-                  অন্য অ্যাপের ভেতরে পপ-আপ বন্ধ হতে পারে। সরাসরি Chrome/Safari-তে পেজটি খুলে লগইন করুন।
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {/Android/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") && (
-                    <a href={mobileBrowserLink}
-                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white no-underline">
-                      <ExternalLink size={16} /> Chrome-এ খুলুন
-                    </a>
-                  )}
-                  <button type="button" onClick={() => void copyLoginLink()}
-                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/30 bg-white px-3 py-2 font-bold text-emerald-950">
-                    <Copy size={16} /> {copiedLoginLink ? "লিংক কপি হয়েছে" : "লিংক কপি করুন"}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs">Chrome না খুললে ⋮ মেনু থেকে “Open in browser” ব্যবহার করুন।</p>
+          <form onSubmit={handleLogin} className="mt-7 max-w-md space-y-5">
+            <div>
+              <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold text-[var(--foreground)]">
+                ইমেইল বা ইউজারনেম
+              </label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
+                <input
+                  id="landbd-login-user"
+                  type="text"
+                  placeholder="আপনার ইমেইল লিখুন"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  required
+                  autoComplete="username"
+                  className="landbd-input h-12 w-full pl-11 pr-4 text-sm"
+                />
               </div>
-            )}
-          </div>
+            </div>
+
+            <div>
+              <label htmlFor="landbd-login-password" className="mb-2 block text-sm font-bold text-[var(--foreground)]">
+                পাসওয়ার্ড
+              </label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
+                <input
+                  id="landbd-login-password"
+                  type="password"
+                  placeholder="পাসওয়ার্ড দিন"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="landbd-input h-12 w-full pl-11 pr-4 text-sm"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || submitting}
+              className="landbd-primary-button flex h-12 w-full items-center justify-center gap-2 px-5 text-base font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading || submitting ? (
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary-foreground)] border-t-transparent" />
+              ) : (
+                <>
+                  <LogIn size={19} />
+                  লগইন করুন
+                  <ArrowRight size={17} />
+                </>
+              )}
+            </button>
+          </form>
 
           <div className="mt-8 max-w-md border-t border-[var(--border-color)] pt-5 text-xs leading-6 text-[var(--muted-foreground)]">
-            এই পেজে অন্য কোনো লগইন পদ্ধতি নেই। অ্যাডমিন প্রবেশ শুধু অনুমোদিত GitHub @omarreact অ্যাকাউন্টের জন্য নির্ধারিত।
+            সাধারণ সদস্যরা LandBD সেবা ব্যবহার করবেন; স্টাফদের জন্য আলাদা অ্যাডমিন ওয়ার্কস্পেস রয়েছে।
           </div>
         </section>
 

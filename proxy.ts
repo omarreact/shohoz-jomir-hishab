@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getLockoutState } from "@/src/lib/security-store";
-import { soleAdminRoleFromClaims } from "@/src/modules/auth/soleAdmin";
 import type { NextRequest } from "next/server";
 import { importX509, jwtVerify } from "jose";
 
@@ -304,7 +303,12 @@ export async function proxy(request: NextRequest) {
         "x-user-id",
         String(userPayload.user_id || userPayload.sub || ""),
       );
-      requestHeaders.set("x-user-role", soleAdminRoleFromClaims(userPayload));
+      requestHeaders.set(
+        "x-user-role",
+        String(
+          userPayload.role || (userPayload.admin === true ? "Admin" : "User"),
+        ),
+      );
     }
   }
 

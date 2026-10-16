@@ -22,7 +22,7 @@ const firebaseUidSchema = z
 
 const roleSchema = z.object({
   userId: firebaseUidSchema,
-  role: z.enum(["Basic User"]),
+  role: z.enum(["Basic User", "Editor", "Admin", "Super Admin"]),
 });
 
 const userActionSchema = z.object({
@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
 
     const currentRole = normalizeRole(snapshot.data()?.role);
     if (
-      currentRole === "Super Admin" &&
+      (currentRole === "Super Admin" || validated.role === "Super Admin") &&
       !isSuperAdminRole(actor.role)
     ) {
       return json(
