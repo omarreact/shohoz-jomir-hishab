@@ -14,6 +14,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/src/modules/database/firebaseClient";
 import { normalizeRole } from "@/src/modules/auth/roles";
+import { githubSignInStrategy } from "@/src/modules/auth/githubBrowser";
 
 export interface AuthUser {
   id: string;
@@ -35,19 +36,22 @@ export type SessionUser = {
   role?: string;
 };
 
-function sameOriginRedirectConfigured(): boolean {
-  return typeof window !== "undefined" &&
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.toLowerCase() === window.location.hostname.toLowerCase();
-}
+const GITHUB_REDIRECT_PENDING = "landbd.github.redirect.pending";
 
 function githubOAuthError(error: unknown): string {
   const code = error && typeof error === "object" && "code" in error
     ? String((error as { code?: unknown }).code) : "";
   if (code === "auth/popup-closed-by-user") {
-    return "GitHub লগইন পপ-আপটি বন্ধ হয়েছে অথবা ব্রাউজার বন্ধ করেছে। আবার চেষ্টা করুন। মোবাইলে হলে সরাসরি ব্রাউজারে পেজটি খুলুন।";
+    return "GitHub লগইন পপ-আপ বন্ধ হয়েছে। অন্য অ্যাপের ভেতরের ব্রাউজার হলে মেনু থেকে Chrome-এ খুলুন এবং আবার চেষ্টা করুন।";
   }
   if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
-    return "ব্রাউজার GitHub লগইন পপ-আপ খুলতে পারেনি। পপ-আপ অনুমতি দিন অথবা অন্য ব্রাউজারে চেষ্টা করুন।";
+    return "GitHub লগইন পপ-আপ ব্লক হয়েছে। Chrome বা Safari-তে LandBD খুলে আবার চেষ্টা করুন।";
+  }
+  if (code === "auth/web-storage-unsupported" || code === "auth/operation-not-supported-in-this-environment") {
+    return "এই ব্রাউজারে GitHub লগইনের প্রয়োজনীয় স্টোরেজ বা পপ-আপ সুবিধা নেই। Chrome বা Safari-তে খুলুন।";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Firebase Console-এ GitHub Sign-in provider সক্রিয় আছে কি না যাচাই করুন।";
   }
   if (code === "auth/unauthorized-domain") {
     return "Firebase Authorized domains-এ landbd.pincodeit.com যোগ করতে হবে।";
@@ -120,7 +124,7 @@ export function useProvideAuth(): AuthState & {
   );
 
   const loadFromToken = useCallback(
-    async (firebaseUser: User | null) => {
+    async (firebaseUser: User | null, requireGithubAdmin = false) => {
       if (!firebaseUser) {
         await clearServerSession().catch(() => undefined);
         clearClientState();
@@ -132,6 +136,9 @@ export function useProvideAuth(): AuthState & {
         // again after a refresh so the HttpOnly server cookie stays in sync.
         const token = await getIdToken(firebaseUser, false);
         const remote = await establishServerSession(token);
+        if (requireGithubAdmin && remote.role !== "Super Admin") {
+          throw new Error("শুধুমাত্র অনুমোদিত GitHub অ্যাডমিন প্রবেশ করতে পারবেন।");
+        }
 
         setState({
           user: {
@@ -161,16 +168,44 @@ export function useProvideAuth(): AuthState & {
   );
 
   useEffect(() => {
-    // Redirect authentication is used on mobile browsers where popups can be blocked.
-    // Surface OAuth errors instead of silently swallowing redirect failures.
-    void getRedirectResult(auth).catch((error: unknown) => {
-      setGithubError(githubOAuthError(error));
-    });
+    // Firebase redirects return to the same /login URL. Do not expose even a
+    // transient authenticated UI until the verified server role is checked.
+    const pendingGithubRedirect =
+      window.sessionStorage.getItem(GITHUB_REDIRECT_PENDING) === "1";
+
     const unsubscribe = onIdTokenChanged(auth, (user) => {
+      if (pendingGithubRedirect) return;
       void loadFromToken(user).catch(() => undefined);
     });
+
+    void (async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (!pendingGithubRedirect) return;
+
+        if (!result) {
+          throw new Error(
+            "GitHub থেকে লগইন সম্পন্ন হয়নি। Chrome/Safari-তে পুনরায় চেষ্টা করুন এবং OAuth callback URL যাচাই করুন.",
+          );
+        }
+
+        await loadFromToken(result.user, true);
+      } catch (error: unknown) {
+        if (pendingGithubRedirect) {
+          await signOut(auth).catch(() => undefined);
+          await clearServerSession().catch(() => undefined);
+          clearClientState();
+        }
+        setGithubError(githubOAuthError(error));
+      } finally {
+        if (pendingGithubRedirect) {
+          window.sessionStorage.removeItem(GITHUB_REDIRECT_PENDING);
+        }
+      }
+    })();
+
     return () => unsubscribe();
-  }, [loadFromToken]);
+  }, [loadFromToken, clearClientState, clearServerSession]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -200,37 +235,49 @@ export function useProvideAuth(): AuthState & {
     setGithubError(null);
     const provider = new GithubAuthProvider();
     provider.setCustomParameters({ allow_signup: "false" });
-    const redirectReady = sameOriginRedirectConfigured();
-    const mobile = typeof navigator !== "undefined" &&
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const strategy = githubSignInStrategy({
+      userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
+      hostname: typeof window === "undefined" ? "" : window.location.hostname,
+      authDomain: auth.app.options.authDomain,
+    });
 
     try {
-      // Use redirect on mobile only when same-origin OAuth helpers have been
-      // deployed AND NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN points to this host.
-      if (mobile && redirectReady) {
-        await signInWithRedirect(auth, provider);
+      if (strategy === "external-browser") {
+        throw new Error(
+          "আপনি অন্য অ্যাপের ভেতরের ব্রাউজার ব্যবহার করছেন। নিচের Chrome-এ খুলুন বোতাম চাপুন অথবা ⋮ মেনু থেকে Open in browser নির্বাচন করুন।",
+        );
+      }
+
+      if (strategy === "redirect") {
+        window.sessionStorage.setItem(GITHUB_REDIRECT_PENDING, "1");
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (error) {
+          window.sessionStorage.removeItem(GITHUB_REDIRECT_PENDING);
+          throw error;
+        }
         return null;
       }
 
+      // Desktop and ordinary external browsers retain popup sign-in until
+      // the GitHub callback has been switched to the same-origin helper.
       const credential = await signInWithPopup(auth, provider);
-      const profile = await loadFromToken(credential.user);
-      if (profile?.role !== "Super Admin") {
-        await signOut(auth).catch(() => undefined);
-        await clearServerSession().catch(() => undefined);
-        clearClientState();
-        throw new Error("শুধুমাত্র অনুমোদিত GitHub অ্যাডমিন প্রবেশ করতে পারবেন।");
-      }
-      return profile;
+      return await loadFromToken(credential.user, true);
     } catch (error: unknown) {
       const code = error && typeof error === "object" && "code" in error
         ? String((error as { code?: unknown }).code) : "";
+      const sameOrigin = auth.app.options.authDomain?.toLowerCase() ===
+        (typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "");
 
-      // Do not start an unexpected second OAuth login when a popup is closed;
-      // users can intentionally cancel authentication.
-      if (redirectReady &&
-          (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request")) {
-        await signInWithRedirect(auth, provider);
-        return null;
+      if (sameOrigin && (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request")) {
+        window.sessionStorage.setItem(GITHUB_REDIRECT_PENDING, "1");
+        try {
+          await signInWithRedirect(auth, provider);
+          return null;
+        } catch (redirectError) {
+          window.sessionStorage.removeItem(GITHUB_REDIRECT_PENDING);
+          throw new Error(githubOAuthError(redirectError));
+        }
       }
       throw new Error(githubOAuthError(error));
     }
