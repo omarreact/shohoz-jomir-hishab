@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
+  Copy,
+  ExternalLink,
   Home,
   Layers3,
   LockKeyhole,
@@ -17,16 +19,35 @@ import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 import { resolvePostLoginTarget } from "@/src/modules/auth/loginRedirect";
+import { androidChromeIntent, isMobileUserAgent } from "@/src/modules/auth/githubBrowser";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [mobileBrowserLink, setMobileBrowserLink] = useState<string | null>(null);
+  const [copiedLoginLink, setCopiedLoginLink] = useState(false);
   const searchParams = useSearchParams();
   const { login, loginWithGithub, githubError, loading, isLoggedIn, user } = useAuth();
   const redirectingRef = useRef(false);
   const fromTarget = searchParams.get("from");
+
+  useEffect(() => {
+    if (!isMobileUserAgent(navigator.userAgent)) return;
+    setMobileBrowserLink(/Android/i.test(navigator.userAgent)
+      ? androidChromeIntent(window.location.href)
+      : window.location.href);
+  }, []);
+
+  const copyLoginLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLoginLink(true);
+    } catch {
+      setError("লিংক কপি করা যায়নি। ব্রাউজারের ⋮ মেনু থেকে Open in browser নির্বাচন করুন।");
+    }
+  };
 
   const redirectToTarget = useCallback((role: unknown) => {
     if (redirectingRef.current) return;
@@ -139,6 +160,27 @@ function LoginForm() {
             <p className="text-center text-xs text-[var(--muted-foreground)]">
               GitHub-এ প্রমাণীকৃত নির্দিষ্ট একটি অ্যাকাউন্ট ছাড়া কোনো Admin বা Editor অনুমতি নেই।
             </p>
+            {mobileBrowserLink && (
+              <div className="rounded-xl border border-emerald-700/20 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+                <p className="font-bold">মোবাইলে GitHub লগইন</p>
+                <p className="mt-1 leading-6">
+                  অন্য অ্যাপের ভেতরে পপ-আপ বন্ধ হতে পারে। সরাসরি Chrome/Safari-তে পেজটি খুলে লগইন করুন।
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/Android/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") && (
+                    <a href={mobileBrowserLink}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-3 py-2 font-bold text-white no-underline">
+                      <ExternalLink size={16} /> Chrome-এ খুলুন
+                    </a>
+                  )}
+                  <button type="button" onClick={() => void copyLoginLink()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/30 bg-white px-3 py-2 font-bold text-emerald-950">
+                    <Copy size={16} /> {copiedLoginLink ? "লিংক কপি হয়েছে" : "লিংক কপি করুন"}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs">Chrome না খুললে ⋮ মেনু থেকে “Open in browser” ব্যবহার করুন।</p>
+              </div>
+            )}
             <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
               <span className="h-px flex-1 bg-[var(--border-color)]" /> সাধারণ সদস্যদের লগইন <span className="h-px flex-1 bg-[var(--border-color)]" />
             </div>
