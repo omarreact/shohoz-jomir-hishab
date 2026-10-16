@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import CommerceKpis from "@/src/components/admin/CommerceKpis";
 import {
   Activity,
   BarChart3,
@@ -355,6 +356,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="fade-in visible" data-admin-panel="true">
+      <CommerceKpis />
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
