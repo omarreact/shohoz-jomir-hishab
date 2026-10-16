@@ -5,7 +5,7 @@ export default function AiAdmin(){
  const [config,setConfig]=useState<AiSettings|null>(null),[prompt,setPrompt]=useState("বাংলায় LandBD-এর খতিয়ান অনুসন্ধান সেবার একটি SEO বিবরণ লিখুন।"),[output,setOutput]=useState(""),[status,setStatus]=useState("");
  useEffect(()=>{void fetch("/api/admin/settings/ai").then(r=>r.json()).then((v:AiSettings)=>setConfig({...v,apiKey:""})).catch(()=>setStatus("AI সেটিংস লোড হয়নি"));},[]);
  function edit(v:Partial<AiSettings>){setConfig(c=>c?{...c,...v}:c);}
- async function save(){if(!config)return;const r=await fetch("/api/admin/settings/ai",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(config)});setStatus(r.ok?"AI সেটিংস সংরক্ষিত":"সেটিংস সংরক্ষণ ব্যর্থ");}
+ async function save(){if(!config)return;const r=await fetch("/api/admin/settings/ai",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:config.enabled,provider:config.provider,model:config.model,apiKey:config.apiKey})});setStatus(r.ok?"AI সেটিংস সংরক্ষিত":"সেটিংস সংরক্ষণ ব্যর্থ");}
  async function generate(){setStatus("লেখা তৈরি হচ্ছে");const r=await fetch("/api/admin/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});const d=await r.json() as {text?:string;error?:string};setOutput(d.text||"");setStatus(r.ok?"খসড়া প্রস্তুত — যাচাই করে CMS-এ ব্যবহার করুন":d.error||"AI সংযোগ ব্যর্থ");}
  return <main className="mx-auto max-w-4xl space-y-5 p-5">
   <h1 className="text-2xl font-black">LandBD AI Studio</h1>
