@@ -35,12 +35,36 @@ export type SessionUser = {
   role?: string;
 };
 
+function sameOriginRedirectConfigured(): boolean {
+  return typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.toLowerCase() === window.location.hostname.toLowerCase();
+}
+
+function githubOAuthError(error: unknown): string {
+  const code = error && typeof error === "object" && "code" in error
+    ? String((error as { code?: unknown }).code) : "";
+  if (code === "auth/popup-closed-by-user") {
+    return "GitHub লগইন পপ-আপটি বন্ধ হয়েছে অথবা ব্রাউজার বন্ধ করেছে। আবার চেষ্টা করুন। মোবাইলে হলে সরাসরি ব্রাউজারে পেজটি খুলুন।";
+  }
+  if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+    return "ব্রাউজার GitHub লগইন পপ-আপ খুলতে পারেনি। পপ-আপ অনুমতি দিন অথবা অন্য ব্রাউজারে চেষ্টা করুন।";
+  }
+  if (code === "auth/unauthorized-domain") {
+    return "Firebase Authorized domains-এ landbd.pincodeit.com যোগ করতে হবে।";
+  }
+  if (code === "auth/account-exists-with-different-credential") {
+    return "এই ইমেইলে অন্য লগইন পদ্ধতির অ্যাকাউন্ট আছে। আগে সেটিতে প্রবেশ করে GitHub সংযুক্ত করুন।";
+  }
+  return error instanceof Error ? error.message : "GitHub লগইন সম্পন্ন করা যায়নি।";
+}
+
 export function useProvideAuth(): AuthState & {
   login: (email: string, password: string) => Promise<SessionUser>;
   loginWithGithub: () => Promise<SessionUser | null>;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
 } {
+  const [githubError, setGithubError] = useState<string | null>(null);
   const [state, setState] = useState<AuthState>({
     user: null,
     isLoggedIn: false,
@@ -137,7 +161,10 @@ export function useProvideAuth(): AuthState & {
 
   useEffect(() => {
     // Redirect authentication is used on mobile browsers where popups can be blocked.
-    void getRedirectResult(auth).catch(() => undefined);
+    // Surface OAuth errors instead of silently swallowing redirect failures.
+    void getRedirectResult(auth).catch((error: unknown) => {
+      setGithubError(githubOAuthError(error));
+    });
     const unsubscribe = onIdTokenChanged(auth, (user) => {
       void loadFromToken(user).catch(() => undefined);
     });
@@ -169,9 +196,21 @@ export function useProvideAuth(): AuthState & {
   );
 
   const loginWithGithub = useCallback(async (): Promise<SessionUser | null> => {
+    setGithubError(null);
     const provider = new GithubAuthProvider();
     provider.setCustomParameters({ allow_signup: "false" });
+    const redirectReady = sameOriginRedirectConfigured();
+    const mobile = typeof navigator !== "undefined" &&
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     try {
+      // Use redirect on mobile only when same-origin OAuth helpers have been
+      // deployed AND NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN points to this host.
+      if (mobile && redirectReady) {
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+
       const credential = await signInWithPopup(auth, provider);
       const profile = await loadFromToken(credential.user);
       if (profile?.role !== "Super Admin") {
@@ -183,14 +222,18 @@ export function useProvideAuth(): AuthState & {
       return profile;
     } catch (error: unknown) {
       const code = error && typeof error === "object" && "code" in error
-        ? String((error as {code?:unknown}).code) : "";
-      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+        ? String((error as { code?: unknown }).code) : "";
+
+      // Do not start an unexpected second OAuth login when a popup is closed;
+      // users can intentionally cancel authentication.
+      if (redirectReady &&
+          (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request")) {
         await signInWithRedirect(auth, provider);
         return null;
       }
-      throw error;
+      throw new Error(githubOAuthError(error));
     }
-  }, [loadFromToken,clearClientState,clearServerSession]);
+  }, [loadFromToken, clearClientState, clearServerSession]);
 
   const logout = useCallback(async () => {
     try {
@@ -231,5 +274,5 @@ export function useProvideAuth(): AuthState & {
     }
   }, [establishServerSession]);
 
-  return { ...state, login, loginWithGithub, logout, refresh };
+  return { ...state, login, loginWithGithub, logout, refresh, githubError };
 }
