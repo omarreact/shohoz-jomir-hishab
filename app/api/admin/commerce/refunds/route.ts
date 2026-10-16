@@ -34,10 +34,20 @@ export async function POST(req:NextRequest){
    await db.runTransaction(async tx=>{
     const current=await tx.get(ref);const data=current.data();
     if(!data||data.refundReference!==order.refundReference)throw Error("Refund changed during check");
-    // A settled refund may require manual credit reconciliation for legacy pooled entitlements.
     const next=decision==="refunded"?"refunded":decision==="processing"?"processing":"review";
+    const entitlementRef=db.collection("landbdEntitlements").doc(data.uid+"_"+data.serviceId);
+    const entitlement=await tx.get(entitlementRef);
+    const entitlementData=entitlement.data();
+    const matchesPurchase=entitlementData?.lastTransactionId===command.orderId;
+    if(next==="refunded" && matchesPurchase){
+      tx.update(entitlementRef,{active:false,refundReviewHold:true,
+        refundReviewOrderId:command.orderId,refundReviewAt:new Date().toISOString()});
+    }
+    // Revoke access only when this refund is the most recent recorded purchase.
+    // For pooled/legacy credits, create a review hold without altering the balance.
     tx.update(ref,{refundStatus:next,status:next==="refunded"?"refunded":data.status,refundCheckedAt:new Date().toISOString(),
-      refundRequiresEntitlementReview:next==="refunded"||data.refundRequiresEntitlementReview===true});
+      refundRequiresEntitlementReview:next==="refunded"||data.refundRequiresEntitlementReview===true,
+      entitlementSuspended:next==="refunded"&&matchesPurchase});
    });
    return NextResponse.json({ok:true,refundStatus:decision,refundReference:order.refundReference,
     requiresEntitlementReview:decision==="refunded"},{headers:responseHeaders});
