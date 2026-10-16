@@ -1,5 +1,5 @@
-import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 "use client";
+import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
