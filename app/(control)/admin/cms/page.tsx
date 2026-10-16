@@ -12,7 +12,7 @@ export default function CmsAdmin(){
  function update(changes:Partial<Page>){setPages(v=>v.map((x,i)=>i===selected?{...x,...changes}:x));}
  async function save(){
   if(!page)return;setBusy(true);setMessage("");
-  try{const r=await fetch("/api/admin/cms",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(page)});if(!r.ok)throw Error("Failed");setMessage("প্রকাশিত কনটেন্ট সংরক্ষিত হয়েছে।");}
+  try{const r=await fetch("/api/admin/cms",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:page.slug,title:page.title,description:page.description,seoTitle:page.seoTitle,seoDescription:page.seoDescription,published:page.published,sections:page.sections})});if(!r.ok)throw Error("Failed");setMessage("প্রকাশিত কনটেন্ট সংরক্ষিত হয়েছে।");}
   catch{setMessage("সংরক্ষণ ব্যর্থ। আবার চেষ্টা করুন।");}finally{setBusy(false);}
  }
  const input="w-full rounded-xl border border-slate-300 bg-white p-3 text-slate-900";
