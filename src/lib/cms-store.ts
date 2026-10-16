@@ -34,7 +34,7 @@ export async function getCmsPage(slug:CmsSlug):Promise<CmsPage>{
  const snap=await db.collection("landbdCmsPages").doc(slug).get();
  if(!snap.exists)return fallback;
  const d=snap.data()??{};
- return {slug,revision:typeof d.revision==="number"&&Number.isSafeInteger(d.revision)&&d.revision>=0?d.revision:0,title:typeof d.title,==="string"?d.title:fallback.title,
+ return {slug,revision:typeof d.revision==="number"&&Number.isSafeInteger(d.revision)&&d.revision>=0?d.revision:0,title:typeof d.title==="string"?d.title:fallback.title,
  description:typeof d.description==="string"?d.description:fallback.description,
  sections:Array.isArray(d.sections)?d.sections.filter((v:unknown)=>!!v&&typeof v==="object"&&typeof (v as CmsSection).heading==="string"&&typeof (v as CmsSection).body==="string").slice(0,40):fallback.sections,
  published:typeof d.published==="boolean"?d.published:fallback.published,
