@@ -121,6 +121,8 @@ export function useFaraezCalculator() {
     const land = Number.parseFloat(pending.plot.a);
     if (!Number.isFinite(land) || land <= 0) return;
     setGisPlot(pending);
+    setResults([]);
+    setErrorMessage("");
     setAssets((current) => ({ ...current, land }));
   }, []);
 
@@ -154,6 +156,31 @@ export function useFaraezCalculator() {
     return () => window.clearTimeout(timer);
   }, [assets, heirs, religion, gender, results, gisPlot, saveDraft]);
 
+  // Preserve the raw setters for draft hydration, but invalidate any displayed
+  // inheritance result immediately after a user modifies its input snapshot.
+  // A prior PDF/receipt must never be exported with new estate or heir details.
+  const invalidateResults = () => {
+    setResults([]);
+    setErrorMessage("");
+  };
+
+  const updateReligion: typeof setReligion = (value) => {
+    invalidateResults();
+    setReligion(value);
+  };
+  const updateGender: typeof setGender = (value) => {
+    invalidateResults();
+    setGender(value);
+  };
+  const updateAssets: typeof setAssets = (value) => {
+    invalidateResults();
+    setAssets(value);
+  };
+  const updateHeirs: typeof setHeirs = (value) => {
+    invalidateResults();
+    setHeirs(value);
+  };
+
   const clearCalculation = () => {
     skipNextAutosaveRef.current = true;
     if (faraezDraftIdRef.current) deleteCalculation(faraezDraftIdRef.current);
@@ -168,6 +195,7 @@ export function useFaraezCalculator() {
   };
 
   const calculate = () => {
+    setResults([]);
     setErrorMessage("");
     try {
       if (religion === "muslim") {
@@ -207,14 +235,14 @@ export function useFaraezCalculator() {
 
   return {
     religion,
-    setReligion,
+    setReligion: updateReligion,
     gender,
-    setGender,
+    setGender: updateGender,
     assets,
-    setAssets,
+    setAssets: updateAssets,
     gisPlot,
     heirs,
-    setHeirs,
+    setHeirs: updateHeirs,
     results,
     errorMessage,
     exportRef,
