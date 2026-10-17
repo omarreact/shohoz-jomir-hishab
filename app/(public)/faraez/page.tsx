@@ -1,4 +1,5 @@
 "use client";
+import MobilePageIntro from "@/src/shared/components/MobilePageIntro";
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 
 import { useState } from "react";
@@ -34,6 +35,7 @@ export default function FaraezPage() {
     heirs,
     setHeirs,
     results,
+    errorMessage,
     exportRef,
     calculate,
     clearCalculation,
@@ -41,15 +43,16 @@ export default function FaraezPage() {
 
   return (
     <ServicePaywallGate serviceId="faraez">
-      <HeroBanner
+      <MobilePageIntro eyebrow="উত্তরাধিকার হিসাব" title="ফারায়েজ বণ্টন" description="সম্পত্তির পরিমাণ, ওয়ারিশ ও প্রযোজ্য তথ্য দিয়ে অংশ হিসাব করুন।" />
+      <div className="hidden md:block"><HeroBanner
         align="center"
         badge="উত্তরাধিকার ক্যালকুলেটর"
         title={<><span>স্মার্ট </span><span className="accent-text">ফারায়েজ</span><span> ও বন্টন</span></>}
         description="বাংলাদেশী মুসলিম ফারায়েজ ও হিন্দু দায়ভাগ আইন অনুযায়ী পৈতৃক সম্পত্তির নিখুঁত হিসাব করুন মাত্র কয়েক ক্লিকে।"
         pattern="none"
-      />
+      /></div>
 
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 fade-in visible">
+      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8 fade-in visible">
         <div className="mx-auto max-w-4xl">
           <div className="mb-5 grid gap-2 sm:grid-cols-3" aria-label="ফারায়েজ হিসাবের ধাপ">
             {[
@@ -103,13 +106,13 @@ export default function FaraezPage() {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 text-primary" size={22} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-bold text-foreground"><MapPinned size={16} /> রাজউক/জিআইএস যাচাইকৃত প্লট</div>
+                    <div className="flex items-center gap-2 font-bold text-foreground"><MapPinned size={16} /> মানচিত্র থেকে নির্বাচিত প্লট</div>
                     <p className="mt-1 text-sm text-muted-foreground">এই জমির পরিমাণ সার্ভার-যাচাইকৃত জিআইএস প্লট থেকে এসেছে এবং লক করা আছে।</p>
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                       <div><span className="text-muted-foreground">প্লট আইডি</span><div className="font-bold">{gisPlot.plot.plotId}</div></div>
                       <div><span className="text-muted-foreground">আরএস</span><div className="font-bold">{gisPlot.plot.rs || "—"}</div></div>
                       <div><span className="text-muted-foreground">জমি (শতাংশ)</span><div className="font-bold text-primary">{gisPlot.plot.a}</div></div>
-                      <div><span className="text-muted-foreground">উৎস</span><div className="font-bold">রাজউক</div></div>
+                      <div><span className="text-muted-foreground">উৎস</span><div className="font-bold">মানচিত্র</div></div>
                     </div>
                   </div>
                 </div>
@@ -146,6 +149,13 @@ export default function FaraezPage() {
             <button type="button" onClick={clearCalculation} className="landbd-secondary-button flex min-h-12 items-center justify-center px-6 py-3.5 font-bold text-[var(--muted-foreground)]"><Trash2 size={20} className="mr-2" /> হিসাব পরিষ্কার করুন</button>
           </div>
 
+          {errorMessage ? (
+            <div role="alert" aria-live="assertive" className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold leading-7 text-rose-800">
+              <p className="mb-2 font-black">হিসাব করার আগে তথ্য ঠিক করুন</p>
+              <p>{errorMessage}</p>
+            </div>
+          ) : null}
+
           {results.length > 0 ? (
             <div className="mt-12 fade-in visible">
               <FaraezResult results={results} exportRef={exportRef} religion={religion} />
@@ -153,7 +163,7 @@ export default function FaraezPage() {
           ) : null}
         </div>
 
-        <div className="mt-20"><LatestBlogs /></div>
+        <div className="mt-20 hidden md:block"><LatestBlogs /></div>
       </div>
     </ServicePaywallGate>
   );
