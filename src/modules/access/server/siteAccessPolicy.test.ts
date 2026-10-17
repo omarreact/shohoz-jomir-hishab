@@ -1,6 +1,34 @@
+const initialPublicAccess = process.env.LANDBD_PUBLIC_ACCESS;
+
 describe("site access policy", () => {
   beforeEach(() => {
     jest.resetModules();
+    process.env.LANDBD_PUBLIC_ACCESS = "false";
+  });
+
+  afterAll(() => {
+    if (initialPublicAccess === undefined) {
+      delete process.env.LANDBD_PUBLIC_ACCESS;
+    } else {
+      process.env.LANDBD_PUBLIC_ACCESS = initialPublicAccess;
+    }
+  });
+
+  it("defaults to public launch access while preserving sensitive route minimums", async () => {
+    process.env.LANDBD_PUBLIC_ACCESS = "true";
+
+    const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
+    const result = await getSiteAccessPolicy({ fresh: true });
+
+    expect(result.maintenanceMode).toBe(false);
+    expect(result.degraded).toBe(false);
+    expect(result.pageAccess["/"]).toBe("public");
+    expect(result.pageAccess["/mouza-map"]).toBe("public");
+    expect(result.pageAccess["/dlrms-khatian"]).toBe("public");
+    expect(result.pageAccess["/nid-copy"]).toBe("logged_in");
+    expect(result.pageAccess["/my-purchases"]).toBe("logged_in");
+    expect(result.pageAccess["/rajuk-test"]).toBe("admin");
+    expect(result.pageAccess["/ms-test"]).toBe("super_admin");
   });
 
   it("fails open (site stays online) when Firebase Admin is unavailable", async () => {

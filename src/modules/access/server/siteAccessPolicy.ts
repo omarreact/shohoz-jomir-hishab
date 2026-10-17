@@ -18,6 +18,17 @@ export interface SiteAccessPolicy {
 const POLICY_TTL_MS = 5_000;
 
 /**
+ * Public launch mode: enabled by default so LandBD's public-facing pages are
+ * accessible without a member session. Set LANDBD_PUBLIC_ACCESS=false to return
+ * full control of maintenance and page-level access to Firestore settings.
+ * The reviewed defaults still protect identity/account and staff-only pages.
+ * API handler authorization and /admin role verification are never bypassed.
+ */
+export function isPublicAccessOverrideEnabled(): boolean {
+  return process.env.LANDBD_PUBLIC_ACCESS !== "false";
+}
+
+/**
  * Firebase Admin + Firestore can exceed 1.5s on a cold Vercel function.
  * Production smoke tests showed the previous 1.5s hard limit consistently
  * forcing LandBD into degraded fail-closed mode. Keep the limit configurable
@@ -129,6 +140,18 @@ async function loadPolicyFromFirestore(): Promise<SiteAccessPolicy> {
 export async function getSiteAccessPolicy(
   options: { fresh?: boolean } = {},
 ): Promise<SiteAccessPolicy> {
+  if (isPublicAccessOverrideEnabled()) {
+    // Ignore old maintenance flags and stale Firestore page overrides during
+    // public launch, without weakening signed-member or administrator routes.
+    return {
+      maintenanceMode: false,
+      pageAccess: getDefaultPageAccessRules(),
+      pageAccessUpdatedAt: null,
+      degraded: false,
+      loadedAt: Date.now(),
+    };
+  }
+
   const now = Date.now();
 
   if (!options.fresh && cachedPolicy && cachedPolicy.expiresAt > now) {
