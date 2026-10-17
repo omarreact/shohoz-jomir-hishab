@@ -24,10 +24,12 @@ export default function LandMeasurementCalculator() {
   const [shape, setShape] = useState<ShapeType>("quad");
   const [inputs, setInputs] = useState<MeasurementInputs>(() => createInitialMeasurementInputs());
   const [result, setResult] = useState<MeasurementResult | null>(null);
+  const [inputError, setInputError] = useState("");
 
   const handleShapeChange = useCallback((nextShape: ShapeType) => {
     setShape(nextShape);
     setResult(null);
+    setInputError("");
   }, []);
 
   const updateInput = useCallback(
@@ -37,6 +39,7 @@ export default function LandMeasurementCalculator() {
         [key]: { ...previous[key], [field]: value },
       }));
       setResult(null);
+      setInputError("");
     },
     [],
   );
@@ -48,7 +51,9 @@ export default function LandMeasurementCalculator() {
     if (shape === "quad") value = calcQuadrilateral(inputs.side1, inputs.side2, inputs.side3, inputs.side4, inputs.diag1);
     if (shape === "pentagon") value = calcPentagon(inputs.side1, inputs.side2, inputs.side3, inputs.side4, inputs.side5, inputs.diag1, inputs.diag2);
     if (shape === "circle") value = calcCircle(inputs.diameter);
-    setResult(value);
+    setResult(value?.isValid ? value : null);
+    setInputError(value?.isValid ? "" : value?.errorMsg || "সঠিক মাপ দিয়ে আবার চেষ্টা করুন।");
+    if (!value?.isValid) return;
     window.setTimeout(
       () => document.getElementById("landResultSection")?.scrollIntoView({ behavior: "smooth", block: "start" }),
       50,
@@ -108,6 +113,11 @@ export default function LandMeasurementCalculator() {
         onCalculate={calculate}
       />
 
+      {inputError ? (
+        <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold leading-6 text-red-800">
+          {inputError}
+        </div>
+      ) : null}
       {result ? <MeasurementResultCard result={result} /> : null}
     </div>
   );

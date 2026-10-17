@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import ShareStepper from "./ShareStepper";
 import { Ruler, LayoutGrid, Calculator } from "lucide-react";
 import { toBn } from "@/src/shared/utils";
 import type { KhatiyanQuickData } from "@/src/shared/types";
@@ -62,8 +63,8 @@ export default function QuickCalculator({
           </div>
 
           <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-            <h6 className="mb-4 border-b border-slate-200 pb-3 text-sm font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">আপনার অংশ/হিস্যা সিলেক্ট করুন</h6>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            <h6 className="mb-4 border-b border-slate-200 pb-3 text-sm font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">আপনার অংশ/হিস্যা নির্ধারণ করুন</h6>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               {[
                 ["আনা", quickData.a, "a", anaOptions],
                 ["গন্ডা", quickData.g, "g", gondaOptions],
@@ -71,17 +72,13 @@ export default function QuickCalculator({
                 ["ক্রান্তি", quickData.kr, "kr", krantiOptions],
                 ["তিল", quickData.ti, "ti", tilOptions],
               ].map(([label, value, key, options]) => (
-                <div key={String(key)} className="space-y-1.5">
-                  <label className="block text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{String(label)}</label>
-                  <select
+                <div key={String(key)} className="min-w-0">
+                  <ShareStepper
+                    label={String(label)}
                     value={Number(value)}
-                    onChange={(e) => onQuickDataChange({ [String(key)]: parseInt(e.target.value, 10) })}
-                    className="h-12 w-full justify-center rounded-xl border border-slate-200 bg-white px-2 text-center text-sm font-medium shadow-sm focus:border-[#006a4e] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                  >
-                    {(options as typeof anaOptions).map((option) => (
-                      <option key={option.v} value={option.v}>{option.t}</option>
-                    ))}
-                  </select>
+                    max={Math.max(...(options as typeof anaOptions).map(option => option.v))}
+                    onChange={(next) => onQuickDataChange({ [String(key)]: next })}
+                  />
                 </div>
               ))}
             </div>

@@ -19,8 +19,8 @@ const PRIMARY_ACTIONS: readonly Action[] = [
     subtitle: "মাপ ও রূপান্তর", icon: Ruler,
   },
   {
-    href: FEATURE_ROUTES.landMap, title: "রাজউক মানচিত্র",
-    subtitle: "GIS ও মৌজা", icon: MapPinned,
+    href: FEATURE_ROUTES.landMap, title: "ভূমি মানচিত্র",
+    subtitle: "সীমানা ও দাগ", icon: MapPinned,
   },
   {
     href: FEATURE_ROUTES.inheritance, title: "ফারায়েজ হিসাব",
@@ -55,7 +55,7 @@ export default function MobileHomeScreen() {
         <div className="pointer-events-none absolute -bottom-16 right-16 h-36 w-36 rounded-full bg-white/[.04]" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-extrabold">
-            <ShieldCheck size={15} /> বাংলাদেশ ভূমি সেবা
+            <ShieldCheck size={15} /> LandBD ভূমি সেবা
           </div>
           <h1 className="mt-4 max-w-xs text-[29px] font-black leading-[1.22] tracking-tight">
             জমির তথ্য ও হিসাব, এখন হাতের মুঠোয়।

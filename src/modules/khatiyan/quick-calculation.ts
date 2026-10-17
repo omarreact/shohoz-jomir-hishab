@@ -14,6 +14,8 @@ export interface KhatiyanQuickResult {
 
 /** Exact fixed-point scale for continuous land area at the calculation boundary. */
 const AREA_SCALE = 1_000_000n;
+/** Defensive upper bound; unrealistic or malicious exponents must not exhaust browser memory. */
+const MAX_AREA_SCALED = 1_000_000_000n * AREA_SCALE;
 const SQFT_PER_DECIMAL = BigInt(KHATIYAN_RECORD_STANDARD.squareFeetPerDecimal);
 const SQFT_PER_KATHA = BigInt(KHATIYAN_RECORD_STANDARD.squareFeetPerKatha);
 const BANGLA_DIGITS = "০১২৩৪৫৬৭৮৯";
@@ -50,22 +52,36 @@ function normalizeNumericText(value: string | number): string {
 
 function toScaledDecimal(value: string | number): bigint {
   const text = normalizeNumericText(value);
+  if (text.length > 64) throw new RangeError("Land area input too long");
   if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/.test(text)) {
     throw new RangeError("Invalid land area");
   }
 
   const [coefficient, exponentText] = text.split("e");
   const exponent = exponentText ? Number.parseInt(exponentText, 10) : 0;
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 32) {
+    throw new RangeError("Land area exponent out of bounds");
+  }
   const [whole, fraction = ""] = coefficient.split(".");
+  if (whole.length + fraction.length > 32) {
+    throw new RangeError("Land area precision out of bounds");
+  }
   const digits = BigInt(`${whole || "0"}${fraction}` || "0");
   const decimalPlaces = fraction.length - exponent;
   const shift = 6 - decimalPlaces;
 
-  if (shift >= 0) return digits * 10n ** BigInt(shift);
-  const divisor = 10n ** BigInt(-shift);
-  const quotient = digits / divisor;
-  const remainder = digits % divisor;
-  return remainder * 2n >= divisor ? quotient + 1n : quotient;
+  const scaled = shift >= 0
+    ? digits * 10n ** BigInt(shift)
+    : (() => {
+        const divisor = 10n ** BigInt(-shift);
+        const quotient = digits / divisor;
+        const remainder = digits % divisor;
+        return remainder * 2n >= divisor ? quotient + 1n : quotient;
+      })();
+  if (scaled > MAX_AREA_SCALED) {
+    throw new RangeError("Land area exceeds supported range");
+  }
+  return scaled;
 }
 
 function fromScaled(value: bigint): number {

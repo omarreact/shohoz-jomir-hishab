@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
+import { formatFaraezValidationMessage } from "@/src/features/faraez/lib/validationCopy";
 import { calculateFaraez } from "@/src/modules/faraez/faraez.engine";
 import type { FaraezInput } from "@/src/modules/faraez/contracts";
 import { toUiResults } from "@/src/modules/faraez/ui-adapter";
@@ -63,6 +64,7 @@ export function useFaraezCalculator() {
   const [gisPlot, setGisPlot] = useState<ReturnType<typeof consumePendingPlot>>(null);
   const [heirs, setHeirs] = useState<HeirsInput>(initialFaraezHeirs);
   const [results, setResults] = useState<HeirResult[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const saveDraft = useHistoryStore((state) => state.saveDraft);
   const deleteCalculation = useHistoryStore((state) => state.deleteCalculation);
@@ -119,6 +121,8 @@ export function useFaraezCalculator() {
     const land = Number.parseFloat(pending.plot.a);
     if (!Number.isFinite(land) || land <= 0) return;
     setGisPlot(pending);
+    setResults([]);
+    setErrorMessage("");
     setAssets((current) => ({ ...current, land }));
   }, []);
 
@@ -152,6 +156,31 @@ export function useFaraezCalculator() {
     return () => window.clearTimeout(timer);
   }, [assets, heirs, religion, gender, results, gisPlot, saveDraft]);
 
+  // Preserve the raw setters for draft hydration, but invalidate any displayed
+  // inheritance result immediately after a user modifies its input snapshot.
+  // A prior PDF/receipt must never be exported with new estate or heir details.
+  const invalidateResults = () => {
+    setResults([]);
+    setErrorMessage("");
+  };
+
+  const updateReligion: typeof setReligion = (value) => {
+    invalidateResults();
+    setReligion(value);
+  };
+  const updateGender: typeof setGender = (value) => {
+    invalidateResults();
+    setGender(value);
+  };
+  const updateAssets: typeof setAssets = (value) => {
+    invalidateResults();
+    setAssets(value);
+  };
+  const updateHeirs: typeof setHeirs = (value) => {
+    invalidateResults();
+    setHeirs(value);
+  };
+
   const clearCalculation = () => {
     skipNextAutosaveRef.current = true;
     if (faraezDraftIdRef.current) deleteCalculation(faraezDraftIdRef.current);
@@ -162,15 +191,18 @@ export function useFaraezCalculator() {
     setGender("male");
     setResults([]);
     setGisPlot(null);
+    setErrorMessage("");
   };
 
   const calculate = () => {
+    setResults([]);
+    setErrorMessage("");
     try {
       if (religion === "muslim") {
         const validationErrors = validateMuslimFaraezInput(heirs, assets);
         if (validationErrors.length > 0) {
           setResults([]);
-          alert(`ইনপুটে সমস্যা আছে:\n\n${validationErrors.join("\n")}`);
+          setErrorMessage(validationErrors.map(formatFaraezValidationMessage).join(" • "));
           return;
         }
 
@@ -197,21 +229,22 @@ export function useFaraezCalculator() {
     } catch (error) {
       logger.warn("Faraez calculation failed", error);
       setResults([]);
-      alert("হিসাব করা যায়নি। অনুগ্রহ করে ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
+      setErrorMessage("হিসাব করা যায়নি। ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
     }
   };
 
   return {
     religion,
-    setReligion,
+    setReligion: updateReligion,
     gender,
-    setGender,
+    setGender: updateGender,
     assets,
-    setAssets,
+    setAssets: updateAssets,
     gisPlot,
     heirs,
-    setHeirs,
+    setHeirs: updateHeirs,
     results,
+    errorMessage,
     exportRef,
     calculate,
     clearCalculation,

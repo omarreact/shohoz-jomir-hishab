@@ -1,4 +1,5 @@
 import { Plus, Trash2, Users } from "lucide-react";
+import ShareStepper from "./ShareStepper";
 import { toBn } from "@/src/shared/utils";
 import type { KhatiyanOwner, RelationTypeBn } from "@/src/shared/types";
 import {
@@ -19,6 +20,14 @@ interface OwnersCardProps {
     value: KhatiyanOwner[Key],
   ) => void;
 }
+
+const SHARE_FIELDS = [
+  { key: "a" as const, label: "আনা", max: anaOptions[anaOptions.length - 1].v },
+  { key: "g" as const, label: "গন্ডা", max: gondaOptions[gondaOptions.length - 1].v },
+  { key: "k" as const, label: "কড়া", max: koraOptions[koraOptions.length - 1].v },
+  { key: "kr" as const, label: "ক্রান্তি", max: krantiOptions[krantiOptions.length - 1].v },
+  { key: "ti" as const, label: "তিল", max: tilOptions[tilOptions.length - 1].v },
+];
 
 export default function OwnersCard({
   owners,
@@ -75,22 +84,17 @@ export default function OwnersCard({
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 block">
                       সম্পর্ক
                     </label>
-                    <select
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e] transition-colors text-sm"
-                      value={owner.rType || "পিতা"}
-                      onChange={(e) =>
-                        onUpdateOwner(
-                          owner.id,
-                          "rType",
-                          e.target.value as RelationTypeBn,
-                        )
-                      }
-                    >
-                      <option value="পিতা">পিতা</option>
-                      <option value="মাতা">মাতা</option>
-                      <option value="স্বামী">স্বামী</option>
-                      <option value="স্ত্রী">স্ত্রী</option>
-                    </select>
+                    <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="সম্পর্ক">
+                      {(["পিতা", "মাতা", "স্বামী", "স্ত্রী"] as const).map(relation => (
+                        <button key={relation} type="button" aria-pressed={owner.rType === relation}
+                          onClick={() => onUpdateOwner(owner.id, "rType", relation as RelationTypeBn)}
+                          className={owner.rType === relation
+                            ? "min-h-11 rounded-xl bg-[var(--primary)] px-1 text-xs font-bold text-white"
+                            : "min-h-11 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-1 text-xs font-bold text-[var(--foreground)]"}>
+                          {relation}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
@@ -113,91 +117,11 @@ export default function OwnersCard({
                   <h6 className="font-bold text-slate-700 dark:text-slate-300 mb-3 text-sm">
                     খতিয়ানের হিস্যা (অংশ)
                   </h6>
-                  <div className="grid grid-cols-5 gap-2">
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400">আনা</label>
-                      <select
-                        className="w-full h-9 text-center px-1 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-[#006a4e]"
-                        value={owner.a?.toString() || "0"}
-                        onChange={(e) =>
-                          onUpdateOwner(owner.id, "a", Number(e.target.value))
-                        }
-                      >
-                        {anaOptions.map((opt) => (
-                          <option key={opt.v} value={opt.v.toString()}>
-                            {opt.t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400">গন্ডা</label>
-                      <select
-                        className="w-full h-9 text-center px-1 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-[#006a4e]"
-                        value={owner.g?.toString() || "0"}
-                        onChange={(e) =>
-                          onUpdateOwner(owner.id, "g", Number(e.target.value))
-                        }
-                      >
-                        {gondaOptions.map((opt) => (
-                          <option key={opt.v} value={opt.v.toString()}>
-                            {opt.t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400">কড়া</label>
-                      <select
-                        className="w-full h-9 text-center px-1 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-[#006a4e]"
-                        value={owner.k?.toString() || "0"}
-                        onChange={(e) =>
-                          onUpdateOwner(owner.id, "k", Number(e.target.value))
-                        }
-                      >
-                        {koraOptions.map((opt) => (
-                          <option key={opt.v} value={opt.v.toString()}>
-                            {opt.t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400">ক্রান্তি</label>
-                      <select
-                        className="w-full h-9 text-center px-1 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-[#006a4e]"
-                        value={owner.kr?.toString() || "0"}
-                        onChange={(e) =>
-                          onUpdateOwner(owner.id, "kr", Number(e.target.value))
-                        }
-                      >
-                        {krantiOptions.map((opt) => (
-                          <option key={opt.v} value={opt.v.toString()}>
-                            {opt.t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1 text-center">
-                      <label className="text-[10px] font-medium text-slate-500 dark:text-slate-400">তিল</label>
-                      <select
-                        className="w-full h-9 text-center px-1 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-[#006a4e]"
-                        value={owner.ti?.toString() || "0"}
-                        onChange={(e) =>
-                          onUpdateOwner(owner.id, "ti", Number(e.target.value))
-                        }
-                      >
-                        {tilOptions.map((opt) => (
-                          <option key={opt.v} value={opt.v.toString()}>
-                            {opt.t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 2xl:grid-cols-5">
+                    {SHARE_FIELDS.map(({ key, label, max }) => (
+                      <ShareStepper key={key} label={label} value={Number(owner[key] ?? 0)}
+                        max={max} onChange={(next) => onUpdateOwner(owner.id, key, next)} />
+                    ))}
                   </div>
                 </div>
               </div>
