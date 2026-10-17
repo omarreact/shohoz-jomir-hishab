@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Box,
   ChevronDown,
   ChevronUp,
   Compass,
@@ -12,10 +11,8 @@ import {
   LocateFixed,
   Map as MapIcon,
   MapPin,
-  Menu,
   Minus,
   MousePointer2,
-  Pentagon,
   Plus,
   Ruler,
   Search,
@@ -223,8 +220,7 @@ export default function MapLibreMapViewV2({
   validateAndRoute,
   activeDetails,
 }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [measurePanelOpen, setMeasurePanelOpen] = useState(true);
+  const [measurePanelOpen, setMeasurePanelOpen] = useState(false);
   const [measureMode, setMeasureMode] = useState<MeasurementMode | null>(null);
   const [measureKind, setMeasureKind] = useState<MeasurementMode>("polygon");
   const [measurePoints, setMeasurePoints] = useState<LngLatTuple[]>([]);
@@ -451,14 +447,14 @@ export default function MapLibreMapViewV2({
             {searching ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
           </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
-          className="pointer-events-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-slate-950/88 text-white shadow-xl backdrop-blur-xl"
-          aria-label="মেনু খুলুন"
+        <Link
+          href="/explore"
+          className="pointer-events-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-slate-950/88 text-white no-underline shadow-xl backdrop-blur-xl"
+          aria-label="সব LandBD সেবা"
+          title="সব সেবা"
         >
-          <Menu size={22} />
-        </button>
+          <Layers3 size={22} />
+        </Link>
       </div>
 
       {vectorStatus ? (
@@ -613,7 +609,7 @@ export default function MapLibreMapViewV2({
                   জমির মাপ
                 </div>
                 <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                  মানচিত্রে পয়েন্ট বসিয়ে জমির ক্ষেত্রফল বা দূরত্ব মাপুন। এই মাপটি আরএস/এমএস সরকারি স্তর পরিবর্তন করে না।
+                  মানচিত্রে একাধিক পয়েন্ট দিন। এখানে মাপা ক্ষেত্রফল আনুমানিক; দাপ্তরিক কাজে মূল নথি যাচাই করুন।
                 </p>
               </div>
               {measureMode ? (
@@ -763,18 +759,12 @@ export default function MapLibreMapViewV2({
       </div>
 
       {panelOpen ? (
-        <div className="absolute inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-[1px]">
-          <button
-            type="button"
-            className="absolute inset-0 cursor-default"
-            aria-label="লেয়ার প্যানেল বন্ধ করুন"
-            onClick={() => setPanelOpen(false)}
-          />
-          <aside className="relative flex h-full w-[min(92vw,24rem)] flex-col border-l border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-2xl">
+        <div className="pointer-events-none absolute right-2 top-20 z-50 flex max-h-[min(72dvh,43rem)] w-[min(92vw,24rem)] flex-col sm:right-4 sm:top-24">
+          <aside className="pointer-events-auto relative flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-xl">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] px-4 py-4">
               <div>
                 <div className="font-black">মানচিত্র নিয়ন্ত্রণ</div>
-                <div className="text-xs text-[var(--muted-foreground)]">আরএস/এমএস কনফিগারেশন অপরিবর্তিত</div>
+                <div className="text-xs text-[var(--muted-foreground)]">মানচিত্র, স্তর এবং দাগের বিস্তারিত</div>
               </div>
               <button
                 type="button"
@@ -786,6 +776,11 @@ export default function MapLibreMapViewV2({
               </button>
             </div>
 
+            <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-4 py-3 text-xs leading-5 text-[var(--foreground)]">
+              <p className="font-black">মানচিত্র ব্যবহারের নিয়ম</p>
+              <p className="mt-1">দাগে চাপুন → জমির তথ্য দেখুন। উপরের সার্চে দাগ নম্বর দিয়ে খুঁজুন। অবস্থান ও পরিমাপের আলাদা বোতাম আছে।</p>
+              <p className="mt-1 text-[var(--muted-foreground)]">RS = রিভিশনাল জরিপ · MS = মহানগর জরিপ। স্তর উপলব্ধ না থাকলে তথ্য অসম্পূর্ণ হতে পারে।</p>
+            </div>
             <div className="grid grid-cols-3 gap-1 border-b border-[var(--border-color)] p-2">
               {(["layers", "basemap", "results"] as Tab[]).map((item) => (
                 <button
@@ -862,7 +857,7 @@ export default function MapLibreMapViewV2({
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-[var(--border-color)] p-6 text-center text-sm text-[var(--muted-foreground)]">
-                    এখনো কোনো দাগ ফলাফল নেই। মানচিত্রে দাগে চাপুন অথবা উপরে দাগ নম্বর খুঁজুন।
+                    কোনো দাগ নির্বাচন করা হয়নি। মানচিত্রে দাগে চাপুন, অথবা উপরে দাগ নম্বর লিখে খুঁজুন।
                   </div>
                 )
               ) : isAdvanced ? (
@@ -919,7 +914,7 @@ export default function MapLibreMapViewV2({
               ) : (
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                    আরএস ও এমএস মৌজা স্তর বর্তমান ডিফল্ট কনফিগারেশনে সক্রিয় আছে। সাধারণ ব্যবহারকারীর জন্য এই স্তরের সেটিং পরিবর্তন বন্ধ রাখা হয়েছে।
+                    মৌজার সীমানা ও দাগ নম্বর স্বয়ংক্রিয়ভাবে দেখা যায়। মানচিত্রের ধরন পরিবর্তন করতে নিচের অপশন ব্যবহার করুন।
                   </div>
                   <button
                     type="button"
@@ -932,60 +927,6 @@ export default function MapLibreMapViewV2({
               )}
             </div>
           </aside>
-        </div>
-      ) : null}
-
-      {menuOpen ? (
-        <div className="absolute inset-0 z-[60] bg-black/50 backdrop-blur-sm">
-          <aside className="flex h-full w-[min(84vw,22rem)] flex-col bg-[#0b1722] p-4 text-white shadow-2xl">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#17663A]">
-                  <MapIcon size={20} />
-                </div>
-                <div>
-                  <div className="font-black">ল্যান্ডবিডি</div>
-                  <div className="text-[11px] text-slate-400">স্মার্ট ভূমি সহায়ক</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                className="rounded-xl border border-white/10 p-2 text-slate-300"
-                aria-label="মেনু বন্ধ করুন"
-              >
-                <X size={19} />
-              </button>
-            </div>
-
-            <nav className="space-y-2">
-              <Link href="/geospatial-map" className="flex items-center gap-3 rounded-2xl bg-[#17663A] px-4 py-3 font-bold text-white no-underline">
-                <MapIcon size={19} /> মানচিত্র দেখুন
-              </Link>
-              <Link href="/dlrms-khatian" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-slate-200 no-underline hover:bg-white/5">
-                <Box size={19} /> খতিয়ান অনুসন্ধান
-              </Link>
-              <Link href="/land-measurement" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-slate-200 no-underline hover:bg-white/5">
-                <Ruler size={19} /> জমি পরিমাপ ক্যালকুলেটর
-              </Link>
-              <Link href="/mouza-map" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-slate-200 no-underline hover:bg-white/5">
-                <Layers3 size={19} /> মৌজা ম্যাপ ডাউনলোড
-              </Link>
-              <Link href="/faraez" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-slate-200 no-underline hover:bg-white/5">
-                <Pentagon size={19} /> ফারায়েজ হিসাব
-              </Link>
-            </nav>
-
-            <div className="mt-auto border-t border-white/10 pt-4 text-xs leading-6 text-slate-400">
-              মানচিত্রের আরএস/এমএস তথ্য বর্তমান LandBD সরকারি-উৎস সংযোগ থেকেই আসে। মাপজোকের আঁকা স্তরটি আলাদা এবং মূল দাগ ডেটা পরিবর্তন করে না।
-            </div>
-          </aside>
-          <button
-            type="button"
-            className="absolute inset-y-0 right-0 left-[min(84vw,22rem)]"
-            onClick={() => setMenuOpen(false)}
-            aria-label="মেনু বন্ধ করুন"
-          />
         </div>
       ) : null}
 
