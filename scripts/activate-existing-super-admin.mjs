@@ -37,7 +37,7 @@ function parseArgs(argv) {
   const email = (flags.email || "").toLowerCase();
   const uid = flags.uid || "";
   if (!["inspect", "verification-link", "activate"].includes(action) ||
-      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       !/^[A-Za-z0-9_-]{10,128}$/.test(uid)) {
     throw new Error("Usage: node scripts/activate-existing-super-admin.mjs <inspect|verification-link|activate> --email=EMAIL --uid=UID");
   }
