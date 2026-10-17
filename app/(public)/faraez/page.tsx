@@ -1,4 +1,5 @@
 "use client";
+import MobilePageIntro from "@/src/shared/components/MobilePageIntro";
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 
 import { useState } from "react";
@@ -42,10 +43,11 @@ export default function FaraezPage() {
 
   return (
     <ServicePaywallGate serviceId="faraez">
-      <HeroBanner
+      <MobilePageIntro eyebrow="উত্তরাধিকার হিসাব" title="ফারায়েজ বণ্টন" description="সম্পত্তির পরিমাণ, ওয়ারিশ ও প্রযোজ্য তথ্য দিয়ে অংশ হিসাব করুন।" />
+      <div className="hidden md:block"><HeroBanner
         align="center"
         badge="উত্তরাধিকার ক্যালকুলেটর"
-        title={<><span>স্মার্ট </span><span className="accent-text">ফারায়েজ</span><span> ও বন্টন</span></>}
+        title={<><span>স্মার্ট </span><span className="accent-text">ফারায়েজ</span><span> ও বন্টন</span></></div>}
         description="বাংলাদেশী মুসলিম ফারায়েজ ও হিন্দু দায়ভাগ আইন অনুযায়ী পৈতৃক সম্পত্তির নিখুঁত হিসাব করুন মাত্র কয়েক ক্লিকে।"
         pattern="none"
       />
