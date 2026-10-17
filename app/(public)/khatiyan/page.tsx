@@ -1,4 +1,5 @@
 "use client";
+import MobilePageIntro from "@/src/shared/components/MobilePageIntro";
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 
 import { useRef, useState } from "react";
@@ -45,7 +46,8 @@ export default function SmartKhatiyanApp() {
   };
 
   return <ServicePaywallGate serviceId="khatiyan">
-    <HeroBanner align="center" badge="খতিয়ান ক্যালকুলেটর" title={<>স্মার্ট <span className="text-[#1A6B3C]">খতিয়ান</span> হিসাব</>} description="জমির পরিমাণ ও মালিকদের অংশ লিখে হিস্যা বের করুন। বিস্তারিত ও দ্রুত হিসাবের জন্য নিচের ট্যাব ব্যবহার করুন।" pattern="none" />
+    <MobilePageIntro eyebrow="খতিয়ান ও রেকর্ড" title="খতিয়ান হিসাব" description="মালিকের অংশ ও জমির পরিমাণ দিয়ে হিস্যা গণনা করুন।" />
+      <div className="hidden md:block"><HeroBanner align="center" badge="খতিয়ান ক্যালকুলেটর" title={<>স্মার্ট <span className="text-[#1A6B3C]">খতিয়ান</span> হিসাব</></div>} description="জমির পরিমাণ ও মালিকদের অংশ লিখে হিস্যা বের করুন। বিস্তারিত ও দ্রুত হিসাবের জন্য নিচের ট্যাব ব্যবহার করুন।" pattern="none" />
     <div className="no-print mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-5 flex justify-center sm:mb-10"><TabsList className="grid h-auto w-full max-w-lg grid-cols-2 rounded-2xl border bg-[var(--secondary)] p-1"><TabsTrigger value="detailed" className="min-h-12 rounded-xl px-2 py-3 text-xs font-black sm:px-6 sm:text-sm"><List size={18} className="mr-2" /> বিস্তারিত হিসাব</TabsTrigger><TabsTrigger value="quick" className="min-h-11 rounded-full px-6 py-3 font-bold"><Zap size={18} className="mr-2" /> কুইক</TabsTrigger></TabsList></div>
