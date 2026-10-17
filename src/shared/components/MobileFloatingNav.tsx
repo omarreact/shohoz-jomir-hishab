@@ -2,197 +2,73 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import {
-  BookOpen,
-  FileSearch,
-  FileText,
-  Home,
-  Map,
-  Menu,
-  Ruler,
-  Scale,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { Compass, FileSearch, Home, MapPinned, Ruler, type LucideIcon } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
-import { MOBILE_MENU_KEYS, NAV_SECTIONS, isFeatureRouteActive, navRoute } from "@/src/shared/config/navigation";
+import { NAV_SECTIONS, isFeatureRouteActive } from "@/src/shared/config/navigation";
 
 type Tab = {
-  href?: string;
+  href: string;
   label: string;
   icon: LucideIcon;
-  match?: (path: string) => boolean;
-  action?: "menu";
+  match: (path: string) => boolean;
 };
 
-const MOBILE_SECTION_MATCHES = {
-  records: NAV_SECTIONS.find(s => s.id === "records")!.keys,
-  calculations: NAV_SECTIONS.find(s => s.id === "calculations")!.keys,
-  maps: NAV_SECTIONS.find(s => s.id === "maps")!.keys,
-} as const;
+const sectionMatches = (section: string, pathname: string) =>
+  NAV_SECTIONS.find(s => s.id === section)?.keys.some(
+    key => isFeatureRouteActive(pathname, FEATURE_ROUTES[key]),
+  ) ?? false;
 
-const TABS: Tab[] = [
-  { href: FEATURE_ROUTES.home, label: "হোম", icon: Home, match: p => isFeatureRouteActive(p, "/") },
-  { href: FEATURE_ROUTES.records, label: "রেকর্ড", icon: FileSearch,
-    match: p => MOBILE_SECTION_MATCHES.records.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
-  { href: FEATURE_ROUTES.landMeasurement, label: "হিসাব", icon: Ruler,
-    match: p => MOBILE_SECTION_MATCHES.calculations.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
-  { href: FEATURE_ROUTES.landMap, label: "ম্যাপ", icon: Map,
-    match: p => MOBILE_SECTION_MATCHES.maps.some(key => isFeatureRouteActive(p, FEATURE_ROUTES[key])) },
-  { label: "মেনু", icon: Menu, action: "menu" },
+const TABS: readonly Tab[] = [
+  { href: "/", label: "হোম", icon: Home, match: p => p === "/" },
+  { href: FEATURE_ROUTES.records, label: "রেকর্ড", icon: FileSearch, match: p => sectionMatches("records", p) },
+  { href: FEATURE_ROUTES.landMeasurement, label: "হিসাব", icon: Ruler, match: p => sectionMatches("calculations", p) },
+  { href: FEATURE_ROUTES.landMap, label: "মানচিত্র", icon: MapPinned, match: p => sectionMatches("maps", p) },
+  { href: "/explore", label: "সব সেবা", icon: Compass, match: p => p === "/explore" },
 ];
 
-const MENU_ICONS: Partial<Record<typeof MOBILE_MENU_KEYS[number], LucideIcon>> = {
-  dlrmsKhatian: FileSearch,
-  landMeasurement: Ruler,
-  inheritance: Scale,
-  mouzaDownload: Map,
-  mouzaPorchaReport: FileText,
-  warishSanad: FileText,
-  blog: BookOpen,
-};
-const MENU_ITEMS = MOBILE_MENU_KEYS.map(key => ({
-  ...navRoute(key),
-  icon: MENU_ICONS[key] ?? FileText,
-}));
-
-function isActive(pathname: string, tab: Tab) {
-  if (tab.action === "menu") return false;
-  if (tab.match) return tab.match(pathname);
-  return Boolean(tab.href && isFeatureRouteActive(pathname, tab.href));
-}
-
+/** Fixed 5-destination native navigation: all other screens open as full pages, never modal sheets. */
 export default function MobileFloatingNav() {
   const pathname = usePathname() || "/";
-  const [menuOpen, setMenuOpen] = useState(false);
-
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/maintenance") ||
-    pathname.startsWith("/geospatial-map")
-  ) {
-    return null;
-  }
-
-  const menuRouteActive = MENU_ITEMS.some(
-    (item) => isFeatureRouteActive(pathname, item.href),
-  );
+    pathname.startsWith("/403") ||
+    pathname.startsWith("/geospatial-map") ||
+    pathname.startsWith("/lios-map") ||
+    pathname.startsWith("/warishsanad") ||
+    pathname.startsWith("/warish/")
+  ) return null;
 
   return (
     <>
-      <div
-        className="h-[5.35rem] md:hidden print:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        aria-hidden
-      />
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-[1100] md:hidden print:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        aria-label="মোবাইল মেনু"
-      >
-        <div className="mx-auto max-w-lg px-2.5 pb-2 pt-1">
-          <div className="flex items-stretch justify-between gap-0.5 rounded-[14px] border border-[var(--border-color)] bg-white/98 px-1 py-1.5 shadow-[0_-8px_30px_rgba(11,45,30,.10)] backdrop-blur-xl">
-            {TABS.map((tab) => {
-              const active = tab.action === "menu" ? menuOpen || menuRouteActive : isActive(pathname, tab);
-              const Icon = tab.icon;
-              const className = `flex min-h-[3.45rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[10px] px-1 py-1.5 no-underline transition-colors ${
-                active
-                  ? "bg-[var(--brand-green-faint)] text-[var(--primary)]"
-                  : "text-[var(--muted-foreground)] hover:bg-[var(--canvas)] hover:text-[var(--foreground)]"
-              }`;
-
-              if (tab.action === "menu") {
-                return (
-                  <button
-                    key={tab.label}
-                    type="button"
-                    onClick={() => setMenuOpen(true)}
-                    className={className}
-                    aria-expanded={menuOpen}
-                    aria-label="আরও সেবা খুলুন"
-                  >
-                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${active ? "bg-[var(--brand-green-soft)]" : ""}`}>
-                      <Icon className="h-[1.15rem] w-[1.15rem]" strokeWidth={active ? 2.5 : 2} />
-                    </span>
-                    <span className="max-w-full truncate text-[10.5px] font-bold leading-tight">{tab.label}</span>
-                  </button>
-                );
-              }
-
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href!}
-                  className={className}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${active ? "bg-[var(--brand-green-soft)]" : ""}`}>
-                    <Icon className="h-[1.15rem] w-[1.15rem]" strokeWidth={active ? 2.5 : 2} aria-hidden />
-                  </span>
-                  <span className="max-w-full truncate text-[10.5px] font-bold leading-tight">{tab.label}</span>
-                </Link>
-              );
-            })}
-          </div>
+      <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] md:hidden print:hidden" aria-hidden="true" />
+      <nav className="landbd-native-tabbar fixed inset-x-0 bottom-0 z-[1100] md:hidden print:hidden"
+        aria-label="LandBD মোবাইল ট্যাব">
+        <div className="mx-auto grid max-w-screen-sm grid-cols-5 gap-1 px-2 pt-1.5"
+          style={{ paddingBottom: "max(.5rem, env(safe-area-inset-bottom))" }}>
+          {TABS.map((tab) => {
+            const active = tab.match(pathname);
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                aria-current={active ? "page" : undefined}
+                className={[
+                  "flex min-h-[3.5rem] min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1 text-center no-underline transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--primary)]",
+                  active ? "bg-[var(--brand-green-faint)] text-[var(--primary)]" :
+                  "text-[var(--muted-foreground)] active:bg-[var(--muted)]",
+                ].join(" ")}
+              >
+                <Icon size={21} strokeWidth={active ? 2.5 : 2} aria-hidden="true" />
+                <span className="max-w-full truncate text-[10px] font-extrabold leading-4">{tab.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
-
-      {menuOpen ? (
-        <div className="fixed inset-0 z-[1400] md:hidden print:hidden" role="dialog" aria-modal="true" aria-label="LandBD সেবা">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
-            onClick={() => setMenuOpen(false)}
-            aria-label="মেনু বন্ধ করুন"
-          />
-          <section className="absolute inset-x-2 bottom-2 max-h-[78%] overflow-hidden rounded-[16px] border border-[var(--border-color)] bg-white shadow-[var(--shadow-lg)]">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] px-4 py-3">
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[.14em] text-[var(--survey-teal)]">LANDBD</p>
-                <h2 className="text-base font-black text-[var(--foreground)]">সব সেবা</h2>
-              </div>
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] text-[var(--muted-foreground)]"
-                onClick={() => setMenuOpen(false)}
-                aria-label="মেনু বন্ধ করুন"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="grid max-h-[60vh] gap-2 overflow-y-auto p-3 sm:grid-cols-2">
-              {MENU_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
-                    className={`flex min-h-[4.25rem] items-center gap-3 rounded-[12px] border p-3 no-underline ${
-                      active
-                        ? "border-[color-mix(in_srgb,var(--primary)_25%,var(--border-color))] bg-[var(--brand-green-faint)]"
-                        : "border-[var(--border-color)] bg-white"
-                    }`}
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--canvas)] text-[var(--primary)]">
-                      <Icon size={18} />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-black text-[var(--foreground)]">{item.label}</span>
-                      <span className="mt-0.5 block text-[10px] font-bold text-[var(--muted-foreground)]">{item.group}</span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-      ) : null}
     </>
   );
 }
