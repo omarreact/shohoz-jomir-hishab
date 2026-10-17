@@ -38,6 +38,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
+    id: "/explore",
+    name: "সব ভূমি সেবা",
+    description: "মোবাইল অ্যাপ-স্টাইল সেবা নির্দেশিকা, বিভাগ ও অনুসন্ধান।",
+    category: "মূল",
+    defaultAccess: "public",
+  },
+  {
     id: "/khatiyan",
     name: "খতিয়ান ক্যালকুলেটর",
     description: "খতিয়ানের জমির অংশ ও হিসাব (ক্যাননিক্যাল রুট)।",
