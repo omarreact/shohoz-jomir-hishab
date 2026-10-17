@@ -36,7 +36,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const canChangeMaintenance = isSuperAdminRole(user?.role);
+  const [publicAccessOverride, setPublicAccessOverride] = useState(false);
+  const canChangeMaintenance = isSuperAdminRole(user?.role) && !publicAccessOverride;
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,6 +49,7 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.settings) {
+          setPublicAccessOverride(data.publicAccessOverride === true);
           setSettings((prev) => ({
             ...prev,
             ...data.settings,
@@ -240,9 +242,12 @@ export default function SettingsPage() {
                   />
                 </label>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                  চালু থাকলে লগইন না করা ব্যবহারকারীরা মেইনটেন্যান্স পেজ দেখবেন;
-                  বৈধ লগইন করা ব্যবহারকারীরা প্রবেশ করতে পারবেন।
-                  {!canChangeMaintenance ? " এই সেটিং শুধু Super Admin পরিবর্তন করতে পারেন।" : ""}
+                  {publicAccessOverride
+                    ? "Public access mode চালু আছে। মেইনটেন্যান্স মোড আপাতত বন্ধ; পাবলিক পেজগুলো সবার জন্য উন্মুক্ত। ব্যক্তিগত ডেটা ও অ্যাডমিন API সুরক্ষিত আছে।"
+                    : "চালু থাকলে লগইন না করা ব্যবহারকারীরা মেইনটেন্যান্স পেজ দেখবেন; বৈধ লগইন করা ব্যবহারকারীরা প্রবেশ করতে পারবেন।"}
+                  {!publicAccessOverride && !canChangeMaintenance
+                    ? " এই সেটিং শুধু Super Admin পরিবর্তন করতে পারেন।"
+                    : ""}
                 </p>
               </div>
             </div>
