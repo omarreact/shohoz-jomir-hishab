@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
-  Menu,
   PenTool,
   QrCode,
   Search,
@@ -56,27 +55,17 @@ const ALL_NAV_ITEMS: NavItem[] = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [adminSearchOpen, setAdminSearchOpen] = useState(false);
+  const [showAllModules, setShowAllModules] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [adminQuery, setAdminQuery] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoggedIn, loading: authChecking, logout } = useAuth();
 
   useEffect(() => {
-    setIsMounted(true);
-    const mq = window.matchMedia("(min-width: 1024px)");
-    setIsSidebarOpen(mq.matches);
-    const onChange = () => setIsSidebarOpen(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
     if (authChecking) return;
     if (!isLoggedIn) {
-      router.replace(`/login?from=${encodeURIComponent(pathname || "/admin")}`);
+      router.replace("/login?from=" + encodeURIComponent(pathname || "/admin"));
       return;
     }
     if (user?.role && !isStaffRole(user.role)) {
@@ -84,38 +73,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [authChecking, isLoggedIn, pathname, router, user?.role]);
 
-  // Close mobile drawer after route change
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setIsSidebarOpen(false);
-    }
-  }, [pathname]);
-
   const userRole = user?.role ?? null;
   const userName = user?.name ?? user?.email?.split("@")[0] ?? "";
-
   const navItems = useMemo(() => {
     if (!userRole) return [];
     return ALL_NAV_ITEMS.filter((item) => item.roles.includes(userRole));
   }, [userRole]);
 
-  const currentTitle =
-    [...navItems].sort((a, b) => b.path.length - a.path.length)
-      .find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))?.name ||
-    "ড্যাশবোর্ড";
+  const isCurrent = (path: string) =>
+    pathname === path || (path !== "/admin" && pathname.startsWith(path + "/"));
 
-  const adminSearchResults = navItems.filter(
-    (item) =>
-      !adminQuery.trim() ||
-      `${item.name} ${item.path}`.toLowerCase().includes(adminQuery.trim().toLowerCase()),
+  const currentTitle =
+    [...navItems]
+      .sort((a, b) => b.path.length - a.path.length)
+      .find((item) => isCurrent(item.path))?.name ?? "ড্যাশবোর্ড";
+
+  const query = adminQuery.trim().toLowerCase();
+  const visibleItems = navItems.filter((item) =>
+    !query || (item.name + " " + item.path).toLowerCase().includes(query),
   );
 
-  const handleLogout = async () => {
+  function closeInlineNavigation() {
+    setShowAllModules(false);
+    setSearchVisible(false);
+    setAdminQuery("");
+  }
+
+  async function handleLogout() {
     await logout();
     router.replace("/login");
-  };
+  }
 
-  if (!isMounted || authChecking || !isLoggedIn) {
+  if (authChecking || !isLoggedIn || (userRole && !isStaffRole(userRole))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <div className="h-9 w-9 animate-spin rounded-full border-4 border-[var(--brand-gold-soft)] border-t-[var(--brand-gold)]" />
@@ -124,228 +113,180 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]">
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] transform flex-col border-r border-[var(--border-color)] bg-[var(--card-bg)] transition-transform duration-300 ease-in-out lg:static lg:w-72 lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0 shadow-2xl lg:shadow-none" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--border-color)] px-4 sm:px-5">
-          <Link href="/admin" className="flex min-w-0 items-center gap-3 no-underline">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
-              <ShieldCheck size={21} />
-            </span>
-            <span className="min-w-0">
-              <strong className="block truncate text-base leading-tight text-[var(--foreground)]">
-                LandBD Admin
-              </strong>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
-                Control Center
-              </span>
-            </span>
+    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[var(--background)] text-[var(--foreground)]">
+      <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-[var(--border-color)] bg-[var(--card-bg)] px-3 shadow-sm sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link
+            href="/admin"
+            onClick={closeInlineNavigation}
+            aria-label="LandBD Admin ড্যাশবোর্ড"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] no-underline"
+          >
+            <ShieldCheck size={21} />
           </Link>
+          <div className="min-w-0">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--brand-gold-text)]">
+              LandBD Admin
+            </p>
+            <p className="truncate text-base font-extrabold sm:text-lg">
+              {currentTitle}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <button
             type="button"
-            onClick={() => setIsSidebarOpen(false)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[var(--border-color)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)] lg:hidden"
-            aria-label="সাইডবার বন্ধ করুন"
+            onClick={() => {
+              setSearchVisible((open) => !open);
+              setAdminQuery("");
+            }}
+            aria-label={searchVisible ? "মডিউল সার্চ বন্ধ করুন" : "অ্যাডমিন মডিউল খুঁজুন"}
+            aria-controls="admin-inline-search"
+            aria-expanded={searchVisible}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]"
           >
-            <X size={18} />
+            {searchVisible ? <X size={18} /> : <Search size={18} />}
+          </button>
+          <Link
+            href="/"
+            className="hidden min-h-10 items-center gap-2 rounded-xl border border-[var(--border-color)] px-3 text-xs font-bold text-[var(--muted-foreground)] no-underline hover:bg-[var(--muted)] sm:inline-flex"
+          >
+            <Globe size={17} /> লাইভ সাইট
+          </Link>
+          <span
+            className="hidden max-w-40 truncate text-xs font-semibold text-[var(--muted-foreground)] md:inline"
+            title={userName}
+          >
+            {userName}
+          </span>
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-gold)] text-sm font-extrabold text-[var(--primary-foreground)]"
+            aria-label={userName}
+          >
+            {userName.charAt(0).toUpperCase()}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleLogout}
+            className="h-10 min-w-10 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+            aria-label="লগআউট"
+            title="লগআউট"
+          >
+            <LogOut size={18} />
+            <span className="hidden xl:inline">লগআউট</span>
+          </Button>
+        </div>
+      </header>
+
+      <section
+        className="min-w-0 border-b border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-3 sm:px-6"
+        aria-label="অ্যাডমিন পেজ নেভিগেশন"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <nav
+            aria-label="অ্যাডমিন ট্যাব"
+            className="flex min-w-0 flex-1 snap-x snap-mandatory items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]"
+          >
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const selected = isCurrent(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={closeInlineNavigation}
+                  aria-current={selected ? "page" : undefined}
+                  className={[
+                    "inline-flex min-h-11 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-bold no-underline transition-colors sm:text-sm",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]",
+                    selected
+                      ? "border-[var(--brand-gold)] bg-[var(--brand-gold-soft)] text-[var(--foreground)]"
+                      : "border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]",
+                  ].join(" ")}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            {!visibleItems.length && (
+              <span className="py-3 text-sm text-[var(--muted-foreground)]">
+                কোনো মডিউল পাওয়া যায়নি
+              </span>
+            )}
+          </nav>
+          <button
+            type="button"
+            onClick={() => setShowAllModules((open) => !open)}
+            aria-expanded={showAllModules}
+            aria-controls="admin-module-grid"
+            className={[
+              "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border px-3 text-xs font-extrabold sm:text-sm",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]",
+              showAllModules
+                ? "border-[var(--brand-gold)] bg-[var(--brand-gold-soft)]"
+                : "border-[var(--border-color)] hover:bg-[var(--muted)]",
+            ].join(" ")}
+          >
+            {showAllModules ? <X size={17} /> : <LayoutDashboard size={17} />}
+            <span>{showAllModules ? "বন্ধ" : "সব মডিউল"}</span>
           </button>
         </div>
 
-        <div className="px-3 py-3 sm:px-4 sm:py-4">
-          <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--brand-gold)_18%,var(--border-color))] bg-[var(--brand-gold-faint)] p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-gold)] text-sm font-extrabold text-[var(--primary-foreground)]">
-                {userName.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-[var(--foreground)]">{userName}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[var(--muted-foreground)]">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                  <span className="truncate">{userRole}</span>
-                </p>
-              </div>
-            </div>
+        {searchVisible && (
+          <div id="admin-inline-search" className="mt-3 flex items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--background)] px-3">
+            <Search size={18} className="shrink-0 text-[var(--muted-foreground)]" />
+            <label htmlFor="admin-module-query" className="sr-only">অ্যাডমিন মডিউল খুঁজুন</label>
+            <input
+              id="admin-module-query"
+              type="search"
+              autoComplete="off"
+              value={adminQuery}
+              onChange={(event) => setAdminQuery(event.target.value)}
+              placeholder="ইউজার, ব্লগ, সেটিংস বা অন্য মডিউল খুঁজুন"
+              className="h-12 min-w-0 w-full bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
+            />
           </div>
-        </div>
+        )}
 
-        <div className="px-4 pb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--muted-foreground)] sm:px-5">
-          ম্যানেজমেন্ট
-        </div>
-
-        <nav className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-4 sm:px-3">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.path ||
-              (item.path !== "/admin" && pathname.startsWith(`${item.path}/`));
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`group flex min-h-11 items-center justify-between rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-all ${
-                  isActive
-                    ? "bg-[var(--brand-gold-soft)] text-[var(--foreground)] shadow-sm"
-                    : "text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      isActive
-                        ? "bg-[var(--brand-gold)] text-[var(--primary-foreground)]"
-                        : "bg-[var(--muted)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <Icon size={16} />
-                  </span>
-                  <span className="min-w-0 truncate">{item.name}</span>
-                  {item.path === "/admin/test-api" ? (
-                    <span className="hidden rounded-md border border-[var(--border-color)] bg-[var(--canvas)] px-1.5 py-0.5 text-[9px] font-black tracking-[.08em] text-[var(--muted-foreground)] sm:inline">
-                      INTERNAL
-                    </span>
-                  ) : null}
-                </div>
-                {isActive && <ChevronRight size={15} className="shrink-0 text-[var(--brand-gold-text)]" />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-[var(--border-color)] p-3 sm:p-4">
-          <Button
-            variant="ghost"
-            className="min-h-11 w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={handleLogout}
+        {showAllModules && (
+          <nav
+            id="admin-module-grid"
+            aria-label="সব অ্যাডমিন মডিউল"
+            className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-color)] pt-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
           >
-            <LogOut className="mr-2 h-4 w-4" /> লগআউট
-          </Button>
-        </div>
-      </aside>
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const selected = isCurrent(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={closeInlineNavigation}
+                  aria-current={selected ? "page" : undefined}
+                  className={[
+                    "flex min-h-14 min-w-0 items-center gap-2 rounded-xl border p-3 text-xs font-bold no-underline sm:text-sm",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]",
+                    selected
+                      ? "border-[var(--brand-gold)] bg-[var(--brand-gold-soft)] text-[var(--foreground)]"
+                      : "border-[var(--border-color)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]",
+                  ].join(" ")}
+                >
+                  <Icon size={18} className="shrink-0" />
+                  <span className="min-w-0 break-words">{item.name}</span>
+                  {selected && <ChevronRight size={15} className="ml-auto shrink-0" />}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+      </section>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_96%,transparent)] px-3 backdrop-blur-xl sm:h-16 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[var(--border-color)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)] lg:hidden"
-              aria-label="সাইডবার খুলুন"
-            >
-              <Menu size={19} />
-            </button>
-            <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--brand-gold-text)]">
-                LandBD Admin
-              </p>
-              <h1 className="truncate text-base font-extrabold text-[var(--foreground)] sm:text-lg">
-                {currentTitle}
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setAdminSearchOpen(true)}
-              className="flex h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-2.5 text-xs font-bold text-[var(--muted-foreground)] shadow-[var(--shadow-xs)] transition hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] sm:px-3"
-              aria-label="অ্যাডমিন মেনু সার্চ করুন"
-            >
-              <Search size={16} />
-              <span className="hidden md:inline">সার্চ</span>
-            </button>
-            <Link
-              href="/"
-              target="_blank"
-              className="hidden h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-3 text-xs font-bold text-[var(--muted-foreground)] no-underline shadow-[var(--shadow-xs)] transition hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] sm:flex"
-            >
-              <Globe size={16} />
-              লাইভ সাইট
-            </Link>
-            <div className="hidden text-right sm:block">
-              <p className="max-w-40 truncate text-sm font-bold text-[var(--foreground)]">{userName}</p>
-              <p className="text-[11px] text-[var(--muted-foreground)]">{userRole}</p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-gold)] font-extrabold text-[var(--primary-foreground)] shadow-sm ring-2 ring-[var(--card-bg)]">
-              {userName.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto overscroll-contain bg-[var(--background)] p-3 sm:p-6">
-          {children}
-        </main>
-      </div>
-
-      {adminSearchOpen ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-start justify-center bg-black/35 p-3 pt-16 backdrop-blur-sm sm:p-4 sm:pt-20"
-          role="dialog"
-          aria-modal="true"
-          aria-label="অ্যাডমিন সার্চ"
-          onMouseDown={() => setAdminSearchOpen(false)}
-        >
-          <div
-            className="w-full max-w-xl overflow-hidden rounded-[14px] border border-[var(--border-color)] bg-white shadow-[var(--shadow-lg)]"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 border-b border-[var(--border-color)] px-3 sm:px-4">
-              <Search size={18} className="shrink-0 text-[var(--survey-teal)]" />
-              <input
-                autoFocus
-                value={adminQuery}
-                onChange={(event) => setAdminQuery(event.target.value)}
-                placeholder="ইউজার, ডেটা, সেটিংস বা টুল খুঁজুন…"
-                className="h-12 flex-1 bg-transparent text-sm font-semibold text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)] sm:h-14"
-              />
-              <button
-                type="button"
-                onClick={() => setAdminSearchOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-[var(--border-color)] text-[var(--muted-foreground)]"
-                aria-label="সার্চ বন্ধ করুন"
-              >
-                <X size={17} />
-              </button>
-            </div>
-            <div className="max-h-[min(20rem,50dvh)] overflow-y-auto p-2">
-              {adminSearchResults.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={() => setAdminSearchOpen(false)}
-                    className="flex min-h-12 items-center gap-3 rounded-[12px] px-3 py-3 text-sm font-bold text-[var(--foreground)] no-underline transition hover:bg-[var(--brand-green-faint)]"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--canvas)] text-[var(--primary)]">
-                      <Icon size={16} />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                    {item.path === "/admin/test-api" ? (
-                      <span className="landbd-status-chip">INTERNAL</span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-              {!adminSearchResults.length ? (
-                <p className="px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
-                  কোনো মডিউল পাওয়া যায়নি
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-          aria-hidden
-        />
-      )}
+      <main id="admin-content" className="min-w-0 w-full flex-1 bg-[var(--background)] p-3 sm:p-6">
+        {children}
+      </main>
     </div>
   );
 }
