@@ -14,12 +14,12 @@ export default function LandMeasurementPage() {
             সহজ ও নির্ভুল <span className="accent-text">জমি পরিমাপ</span>
           </>
         }
-        description="দৈর্ঘ্য, প্রস্থ, বাহু ও কর্ণের মাপ দিয়ে জমির ক্ষেত্রফল হিসাব করুন। রাজউক-সংক্রান্ত অনুসন্ধান এখন আলাদা RAJUK পেজে রয়েছে।"
+        description="জমির আকৃতি বেছে নিয়ে বাহু ও কর্ণের মাপ লিখুন। ক্ষেত্রফল, শতাংশ, কাঠা, একর ও বর্গফুটের ফলাফল একই জায়গায় দেখুন।"
         pattern="none"
       />
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-10">
         <LandMeasurementCalculator />
-        <div className="mt-16">
+        <div className="mt-10 hidden md:block">
           <LatestBlogs />
         </div>
       </div>
