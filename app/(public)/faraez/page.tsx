@@ -47,10 +47,10 @@ export default function FaraezPage() {
       <div className="hidden md:block"><HeroBanner
         align="center"
         badge="উত্তরাধিকার ক্যালকুলেটর"
-        title={<><span>স্মার্ট </span><span className="accent-text">ফারায়েজ</span><span> ও বন্টন</span></></div>}
+        title={<><span>স্মার্ট </span><span className="accent-text">ফারায়েজ</span><span> ও বন্টন</span></>}
         description="বাংলাদেশী মুসলিম ফারায়েজ ও হিন্দু দায়ভাগ আইন অনুযায়ী পৈতৃক সম্পত্তির নিখুঁত হিসাব করুন মাত্র কয়েক ক্লিকে।"
         pattern="none"
-      />
+      /></div>
 
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8 fade-in visible">
         <div className="mx-auto max-w-4xl">
