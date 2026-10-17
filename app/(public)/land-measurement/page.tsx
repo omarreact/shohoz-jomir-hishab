@@ -14,11 +14,11 @@ export default function LandMeasurementPage() {
         title={
           <>
             সহজ ও নির্ভুল <span className="accent-text">জমি পরিমাপ</span>
-          </></div>
+          </>
         }
         description="জমির আকৃতি বেছে নিয়ে বাহু ও কর্ণের মাপ লিখুন। ক্ষেত্রফল, শতাংশ, কাঠা, একর ও বর্গফুটের ফলাফল একই জায়গায় দেখুন।"
         pattern="none"
-      />
+      /></div>
       <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-10">
         <LandMeasurementCalculator />
         <div className="mt-10 hidden md:block">
