@@ -442,3 +442,58 @@
     text-align: right !important;
   }
 }
+
+
+/* Native-feeling Android/iOS-sized app shell; desktop + printable reports untouched. */
+@media (max-width: 767.98px) {
+  .landbd-native-shell {
+    width: 100%;
+    min-height: 100dvh;
+    background: var(--background);
+    -webkit-overflow-scrolling: touch;
+  }
+  .landbd-native-shell button,
+  .landbd-native-shell a {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .landbd-native-shell button:focus-visible,
+  .landbd-native-shell a:focus-visible,
+  .landbd-native-shell input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  /* Prevent Safari's automatic input zoom while keeping a readable UI scale. */
+  .landbd-native-shell input:not([type="checkbox"]):not([type="radio"]),
+  .landbd-native-shell select,
+  .landbd-native-shell textarea {
+    font-size: max(16px, 1rem);
+  }
+  .landbd-mobile-appbar {
+    border-bottom: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--card-bg) 96%, transparent);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+  .landbd-native-tabbar {
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+    background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 -4px 20px rgb(10 45 28 / .06);
+  }
+  .landbd-explore input[type="search"]::-webkit-search-cancel-button {
+    display: none;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 767.98px) {
+  .landbd-mobile-appbar {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Full-document printing never includes app chrome. */
+@media print {
+  .landbd-mobile-appbar, .landbd-native-tabbar { display: none !important; }
+}
