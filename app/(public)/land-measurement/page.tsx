@@ -1,3 +1,4 @@
+import MobilePageIntro from "@/src/shared/components/MobilePageIntro";
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 import LatestBlogs from "@/src/shared/components/LatestBlogs";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
@@ -6,7 +7,8 @@ import LandMeasurementCalculator from "@/src/features/land-measurement/component
 export default function LandMeasurementPage() {
   return (
     <ServicePaywallGate serviceId="land-area">
-      <HeroBanner
+      <MobilePageIntro eyebrow="জমির হিসাব" title="জমি পরিমাপ" description="জমির আকৃতি ও পরিমাপ দিন। ফলাফল শতাংশ, কাঠা, একর এবং বর্গফুটে দেখুন।" />
+      <div className="hidden md:block"><HeroBanner
         align="center"
         badge="ভূমি পরিমাপ"
         title={
@@ -14,12 +16,12 @@ export default function LandMeasurementPage() {
             সহজ ও নির্ভুল <span className="accent-text">জমি পরিমাপ</span>
           </>
         }
-        description="দৈর্ঘ্য, প্রস্থ, বাহু ও কর্ণের মাপ দিয়ে জমির ক্ষেত্রফল হিসাব করুন। রাজউক-সংক্রান্ত অনুসন্ধান এখন আলাদা RAJUK পেজে রয়েছে।"
+        description="জমির আকৃতি বেছে নিয়ে বাহু ও কর্ণের মাপ লিখুন। ক্ষেত্রফল, শতাংশ, কাঠা, একর ও বর্গফুটের ফলাফল একই জায়গায় দেখুন।"
         pattern="none"
-      />
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      /></div>
+      <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-10">
         <LandMeasurementCalculator />
-        <div className="mt-16">
+        <div className="mt-10 hidden md:block">
           <LatestBlogs />
         </div>
       </div>

@@ -49,6 +49,22 @@ describe("Khatiyan quick calculation", () => {
     expect(result?.sqft).toBe(2700);
   });
 
+  it("rejects pathological exponent and excessive input magnitude without BigInt explosions", () => {
+    const inputs = ["1e1000000000", "1e99", "1e-9999999", "999999999999", "9".repeat(200), "Infinity"];
+    for (const totalLand of inputs) {
+      expect(calculateQuickKhatiyan(
+        { totalLand, a: 8, g: 0, k: 0, kr: 0, ti: 0 }, identity,
+      )).toBeNull();
+    }
+  });
+
+  it("accepts practical scientific notation within the supported range", () => {
+    const result = calculateQuickKhatiyan(
+      { totalLand: "1e2", a: 8, g: 0, k: 0, kr: 0, ti: 0 }, identity,
+    );
+    expect(result?.land).toBe(50);
+  });
+
   it("returns null for non-positive land, zero share, or invalid share", () => {
     expect(calculateQuickKhatiyan({ totalLand: "0", a: 8, g: 0, k: 0, kr: 0, ti: 0 }, identity)).toBeNull();
     expect(calculateQuickKhatiyan({ totalLand: "100", a: 0, g: 0, k: 0, kr: 0, ti: 0 }, identity)).toBeNull();

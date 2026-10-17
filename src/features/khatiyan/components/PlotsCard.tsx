@@ -73,13 +73,20 @@ export default function PlotsCard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 dark:border-slate-800 md:grid-cols-2">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">শ্রেণী</label>
-                    <select className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-[#006a4e] transition-colors text-sm" value={p.t || ""} onChange={(e) => onUpdatePlot(p.id, "t", e.target.value)}>
-                      <option value="" disabled>নির্বাচন করুন</option>
-                      {plotClassOptionsList.map((c: string) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <div role="group" aria-label="জমির শ্রেণী" className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
+                      {plotClassOptionsList.map((category: string) => (
+                        <button key={category} type="button" aria-pressed={p.t === category}
+                          onClick={() => onUpdatePlot(p.id, "t", category)}
+                          className={p.t === category
+                            ? "min-h-11 shrink-0 rounded-full bg-[var(--primary)] px-4 text-sm font-bold text-white"
+                            : "min-h-11 shrink-0 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-4 text-sm font-bold text-[var(--foreground)]"}>
+                          {category}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">মোট জমি (শতাংশ)</label>

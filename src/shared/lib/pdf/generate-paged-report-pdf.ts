@@ -219,13 +219,14 @@ export async function generatePagedReportPdf({
       let x = 0;
       let y = 0;
 
-      // Top-left align so short pages do not float as a blank-looking band.
+      // Preserve source proportions and center the unused axis. Stretching
+      // tables to the full page distorts Bangla glyphs and document seals.
       if (sourceRatio > targetRatio) {
         drawHeight = pageWidth / sourceRatio;
-        y = 0;
+        y = (pageHeight - drawHeight) / 2;
       } else if (sourceRatio < targetRatio) {
         drawWidth = pageHeight * sourceRatio;
-        x = 0;
+        x = (pageWidth - drawWidth) / 2;
       }
 
       const imageData = canvas.toDataURL("image/jpeg", jpegQuality);
