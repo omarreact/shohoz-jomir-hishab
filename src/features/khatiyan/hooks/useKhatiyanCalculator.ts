@@ -55,13 +55,26 @@ export function useKhatiyanCalculator() {
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const addPlot = () => setPlots((current) => [...current, initialPlot(nextPlotId.current++)]);
+  // Any edit invalidates both previews; otherwise an old receipt can be printed for new inputs.
+  const invalidateResults = () => {
+    setDetailedResults(null);
+    setQuickResult(null);
+    setValidationAttempted(false);
+    setErrorMessage("");
+  };
+
+  const addPlot = () => {
+    invalidateResults();
+    setPlots((current) => [...current, initialPlot(nextPlotId.current++)]);
+  };
 
   const removePlot = (id: number) => {
+    invalidateResults();
     setPlots((current) => current.filter((plot) => plot.id !== id));
   };
 
   const updatePlot = (id: number, field: keyof KhatiyanPlot, value: string) => {
+    invalidateResults();
     setPlots((current) => current.map((plot) => (
       plot.id === id
         ? {
@@ -74,19 +87,25 @@ export function useKhatiyanCalculator() {
     )));
   };
 
-  const addOwner = () => setOwners((current) => [...current, initialOwner(nextOwnerId.current++)]);
+  const addOwner = () => {
+    invalidateResults();
+    setOwners((current) => [...current, initialOwner(nextOwnerId.current++)]);
+  };
 
   const removeOwner = (id: number) => {
+    invalidateResults();
     setOwners((current) => current.filter((owner) => owner.id !== id));
   };
 
   const updateOwner = <K extends keyof KhatiyanOwner>(id: number, field: K, value: KhatiyanOwner[K]) => {
+    invalidateResults();
     setOwners((current) => current.map((owner) => (
       owner.id === id ? { ...owner, [field]: value } : owner
     )));
   };
 
   const calculateDetailed = () => {
+    setDetailedResults(null);
     setErrorMessage("");
     setValidationAttempted(true);
     try {
@@ -95,15 +114,22 @@ export function useKhatiyanCalculator() {
         setDetailedResults(computedResults);
         setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 50);
       } else {
+        setDetailedResults(null);
         setErrorMessage("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ লিখুন।");
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "হিসাব করা যায়নি।");
+      const detail = error instanceof Error ? error.message : "";
+      setErrorMessage(
+        /exceeds|exceed|full unit/i.test(detail)
+          ? "মালিকদের অংশ ১৬ আনার বেশি হয়েছে। প্রতিটি মালিকের হিস্যা যাচাই করুন।"
+          : "মালিকদের অংশ ও প্রতিটি দাগের জমির পরিমাণ সঠিকভাবে লিখুন।",
+      );
       setDetailedResults(null);
     }
   };
 
   const calculateQuick = () => {
+    setQuickResult(null);
     setErrorMessage("");
     const result = calculateQuickKhatiyan(quickData, toEn);
     if (result) {
@@ -127,6 +153,7 @@ export function useKhatiyanCalculator() {
   };
 
   const handleQuickDataChange = (data: Partial<KhatiyanQuickData>) => {
+    invalidateResults();
     setQuickData((current) => ({
       ...current,
       ...data,
