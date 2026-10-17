@@ -56,7 +56,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   contact: { en: "Contact", bn: "যোগাযোগ" },
   privacy: { en: "Privacy", bn: "গোপনীয়তা" },
   terms: { en: "Terms", bn: "শর্তাবলি" },
-  login: { en: "Staff login", bn: "স্টাফ লগইন" },
+  login: { en: "Login", bn: "লগইন" },
   admin: { en: "Admin", bn: "অ্যাডমিন" },
 };
 
