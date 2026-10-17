@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAdminRole } from "@/src/modules/auth/roles";
 import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { allowRateLimit } from "@/src/modules/security/redisRateLimit";
 
@@ -74,14 +73,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // All verified Firebase members can establish a session. Admin routes and
+    // privileged API handlers retain their own authoritative role checks.
     const user = await verifyServerAuth(req, { checkRevoked: true, requireAdminBackend: true });
-
-    if (!isAdminRole(user.role)) {
-      const response = json({ error: "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।" }, 403);
-      response.cookies.set(COOKIE_NAME, "", { path: "/", maxAge: 0, httpOnly: true,
-        secure: process.env.NODE_ENV === "production", sameSite: "lax" });
-      return response;
-    }
 
     const now = Math.floor(Date.now() / 1000);
     const exp = tokenExpiry(token) ?? now + MAX_COOKIE_AGE_SECONDS;

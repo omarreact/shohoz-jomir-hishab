@@ -1,4 +1,4 @@
-import { isAdminRole } from "@/src/modules/auth/roles";
+import { isStaffRole } from "@/src/modules/auth/roles";
 
 const DEFAULT_LOGIN_TARGET = "/";
 
@@ -35,10 +35,19 @@ export function buildLoginHref(target: string | null | undefined): string {
   return `/login?from=${encodeURIComponent(safeTarget)}`;
 }
 
-/** Admin login always opens the dashboard, regardless of a return URL. */
+/** Staff reach the control plane; ordinary Firebase members return to their
+ * intended safe page (or the public homepage), never a staff/system route. */
 export function resolvePostLoginTarget(
-  _rawTarget: string | null | undefined,
+  rawTarget: string | null | undefined,
   role: unknown,
 ): string {
-  return isAdminRole(role) ? "/admin" : "/403";
+  if (isStaffRole(role)) return "/admin";
+
+  const target = resolveLoginTarget(rawTarget, DEFAULT_LOGIN_TARGET);
+  const pathname = target.split(/[?#]/, 1)[0] || "/";
+  const forbidden = ["/admin", "/api", "/403", "/maintenance", "/security-locked"];
+  if (forbidden.some(prefix => pathname === prefix || pathname.startsWith(prefix + "/"))) {
+    return DEFAULT_LOGIN_TARGET;
+  }
+  return target;
 }

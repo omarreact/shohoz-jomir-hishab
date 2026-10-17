@@ -73,7 +73,7 @@ export function useProvideAuth(): AuthState & {
 
       if (response.status === 403) {
         const body = await response.json().catch(() => null);
-        throw new Error(body?.error || "শুধুমাত্র অ্যাডমিন লগইন করতে পারবেন।");
+        throw new Error(body?.error || "এই অ্যাকাউন্ট দিয়ে লগইন করা যাচ্ছে না।");
       }
 
       if (!response.ok) {

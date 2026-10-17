@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
   Home,
   Eye,
   EyeOff,
@@ -13,14 +15,22 @@ import {
   LockKeyhole,
   LogIn,
   Mail,
+  Send,
   MapPinned,
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "@/src/modules/database/firebaseClient";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { resolvePostLoginTarget } from "@/src/modules/auth/loginRedirect";
 
 function LoginForm() {
+  const [mode, setMode] = useState<"login" | "reset">("login");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetSubmitted, setResetSubmitted] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -83,12 +93,51 @@ function LoginForm() {
     }
   };
 
+  const openResetMode = () => {
+    setResetEmail(username.includes("@") ? username.trim() : "");
+    setResetError("");
+    setResetSubmitted(false);
+    setError("");
+    setMode("reset");
+  };
+
+  const handleResetPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (resetSubmitting || resetSubmitted) return;
+    setResetSubmitting(true);
+    setResetError("");
+
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim().toLowerCase());
+      setResetSubmitted(true);
+    } catch (error: unknown) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "";
+      // Don't disclose whether an email belongs to an existing account.
+      if (code === "auth/user-not-found") {
+        setResetSubmitted(true);
+      } else if (code === "auth/too-many-requests") {
+        setResetError("অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
+      } else if (code === "auth/invalid-email") {
+        setResetError("সঠিক ইমেইল ঠিকানা লিখুন।");
+      } else if (code === "auth/network-request-failed") {
+        setResetError("ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।");
+      } else {
+        setResetError("রিসেট ইমেইল পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
+      }
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-10">
         <Link href={FEATURE_ROUTES.home} className="flex items-center gap-3 text-inherit no-underline">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]"><MapPinned size={23} /></span>
-          <span><strong className="block text-xl tracking-tight">LandBD</strong><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Admin workspace</span></span>
+          <span><strong className="block text-xl tracking-tight">LandBD</strong><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Firebase authentication</span></span>
         </Link>
         <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] px-3 text-xs font-semibold text-[var(--muted-foreground)] no-underline hover:bg-[var(--card-bg)] sm:px-4 sm:text-sm"><Home size={16} /> ওয়েবসাইটে যান</Link>
       </header>
@@ -96,14 +145,14 @@ function LoginForm() {
       <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 pb-8 pt-4 sm:px-10 sm:pt-10 lg:min-h-[calc(100dvh-160px)] lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16 lg:pb-14">
         <section className="relative overflow-hidden rounded-[2rem] border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-7 sm:p-10 lg:p-12" aria-labelledby="workspace-title">
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-10 blur-3xl" />
-          <span className="relative inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2 text-[11px] font-bold tracking-wide"><ShieldCheck size={14} className="text-emerald-600" /> ADMIN ACCESS</span>
-          <h1 id="workspace-title" className="relative mt-7 max-w-sm text-3xl font-extrabold leading-snug tracking-tight sm:text-4xl lg:text-5xl">LandBD পরিচালনা,<br /><span className="text-[var(--primary)]">এক জায়গা থেকেই।</span></h1>
-          <p className="relative mt-5 max-w-sm text-sm leading-7 text-[var(--muted-foreground)]">ভূমি তথ্য, মানচিত্র ও কনটেন্ট পরিচালনার জন্য আপনার কেন্দ্রীয় অ্যাডমিন ওয়ার্কস্পেস।</p>
+          <span className="relative inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2 text-[11px] font-bold tracking-wide"><ShieldCheck size={14} className="text-emerald-600" /> SECURE ACCESS</span>
+          <h1 id="workspace-title" className="relative mt-7 max-w-sm text-3xl font-extrabold leading-snug tracking-tight sm:text-4xl lg:text-5xl">LandBD ভূমি সেবা,<br /><span className="text-[var(--primary)]">সুরক্ষিত অ্যাকাউন্টে।</span></h1>
+          <p className="relative mt-5 max-w-sm text-sm leading-7 text-[var(--muted-foreground)]">ভূমি তথ্য, মানচিত্র ও ব্যক্তিগত সেবা ব্যবহার করুন। অ্যাডমিনরা একই Firebase অ্যাকাউন্ট দিয়ে ড্যাশবোর্ডে প্রবেশ করতে পারবেন।</p>
           <div className="relative mt-8 hidden space-y-3 sm:block">
             {[
-              { icon: LayoutDashboard, title: "ড্যাশবোর্ড ও পর্যবেক্ষণ", detail: "সিস্টেম স্বাস্থ্য ও কার্যক্রমের সারসংক্ষেপ" },
-              { icon: MapPinned, title: "GIS ও ভূমি তথ্য", detail: "মানচিত্র, রেকর্ড ও API ব্যবস্থাপনা" },
-              { icon: FileText, title: "কনটেন্ট ও অ্যাক্সেস", detail: "ব্লগ, পেজ ও ব্যবহারকারীর অনুমতি" },
+              { icon: LayoutDashboard, title: "নিরাপদ অ্যাকাউন্ট", detail: "Firebase-ভিত্তিক সুরক্ষিত লগইন" },
+              { icon: MapPinned, title: "GIS ও ভূমি সেবা", detail: "মানচিত্র, খতিয়ান ও সেবা ব্যবহার" },
+              { icon: FileText, title: "অ্যাডমিন ও সদস্য", detail: "ভূমিকা অনুযায়ী আলাদা প্রবেশাধিকার" },
             ].map(({ icon: Icon, title, detail }) => (
               <div key={title} className="flex items-center gap-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold-faint)] text-[var(--foreground)]"><Icon size={19} /></span>
@@ -116,11 +165,17 @@ function LoginForm() {
         <section className="mx-auto w-full max-w-md py-2 sm:py-6" aria-labelledby="login-title">
           <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--primary)]"><LockKeyhole size={23} /></span>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Welcome back</p>
-          <h2 id="login-title" className="mt-2 text-3xl font-extrabold tracking-tight">অ্যাডমিন লগইন</h2>
-          <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">আপনার অনুমোদিত অ্যাকাউন্ট দিয়ে প্রবেশ করুন। লগইনের পর সরাসরি ড্যাশবোর্ড খুলবে।</p>
+          <h2 id="login-title" className="mt-2 text-3xl font-extrabold tracking-tight">{mode === "login" ? "Firebase লগইন" : "পাসওয়ার্ড রিসেট"}</h2>
+          <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
+            {mode === "login"
+              ? "আপনার Firebase অ্যাকাউন্ট দিয়ে লগইন করুন। অ্যাডমিন ও এডিটররা ড্যাশবোর্ডে, অন্য সদস্যরা নিজস্ব সেবায় প্রবেশ করবেন।"
+              : "অ্যাকাউন্টের ইমেইল ঠিকানা লিখুন। Firebase থেকে পাসওয়ার্ড পরিবর্তনের লিংক পাঠানো হবে।"}
+          </p>
 
           {error && <div id="login-error" role="alert" className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm leading-6 text-red-700 dark:text-red-300">{error}</div>}
 
+          {mode === "login" ? (
+            <>
           <form onSubmit={handleLogin} aria-busy={submitting} aria-describedby={error ? "login-error" : undefined} className="mt-7 space-y-5">
             <div>
               <label htmlFor="landbd-login-user" className="mb-2 block text-sm font-bold">ইমেইল বা ইউজারনেম</label>
@@ -139,11 +194,63 @@ function LoginForm() {
               {capsLock && <p id="caps-lock-warning" role="status" className="mt-2 text-xs text-amber-700 dark:text-amber-400">Caps Lock চালু আছে।</p>}
             </div>
             <button type="submit" disabled={loading || submitting} className="landbd-primary-button flex min-h-14 w-full items-center justify-center gap-3 px-5 text-base font-bold disabled:cursor-not-allowed disabled:opacity-60">
-              {loading || submitting ? <><span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" /><span role="status">{submitting ? "যাচাই করা হচ্ছে…" : "সেশন যাচাই হচ্ছে…"}</span></> : <><LogIn size={19} /> ড্যাশবোর্ডে প্রবেশ করুন <ArrowRight size={18} /></>}
+              {loading || submitting ? <><span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" /><span role="status">{submitting ? "যাচাই করা হচ্ছে…" : "সেশন যাচাই হচ্ছে…"}</span></> : <><LogIn size={19} /> লগইন করুন <ArrowRight size={18} /></>}
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={openResetMode}
+            className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-[var(--primary)] underline-offset-4 hover:underline"
+          >
+            পাসওয়ার্ড ভুলে গেছেন?
+          </button>
+            </>
+          ) : (
+
+          <div className="mt-7">
+            {resetSubmitted ? (
+              <div role="status" className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+                <div className="flex items-center gap-3 font-bold text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle2 size={23} /> ইমেইল চেক করুন
+                </div>
+                <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
+                  এই ইমেইলে Firebase অ্যাকাউন্ট থাকলে পাসওয়ার্ড রিসেটের নির্দেশনা পাঠানো হয়েছে।
+                  ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPassword} aria-busy={resetSubmitting} className="space-y-5">
+                <div>
+                  <label htmlFor="landbd-reset-email" className="mb-2 block text-sm font-bold">অ্যাকাউন্টের ইমেইল</label>
+                  <div className="relative">
+                    <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
+                    <input id="landbd-reset-email" name="email" type="email" placeholder="name@example.com" value={resetEmail} onChange={event => setResetEmail(event.target.value)} autoComplete="email" autoCapitalize="none" spellCheck={false} required disabled={resetSubmitting} className="landbd-input h-14 w-full pl-11 pr-4 text-base disabled:opacity-60" />
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">ইউজারনেম নয়, Firebase-এ নিবন্ধিত সম্পূর্ণ ইমেইল দিন।</p>
+                </div>
+                {resetError && (
+                  <div role="alert" className="rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{resetError}</div>
+                )}
+                <button type="submit" disabled={resetSubmitting} className="landbd-primary-button flex min-h-14 w-full items-center justify-center gap-3 px-5 text-base font-bold disabled:cursor-not-allowed disabled:opacity-60">
+                  {resetSubmitting ? "পাঠানো হচ্ছে…" : <><Send size={18} /> রিসেট লিংক পাঠান</>}
+                </button>
+              </form>
+            )}
+            <button
+              type="button"
+              onClick={() => { setMode("login"); setResetError(""); }}
+              className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--primary)] underline-offset-4 hover:underline"
+            >
+              <ArrowLeft size={17} /> লগইনে ফিরে যান
+            </button>
+          </div>
+          )}
           <div className="mt-7 flex items-start gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" /><p className="text-xs leading-6 text-[var(--muted-foreground)]">শুধুমাত্র Admin ও Super Admin প্রবেশ করতে পারবেন। আপনার অ্যাকাউন্টের ইমেইল ও পাসওয়ার্ড ব্যবহার করুন।</p>
+            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+            <p className="text-xs leading-6 text-[var(--muted-foreground)]">
+              Firebase Authentication আপনার অ্যাকাউন্ট যাচাই করে। অ্যাডমিন ড্যাশবোর্ড ও সংবেদনশীল API শুধুমাত্র অনুমোদিত ভূমিকার জন্য উন্মুক্ত।
+            </p>
           </div>
         </section>
       </div>
