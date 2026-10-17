@@ -147,10 +147,10 @@ function LoginForm() {
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-[var(--brand-gold)] opacity-10 blur-3xl" />
           <span className="relative inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2 text-[11px] font-bold tracking-wide"><ShieldCheck size={14} className="text-emerald-600" /> SECURE ACCESS</span>
           <h1 id="workspace-title" className="relative mt-7 max-w-sm text-3xl font-extrabold leading-snug tracking-tight sm:text-4xl lg:text-5xl">LandBD ভূমি সেবা,<br /><span className="text-[var(--primary)]">সুরক্ষিত অ্যাকাউন্টে।</span></h1>
-          <p className="relative mt-5 max-w-sm text-sm leading-7 text-[var(--muted-foreground)]">ভূমি তথ্য, মানচিত্র ও ব্যক্তিগত সেবা ব্যবহার করুন। অ্যাডমিনরা একই Firebase অ্যাকাউন্ট দিয়ে ড্যাশবোর্ডে প্রবেশ করতে পারবেন।</p>
+          <p className="relative mt-5 max-w-sm text-sm leading-7 text-[var(--muted-foreground)]">ভূমি তথ্য, মানচিত্র ও ব্যক্তিগত সেবা ব্যবহার করুন। অনুমোদিত ব্যবহারকারীরা নিজ নিজ সেবায় নিরাপদে প্রবেশ করতে পারবেন।</p>
           <div className="relative mt-8 hidden space-y-3 sm:block">
             {[
-              { icon: LayoutDashboard, title: "নিরাপদ অ্যাকাউন্ট", detail: "Firebase-ভিত্তিক সুরক্ষিত লগইন" },
+              { icon: LayoutDashboard, title: "নিরাপদ অ্যাকাউন্ট", detail: "সুরক্ষিত LandBD অ্যাকাউন্ট" },
               { icon: MapPinned, title: "GIS ও ভূমি সেবা", detail: "মানচিত্র, খতিয়ান ও সেবা ব্যবহার" },
               { icon: FileText, title: "অ্যাডমিন ও সদস্য", detail: "ভূমিকা অনুযায়ী আলাদা প্রবেশাধিকার" },
             ].map(({ icon: Icon, title, detail }) => (
@@ -169,7 +169,7 @@ function LoginForm() {
           <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
             {mode === "login"
               ? "আপনার LandBD অ্যাকাউন্ট দিয়ে প্রবেশ করুন। অ্যাডমিন ও এডিটররা ড্যাশবোর্ডে, অন্য সদস্যরা নিজস্ব সেবায় প্রবেশ করবেন।"
-              : "অ্যাকাউন্টের ইমেইল ঠিকানা লিখুন। Firebase থেকে পাসওয়ার্ড পরিবর্তনের লিংক পাঠানো হবে।"}
+              : "অ্যাকাউন্টের ইমেইল ঠিকানা লিখুন। পাসওয়ার্ড পরিবর্তনের নির্দেশনা ইমেইলে পাঠানো হবে।"}
           </p>
 
           {error && <div id="login-error" role="alert" className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm leading-6 text-red-700 dark:text-red-300">{error}</div>}
@@ -215,7 +215,7 @@ function LoginForm() {
                   <CheckCircle2 size={23} /> ইমেইল চেক করুন
                 </div>
                 <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
-                  এই ইমেইলে Firebase অ্যাকাউন্ট থাকলে পাসওয়ার্ড রিসেটের নির্দেশনা পাঠানো হয়েছে।
+                  এই ঠিকানায় LandBD অ্যাকাউন্ট থাকলে পাসওয়ার্ড পরিবর্তনের নির্দেশনা পাঠানো হয়েছে।
                   ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।
                 </p>
               </div>
@@ -227,7 +227,7 @@ function LoginForm() {
                     <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
                     <input id="landbd-reset-email" name="email" type="email" placeholder="name@example.com" value={resetEmail} onChange={event => setResetEmail(event.target.value)} autoComplete="email" autoCapitalize="none" spellCheck={false} required disabled={resetSubmitting} className="landbd-input h-14 w-full pl-11 pr-4 text-base disabled:opacity-60" />
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">ইউজারনেম নয়, Firebase-এ নিবন্ধিত সম্পূর্ণ ইমেইল দিন।</p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">ইউজারনেমের পরিবর্তে নিবন্ধিত সম্পূর্ণ ইমেইল ঠিকানা দিন।</p>
                 </div>
                 {resetError && (
                   <div role="alert" className="rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{resetError}</div>
@@ -249,7 +249,7 @@ function LoginForm() {
           <div className="mt-7 flex items-start gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
             <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" />
             <p className="text-xs leading-6 text-[var(--muted-foreground)]">
-              Firebase Authentication আপনার অ্যাকাউন্ট যাচাই করে। অ্যাডমিন ড্যাশবোর্ড ও সংবেদনশীল API শুধুমাত্র অনুমোদিত ভূমিকার জন্য উন্মুক্ত।
+              আপনার LandBD অ্যাকাউন্ট সুরক্ষিতভাবে যাচাই করা হয়। সংবেদনশীল সেবা শুধুমাত্র অনুমোদিত ব্যবহারকারীদের জন্য।
             </p>
           </div>
         </section>
