@@ -244,7 +244,7 @@ export default function MouzaPorchaDocument({
       translate="no"
       aria-label="মৌজা পর্চা রিপোর্ট"
     >
-      <style>{`@import url("https://fonts.maateen.me/kalpurush/font.css");`}</style>
+      {/* Bundled Bengali webfonts are already loaded by LandBD; no remote font dependency. */}
       <div className="report-page-stack">
         {pages.map((pageRows, pageIndex) => {
           const firstPage = pageIndex === 0;
@@ -386,7 +386,7 @@ export default function MouzaPorchaDocument({
       <style jsx global>{`
         .landbd-report-font,
         .landbd-report-font * {
-          font-family: "Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif !important;
+          font-family: var(--font-noto-bengali), "Kalpurush", var(--font-hind-siliguri), "Nirmala UI", sans-serif !important;
           font-synthesis: none !important;
           text-rendering: optimizeLegibility;
         }
@@ -418,8 +418,8 @@ export default function MouzaPorchaDocument({
           color: var(--report-ink);
           border: 1px solid var(--report-border);
           box-shadow: 0 10px 30px rgba(11, 45, 30, 0.08);
-          font-size: 7.6pt;
-          line-height: 1.38;
+          font-size: 8.7pt;
+          line-height: 1.44;
           print-color-adjust: exact;
           -webkit-print-color-adjust: exact;
         }
@@ -876,8 +876,8 @@ export default function MouzaPorchaDocument({
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 6.35pt;
-          line-height: 1.3;
+          font-size: 8pt;
+          line-height: 1.36;
         }
 
         .report-table thead {
@@ -885,7 +885,7 @@ export default function MouzaPorchaDocument({
         }
 
         .report-table th {
-          padding: 1.35mm 1.25mm;
+          padding: 1.6mm 1.4mm;
           border: 0.25mm solid #0a5135;
           background: var(--report-primary);
           color: #fff;
@@ -901,7 +901,7 @@ export default function MouzaPorchaDocument({
         }
 
         .report-table td {
-          padding: 1.1mm 1.25mm;
+          padding: 1.55mm 1.4mm;
           border: 0.22mm solid var(--report-border);
           color: #20342a;
           text-align: left;
@@ -1168,7 +1168,7 @@ export default function MouzaPorchaDocument({
         /* LandBD branded khatian-inspired report presentation */
         #mouza-porcha-report,
         #mouza-porcha-report * {
-          font-family: "Kalpurush", "Noto Serif Bengali", "Nirmala UI", serif !important;
+          font-family: var(--font-noto-bengali), "Kalpurush", var(--font-hind-siliguri), "Nirmala UI", sans-serif !important;
         }
 
         #mouza-porcha-report .report-page {

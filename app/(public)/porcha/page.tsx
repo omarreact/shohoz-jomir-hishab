@@ -231,7 +231,7 @@ export default function PorchaPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <ResultDocument ref={exportRef} className="p-8 sm:p-12">
+              <ResultDocument ref={exportRef} className="p-6 sm:p-10">
                 <div className="mb-8 border-b-2 border-green-600 pb-4 text-center">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#006a4e]">ল্যান্ডবিডি</p>
                   <h2 className="mt-1 text-2xl font-bold text-green-700">খতিয়ান (পর্চা) বিবরণী</h2>
@@ -239,7 +239,7 @@ export default function PorchaPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300 text-left">
+                  <table className="w-full table-fixed border-collapse border border-gray-300 text-left text-base leading-7">
                     <tbody>
                       {[
                         ["খতিয়ান নং", selectedPorcha.JOMIHUB ? toBn(selectedPorcha.JOMIHUB) : "-", "font-bold text-lg text-green-700"],
@@ -249,16 +249,16 @@ export default function PorchaPage() {
                         ["জমির পরিমাণ", selectedPorcha.Column5 ? toBn(selectedPorcha.Column5) : "-", "font-bold text-gray-900"],
                       ].map(([label, value, className]) => (
                         <tr key={label}>
-                          <th className="w-1/3 border border-gray-300 bg-gray-100 px-4 py-3 font-bold text-gray-800">{label}</th>
-                          <td className={`border border-gray-300 px-4 py-3 ${className}`}>{value}</td>
+                          <th className="w-[32%] border border-gray-300 bg-emerald-50 px-4 py-4 text-left font-bold text-gray-900">{label}</th>
+                          <td className={`break-words border border-gray-300 px-4 py-4 align-top ${className}`}>{value}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="mt-8 border-t border-gray-200 pt-4 text-center text-sm text-gray-500">
-                  * এই খতিয়ানটি ডিজিটাল কপি। দাপ্তরিক কাজের জন্য মূল কপির সাথে যাচাই করুন।
+                <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm leading-6 text-amber-950">
+                  তথ্যসূত্র: LandBD-এর বিদ্যমান পর্চা ডেটাসেট। এটি সরকারি প্রত্যয়িত খতিয়ান নয়; জমির মালিকানা, দাগ এবং পরিমাণ অবশ্যই সংশ্লিষ্ট সরকারি মূল নথির সাথে যাচাই করুন।
                 </div>
               </ResultDocument>
             </div>
