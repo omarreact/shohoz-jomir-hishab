@@ -104,13 +104,13 @@ export default function FaraezPage() {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 text-primary" size={22} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-bold text-foreground"><MapPinned size={16} /> রাজউক/জিআইএস যাচাইকৃত প্লট</div>
+                    <div className="flex items-center gap-2 font-bold text-foreground"><MapPinned size={16} /> মানচিত্র থেকে নির্বাচিত প্লট</div>
                     <p className="mt-1 text-sm text-muted-foreground">এই জমির পরিমাণ সার্ভার-যাচাইকৃত জিআইএস প্লট থেকে এসেছে এবং লক করা আছে।</p>
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                       <div><span className="text-muted-foreground">প্লট আইডি</span><div className="font-bold">{gisPlot.plot.plotId}</div></div>
                       <div><span className="text-muted-foreground">আরএস</span><div className="font-bold">{gisPlot.plot.rs || "—"}</div></div>
                       <div><span className="text-muted-foreground">জমি (শতাংশ)</span><div className="font-bold text-primary">{gisPlot.plot.a}</div></div>
-                      <div><span className="text-muted-foreground">উৎস</span><div className="font-bold">রাজউক</div></div>
+                      <div><span className="text-muted-foreground">উৎস</span><div className="font-bold">মানচিত্র</div></div>
                     </div>
                   </div>
                 </div>
