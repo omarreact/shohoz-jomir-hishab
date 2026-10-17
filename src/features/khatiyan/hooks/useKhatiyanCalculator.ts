@@ -53,6 +53,7 @@ export function useKhatiyanCalculator() {
   const [quickData, setQuickData] = useState<KhatiyanQuickData>(initialQuickData);
   const [quickResult, setQuickResult] = useState<ReturnType<typeof calculateQuickKhatiyan>>(null);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const addPlot = () => setPlots((current) => [...current, initialPlot(nextPlotId.current++)]);
 
@@ -86,6 +87,7 @@ export function useKhatiyanCalculator() {
   };
 
   const calculateDetailed = () => {
+    setErrorMessage("");
     setValidationAttempted(true);
     try {
       const { hasData, computedResults } = buildDetailedResults(owners, plots, FULL_UNIT_TIL, toEn, toBn);
@@ -93,25 +95,25 @@ export function useKhatiyanCalculator() {
         setDetailedResults(computedResults);
         setTimeout(() => document.getElementById("resultSection")?.scrollIntoView({ behavior: "smooth" }), 50);
       } else {
-        alert("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ ইনপুট দিন।");
+        setErrorMessage("কমপক্ষে একজন মালিকের অংশ এবং জমির পরিমাণ লিখুন।");
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : "হিসাব করা যায়নি।");
+      setErrorMessage(error instanceof Error ? error.message : "হিসাব করা যায়নি।");
       setDetailedResults(null);
     }
   };
 
   const calculateQuick = () => {
+    setErrorMessage("");
     const result = calculateQuickKhatiyan(quickData, toEn);
     if (result) {
       setQuickResult(result);
     } else {
-      alert("দয়া করে জমির পরিমাণ এবং অংশ সঠিক ভাবে দিন।");
+      setErrorMessage("জমির পরিমাণ এবং অংশ সঠিকভাবে লিখুন।");
     }
   };
 
   const clearAll = () => {
-    if (!confirm("সব ডাটা মুছে ফেলতে চান?")) return;
 
     nextPlotId.current = 3;
     nextOwnerId.current = 4;
@@ -121,6 +123,7 @@ export function useKhatiyanCalculator() {
     setQuickData(initialQuickData());
     setQuickResult(null);
     setValidationAttempted(false);
+    setErrorMessage("");
   };
 
   const handleQuickDataChange = (data: Partial<KhatiyanQuickData>) => {
@@ -138,6 +141,7 @@ export function useKhatiyanCalculator() {
     quickData,
     quickResult,
     validationAttempted,
+    errorMessage,
     totalOwnerTil: totalOwnerTil(owners),
     addPlot,
     removePlot,
