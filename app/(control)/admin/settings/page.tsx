@@ -21,6 +21,7 @@ interface AppSettings {
   facebookUrl: string;
   youtubeUrl: string;
   maintenanceMode: boolean;
+  searchIndexingEnabled: boolean;
   announcement: string;
 }
 
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   facebookUrl: "",
   youtubeUrl: "",
   maintenanceMode: false,
+  searchIndexingEnabled: false,
   announcement: "",
 };
 
@@ -38,6 +40,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const [publicAccessOverride, setPublicAccessOverride] = useState(false);
   const canChangeMaintenance = isSuperAdminRole(user?.role) && !publicAccessOverride;
+  const canChangeSearchIndexing = isSuperAdminRole(user?.role);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +57,7 @@ export default function SettingsPage() {
             ...prev,
             ...data.settings,
             maintenanceMode: data.settings.maintenanceMode === true,
+            searchIndexingEnabled: data.settings.searchIndexingEnabled === true,
           }));
         }
       })
@@ -85,16 +89,16 @@ export default function SettingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          canChangeMaintenance
-            ? settings
-            : {
-                siteName: settings.siteName,
-                contactEmail: settings.contactEmail,
-                contactPhone: settings.contactPhone,
-                facebookUrl: settings.facebookUrl,
-                youtubeUrl: settings.youtubeUrl,
-                announcement: settings.announcement,
-              },
+          {
+            siteName: settings.siteName,
+            contactEmail: settings.contactEmail,
+            contactPhone: settings.contactPhone,
+            facebookUrl: settings.facebookUrl,
+            youtubeUrl: settings.youtubeUrl,
+            announcement: settings.announcement,
+            ...(canChangeMaintenance ? { maintenanceMode: settings.maintenanceMode } : {}),
+            ...(canChangeSearchIndexing ? { searchIndexingEnabled: settings.searchIndexingEnabled } : {}),
+          },
         ),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -250,6 +254,29 @@ export default function SettingsPage() {
                     : ""}
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border-color)] border-t-4 border-t-amber-500 bg-[var(--card-bg)] p-5 shadow-sm sm:rounded-3xl sm:p-8">
+              <h5 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-[var(--foreground)]">
+                <Globe size={21} /> সার্চ ইঞ্জিনে দৃশ্যমানতা
+              </h5>
+              <label className="flex min-h-12 items-center justify-between gap-3">
+                <span className="font-bold text-sm">
+                  Google ও অন্যান্য সার্চ ইঞ্জিনে ইনডেক্সিং {settings.searchIndexingEnabled ? "চালু" : "বন্ধ"}
+                </span>
+                <input type="checkbox" role="switch" name="searchIndexingEnabled"
+                  aria-label="সার্চ ইঞ্জিনে ইনডেক্সিং চালু করুন"
+                  checked={settings.searchIndexingEnabled}
+                  onChange={handleChange}
+                  disabled={!canChangeSearchIndexing}
+                  className="h-5 w-5 accent-emerald-600 disabled:opacity-50"
+                />
+              </label>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                সম্পূর্ণ প্রস্তুত না হওয়া পর্যন্ত বন্ধ রাখুন। বন্ধ থাকলে সব পেজে noindex হেডার ও মেটাডেটা থাকবে এবং sitemap খালি থাকবে।
+                এটি সাইটে ভিজিটর প্রবেশ বন্ধ করে না; আগে ইনডেক্স হওয়া পেজ সরাতে Google Search Console-এ removal request লাগতে পারে।
+                {canChangeSearchIndexing ? "" : " এই সেটিং শুধু Super Admin পরিবর্তন করতে পারেন।"}
+              </p>
             </div>
 
             <button

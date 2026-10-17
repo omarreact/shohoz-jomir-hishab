@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { getSearchIndexingEnabled } from "@/src/modules/search/server/searchIndexingPolicy";
 import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
@@ -51,7 +52,7 @@ export const viewport: Viewport = {
   themeColor: "#006A3D",
 };
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: siteUrl,
   applicationName: "LandBD",
   appleWebApp: {
@@ -105,6 +106,16 @@ export const metadata: Metadata = {
     images: [socialImage],
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const enabled = await getSearchIndexingEnabled();
+  return {
+    ...baseMetadata,
+    robots: enabled
+      ? { index: true, follow: true }
+      : { index: false, follow: false, noarchive: true, googleBot: { index: false, follow: false, noarchive: true } },
+  };
+}
 
 export default function RootLayout({
   children,

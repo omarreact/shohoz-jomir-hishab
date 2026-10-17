@@ -5,6 +5,8 @@ import { importX509, jwtVerify } from "jose";
 
 import { getPageAccessLevel } from "@/src/shared/config/pageAccess";
 import { getSiteAccessPolicy } from "@/src/modules/access/server/siteAccessPolicy";
+import { getSearchIndexingEnabled } from "@/src/modules/search/server/searchIndexingPolicy";
+import { isPrivateSearchPath } from "@/src/lib/search-indexing-config";
 import { verifyServerAuth, type ServerUser } from "@/src/modules/auth/serverAuth";
 import { getAdminMinimumRole } from "@/src/shared/routing/route-registry";
 import { isAnonymousApiRequest } from "@/src/shared/routing/api-route-registry";
@@ -233,6 +235,11 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set("x-request-id", requestId);
 
   const securityHeaders = securityResponseHeaders(requestId, pathname);
+  // This response header is authoritative even if a nested page overrides its
+  // metadata. Fail-closed while LandBD remains in pre-launch SEO mode.
+  if (isPrivateSearchPath(pathname) || !(await getSearchIndexingEnabled())) {
+    securityHeaders["X-Robots-Tag"] = "noindex, nofollow, noarchive";
+  }
 
   // OAuth helper callbacks must remain accessible even during maintenance;
   // next.config.ts proxies these paths to the trusted Firebase Hosting origin.
