@@ -350,8 +350,9 @@ export async function proxy(request: NextRequest) {
 
   if (authenticatedFullAccess && userPayload) {
     try {
-      await authoritativeUser();
-      hasAuthenticatedFullAccess = true;
+      const member = await authoritativeUser();
+      // Full-access mode must not promote ordinary Firebase members to staff.
+      hasAuthenticatedFullAccess = isStaffRole(member.role);
     } catch {
       hasAuthenticatedFullAccess = false;
     }
