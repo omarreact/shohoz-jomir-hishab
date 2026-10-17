@@ -1,4 +1,5 @@
 import { applyLandBdPdfMetadata } from "@/src/shared/lib/pdf/branding";
+import { inspectA4PageGeometry } from "@/src/shared/lib/pdf/a4-page-geometry";
 
 export type PagedPdfOrientation = "portrait" | "landscape";
 
@@ -132,6 +133,41 @@ export async function generatePagedReportPdf({
 
   try {
     await waitForAssets(source);
+
+    // Report pages use an A4 CSS box with a positioned footer. A tall khatian
+    // cell can otherwise be silently scaled down or clipped when rasterized.
+    // Refuse an unsafe PDF instead of producing an apparently complete record.
+    for (let index = 0; index < pages.length; index += 1) {
+      const page = pages[index];
+      if (!page.classList.contains("report-page")) continue;
+      const bounds = page.getBoundingClientRect();
+      const footer = page.querySelector<HTMLElement>(".report-page-footer");
+      const table = page.querySelector<HTMLElement>(".report-table-wrapper");
+      const pageOrientation = page.dataset.pageOrientation === "portrait"
+        ? "portrait"
+        : page.dataset.pageOrientation === "landscape"
+          ? "landscape"
+          : orientation;
+
+      const problem = inspectA4PageGeometry({
+        orientation: pageOrientation,
+        renderedWidthPx: bounds.width,
+        renderedHeightPx: bounds.height,
+        clientHeightPx: page.clientHeight,
+        scrollHeightPx: page.scrollHeight,
+        tableBottomPx: table?.getBoundingClientRect().bottom,
+        footerTopPx: footer?.getBoundingClientRect().top,
+      });
+
+      if (problem) {
+        console.warn("[LandBD PDF] A4 layout validation failed", { page: index + 1, problem });
+        return {
+          ok: false,
+          error: `রিপোর্টের ${index + 1} নম্বর পৃষ্ঠায় তথ্য কেটে যাওয়ার ঝুঁকি আছে। ভুল বা অসম্পূর্ণ পিডিএফ তৈরির বদলে রিপোর্টের তথ্য ভাগ করে আবার চেষ্টা করুন।`,
+        };
+      }
+    }
+
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import("html2canvas"),
       import("jspdf"),
