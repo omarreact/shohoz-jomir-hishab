@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { collections } from "@/src/modules/database/firebaseAdmin";
+import { invalidateSearchIndexingCache } from "@/src/modules/search/server/searchIndexingPolicy";
+import { parseSearchIndexingEnabled } from "@/src/lib/search-indexing-config";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import { invalidateSiteAccessPolicyCache, isPublicAccessOverrideEnabled } from "@/src/modules/access/server/siteAccessPolicy";
@@ -18,6 +20,7 @@ const ALLOWED_KEYS = [
   "facebookUrl",
   "youtubeUrl",
   "maintenanceMode",
+  "searchIndexingEnabled",
   "announcement",
 ] as const;
 
@@ -57,6 +60,7 @@ const settingsSchema = z
     facebookUrl: httpUrl.optional(),
     youtubeUrl: httpUrl.optional(),
     maintenanceMode: maintenanceSchema.optional(),
+    searchIndexingEnabled: z.boolean().optional(),
     announcement: z.string().trim().max(2000).optional(),
   })
   .strict();
@@ -82,6 +86,7 @@ export async function GET(req: NextRequest) {
       facebookUrl: "",
       youtubeUrl: "",
       maintenanceMode: false,
+      searchIndexingEnabled: false,
       announcement: "",
     };
 
@@ -89,7 +94,9 @@ export async function GET(req: NextRequest) {
       const row = doc.data();
       if (!ALLOWED_KEYS.includes(row.key)) continue;
       result[row.key] =
-        row.key === "maintenanceMode" ? row.value === "true" : String(row.value ?? "");
+        row.key === "maintenanceMode" || row.key === "searchIndexingEnabled"
+          ? parseSearchIndexingEnabled(row.value)
+          : String(row.value ?? "");
     }
 
     const publicAccessOverride = isPublicAccessOverrideEnabled();
@@ -131,6 +138,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (
+      Object.prototype.hasOwnProperty.call(validated, "searchIndexingEnabled") &&
+      !isSuperAdminRole(actor.role)
+    ) {
+      return json({ error: "শুধুমাত্র Super Admin সার্চ ইনডেক্সিং পরিবর্তন করতে পারবেন।" }, 403);
+    }
+
+    if (
       isPublicAccessOverrideEnabled() &&
       Object.prototype.hasOwnProperty.call(validated, "maintenanceMode")
     ) {
@@ -160,6 +174,7 @@ export async function POST(req: NextRequest) {
     }
     await batch.commit();
     invalidateSiteAccessPolicyCache();
+    invalidateSearchIndexingCache();
 
     await recordAdminAudit(
       req,

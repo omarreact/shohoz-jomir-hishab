@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
+import { getSearchIndexingEnabled } from "@/src/modules/search/server/searchIndexingPolicy";
 import { FEATURE_ROUTES,PUBLIC_SITEMAP_KEYS } from "@/src/shared/config/feature-routes";
 import { STATIC_BLOG_POSTS } from "@/src/features/blog/content/static-posts";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 import { getAllCmsPages } from "@/src/lib/cms-store";
 export const dynamic="force-dynamic";
 export default async function sitemap():Promise<MetadataRoute.Sitemap>{
+ if (!(await getSearchIndexingEnabled())) return [];
  const base=SITE_CONFIG.url,now=new Date();
  const core=PUBLIC_SITEMAP_KEYS.map(key=>({url:base+(FEATURE_ROUTES[key]==="/"?"":FEATURE_ROUTES[key]),lastModified:now,changeFrequency:"weekly" as const,priority:FEATURE_ROUTES[key]==="/"?1:.8}));
  const pages=await getAllCmsPages();
