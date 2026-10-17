@@ -18,7 +18,7 @@ type Props = {
 
 export default function MeasurementForm({ shape, inputs, onUpdate, onCalculate }: Props) {
   return (
-    <section className="landbd-card p-4 sm:p-6">
+    <section className="landbd-card p-3 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[.12em] text-[var(--survey-teal)]">DIMENSIONS</p>
