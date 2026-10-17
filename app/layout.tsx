@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
 
 import "./globals.css";
@@ -44,9 +44,22 @@ const siteUrl = new URL("https://landbd.pincodeit.com");
 const socialImage = "/brand/og-default.svg";
 const enableVercelTelemetry = Boolean(process.env.VERCEL);
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#006A3D",
+};
+
 export const metadata: Metadata = {
   metadataBase: siteUrl,
   applicationName: "LandBD",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LandBD",
+  },
+  formatDetection: { telephone: false },
   title: "সহজ জমির হিসাব | LandBD",
   description:
     "বাংলাদেশের ভূমি পরিমাপ, খতিয়ান, মানচিত্র এবং উত্তরাধিকার হিসাবের আধুনিক ডিজিটাল প্ল্যাটফর্ম।",
@@ -109,7 +122,7 @@ export default function RootLayout({
         style={{
           display: "flex",
           flexDirection: "column",
-          minHeight: "100vh",
+          minHeight: "100dvh",
           overflowX: "hidden",
         }}
       >
