@@ -1,5 +1,6 @@
 import AnnouncementBanner from "@/src/features/home/components/AnnouncementBanner";
 import HeroSection from "@/src/features/home/components/HeroSection";
+import MobileHomeScreen from "@/src/shared/components/MobileHomeScreen";
 import EasyToolsHub from "@/src/features/home/components/EasyToolsHub";
 import FaqSection from "@/src/features/home/components/FaqSection";
 import LiveHomeContent from "@/src/components/cms/LiveHomeContent";
@@ -15,11 +16,14 @@ export default async function HomePage() {
   return (
     <div className="flex w-full flex-col">
       <LandBDStructuredData />
+      <div className="md:hidden"><MobileHomeScreen /></div>
       <LiveHomeContent />
       <AnnouncementBanner />
-      <HeroSection />
-      <EasyToolsHub />
-      <FaqSection items={items}/>
+      <div className="hidden md:block">
+        <HeroSection />
+        <EasyToolsHub />
+        <FaqSection items={items}/>
+      </div>
     </div>
   );
 }
