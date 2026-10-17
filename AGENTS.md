@@ -147,3 +147,21 @@ OPTIONAL CACHE -> Redis where already required
 
 # 17. FINAL VERIFICATION
 Before deployment verify all features and functionality as outlined in the initial architectural constraints document.
+
+
+---
+
+# 18. REUSABILITY, MODULARITY, AND MAINTAINABILITY (OWNER DIRECTIVE: 2026-10-18)
+
+Applies to **all Next.js, React, JavaScript, TypeScript, and Node.js work** in this repository.
+
+1. **Feature-first structure, not giant page files.** Pages and routes compose the feature and delegate to small components/services; each reusable feature has its own `components/`, `hooks/`, `lib/`, `schemas/`, `types/`, and `*.test.*` as needed. Do not create needless folders when a feature is tiny.
+2. **One responsibility per module.** UI displays state; hooks coordinate interactions; pure functions calculate/transform; server-only modules perform privileged network/database work. Never put Firebase Admin credentials, third-party tokens, or business authorization in a client component.
+3. **Readable code before clever abstraction.** Prefer explicit names and composable functions. Extract common logic once it truly repeats; never introduce generic frameworks or duplicate wrappers merely for apparent DRY compliance.
+4. **Reusability with stable contracts.** Build shared typography, layouts, loading/error/empty states, PDF components, map controls, admin settings, validation and formatting primitives where multiple screens need them. Keep domain-specific behavior inside its feature.
+5. **Typed boundaries.** TypeScript interfaces and Zod schemas at API/data boundaries; avoid `any`, speculative shape assumptions and mixed units. Keep data parsers separated from rendered tables.
+6. **Test business logic and reports.** Regression-test calculations, PDF pagination, missing fields, record integrity, permission enforcement, mobile controls and all critical loading/error states. A successful compilation is not a replacement for visual PDF QA.
+7. **Secure authorization.** Route handlers verify roles and access server-side, preserve Firebase as authoritative for application data, and provide no browser bypass.
+8. **No silent rewrites.** Preserve current production behavior and previously approved user flows. Stage changes in PRs, keep migrations reversible, and never fabricate external land or payment data.
+9. **Document design intent.** Short README/ADR for complex features, important invariant comments, meaningful commit/PR summaries, and clear files a developer can navigate.
+10. **LandBD first.** Do not divert effort to PinPay or other independent projects until LandBD is accepted as complete.

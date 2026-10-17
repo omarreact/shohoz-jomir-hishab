@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 const frameStyle: CSSProperties = {
   width: "min(70%, 520px)",
   aspectRatio: "1.65 / 1",
-  border: "16px solid rgba(0, 106, 78, 0.10)",
+  border: "6px solid rgba(0, 106, 78, 0.035)",
   borderRadius: "32px",
   display: "grid",
   placeItems: "center",
@@ -16,7 +16,7 @@ const redDiscStyle: CSSProperties = {
   width: "34%",
   aspectRatio: "1 / 1",
   borderRadius: "9999px",
-  background: "rgba(244, 42, 65, 0.095)",
+  background: "rgba(0, 106, 78, 0.025)",
   boxShadow: "0 0 0 10px rgba(0, 106, 78, 0.025)",
 };
 
@@ -36,7 +36,7 @@ export default function ResultWatermark() {
             fontSize: "22px",
             fontWeight: 800,
             letterSpacing: "0.14em",
-            color: "rgba(0, 106, 78, 0.075)",
+            color: "rgba(0, 106, 78, 0.045)",
           }}
         >
           ল্যান্ডবিডি

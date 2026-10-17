@@ -50,13 +50,13 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
 
         <CardContent ref={exportRef as React.RefObject<HTMLDivElement>} className="relative isolate overflow-hidden rounded-none bg-white p-4 text-slate-900 md:p-8">
           <div className="relative z-10">
-            <div className="mb-8 border-b-2 border-success/30 pb-6 text-center">
+            <div className="mb-5 border-b-2 border-success/30 pb-4 text-center">
               <h2 className="mb-2 text-2xl font-bold text-success">সম্পত্তি বন্টন (ফারায়েজ) বিবরণী</h2>
               <p className="mb-0 font-semibold text-slate-600">তারিখ: {today} | {religion === "muslim" ? "ইসলামী শরীয়ত" : "হিন্দু দায়ভাগ আইন"} মোতাবেক প্রস্তুতকৃত</p>
             </div>
 
             {pieData.length > 0 ? (
-              <div className="mx-0 mb-8 flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm md:flex-row">
+              <div data-pdf-exclude="1" className="mx-0 mb-8 flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm md:flex-row">
                 <div className="mb-6 text-center md:mb-0 md:w-5/12">
                   <h5 className="mb-3 flex items-center justify-center text-lg font-bold text-slate-900"><PieChartIcon className="mr-2 text-primary" /> অংশের গ্রাফিক্যাল রূপ</h5>
                   <p className="text-sm text-slate-600">নিচের চার্টে ওয়ারিশদের অংশের হার দেখানো হলো</p>
@@ -113,7 +113,7 @@ export default function FaraezResult({ results, exportRef, religion }: Props) {
               </table>
             </div>
 
-            <div className="mt-6 pt-8 text-center text-sm text-slate-600">
+            <div className="mt-4 border-t border-slate-200 pt-4 text-center text-sm text-slate-600">
               <p className="mb-2 inline-block border-t border-slate-200 px-8 pt-4">* এই দলিলটি <strong className="text-slate-900">LandBD</strong> ডিজিটাল ক্যালকুলেটর দ্বারা প্রস্তুতকৃত।</p>
               <p>চূড়ান্ত আইনি বা দাপ্তরিক কাজের জন্য অভিজ্ঞ আইনজীবী বা মুফতির পরামর্শ গ্রহণ করুন।</p>
             </div>

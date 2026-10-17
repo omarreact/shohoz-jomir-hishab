@@ -175,9 +175,9 @@ export function paginateMouzaReportRows(
   // Denser packing: previous budgets left ~half the sheet empty and, combined
   // with min-height A4 pages, produced many near-blank PDF sheets.
   const resolvedFirstBudget =
-    firstPageBudget ?? (orientation === "landscape" ? 36 : 42);
+    firstPageBudget ?? (orientation === "landscape" ? 32 : 36);
   const resolvedLaterBudget =
-    laterPageBudget ?? (orientation === "landscape" ? 52 : 64);
+    laterPageBudget ?? (orientation === "landscape" ? 44 : 50);
 
   const pages: MouzaReportRowSegment[][] = [];
   let current: MouzaReportRowSegment[] = [];

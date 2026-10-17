@@ -104,7 +104,7 @@ export function drawLandBdPdfChrome(
   doc.text("LandBD", left + 11, LANDBD_PDF.headerTopMm + 4.4);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(5.4);
+  doc.setFontSize(6.2);
   doc.setTextColor(...LANDBD_PDF.muted);
   doc.text(
     "Land information • calculation • maps • documents",
@@ -114,7 +114,7 @@ export function drawLandBdPdfChrome(
 
   const title = toPdfCoreFontText(options.title, "LandBD Report");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.2);
+  doc.setFontSize(7.5);
   doc.setTextColor(...LANDBD_PDF.ink);
   doc.text(title, right, LANDBD_PDF.headerTopMm + 4.5, {
     align: "right",
@@ -141,7 +141,7 @@ export function drawLandBdPdfChrome(
   doc.line(left, footerRuleY, right, footerRuleY);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(5.5);
+  doc.setFontSize(6.4);
   doc.setTextColor(...LANDBD_PDF.primary);
   doc.text("landbd.pincodeit.com", left, height - LANDBD_PDF.footerTextOffsetMm);
 
