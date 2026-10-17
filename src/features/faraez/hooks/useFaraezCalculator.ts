@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
+import { formatFaraezValidationMessage } from "@/src/features/faraez/lib/validationCopy";
 import { calculateFaraez } from "@/src/modules/faraez/faraez.engine";
 import type { FaraezInput } from "@/src/modules/faraez/contracts";
 import { toUiResults } from "@/src/modules/faraez/ui-adapter";
@@ -63,6 +64,7 @@ export function useFaraezCalculator() {
   const [gisPlot, setGisPlot] = useState<ReturnType<typeof consumePendingPlot>>(null);
   const [heirs, setHeirs] = useState<HeirsInput>(initialFaraezHeirs);
   const [results, setResults] = useState<HeirResult[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const saveDraft = useHistoryStore((state) => state.saveDraft);
   const deleteCalculation = useHistoryStore((state) => state.deleteCalculation);
@@ -162,15 +164,17 @@ export function useFaraezCalculator() {
     setGender("male");
     setResults([]);
     setGisPlot(null);
+    setErrorMessage("");
   };
 
   const calculate = () => {
+    setErrorMessage("");
     try {
       if (religion === "muslim") {
         const validationErrors = validateMuslimFaraezInput(heirs, assets);
         if (validationErrors.length > 0) {
           setResults([]);
-          alert(`ইনপুটে সমস্যা আছে:\n\n${validationErrors.join("\n")}`);
+          setErrorMessage(validationErrors.map(formatFaraezValidationMessage).join(" • "));
           return;
         }
 
@@ -197,7 +201,7 @@ export function useFaraezCalculator() {
     } catch (error) {
       logger.warn("Faraez calculation failed", error);
       setResults([]);
-      alert("হিসাব করা যায়নি। অনুগ্রহ করে ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
+      setErrorMessage("হিসাব করা যায়নি। ইনপুটগুলো যাচাই করে আবার চেষ্টা করুন।");
     }
   };
 
@@ -212,6 +216,7 @@ export function useFaraezCalculator() {
     heirs,
     setHeirs,
     results,
+    errorMessage,
     exportRef,
     calculate,
     clearCalculation,
