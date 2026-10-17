@@ -11,12 +11,12 @@ export type LayerDef = {
 };
 
 export const LAYERS: LayerDef[] = [
-  { key: "dap", label: "DAP Proposed Landuse", description: "Proposed land-use zones", color: "#16a34a", defaultVisible: true },
-  { key: "rs", label: "RS Mauza tiles", description: "Hosted/RS_Mauza_282Scale MapServer", color: "#2563eb", defaultVisible: true },
-  { key: "ms", label: "MS Mauza tiles", description: "Hosted/MS_Mauza_Tiles_Final MapServer", color: "#7c3aed", defaultVisible: true },
-  { key: "flood", label: "Flood Overlay", description: "Flood susceptibility overlay", color: "#0891b2", defaultVisible: false },
-  { key: "boundary", label: "Overlay Boundary", description: "Planning boundary tiles", color: "#ea580c", defaultVisible: false },
-  { key: "transport", label: "Transport Network", description: "Transport network tiles", color: "#dc2626", defaultVisible: false },
+  { key: "dap", label: "প্রস্তাবিত ভূমি ব্যবহার", description: "জমির পরিকল্পিত ব্যবহার ও অঞ্চল", color: "#16a34a", defaultVisible: true },
+  { key: "rs", label: "আরএস মৌজা", description: "আরএস জরিপের মৌজা সীমানা ও দাগ", color: "#2563eb", defaultVisible: true },
+  { key: "ms", label: "এমএস মৌজা", description: "এমএস জরিপের মৌজা সীমানা ও দাগ", color: "#7c3aed", defaultVisible: true },
+  { key: "flood", label: "বন্যা ঝুঁকি", description: "বন্যা ঝুঁকির অনুমানভিত্তিক অঞ্চল", color: "#0891b2", defaultVisible: false },
+  { key: "boundary", label: "পরিকল্পনা সীমানা", description: "এলাকাভিত্তিক পরিকল্পনার সীমা", color: "#ea580c", defaultVisible: false },
+  { key: "transport", label: "সড়ক সংযোগ", description: "সড়ক ও যোগাযোগ নেটওয়ার্ক", color: "#dc2626", defaultVisible: false },
 ];
 
 export const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
