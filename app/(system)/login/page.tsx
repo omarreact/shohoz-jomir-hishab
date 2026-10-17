@@ -137,7 +137,7 @@ function LoginForm() {
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-10">
         <Link href={FEATURE_ROUTES.home} className="flex items-center gap-3 text-inherit no-underline">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--brand-gold)] text-[var(--primary-foreground)]"><MapPinned size={23} /></span>
-          <span><strong className="block text-xl tracking-tight">LandBD</strong><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Firebase authentication</span></span>
+          <span><strong className="block text-xl tracking-tight">LandBD</strong><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">LandBD account</span></span>
         </Link>
         <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] px-3 text-xs font-semibold text-[var(--muted-foreground)] no-underline hover:bg-[var(--card-bg)] sm:px-4 sm:text-sm"><Home size={16} /> ওয়েবসাইটে যান</Link>
       </header>
@@ -165,10 +165,10 @@ function LoginForm() {
         <section className="mx-auto w-full max-w-md py-2 sm:py-6" aria-labelledby="login-title">
           <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--primary)]"><LockKeyhole size={23} /></span>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Welcome back</p>
-          <h2 id="login-title" className="mt-2 text-3xl font-extrabold tracking-tight">{mode === "login" ? "Firebase লগইন" : "পাসওয়ার্ড রিসেট"}</h2>
+          <h2 id="login-title" className="mt-2 text-3xl font-extrabold tracking-tight">{mode === "login" ? "LandBD লগইন" : "পাসওয়ার্ড রিসেট"}</h2>
           <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
             {mode === "login"
-              ? "আপনার Firebase অ্যাকাউন্ট দিয়ে লগইন করুন। অ্যাডমিন ও এডিটররা ড্যাশবোর্ডে, অন্য সদস্যরা নিজস্ব সেবায় প্রবেশ করবেন।"
+              ? "আপনার LandBD অ্যাকাউন্ট দিয়ে প্রবেশ করুন। অ্যাডমিন ও এডিটররা ড্যাশবোর্ডে, অন্য সদস্যরা নিজস্ব সেবায় প্রবেশ করবেন।"
               : "অ্যাকাউন্টের ইমেইল ঠিকানা লিখুন। Firebase থেকে পাসওয়ার্ড পরিবর্তনের লিংক পাঠানো হবে।"}
           </p>
 
