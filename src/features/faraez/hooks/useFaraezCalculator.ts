@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { calculateHinduDayabhaga } from "@/src/modules/faraez/hindu-law";
 import { validateMuslimFaraezInput } from "@/src/modules/faraez/validation";
+import { formatFaraezValidationMessage } from "@/src/features/faraez/lib/validationCopy";
 import { calculateFaraez } from "@/src/modules/faraez/faraez.engine";
 import type { FaraezInput } from "@/src/modules/faraez/contracts";
 import { toUiResults } from "@/src/modules/faraez/ui-adapter";
@@ -173,7 +174,7 @@ export function useFaraezCalculator() {
         const validationErrors = validateMuslimFaraezInput(heirs, assets);
         if (validationErrors.length > 0) {
           setResults([]);
-          setErrorMessage(validationErrors.join(" • "));
+          setErrorMessage(validationErrors.map(formatFaraezValidationMessage).join(" • "));
           return;
         }
 
