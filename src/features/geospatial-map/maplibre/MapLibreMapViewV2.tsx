@@ -13,6 +13,7 @@ import {
   MapPin,
   Minus,
   MousePointer2,
+  Pentagon,
   Plus,
   Ruler,
   Search,
