@@ -124,18 +124,22 @@ async function main() {
       disabled: false,
     });
 
+    const newProfileRef = db.collection("users").doc(record.uid);
+    let profileCreated = false;
     try {
       const now = new Date().toISOString();
-      await db.collection("users").doc(record.uid).create({
+      await newProfileRef.create({
         email, name: name || null, role: "Basic User",
         status: "active", isVerified: false, lockedUntil: null,
         failedAttempts: 0, lastLogin: null,
         recoveryBootstrapMarker: PREPARED_MARKER,
         createdAt: now, updatedAt: now,
       });
+      profileCreated = true;
       await audit(db, "auth.bootstrap.prepare", record.uid, email);
     } catch (error) {
-      // Only a user freshly created by this invocation may be rolled back.
+      // Only data created by this invocation may be rolled back.
+      if (profileCreated) await newProfileRef.delete().catch(() => undefined);
       await auth.deleteUser(record.uid).catch(() => undefined);
       throw error;
     }
@@ -187,6 +191,7 @@ async function main() {
   // Audit the authorized intention before issuing any elevation.
   await audit(db, "auth.bootstrap.activate.requested", account.uid, email);
   const updatedClaims = { ...currentClaims, role: "Super Admin", admin: true };
+  const previousProfile = profile.data() || {};
   await auth.setCustomUserClaims(account.uid, updatedClaims);
   try {
     await profileRef.update({
@@ -203,6 +208,15 @@ async function main() {
       await auth.setCustomUserClaims(account.uid, currentClaims);
     } catch (rollbackError) {
       console.error("CRITICAL: claim rollback failed; revoke manually.", rollbackError?.code || "unknown");
+    }
+    try {
+      await profileRef.update({
+        role: previousProfile.role || "Basic User",
+        isVerified: previousProfile.isVerified === true,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (rollbackError) {
+      console.error("CRITICAL: profile rollback failed; repair manually.", rollbackError?.code || "unknown");
     }
     throw error;
   }
