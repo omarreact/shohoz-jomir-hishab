@@ -4,7 +4,7 @@ import { z } from "zod";
 import { collections } from "@/src/modules/database/firebaseAdmin";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import { isSuperAdminRole } from "@/src/modules/auth/roles";
-import { invalidateSiteAccessPolicyCache } from "@/src/modules/access/server/siteAccessPolicy";
+import { invalidateSiteAccessPolicyCache, isPublicAccessOverrideEnabled } from "@/src/modules/access/server/siteAccessPolicy";
 import {
   adminErrorStatus,
   protectAdminMutation,
@@ -92,7 +92,14 @@ export async function GET(req: NextRequest) {
         row.key === "maintenanceMode" ? row.value === "true" : String(row.value ?? "");
     }
 
-    return json({ settings: result });
+    const publicAccessOverride = isPublicAccessOverrideEnabled();
+    return json({
+      settings: {
+        ...result,
+        maintenanceMode: publicAccessOverride ? false : result.maintenanceMode,
+      },
+      publicAccessOverride,
+    });
   } catch (error: unknown) {
     console.error("Failed to fetch settings:", error);
     const status = adminErrorStatus(error);
@@ -120,6 +127,16 @@ export async function POST(req: NextRequest) {
       return json(
         { error: "মেইনটেন্যান্স মোড শুধুমাত্র Super Admin পরিবর্তন করতে পারবেন।" },
         403,
+      );
+    }
+
+    if (
+      isPublicAccessOverrideEnabled() &&
+      Object.prototype.hasOwnProperty.call(validated, "maintenanceMode")
+    ) {
+      return json(
+        { error: "Public launch mode is active. Set LANDBD_PUBLIC_ACCESS=false before changing maintenance mode." },
+        409,
       );
     }
 
