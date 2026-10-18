@@ -1,90 +1,111 @@
-import {NextRequest,NextResponse} from "next/server";
-import {z} from "zod";
-import {verifySuperAdminAuth} from "@/src/modules/auth/serverAuth";
-import {db} from "@/src/modules/database/firebaseAdmin";
-import {getGateway} from "@/src/lib/sslcommerz";
-import {initiateMerchantRefund,queryMerchantRefund} from "@/src/lib/commerce-gateway";
-import {refundDecision,refundStatusDecision} from "@/src/lib/refund-policy";
+import { createHash } from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { verifySuperAdminAuth } from "@/src/modules/auth/serverAuth";
+import { db } from "@/src/modules/database/firebaseAdmin";
 import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
-export const runtime="nodejs";export const dynamic="force-dynamic";
-const schema=z.discriminatedUnion("action",[
- z.object({action:z.literal("request"),orderId:z.string().regex(/^LBD[A-F0-9]{24}$/),
-  confirmation:z.string().max(50),reason:z.string().trim().min(12).max(250)}).strict(),
- z.object({action:z.literal("status"),orderId:z.string().regex(/^LBD[A-F0-9]{24}$/)}).strict()
+import { isPinPayOrderId } from "@/src/features/pinpay/types";
+import { recordAdminAudit } from "@/src/modules/security/adminSecurity";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const schema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("request"), orderId: z.string(),
+    reason: z.string().trim().min(12).max(250),
+    confirmation: z.string().max(80),
+  }).strict(),
+  z.object({
+    action: z.literal("confirm"), orderId: z.string(),
+    refundReference: z.string().trim().min(6).max(100),
+    refundAmountBdt: z.number().positive(),
+    fundsReturnedChecked: z.literal(true),
+  }).strict(),
 ]);
-const responseHeaders={"Cache-Control":"private, no-store"};
-export async function POST(req:NextRequest){
- try{
-  const actor=await verifySuperAdminAuth(req);
-  if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Invalid origin"},{status:403});
-  if(!await allowDurableRateLimit("refund-admin:"+actor.id,6,60))return NextResponse.json({error:"অনুরোধ সীমা অতিক্রম করেছে"},{status:429});
-  const parsed=schema.safeParse(await req.json());
-  if(!parsed.success)return NextResponse.json({error:"Invalid refund request"},{status:400});
-  const command=parsed.data;
-  const ref=db.collection("landbdOrders").doc(command.orderId);
-  const config=await getGateway();
-  if(!config.enabled||!config.password||!config.storeId)return NextResponse.json({error:"পেমেন্ট গেটওয়ে বন্ধ বা অসম্পূর্ণ"},{status:503});
-  if(command.action==="status"){
-   const order=(await ref.get()).data();
-   if(!order?.refundReference)return NextResponse.json({error:"Refund reference not yet available; check merchant panel"},{status:409});
-   const result=await queryMerchantRefund(config,order.refundReference);
-   if(result.bankTransactionId&&result.bankTransactionId!==order.bankTranId)
-     return NextResponse.json({error:"Bank transaction mismatch"},{status:502});
-   const decision=refundStatusDecision(result.status);
-   await db.runTransaction(async tx=>{
-    const current=await tx.get(ref);const data=current.data();
-    if(!data||data.refundReference!==order.refundReference)throw Error("Refund changed during check");
-    const next=decision==="refunded"?"refunded":decision==="processing"?"processing":"review";
-    const entitlementRef=db.collection("landbdEntitlements").doc(data.uid+"_"+data.serviceId);
-    const entitlement=await tx.get(entitlementRef);
-    const entitlementData=entitlement.data();
-    const matchesPurchase=entitlementData?.lastTransactionId===command.orderId;
-    if(next==="refunded" && matchesPurchase){
-      tx.update(entitlementRef,{active:false,refundReviewHold:true,
-        refundReviewOrderId:command.orderId,refundReviewAt:new Date().toISOString()});
+
+/** Review-only refund workflow. NO endpoint triggers a bank/MFS transfer. */
+export async function POST(req: NextRequest) {
+  if (req.headers.get("origin") !== req.nextUrl.origin) {
+    return NextResponse.json({ error: "Origin denied" }, { status: 403 });
+  }
+  let actor: Awaited<ReturnType<typeof verifySuperAdminAuth>>;
+  try { actor = await verifySuperAdminAuth(req); }
+  catch { return NextResponse.json({ error: "Super Admin required" }, { status: 403 }); }
+  try {
+    if (!await allowDurableRateLimit("pinpay:refund:" + actor.id, 6, 60)) {
+      return NextResponse.json({ error: "অনুরোধ সীমা অতিক্রম করেছে" }, { status: 429 });
     }
-    // Revoke access only when this refund is the most recent recorded purchase.
-    // For pooled/legacy credits, create a review hold without altering the balance.
-    tx.update(ref,{refundStatus:next,status:next==="refunded"?"refunded":data.status,refundCheckedAt:new Date().toISOString(),
-      refundRequiresEntitlementReview:next==="refunded"||data.refundRequiresEntitlementReview===true,
-      entitlementSuspended:next==="refunded"&&matchesPurchase});
-   });
-   return NextResponse.json({ok:true,refundStatus:decision,refundReference:order.refundReference,
-    requiresEntitlementReview:decision==="refunded"},{headers:responseHeaders});
+    const parsed = schema.safeParse(await req.json());
+    if (!parsed.success || !isPinPayOrderId(parsed.data.orderId)) {
+      return NextResponse.json({ error: "Invalid refund request" }, { status: 400 });
+    }
+    const input = parsed.data;
+    const orderRef = db.collection("landbdOrders").doc(input.orderId);
+    if (input.action === "request") {
+      if (input.confirmation !== "REFUND " + input.orderId) {
+        return NextResponse.json({ error: "Confirmation mismatch" }, { status: 400 });
+      }
+      await db.runTransaction(async tx => {
+        const snapshot = await tx.get(orderRef);
+        const d = snapshot.data();
+        if (!d || d.gateway !== "pinpay" || d.status !== "paid" || d.refundStatus) {
+          throw new Error("Refund request not allowed");
+        }
+        tx.update(orderRef, {
+          refundStatus: "review", refundReason: input.reason,
+          refundRequestedBy: actor.id, refundRequestedAt: new Date().toISOString(),
+          refundRequiresEntitlementReview: true,
+        });
+      });
+      await recordAdminAudit(req, actor, "pinpay.refund.requested", "landbdOrder", input.orderId);
+      return NextResponse.json({
+        ok: true, refundStatus: "review",
+        message: "রিফান্ড রিভিউ তৈরি হয়েছে। অর্থ ফেরত পাঠানো হয়নি। অনুমোদিত অ্যাকাউন্ট থেকে আলাদা করে ফেরত দিন।",
+      });
+    }
+
+    if (!/^[a-zA-Z0-9/_-]{6,100}$/.test(input.refundReference)) {
+      return NextResponse.json({ error: "Independent refund reference required" }, { status: 400 });
+    }
+    const settlementRef = db.collection("landbdPinPayRefunds").doc(createHash("sha256").update(input.refundReference).digest("hex"));
+    await db.runTransaction(async tx => {
+      const orderSnap = await tx.get(orderRef);
+      const order = orderSnap.data();
+      if (!order || order.gateway !== "pinpay" || order.status !== "paid" ||
+          order.refundStatus !== "review" || order.amountBdt !== input.refundAmountBdt) {
+        throw new Error("Refund status or amount mismatch");
+      }
+      const entitlementRef = db.collection("landbdEntitlements").doc(order.uid + "_" + order.serviceId);
+      const [refund, entitlement] = await Promise.all([tx.get(settlementRef), tx.get(entitlementRef)]);
+      if (refund.exists) throw new Error("Refund reference already used");
+      const lastPurchase = entitlement.data()?.lastTransactionId === input.orderId;
+      const now = new Date().toISOString();
+      tx.create(settlementRef, {
+        orderId: input.orderId, provider: order.provider,
+        amountBdt: order.amountBdt, refundReference: input.refundReference,
+        verifiedBy: actor.id, source: "independent_refund_statement_review", createdAt: now,
+      });
+      if (lastPurchase) {
+        tx.update(entitlementRef, {
+          active: false, refundReviewHold: true, refundReviewOrderId: input.orderId,
+          refundReviewAt: now,
+        });
+      }
+      tx.update(orderRef, {
+        status: "refunded", refundStatus: "refunded",
+        refundReference: input.refundReference, refundedAt: now,
+        refundVerifiedBy: actor.id, entitlementSuspended: lastPurchase,
+        refundRequiresEntitlementReview: true,
+      });
+    });
+    await recordAdminAudit(req, actor, "pinpay.refund.confirmed", "landbdOrder", input.orderId);
+    return NextResponse.json({
+      ok: true, refundStatus: "refunded",
+      message: "বাইরের অ্যাকাউন্ট স্টেটমেন্ট অনুযায়ী ফেরত সম্পন্ন রেকর্ড করা হয়েছে।",
+    });
+  } catch (error) {
+    console.error("[PinPay refund]", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "রিফান্ড যাচাই বা সংরক্ষণ করা যায়নি।" }, { status: 409 });
   }
-  if(command.confirmation!=="REFUND "+command.orderId)
-   return NextResponse.json({error:"Confirmation text does not match"},{status:400});
-  const requestedAt=new Date().toISOString(),refundTransactionId="R"+command.orderId;
-  await db.runTransaction(async tx=>{
-   const snapshot=await tx.get(ref),order=snapshot.data();
-   if(!order)throw Error("Order not found");
-   const decision=refundDecision({id:command.orderId,status:order.status,amountBdt:order.amountBdt,
-    bankTranId:order.bankTranId,refundStatus:order.refundStatus});
-   if(!decision.ok)throw Error(decision.reason||"Refund rejected");
-   tx.update(ref,{refundStatus:"requesting",refundTransactionId,refundReason:command.reason,
-    refundRequestedAt:requestedAt,refundRequestedBy:actor.id,refundRequiresEntitlementReview:true});
-  });
-  // External monetary side effect is never retried automatically. Any transport
-  // uncertainty is flagged for manual merchant-panel reconciliation.
-  const order=(await ref.get()).data()!;
-  try{
-   const result=await initiateMerchantRefund(config,{
-    bankTransactionId:order.bankTranId,refundTransactionId,
-    amountBdt:order.amountBdt,reason:command.reason
-   });
-   const next=result.status==="failed"?"review":"processing";
-   await ref.update({refundStatus:next,refundReference:result.refundReference||null,
-    refundProviderResponse:result.status,refundProviderMessage:result.reason||null,
-    refundUpdatedAt:new Date().toISOString()});
-   return NextResponse.json({ok:result.status!=="failed",refundStatus:next,
-    refundReference:result.refundReference,providerStatus:result.status,
-    message:result.status==="failed"?"Gateway rejected request; investigate manually":"Refund request sent to SSLCommerz"}, {headers:responseHeaders});
-  }catch(e){
-   await ref.update({refundStatus:"unknown",refundUpdatedAt:new Date().toISOString(),
-    refundProviderMessage:e instanceof Error?e.message.slice(0,200):"Unknown failure"});
-   return NextResponse.json({error:"অনিশ্চিত ফলাফল: মার্চেন্ট প্যানেলে যাচাই না করে আবার রিফান্ড পাঠাবেন না।",refundStatus:"unknown"},{status:503,headers:responseHeaders});
-  }
- }catch(e){
-  return NextResponse.json({error:e instanceof Error?e.message:"Refund unavailable"},{status:409,headers:responseHeaders});
- }
 }
