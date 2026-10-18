@@ -21,7 +21,7 @@ export async function PUT(req:NextRequest){
  if(!parsed.success||!isServiceId(parsed.data?.id))return NextResponse.json({error:"অবৈধ সেবা/মূল্য"},{status:400});
  const data=parsed.data;
  if(data.discountBdt!==null&&data.discountBdt>data.priceBdt)return NextResponse.json({error:"ছাড় মূল্যের চেয়ে বেশি হতে পারে না"},{status:400});
- if(data.paid&&(data.priceBdt<10||data.priceBdt>500000||(data.discountBdt!==null&&data.discountBdt<10)))return NextResponse.json({error:"SSLCommerz পেইড সেবার মূল্য ও ছাড়ের পরিমাণ ১০–৫,০০,০০০ টাকার মধ্যে হতে হবে"},{status:400});
+ if(data.paid&&(data.priceBdt<10||data.priceBdt>500000||(data.discountBdt!==null&&data.discountBdt<10)))return NextResponse.json({error:"PinPay পেইড সেবার মূল্য ও ছাড়ের পরিমাণ ১০–৫,০০,০০০ টাকার মধ্যে হতে হবে"},{status:400});
  await db.collection("landbdServicePricing").doc(data.id).set({...data,updatedAt:new Date().toISOString(),updatedBy:actor.id},{merge:true});
  return NextResponse.json({ok:true});
  }catch{return NextResponse.json({error:"সংরক্ষণ ব্যর্থ"},{status:500});}

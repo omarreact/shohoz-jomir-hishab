@@ -1,4 +1,4 @@
-/** Immutable safety decisions for admin-initiated SSLCommerz refunds. */
+/** Immutable legacy gateway refund decisions retained for historical analysis. */
 export type RefundOrder={id:string;status:string;amountBdt:number;bankTranId?:string|null;
  refundStatus?:string|null};
 export function refundDecision(order:RefundOrder):{ok:boolean;reason:string|null}{

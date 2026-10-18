@@ -91,10 +91,7 @@ const MAINTENANCE_ESSENTIAL_PATHS = new Set([
   "/maintenance",
   "/security-locked",
   "/api/security/lockout",
-  "/api/payment/sslcommerz/success",
-  "/api/payment/sslcommerz/fail",
-  "/api/payment/sslcommerz/cancel",
-  "/api/payment/sslcommerz/ipn",
+  "/api/payment/pinpay/bridge/events",
   "/api/public/maintenance",
 ]);
 

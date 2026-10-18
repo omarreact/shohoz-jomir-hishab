@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/src/modules/database/firebaseAdmin";
 import { getService, isServiceId, servicePrice } from "@/src/lib/services-registry";
 import { getPinPaySettings, validateMethod } from "./settings";
@@ -32,10 +32,8 @@ export async function createPinPayOrder(
 
   // Per-user idempotency. The request ID comes from the browser, while all
   // service prices, account routing, and user identity come from the server.
-  const key = userId + ":" + requestId;
-  const requestReference = db.collection("landbdPinPayRequests").doc(
-    Buffer.from(key).toString("base64url").slice(0, 145),
-  );
+  const key = createHash("sha256").update(userId + ":" + requestId).digest("hex");
+  const requestReference = db.collection("landbdPinPayRequests").doc(key);
 
   const id = await db.runTransaction(async tx => {
     const existing = await tx.get(requestReference);
@@ -104,6 +102,3 @@ export async function claimPinPayPayment(userId: string, orderId: string, messag
   });
 }
 
-export function newRequestKey(): string {
-  return randomUUID();
-}
