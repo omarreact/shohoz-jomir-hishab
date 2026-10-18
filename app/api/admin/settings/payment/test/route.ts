@@ -1,23 +1,26 @@
-import { randomBytes } from "node:crypto";
-import { NextRequest,NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
-import { getGateway,startGateway } from "@/src/lib/sslcommerz";
-import { allowDurableRateLimit } from "@/src/lib/durable-rate-limit";
-export const runtime="nodejs";
-export async function POST(req:NextRequest){
- try{
-  const admin=await verifyAdminAuth(req);
-  if(req.headers.get("origin")!==req.nextUrl.origin)return NextResponse.json({error:"Invalid origin"},{status:403});
-  if(!await allowDurableRateLimit("payment-connection-test:"+admin.id,3,60))return NextResponse.json({error:"অনেকবার পরীক্ষা করেছেন"},{status:429});
-  const c=await getGateway();
-  if(c.live)return NextResponse.json({error:"লাইভ মোডে পরীক্ষা নয়; প্রথমে Sandbox নির্বাচন করুন"},{status:409});
-  if(!c.storeId||!c.password)return NextResponse.json({error:"Store ID ও Password সংরক্ষণ করুন"},{status:409});
-  await startGateway({...c,enabled:true},{
-   id:"LBDT"+randomBytes(11).toString("hex").toUpperCase(),
-   amount:10,service:"LandBD Sandbox Configuration Test",
-   serviceId:"land-area",name:"LandBD Tester",
-   phone:"01700000000",email:"support@landbd.pincodeit.com"
-  });
-  return NextResponse.json({ok:true,message:"Sandbox checkout session তৈরি হয়েছে; প্রকৃত লেনদেন বা গ্রাহকের টাকা নেওয়া হয়নি।"});
- }catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Gateway test failed"},{status:503});}
+import { getPinPaySettings, availablePinPayMethods } from "@/src/features/pinpay/server/settings";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest) {
+  if (req.headers.get("origin") !== req.nextUrl.origin) {
+    return NextResponse.json({ error: "Origin denied" }, { status: 403 });
+  }
+  try {
+    await verifyAdminAuth(req);
+    const settings = await getPinPaySettings();
+    const active = availablePinPayMethods(settings);
+    return NextResponse.json({
+      ok: active.length > 0,
+      configuredProviders: active,
+      message: active.length
+        ? "PinPay রিসিভিং অ্যাকাউন্ট প্রস্তুত। এটি লাইভ অর্থপ্রদানের নিশ্চয়তা নয়।"
+        : "অনুমোদিত পেমেন্ট অ্যাকাউন্ট সক্রিয় করুন।",
+    }, { status: active.length ? 200 : 409 });
+  } catch {
+    return NextResponse.json({ error: "অনুমতি বা সংযোগ ব্যর্থ।" }, { status: 503 });
+  }
 }
