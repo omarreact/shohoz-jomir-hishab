@@ -22,7 +22,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/services/access", get: "public", mutate: "public" },
   { path: "/api/admin/settings/payment/test", get: "admin", mutate: "admin" },
   { path: "/api/admin/settings/payment", get: "admin", mutate: "admin" },
-  { path: "/api/payment/pinpay/methods", get: "public", mutate: "admin" },
+  { path: "/api/payment/pinpay/methods", get: "public", mutate: "public" },
   { path: "/api/payment/pinpay/intents", get: "member", mutate: "member" },
   { path: "/api/payment/pinpay/intents/[id]", get: "member", mutate: "member" },
   { path: "/api/payment/pinpay/intents/[id]/claim", get: "member", mutate: "member" },
