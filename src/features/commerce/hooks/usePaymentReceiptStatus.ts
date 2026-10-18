@@ -17,6 +17,7 @@ export function usePaymentReceiptStatus(transactionId: string) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const controllerRef = useRef<AbortController | null>(null);
+  const latestStatusRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!TRANSACTION_ID_RE.test(transactionId)) {
@@ -38,6 +39,7 @@ export function usePaymentReceiptStatus(transactionId: string) {
       if (!response.ok) throw new Error("Order query failed");
       const received = await response.json() as PaymentReceiptOrder;
       if (!controller.signal.aborted) {
+        latestStatusRef.current = received.status;
         setOrder(received);
         setMessage("");
       }
@@ -53,11 +55,8 @@ export function usePaymentReceiptStatus(transactionId: string) {
     void refresh();
     const interval = window.setInterval(() => {
       if (document.hidden || Date.now() - start > AUTO_REFRESH_WINDOW_MS) return;
-      setOrder((current) => {
-        if (current && paymentReceiptState(current.status).terminal) return current;
-        void refresh();
-        return current;
-      });
+      if (latestStatusRef.current && paymentReceiptState(latestStatusRef.current).terminal) return;
+      void refresh();
     }, POLL_INTERVAL_MS);
     const onVisibility = () => { if (!document.hidden) void refresh(); };
     document.addEventListener("visibilitychange", onVisibility);
