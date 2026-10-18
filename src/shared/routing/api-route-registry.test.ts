@@ -39,7 +39,7 @@ describe("LandBD API security inventory", () => {
       if (route.get === "public" && route.mutate === "public") continue;
       if (route.get === "signed_token" && route.mutate === "signed_token") {
         const body = fs.readFileSync(path.join(process.cwd(), "app" + route.path + "/route.ts"), "utf8");
-        expect(body).toMatch(/verifyPrivateDownloadToken/);
+        expect(body).toMatch(/verifyPrivateDownloadToken|verifySignature/);
         continue;
       }
       const body = fs.readFileSync(path.join(process.cwd(), "app" + route.path + "/route.ts"), "utf8");

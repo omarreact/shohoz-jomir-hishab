@@ -24,7 +24,9 @@ describe("LandBD paid service endpoint authorization",()=>{
  });
  test("refund success must not erase pooled credits blindly",()=>{
   const source=fs.readFileSync(path.join(process.cwd(),"app/api/admin/commerce/refunds/route.ts"),"utf8");
-  expect(source).toContain("entitlementData?.lastTransactionId===command.orderId");
-  expect(source).toContain("refundReviewHold:true");
+  expect(source).toContain('entitlement.data()?.lastTransactionId === input.orderId');
+  expect(source).toContain("refundReviewHold: true");
+  expect(source).toContain('d.gateway !== "pinpay"');
+  expect(source).toContain("fundsReturnedChecked");
  });
 });
