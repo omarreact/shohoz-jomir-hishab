@@ -5,6 +5,7 @@ import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import FormattedKhatianRecord from "./FormattedKhatianRecord";
+import { extractKhatianAdditionalFields } from "../lib/khatian-additional-fields";
 
 type Props = {
   fullKhatian: FullKhatian;
@@ -36,6 +37,7 @@ function dlrmsAreaLabel(value: string | null | undefined): string {
 
 export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: Props) {
   const { tracking, halSabek, lisf, evidence, warnings } = fullKhatian;
+  const additionalFields = extractKhatianAdditionalFields(fullKhatian.base, fullKhatian.base.SURVEY_NAME);
   const structuredOwners = fullKhatian.owners.filter(
     (owner) => owner.fatherOrHusband || owner.address || owner.shareRaw,
   );
@@ -81,6 +83,21 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
           কোনো অনুমান করা মালিক–অভিভাবক সম্পর্ক দেখানো হয় না। জমির পরিমাণ শুধু উৎস JSON-এর area value থেকে Acre-এ দেখানো হয়; geometry থেকে area গণনা করা হয় না।
         </p>
       </Panel>
+
+      {additionalFields.length ? (
+        <Panel title="অতিরিক্ত খতিয়ান তথ্য">
+          <table className="w-full border-collapse text-[14px] leading-6">
+            <tbody>
+              {additionalFields.map((item) => (
+                <tr key={item.label}>
+                  <th className="w-2/5 border border-slate-300 px-3 py-1.5 text-left font-semibold">{item.label}</th>
+                  <td className="border border-slate-300 px-3 py-1.5">{item.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      ) : null}
 
       {tracking ? (
         <Panel title="DLRMS যাচাইকরণ / QR রেকর্ড">
