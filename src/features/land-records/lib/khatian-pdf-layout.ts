@@ -10,11 +10,11 @@ export const A4_LANDSCAPE_HEIGHT_MM = LANDBD_PDF.a4Landscape.heightMm;
 
 export const PDF_MARGIN_MM = 10;
 export const PDF_CONTENT_TOP_MM = LANDBD_PDF.contentTopMm;
-export const PDF_CONTENT_BOTTOM_MM = 15;
+export const PDF_CONTENT_BOTTOM_MM = 19;
 
 /** Capture width in CSS px — wider for landscape so more columns fit cleanly. */
-export const PDF_EXPORT_WIDTH_PX_PORTRAIT = 980;
-export const PDF_EXPORT_WIDTH_PX_LANDSCAPE = 1380;
+export const PDF_EXPORT_WIDTH_PX_PORTRAIT = 820;
+export const PDF_EXPORT_WIDTH_PX_LANDSCAPE = 1120;
 
 /** @deprecated use PDF_EXPORT_WIDTH_PX_PORTRAIT */
 export const PDF_EXPORT_WIDTH_PX = PDF_EXPORT_WIDTH_PX_PORTRAIT;
