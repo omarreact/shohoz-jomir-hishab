@@ -147,10 +147,7 @@ export default function AuthoritativeKhatianDetailsView({
               </tr>
               <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
                 <th className="w-12 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>ক্রম</th>
-                <th colSpan={guardians.length || hasOwnerShare ? 2 : 5} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>মালিকের নাম</th>
-                {guardians.length ? (
-                  <th colSpan={hasOwnerShare ? 2 : 3} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>অভিভাবক তালিকা</th>
-                ) : null}
+                <th colSpan={hasOwnerShare ? 4 : 5} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>মালিকের নাম</th>
                 {hasOwnerShare ? (
                   <th className="w-24 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>অংশ</th>
                 ) : null}
@@ -158,12 +155,7 @@ export default function AuthoritativeKhatianDetailsView({
               {model.owners.length ? model.owners.map((owner, index) => (
                 <tr key={`${owner.name}-${index}`} style={{ backgroundColor: index % 2 ? tableSoft : "#ffffff" }}>
                   <td className="border px-2 py-1.5 text-center font-bold" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                  <td colSpan={guardians.length || hasOwnerShare ? 2 : 5} className="border px-2 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{owner.name || "—"}</td>
-                  {guardians.length ? (
-                    <td colSpan={hasOwnerShare ? 2 : 3} className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>
-                      {guardians[index] || (index === 0 ? guardians.join(", ") : "—")}
-                    </td>
-                  ) : null}
+                  <td colSpan={hasOwnerShare ? 4 : 5} className="border px-2 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{owner.name || "—"}</td>
                   {hasOwnerShare ? (
                     <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{present(owner.share) ? bangla(owner.share) : "—"}</td>
                   ) : null}
@@ -176,11 +168,19 @@ export default function AuthoritativeKhatianDetailsView({
                 </tr>
               )}
               {guardians.length ? (
-                <tr>
-                  <td colSpan={6} className="border px-3 py-1.5 text-[11px] font-semibold" style={{ borderColor: tableBorder, color: muted, backgroundColor: "#fbfdfb" }}>
-                    নোট: অভিভাবক তালিকা উৎস ডাটার ক্রমে দেখানো হয়েছে; মালিকের সঙ্গে সম্পর্ক অনুমান করা হয়নি।
-                  </td>
-                </tr>
+                <>
+                  <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
+                    <th colSpan={6} className="border px-3 py-1.5 text-left font-bold" style={{ borderColor: tableBorder }}>
+                      অভিভাবক তালিকা (মালিকের সঙ্গে সম্পর্ক উৎসে যাচাইকৃত নয়)
+                    </th>
+                  </tr>
+                  {guardians.map((guardian, index) => (
+                    <tr key={`guardian-${index}`}>
+                      <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
+                      <td colSpan={5} className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{guardian}</td>
+                    </tr>
+                  ))}
+                </>
               ) : null}
 
               <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
@@ -190,30 +190,20 @@ export default function AuthoritativeKhatianDetailsView({
               </tr>
               <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
                 <th className="w-12 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>ক্রম</th>
-                <th className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>দাগ নং</th>
+                <th colSpan={5 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>দাগ নং</th>
                 {hasClass ? <th className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>শ্রেণী</th> : null}
                 {hasTotalArea ? <th className="border px-2 py-1.5 text-right font-black" style={{ borderColor: tableBorder }}>দাগের মোট জমি</th> : null}
                 {hasKhatianArea ? <th className="border px-2 py-1.5 text-right font-black" style={{ borderColor: tableBorder }}>খতিয়ানের অংশ</th> : null}
                 {hasShare ? <th className="border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>অংশ/হিস্যা</th> : null}
-                {!(hasClass && hasTotalArea && hasKhatianArea && hasShare) ? (
-                  <th colSpan={4 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>
-                    মন্তব্য
-                  </th>
-                ) : null}
               </tr>
               {model.dags.length ? model.dags.map((dag, index) => (
                 <tr key={`${dag.dagNo}-${index}`} style={{ backgroundColor: index % 2 ? tableSoft : "#ffffff" }}>
                   <td className="border px-2 py-1.5 text-center font-bold" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                  <td className="border px-2 py-1.5 font-bold" style={{ borderColor: tableBorder }}>{bangla(dag.dagNo)}</td>
+                  <td colSpan={5 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 font-bold" style={{ borderColor: tableBorder }}>{bangla(dag.dagNo)}</td>
                   {hasClass ? <td className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{dag.landClass || "—"}</td> : null}
                   {hasTotalArea ? <td className="border px-2 py-1.5 text-right" style={{ borderColor: tableBorder }}>{bangla(dag.totalArea)}</td> : null}
                   {hasKhatianArea ? <td className="border px-2 py-1.5 text-right" style={{ borderColor: tableBorder }}>{bangla(dag.shareArea || dag.area)}</td> : null}
                   {hasShare ? <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{bangla(dag.khatianShare)}</td> : null}
-                  {!(hasClass && hasTotalArea && hasKhatianArea && hasShare) ? (
-                    <td colSpan={4 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder, color: muted }}>
-                      —
-                    </td>
-                  ) : null}
                 </tr>
               )) : (
                 <tr>
@@ -233,7 +223,7 @@ export default function AuthoritativeKhatianDetailsView({
           </table>
         </div>
       </div>
-      <LandBdPrintRibbon className="print:hidden" />
+      <div data-pdf-exclude="1"><LandBdPrintRibbon className="print:hidden" /></div>
     </article>
   );
 }
