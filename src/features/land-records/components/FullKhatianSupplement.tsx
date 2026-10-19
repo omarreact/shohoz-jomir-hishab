@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
+import FormattedKhatianRecord from "./FormattedKhatianRecord";
 
 type Props = {
   fullKhatian: FullKhatian;
@@ -12,8 +13,8 @@ type Props = {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border border-black bg-white">
-      <h3 className="border-b border-black px-3 py-2 text-[15px] font-normal">{title}</h3>
+    <section className="overflow-hidden rounded-lg border border-emerald-200 bg-white">
+      <h3 data-pdf-surface="table-head" className="border-b border-emerald-200 bg-emerald-50 px-3 py-2 text-[16px] font-bold text-emerald-950">{title}</h3>
       <div className="p-3">{children}</div>
     </section>
   );
@@ -195,7 +196,7 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
       ) : null}
 
       {hasLisfData ? (
-        <Panel title="LISF অতিরিক্ত রেকর্ড">
+        <Panel title="উৎসে পাওয়া অতিরিক্ত রেকর্ড">
           <table className="w-full border-collapse border border-black">
             <tbody>
               {lisf.taxAmountRaw ? (
@@ -211,7 +212,7 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
                 <tr><td className="border border-black px-2 py-1.5">দলিল রেকর্ড</td><td className="border border-black px-2 py-1.5">{lisf.deeds.length}</td></tr>
               ) : null}
               {lisf.formattedRecord !== undefined ? (
-                <tr><td className="border border-black px-2 py-1.5">পূর্ণ formatted khatian</td><td className="border border-black px-2 py-1.5">উপলব্ধ</td></tr>
+                <tr><td className="border border-black px-2 py-1.5">মূল formatted khatian</td><td className="border border-black px-2 py-1.5">নিচে ফিল্ডভিত্তিক সম্পূর্ণ উৎস রেকর্ড</td></tr>
               ) : null}
             </tbody>
           </table>
@@ -222,14 +223,25 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
                 <div key={`${deed.deedNo}-${index}`} className="border border-black px-3 py-2 text-[12px]">
                   <p>দলিল {deed.deedNo || index + 1}</p>
                   <p>{[deed.deedType, deed.deedDate, deed.officeInformation].filter(Boolean).join(" · ") || "—"}</p>
+                  {deed.referenceDeedNo ? <p>রেফারেন্স দলিল: {deed.referenceDeedNo}</p> : null}
+                  {deed.balamBookNo ? <p>বালাম বই: {deed.balamBookNo}</p> : null}
+                  {deed.tafsilInformation ? <p>তফসিল: {deed.tafsilInformation}</p> : null}
+                  {deed.ownerInformation ? <p>মালিক: {deed.ownerInformation}</p> : null}
+                  {deed.sellerInformation ? <p>দাতা/বিক্রেতা: {deed.sellerInformation}</p> : null}
                   {deed.scannedDeedLink ? <p className="break-all">Scanned reference: {deed.scannedDeedLink}</p> : null}
                 </div>
               ))}
             </div>
           ) : null}
+          {lisf.formattedRecord !== undefined ? (
+            <div className="mt-4">
+              <h4 className="mb-2 font-bold">সরকারি উৎসের ফরম্যাটকৃত রেকর্ড</h4>
+              <FormattedKhatianRecord record={lisf.formattedRecord} />
+            </div>
+          ) : null}
         </Panel>
       ) : (
-        <Panel title={`LISF enrichment: ${lisf.status}`}>
+        <Panel title="অতিরিক্ত উৎসের অবস্থা">
           <p className="text-[12px]">{lisf.message || "অতিরিক্ত LISF তথ্য পাওয়া যায়নি।"}</p>
         </Panel>
       )}
@@ -244,7 +256,7 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
         </Panel>
       ) : null}
 
-      <footer className="pt-2">
+      <footer className="pt-2 print:hidden" data-pdf-exclude="1">
         <LandBdPrintRibbon />
       </footer>
     </section>
