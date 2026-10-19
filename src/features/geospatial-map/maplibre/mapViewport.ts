@@ -23,8 +23,10 @@ export function getBoundMap(container: HTMLElement | null | undefined): MapLibre
 export function bindMapViewport(
   map: MapLibreInstance,
   container: HTMLElement,
+  onResizeError?: (error: unknown) => void,
 ): () => void {
   let resizeRaf: number | null = null;
+  let resizeFailed = false;
   BOUND_MAPS.set(container, map);
 
   const resize = () => {
@@ -49,7 +51,13 @@ export function bindMapViewport(
     root.style.setProperty("--landbd-vh", `${height}px`);
     root.style.setProperty("--landbd-dpr", `${dpr}`);
 
-    map.resize();
+    try {
+      map.resize();
+    } catch (error) {
+      if (resizeFailed) return;
+      resizeFailed = true;
+      onResizeError?.(error);
+    }
   };
 
   const scheduleResize = () => {

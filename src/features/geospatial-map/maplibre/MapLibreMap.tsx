@@ -126,7 +126,17 @@ export default function MapLibreMap() {
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
     mapRef.current = map;
-    const unbindViewport = bindMapViewport(map, containerRef.current!);
+    const handleMapError = (event: { error?: unknown }) => {
+      const detail = event.error instanceof Error ? event.error.message : String(event.error ?? "");
+      if (!/webgl2|webgl/i.test(detail)) return;
+      logger.error("MapLibre WebGL initialization failed", event.error);
+      setInitError("এই ব্রাউজারে জিআইএস মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
+    };
+    map.on("error", handleMapError);
+    const unbindViewport = bindMapViewport(map, containerRef.current!, (error) => {
+      logger.error("MapLibre viewport resize failed", error);
+      setInitError("এই ব্রাউজারে জিআইএস মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
+    });
 
     const addSources = () => {
       map.resize();
@@ -254,6 +264,7 @@ export default function MapLibreMap() {
       extentRequestIdRef.current += 1;
       identifyRequestIdRef.current += 1;
       unbindViewport();
+      map.off("error", handleMapError);
       map.off("click", handleClick);
       map.off("moveend", handleMove);
       map.off("zoomend", handleMove);
