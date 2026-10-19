@@ -13,12 +13,12 @@ import {
 
 describe("khatian A4 portrait PDF layout", () => {
   test("uses A4 portrait content dimensions", () => {
-    expect(portraitContentSizeMm()).toEqual({ width: 190, height: 262 });
-    expect(contentSizeMm("portrait")).toEqual({ width: 190, height: 262 });
-    expect(idealPageCssHeight("portrait")).toBeGreaterThan(1340);
-    expect(idealPageCssHeight("portrait")).toBeLessThan(1360);
-    expect(PDF_EXPORT_WIDTH_PX).toBe(980);
-    expect(exportWidthPxFor("portrait")).toBe(980);
+    expect(portraitContentSizeMm()).toEqual({ width: 190, height: 258 });
+    expect(contentSizeMm("portrait")).toEqual({ width: 190, height: 258 });
+    expect(idealPageCssHeight("portrait")).toBeGreaterThan(1110);
+    expect(idealPageCssHeight("portrait")).toBeLessThan(1120);
+    expect(PDF_EXPORT_WIDTH_PX).toBe(820);
+    expect(exportWidthPxFor("portrait")).toBe(820);
   });
 
   test("plans contiguous pages and prefers natural row boundaries", () => {
@@ -27,7 +27,7 @@ describe("khatian A4 portrait PDF layout", () => {
       [500, 1250, 1400, 2500, 2780, 3900, 4200],
     );
 
-    expect(slices[0]).toEqual({ offsetY: 0, height: 1250 });
+    expect(slices[0]).toEqual({ offsetY: 0, height: 1113 });
     expect(slices.at(-1)!.offsetY + slices.at(-1)!.height).toBe(4300);
 
     for (let index = 1; index < slices.length; index += 1) {
@@ -51,11 +51,11 @@ describe("khatian A4 portrait PDF layout", () => {
 
 describe("khatian A4 landscape PDF layout", () => {
   test("uses A4 landscape content dimensions", () => {
-    expect(contentSizeMm("landscape")).toEqual({ width: 277, height: 175 });
+    expect(contentSizeMm("landscape")).toEqual({ width: 277, height: 171 });
     expect(exportWidthPxFor("landscape")).toBe(PDF_EXPORT_WIDTH_PX_LANDSCAPE);
-    expect(PDF_EXPORT_WIDTH_PX_LANDSCAPE).toBe(1380);
-    expect(idealPageCssHeight("landscape")).toBeGreaterThan(860);
-    expect(idealPageCssHeight("landscape")).toBeLessThan(880);
+    expect(PDF_EXPORT_WIDTH_PX_LANDSCAPE).toBe(1120);
+    expect(idealPageCssHeight("landscape")).toBeGreaterThan(680);
+    expect(idealPageCssHeight("landscape")).toBeLessThan(700);
   });
 
   test("plans contiguous landscape slices", () => {
@@ -78,10 +78,10 @@ describe("khatian A4 landscape PDF layout", () => {
 
 describe("single-page BRS ribbon regression", () => {
   test("keeps a short trailing branding ribbon with its khatian details", () => {
-    const slices = planA4Slices(960, [560, 770, 870], "landscape");
+    const slices = planA4Slices(770, [480, 650], "landscape");
     expect(slices.length).toBe(2);
-    expect(shouldFitTrailingRibbonOnOnePage(960, slices, "landscape", 1380, true)).toBe(true);
-    expect(shouldFitTrailingRibbonOnOnePage(960, slices, "landscape", 1380, false)).toBe(false);
+    expect(shouldFitTrailingRibbonOnOnePage(770, slices, "landscape", 1120, true)).toBe(true);
+    expect(shouldFitTrailingRibbonOnOnePage(770, slices, "landscape", 1120, false)).toBe(false);
   });
 
   test("preserves pagination for genuinely long khatian records", () => {
@@ -91,13 +91,13 @@ describe("single-page BRS ribbon regression", () => {
   });
 
   test("fits taller images proportionally without clipping or distorting fonts and QR", () => {
-    const result = fitImageToA4Content(960, 1380, 277, 175);
-    expect(result.heightMm).toBeCloseTo(175, 3);
+    const result = fitImageToA4Content(960, 1120, 277, 171);
+    expect(result.heightMm).toBeCloseTo(171, 3);
     expect(result.widthMm).toBeLessThan(277);
     expect(result.insetMm).toBeGreaterThan(0);
-    expect(result.widthMm / result.heightMm).toBeCloseTo(1380 / 960, 6);
+    expect(result.widthMm / result.heightMm).toBeCloseTo(1120 / 960, 6);
 
-    const short = fitImageToA4Content(800, 1380, 277, 175);
+    const short = fitImageToA4Content(600, 1120, 277, 171);
     expect(short.widthMm).toBe(277);
     expect(short.insetMm).toBe(0);
   });
