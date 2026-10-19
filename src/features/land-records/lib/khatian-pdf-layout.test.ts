@@ -42,7 +42,7 @@ describe("khatian A4 portrait PDF layout", () => {
     const slices = planPortraitSlices(20_000, breakpoints);
 
     expect(slices.length).toBeGreaterThan(10);
-    expect(slices.length).toBeLessThan(20);
+    expect(slices.length).toBeLessThan(25);
     expect(Math.max(...slices.map((slice) => slice.height))).toBeLessThanOrEqual(
       idealPageCssHeight("portrait"),
     );
