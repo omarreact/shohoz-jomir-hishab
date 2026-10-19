@@ -562,7 +562,7 @@ export default function SurveyKhatianSearch() {
                     role="status"
                   >
                     পূর্ণ রেকর্ড সাময়িকভাবে পাওয়া যায়নি। নিচে কেবল সার্চ-ফলাফলের প্রিভিউ দেখানো হচ্ছে; অসম্পূর্ণ PDF বন্ধ রাখা হয়েছে।
-                    <button type="button" className="ml-2 font-bold underline" onClick={() => showDetails(selectedKhatian)}>
+                    <button type="button" className="ml-2 font-bold underline" onClick={() => { if (selectedKhatian) showDetails(selectedKhatian); }}>
                       আবার পূর্ণ তথ্য লোড করুন
                     </button>
                   </div>
