@@ -561,12 +561,17 @@ export default function SurveyKhatianSearch() {
                     className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-800 print:hidden"
                     role="status"
                   >
-                    পূর্ণ enrichment সাময়িকভাবে পাওয়া যায়নি। নিচে সরকারি search-result record দেখানো হচ্ছে; এটি এখনও print করা যাবে।
+                    পূর্ণ রেকর্ড সাময়িকভাবে পাওয়া যায়নি। নিচে কেবল সার্চ-ফলাফলের প্রিভিউ দেখানো হচ্ছে; অসম্পূর্ণ PDF বন্ধ রাখা হয়েছে।
+                    <button type="button" className="ml-2 font-bold underline" onClick={() => showDetails(selectedKhatian)}>
+                      আবার পূর্ণ তথ্য লোড করুন
+                    </button>
                   </div>
                 ) : null}
                 <KhatianDetailsView
                   khatian={selectedKhatian}
                   fullKhatian={selectedFullKhatian ?? undefined}
+                  fullKhatianLoading={Boolean(loading.khatian)}
+                  fullKhatianFailed={!loading.khatian && Boolean(error)}
                   surveyKey={surveyKey}
                 />
               </>
