@@ -1,3 +1,4 @@
+import type { jsPDF } from "jspdf";
 import {
   applyLandBdPdfMetadata,
   drawLandBdPdfChrome,
@@ -26,7 +27,7 @@ export type KhatianPdfExportResult =
   | { ok: false; error: string };
 
 const RENDER_SCALES = [1.35, 1.15, 1];
-const JPEG_QUALITY = 0.95;
+const JPEG_QUALITY = 0.97;
 const MAX_PAGES = 80;
 
 function isNearlyBlankCanvas(canvas: HTMLCanvasElement): boolean {
@@ -113,7 +114,7 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
   clone.style.overflow = "visible";
   clone.style.fontFamily = fontFamily;
   clone.style.fontVariantNumeric = "tabular-nums";
-  clone.style.fontSize = "14px";
+  clone.style.fontSize = "16px";
   clone.classList.remove("dark");
 
   clone
@@ -181,10 +182,16 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
   });
 
   clone.querySelectorAll<HTMLElement>("th, td").forEach((cell) => {
-    setImportant(cell, "padding", "5px 7px");
-    setImportant(cell, "line-height", "1.35");
+    setImportant(cell, "padding", "8px 9px");
+    setImportant(cell, "font-size", "16px");
+    setImportant(cell, "line-height", "1.55");
     setImportant(cell, "border-bottom", "1px solid #e7eee9");
     setImportant(cell, "vertical-align", "top");
+  });
+
+  clone.querySelectorAll<HTMLElement>("p, li").forEach((node) => {
+    setImportant(node, "font-size", "15px");
+    setImportant(node, "line-height", "1.5");
   });
 
   clone.querySelectorAll<HTMLElement>("[class*='overflow-x-auto']").forEach((node) => {
@@ -285,10 +292,6 @@ async function buildPdfAtScale(
 
   for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
     const slice = slices[pageIndex];
-    if (slice.height < 48 && pageIndex === slices.length - 1 && pageImages.length > 0) {
-      continue;
-    }
-
     viewport.style.height = `${slice.height}px`;
     clone.style.transform = `translateY(-${slice.offsetY}px)`;
     clone.style.transformOrigin = "top left";
@@ -341,7 +344,7 @@ async function buildPdfAtScale(
     if (isNearlyBlankCanvas(canvas)) {
       canvas.width = 1;
       canvas.height = 1;
-      continue;
+      throw new Error(`Blank khatian PDF page ${pageIndex + 1}; refusing a partial export`);
     }
 
     const pageBlob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
@@ -387,6 +390,7 @@ async function buildPdfAtScale(
       pageNumber: i + 1,
       pageCount: pageImages.length,
     });
+    drawKhatianAccentRibbon(pdf);
   }
 
   const pdfBlob = pdf.output("blob");
@@ -398,6 +402,22 @@ async function buildPdfAtScale(
   const outputName = `${sanitizeFileName(fileName)}${suffix}.pdf`;
   if (delivery === "download") triggerPdfDownload(pdfBlob, outputName);
   return { pages: pageImages.length, scale, blob: pdfBlob, fileName: outputName };
+}
+
+/** Native vector footer accent: no oversized SVG banner in the record body. */
+function drawKhatianAccentRibbon(pdf: jsPDF): void {
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const y = pdf.internal.pageSize.getHeight() - 17;
+  const x = PDF_MARGIN_MM;
+  const width = pageWidth - 2 * PDF_MARGIN_MM;
+  const third = width / 3;
+  const colors: Array<[number, number, number]> = [
+    [0, 54, 154], [192, 24, 58], [4, 107, 58],
+  ];
+  colors.forEach(([red, green, blue], i) => {
+    pdf.setFillColor(red, green, blue);
+    pdf.rect(x + i * third, y, third + 0.1, 1.8, "F");
+  });
 }
 
 export async function exportKhatianPdf(

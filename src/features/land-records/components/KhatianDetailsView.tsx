@@ -16,6 +16,8 @@ import FullKhatianSupplement from "./FullKhatianSupplement";
 type Props = {
   khatian: KhatianDetails;
   fullKhatian?: FullKhatian;
+  fullKhatianLoading?: boolean;
+  fullKhatianFailed?: boolean;
   surveyKey?: string;
   captureRef?: RefObject<HTMLDivElement | null>;
 };
@@ -45,6 +47,8 @@ function buildFileName(khatian: KhatianDetails, surveyKey?: string): string {
 export default function KhatianDetailsView({
   khatian,
   fullKhatian,
+  fullKhatianLoading = false,
+  fullKhatianFailed = false,
   surveyKey,
   captureRef,
 }: Props) {
@@ -61,6 +65,10 @@ export default function KhatianDetailsView({
 
   const handleDownloadPdf = useCallback(
     async (orientation: KhatianPdfOrientation, delivery: "download" | "return" = "download") => {
+      if (!resolvedFullKhatian) {
+        setExportError("পূর্ণ খতিয়ানের তথ্য লোড না হওয়া পর্যন্ত PDF তৈরি করা যাবে না।");
+        return;
+      }
       const source = resolvedCaptureRef.current;
       if (!source) {
         setExportError("রিপোর্ট এলিমেন্ট পাওয়া যায়নি।");
@@ -90,10 +98,10 @@ export default function KhatianDetailsView({
         setExporting(null);
       }
     },
-    [khatian, resolvedCaptureRef, surveyKey],
+    [khatian, resolvedCaptureRef, resolvedFullKhatian, surveyKey],
   );
 
-  const isBusy = exporting !== null;
+  const isBusy = exporting !== null || fullKhatianLoading || !resolvedFullKhatian;
 
   return (
     <div
@@ -216,6 +224,11 @@ export default function KhatianDetailsView({
         </button>
       </div>
 
+      {!resolvedFullKhatian ? (
+        <p className="mb-2 text-sm font-semibold text-amber-800 print:hidden" role="status">
+          {fullKhatianLoading ? "সম্পূর্ণ খতিয়ানের তথ্য যাচাই হচ্ছে; PDF সাময়িকভাবে বন্ধ।" : fullKhatianFailed ? "পূর্ণ রেকর্ড লোড হয়নি। আবার চেষ্টা করুন; অসম্পূর্ণ PDF তৈরি করা হচ্ছে না।" : "সম্পূর্ণ রেকর্ড প্রস্তুত হলে PDF অপশন সক্রিয় হবে।"}
+        </p>
+      ) : null}
       {exportError ? (
         <p
           className="mb-2 text-right text-sm font-semibold text-red-600 print:hidden"
@@ -235,22 +248,20 @@ export default function KhatianDetailsView({
       />
       <LandBdPrintRibbon className="dlrms-fixed-print-ribbon" />
 
-      <AuthoritativeKhatianDetailsView
-        khatian={khatian}
-        fullKhatian={resolvedFullKhatian}
-        surveyKey={surveyKey}
-        captureRef={resolvedCaptureRef}
-        pageOrientation={pageOrientation}
-      />
-
-      {resolvedFullKhatian ? (
-        <div className="print:hidden" data-exclude-export="1">
+      <div ref={resolvedCaptureRef} data-khatian-pdf-body="1" className="w-full bg-white">
+        <AuthoritativeKhatianDetailsView
+          khatian={khatian}
+          fullKhatian={resolvedFullKhatian}
+          surveyKey={surveyKey}
+          pageOrientation={pageOrientation}
+        />
+        {resolvedFullKhatian ? (
           <FullKhatianSupplement
             fullKhatian={resolvedFullKhatian}
             pageOrientation={pageOrientation}
           />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       {pdfPreview ? (
         <PdfPreviewDialog document={pdfPreview} onClose={() => setPdfPreview(null)} />
       ) : null}
