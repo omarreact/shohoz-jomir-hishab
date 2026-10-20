@@ -458,7 +458,10 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     const totalPages = optionalNumber(meta, "totalPages", "TOTAL_PAGES", "lastPage");
     let items = normalizeRows(rows, (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }), "khatians");
 
-    if (items.some(khatianRowNeedsEnrichment)) {
+    // Exact khatian searches can omit the trailing ellipsis even when their
+    // compact owner/dag columns contain just the first entry. Try the fuller
+    // public mirror for exact-number searches as well, not only explicit "...".
+    if (Boolean(input.khatianNo?.trim()) || items.some(khatianRowNeedsEnrichment)) {
       const enrichedRows = await fetchEnrichedKhatianList(input, signal);
       if (enrichedRows?.length) {
         try {
