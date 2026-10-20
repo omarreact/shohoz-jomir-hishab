@@ -83,8 +83,11 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
   );
   const truncatedItems = values.filter((value) => isTruncated(value ?? ""))
     .flatMap((value) => splitVisibleItems(value ?? "").map(normalizeToken));
+  const longestTruncated = Math.max(0, ...values.filter((value) => isTruncated(value ?? ""))
+    .map((value) => splitVisibleItems(value ?? "").length));
   const partial = truncatedInputs > 0 &&
-    (completeInputs === 0 || truncatedItems.some((item) => !completeItems.has(item)));
+    (completeInputs === 0 || completeItems.size <= longestTruncated ||
+      truncatedItems.some((item) => !completeItems.has(item)));
   const joined = output.join(", ");
 
   return {
@@ -136,7 +139,7 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
   const coversTruncated = prepared
     .filter((entry) => entry.truncated)
     .every((entry) => entry.items.every((item) => bestItems.has(normalizeToken(item))) &&
-      best.items.length >= entry.items.length);
+      best.items.length > entry.items.length);
   if (!coversTruncated) {
     const fallback = mergeListValues(values);
     return { ...fallback, partial: true, text: fallback.text.replace(/(?:,\s*…)?$/, ", …") };
