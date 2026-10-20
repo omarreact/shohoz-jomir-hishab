@@ -57,8 +57,8 @@ export default function AuthoritativeKhatianDetailsView({
   const quality = model.reconstruction?.FIELD_QUALITY as
     | Record<string, { PARTIAL?: boolean }>
     | undefined;
-  const ownerPartial = Boolean(quality?.OWNERS?.PARTIAL) || /(?:\\.{3}|…)\\s*$/u.test(khatian.OWNERS);
-  const dagPartial = Boolean(quality?.DAGS?.PARTIAL) || /(?:\\.{3}|…)\\s*$/u.test(khatian.DAGS);
+  const ownerPartial = Boolean(quality?.OWNERS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.OWNERS);
+  const dagPartial = Boolean(quality?.DAGS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.DAGS);
 
   return (
     <article
