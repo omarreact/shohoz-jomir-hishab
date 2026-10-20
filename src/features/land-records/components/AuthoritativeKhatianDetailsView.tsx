@@ -4,7 +4,7 @@ import { useMemo, type RefObject } from "react";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import { buildKhatianDisplayModel } from "../lib/khatian-display";
+import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
 
 type Props = {
   khatian: KhatianDetails;
@@ -37,18 +37,28 @@ const sectionGreen = "#0f5536";
  */
 export default function AuthoritativeKhatianDetailsView({
   khatian,
+  fullKhatian,
   surveyKey,
   captureRef,
   pageOrientation,
 }: Props) {
-  const model = useMemo(() => buildKhatianDisplayModel(khatian, surveyKey), [khatian, surveyKey]);
+  const model = useMemo(
+    () => buildFullKhatianDisplayModel(khatian, fullKhatian, surveyKey),
+    [khatian, fullKhatian, surveyKey],
+  );
   const guardians = model.guardians.filter(present);
   const hasClass = model.dags.some((dag) => present(dag.landClass));
   const hasTotalArea = model.dags.some((dag) => present(dag.totalArea));
   const hasKhatianArea = model.dags.some((dag) => present(dag.shareArea || dag.area));
   const hasShare = model.dags.some((dag) => present(dag.khatianShare));
   const hasOwnerShare = model.owners.some((owner) => present(owner.share));
-  const totalLand = model.totalLand ? `${bangla(model.totalLand)} একর` : "উৎসে নেই";
+  // formatAcre already includes the Bengali unit; never append "একর" twice.
+  const totalLand = model.totalLand ? bangla(model.totalLand) : "উৎসে নেই";
+  const quality = model.reconstruction?.FIELD_QUALITY as
+    | Record<string, { PARTIAL?: boolean }>
+    | undefined;
+  const ownerPartial = Boolean(quality?.OWNERS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.OWNERS);
+  const dagPartial = Boolean(quality?.DAGS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.DAGS);
 
   return (
     <article
@@ -127,9 +137,9 @@ export default function AuthoritativeKhatianDetailsView({
               </tr>
               <tr>
                 <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>মালিক সংখ্যা</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}</td>
+                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}{ownerPartial ? " (আংশিক)" : ""}</td>
                 <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>দাগ সংখ্যা / মোট জমি</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)} / {totalLand}</td>
+                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""} / {totalLand}</td>
               </tr>
 
               {model.isPartial ? (

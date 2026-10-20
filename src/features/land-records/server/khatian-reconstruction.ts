@@ -74,7 +74,20 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
 
   for (const item of verifiedExactItems) addItem(item);
 
-  const partial = truncatedInputs > 0 && completeInputs === 0;
+  // A short non-truncated search hit is NOT proof that a longer truncated
+  // source list is complete. Its items must actually cover every visible
+  // item in every truncated variant before we drop the partial flag.
+  const completeItems = new Set(
+    values.filter((value) => value?.trim() && !isTruncated(value))
+      .flatMap((value) => splitVisibleItems(value ?? "").map(normalizeToken)),
+  );
+  const truncatedItems = values.filter((value) => isTruncated(value ?? ""))
+    .flatMap((value) => splitVisibleItems(value ?? "").map(normalizeToken));
+  const longestTruncated = Math.max(0, ...values.filter((value) => isTruncated(value ?? ""))
+    .map((value) => splitVisibleItems(value ?? "").length));
+  const partial = truncatedInputs > 0 &&
+    (completeInputs === 0 || completeItems.size <= longestTruncated ||
+      truncatedItems.some((item) => !completeItems.has(item)));
   const joined = output.join(", ");
 
   return {
@@ -119,6 +132,19 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
       return a.index - b.index;
     })[0];
 
+  // If the "complete" result has fewer/different entries than a truncated
+  // variant, it may only be a filtered preview. Preserve every visible item
+  // and retain the partial status instead of replacing a longer list.
+  const bestItems = new Set(best.items.map(normalizeToken));
+  const coversTruncated = prepared
+    .filter((entry) => entry.truncated)
+    .every((entry) => entry.items.every((item) => bestItems.has(normalizeToken(item))) &&
+      best.items.length > entry.items.length);
+  if (!coversTruncated) {
+    const fallback = mergeListValues(values);
+    return { ...fallback, partial: true, text: fallback.text.replace(/(?:,\s*…)?$/, ", …") };
+  }
+
   const distinct = new Set(best.items.map((item) => normalizeToken(item)).filter(Boolean));
   return {
     text: best.items.join(", "),
@@ -129,11 +155,11 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
 }
 
 function sameKhatian(base: KhatianDetails, row: KhatianIndex): boolean {
-  if (row.ID === base.ID) return true;
+  // Exact internal ID + survey-scoped khatian number are both required.
+  // A same-number result belonging to a neighbouring mouza or entry must
+  // never contribute legal ownership or dag evidence.
+  if (row.ID !== base.ID) return false;
   if (clean(row.KHATIAN_NO) !== clean(base.KHATIAN_NO)) return false;
-
-  // Candidate searches are scoped by JL_NUMBER_ID. Keep that boundary explicit
-  // as a second identity check when both records expose it.
   if (base.JL_NUMBER_ID && row.JL_NUMBER_ID && base.JL_NUMBER_ID !== row.JL_NUMBER_ID) return false;
   return true;
 }

@@ -179,6 +179,53 @@ describe("khatian reconstruction", () => {
     expect(reconstruction.UPSTREAM_TRUNCATION_REMAINS).toBe(true);
   });
 
+  it("does not erase a truncated owner/guardian/dag list using a one-entry search preview", () => {
+    const selected = {
+      ...base,
+      ID: 7940021,
+      KHATIAN_NO: "312",
+      JL_NUMBER_ID: 382911,
+      OWNERS: "দং আস্কর আলী, খোদেজা খাতুন,...",
+      GUARDIANS: "পিং ছোমেদ খাঁন,...",
+      DAGS: "1948,1972,...",
+      TOTAL_LAND: "2.0412",
+    };
+
+    const limitedPreview = {
+      ID: 7940021,
+      KHATIAN_NO: "312",
+      JL_NUMBER_ID: 382911,
+      MOUZA_ID: 71947,
+      OWNERS: "দং আস্কর আলী",
+      GUARDIANS: "পিং ছোমেদ খাঁন",
+      DAGS: "1948",
+      TOTAL_LAND: "2.0412",
+    };
+
+    const result = reconstructKhatian(selected, [limitedPreview]);
+    expect(result.OWNERS).toContain("খোদেজা খাতুন");
+    expect(result.DAGS).toContain("1972");
+    expect(result.OWNERS).toContain("…");
+    expect(result.DAGS).toContain("…");
+    expect(result.GUARDIANS).toContain("…");
+    expect((result.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as { UPSTREAM_TRUNCATION_REMAINS: boolean }).UPSTREAM_TRUNCATION_REMAINS).toBe(true);
+  });
+
+  it("requires internal record identity, even when the khatian number and JL match", () => {
+    const result = reconstructKhatian(base, [{
+      ID: 999999,
+      KHATIAN_NO: base.KHATIAN_NO,
+      JL_NUMBER_ID: base.JL_NUMBER_ID,
+      MOUZA_ID: base.MOUZA_ID,
+      OWNERS: "ভুল রেকর্ড",
+      GUARDIANS: "ভুল অভিভাবক",
+      DAGS: "999",
+      TOTAL_LAND: "99",
+    }]);
+    expect(result.OWNERS).toBe(base.OWNERS);
+    expect(result.DAGS).toBe("");
+  });
+
   it("rejects same-number rows from a different JL boundary", () => {
     const result = reconstructKhatian(base, [
       {

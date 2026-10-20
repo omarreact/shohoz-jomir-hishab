@@ -6,6 +6,7 @@ import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTr
 import { getLisfProvider } from "./lisf-provider";
 import {
   extractStructuredPublicRecord,
+  extractVerifiedMirrorCompactRow,
   fetchStrictPublicMirrorRecord,
   publicMirrorBaseUrl,
   restoreOfficialDetailBase,
@@ -432,6 +433,16 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       dags: mergeStructuredDags(mirrorStructured.dags, filtered.dags),
     };
   }
+  // Mirror sources sometimes return the complete comma-delimited OWNERS, GUARDIANS
+  // and DAGS, without structured sub-record arrays. Previously that payload
+  // was fetched but its main lists were never used.
+  const verifiedMirrorRows = [mirrorRecord, ...mirrorDagRecords]
+    .map((record) => extractVerifiedMirrorCompactRow(rebuilt, record))
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+  if (verifiedMirrorRows.length) {
+    rebuilt = reconstructKhatian(rebuilt, verifiedMirrorRows);
+  }
+
   const structuredPublicOwners = mergeStructuredOwners(officialStructured.owners, mirrorStructured.owners);
   const structuredPublicDags = mergeStructuredDags(officialStructured.dags, mirrorStructured.dags);
   rebuilt = enrichBaseFromStructuredPublic(rebuilt, structuredPublicOwners, structuredPublicDags);

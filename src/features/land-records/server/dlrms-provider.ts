@@ -297,7 +297,19 @@ function preferFullerField(primary: string, secondary: string): string {
   if (!a) return b;
   const aTrunc = isTruncatedPublicField(a);
   const bTrunc = isTruncatedPublicField(b);
-  if (aTrunc && !bTrunc) return b;
+  if (aTrunc && !bTrunc) {
+    // A one-person/one-dag filtered preview does not resolve a truncated
+    // multi-entry source record. Keep it for reconstruction to repair later.
+    const expected = a.replace(TRAILING_ELLIPSIS, "").split(/[,،]/u)
+      .map((value) => value.trim()).filter(Boolean);
+    const full = b.split(/[,،]/u).map((value) => value.trim()).filter(Boolean);
+    const normalize = (value: string) => value.replace(/\s+/g, " ").toLocaleLowerCase("bn-BD");
+    const known = new Set(full.map(normalize));
+    if (full.length > expected.length && expected.every((item) => known.has(normalize(item)))) {
+      return b;
+    }
+    return a;
+  }
   if (!aTrunc && bTrunc) return a;
   return b.length > a.length ? b : a;
 }
@@ -446,7 +458,10 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     const totalPages = optionalNumber(meta, "totalPages", "TOTAL_PAGES", "lastPage");
     let items = normalizeRows(rows, (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }), "khatians");
 
-    if (items.some(khatianRowNeedsEnrichment)) {
+    // Exact khatian searches can omit the trailing ellipsis even when their
+    // compact owner/dag columns contain just the first entry. Try the fuller
+    // public mirror for exact-number searches as well, not only explicit "...".
+    if (Boolean(input.khatianNo?.trim()) || items.some(khatianRowNeedsEnrichment)) {
       const enrichedRows = await fetchEnrichedKhatianList(input, signal);
       if (enrichedRows?.length) {
         try {
@@ -504,8 +519,9 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
           signal,
         );
         const match =
-          listPage.items.find((item) => item.ID === base.ID) ??
-          listPage.items.find((item) => item.KHATIAN_NO.trim() === base.KHATIAN_NO.trim());
+          listPage.items.find((item) => item.ID === base.ID &&
+            item.KHATIAN_NO.trim() === base.KHATIAN_NO.trim() &&
+            (!item.JL_NUMBER_ID || item.JL_NUMBER_ID === base.JL_NUMBER_ID));
         if (match) {
           base = {
             ...base,

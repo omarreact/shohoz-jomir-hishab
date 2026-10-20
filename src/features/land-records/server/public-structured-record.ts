@@ -1,4 +1,5 @@
 import type { FullKhatianDag, FullKhatianOwner, LandRecordSource } from "../full-khatian";
+import type { KhatianIndex } from "../types";
 import type { KhatianDetails } from "../types";
 
 type JsonRecord = Record<string, unknown>;
@@ -177,6 +178,57 @@ export function extractStructuredPublicRecord(
  * exact official detail payload kept in PUBLIC_RECORD. This prevents a different
  * record with the same khatian number from contaminating the selected ID.
  */
+
+/**
+ * A mirror may return complete top-level owner/guardian/dag strings without
+ * OWNER_DETAILS or DAG_DETAILS arrays. These strings were previously ignored
+ * by FullKhatian even when the strict lookup found the correct record.
+ *
+ * Accept only the same internal ID, khatian number and JL when advertised.
+ * Never import arbitrary properties, authentication keys or a neighbouring
+ * mouza's owners into our source model.
+ */
+export function extractVerifiedMirrorCompactRow(
+  base: KhatianIndex,
+  record: Record<string, unknown> | null,
+): KhatianIndex | null {
+  if (!record || Number(record.ID ?? record.id) !== base.ID) return null;
+
+  const recordNo = record.KHATIAN_NO ?? record.khatianNo;
+  if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return null;
+
+  const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
+  if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return null;
+
+  const select = (...keys: string[]): string => {
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "string" || typeof value === "number") {
+        const text = String(value).trim();
+        if (text) return text;
+      }
+    }
+    return "";
+  };
+
+  const owners = select("OWNERS", "owners");
+  const dags = select("DAGS", "dags");
+  const guardians = select("GUARDIANS", "guardians");
+  const totalLand = select("TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount");
+  if (!owners && !dags && !guardians && !totalLand) return null;
+
+  return {
+    ID: base.ID,
+    KHATIAN_NO: base.KHATIAN_NO,
+    JL_NUMBER_ID: base.JL_NUMBER_ID,
+    MOUZA_ID: base.MOUZA_ID,
+    OWNERS: owners,
+    DAGS: dags,
+    GUARDIANS: guardians,
+    TOTAL_LAND: totalLand,
+  };
+}
+
 export function restoreOfficialDetailBase(base: KhatianDetails): KhatianDetails {
   const record = base.PUBLIC_RECORD;
   if (!record) return base;

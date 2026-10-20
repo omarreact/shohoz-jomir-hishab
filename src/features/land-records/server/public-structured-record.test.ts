@@ -1,6 +1,7 @@
 import type { KhatianDetails } from "../types";
 import {
   extractStructuredPublicRecord,
+  extractVerifiedMirrorCompactRow,
   fetchStrictPublicMirrorRecord,
   restoreOfficialDetailBase,
 } from "./public-structured-record";
@@ -115,6 +116,29 @@ describe("public structured khatian record helpers", () => {
 
     expect(record?.ID).toBe(123);
     expect(record?.OWNER_DETAILS).toEqual([{ NAME: "সঠিক রেকর্ড" }]);
+  });
+
+  it("accepts complete BRS 312 mirror owner/guardian/dag strings with exact identity", () => {
+    const base = {
+      ID: 7940021, KHATIAN_NO: "312", JL_NUMBER_ID: 382911,
+      MOUZA_ID: 71947, OWNERS: "দং আস্কর আলী,...", GUARDIANS: "",
+      DAGS: "1948,...", TOTAL_LAND: "2.0412",
+    };
+    const raw = {
+      ID: 7940021, KHATIAN_NO: "312", JL_NUMBER_ID: 382911,
+      OWNERS: "দং আস্কর আলী,খোদেজা খাতুন,হাজাতুন নেছা",
+      GUARDIANS: "পিং ছোমেদ খাঁন,জং ওয়াকিল উদ্দিন ভুঞা",
+      DAGS: "1948,1972,1987,2003,2009,2010,2116,3128,3918",
+      TOTAL_LAND: "2.0412",
+    };
+    const restored = extractVerifiedMirrorCompactRow(base, raw);
+    expect(restored).toMatchObject({
+      OWNERS: raw.OWNERS, GUARDIANS: raw.GUARDIANS,
+      DAGS: raw.DAGS, TOTAL_LAND: raw.TOTAL_LAND,
+    });
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, ID: 111 })).toBeNull();
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, KHATIAN_NO: "349" })).toBeNull();
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, JL_NUMBER_ID: 999 })).toBeNull();
   });
 
   it("passes dag filters to the strict public mirror lookup", async () => {
