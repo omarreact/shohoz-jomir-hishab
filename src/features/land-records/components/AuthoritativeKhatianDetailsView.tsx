@@ -52,7 +52,13 @@ export default function AuthoritativeKhatianDetailsView({
   const hasKhatianArea = model.dags.some((dag) => present(dag.shareArea || dag.area));
   const hasShare = model.dags.some((dag) => present(dag.khatianShare));
   const hasOwnerShare = model.owners.some((owner) => present(owner.share));
-  const totalLand = model.totalLand ? `${bangla(model.totalLand)} একর` : "উৎসে নেই";
+  // formatAcre already includes the Bengali unit; never append "একর" twice.
+  const totalLand = model.totalLand ? bangla(model.totalLand) : "উৎসে নেই";
+  const quality = model.reconstruction?.FIELD_QUALITY as
+    | Record<string, { PARTIAL?: boolean }>
+    | undefined;
+  const ownerPartial = Boolean(quality?.OWNERS?.PARTIAL) || /(?:\\.{3}|…)\\s*$/u.test(khatian.OWNERS);
+  const dagPartial = Boolean(quality?.DAGS?.PARTIAL) || /(?:\\.{3}|…)\\s*$/u.test(khatian.DAGS);
 
   return (
     <article
@@ -131,9 +137,9 @@ export default function AuthoritativeKhatianDetailsView({
               </tr>
               <tr>
                 <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>মালিক সংখ্যা</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}</td>
+                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}{ownerPartial ? " (আংশিক)" : ""}</td>
                 <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>দাগ সংখ্যা / মোট জমি</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)} / {totalLand}</td>
+                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""} / {totalLand}</td>
               </tr>
 
               {model.isPartial ? (
