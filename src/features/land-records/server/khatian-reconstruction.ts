@@ -74,7 +74,17 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
 
   for (const item of verifiedExactItems) addItem(item);
 
-  const partial = truncatedInputs > 0 && completeInputs === 0;
+  // A short non-truncated search hit is NOT proof that a longer truncated
+  // source list is complete. Its items must actually cover every visible
+  // item in every truncated variant before we drop the partial flag.
+  const completeItems = new Set(
+    values.filter((value) => value?.trim() && !isTruncated(value))
+      .flatMap((value) => splitVisibleItems(value ?? "").map(normalizeToken)),
+  );
+  const truncatedItems = values.filter((value) => isTruncated(value ?? ""))
+    .flatMap((value) => splitVisibleItems(value ?? "").map(normalizeToken));
+  const partial = truncatedInputs > 0 &&
+    (completeInputs === 0 || truncatedItems.some((item) => !completeItems.has(item)));
   const joined = output.join(", ");
 
   return {
@@ -118,6 +128,19 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
       if (b.value.length !== a.value.length) return b.value.length - a.value.length;
       return a.index - b.index;
     })[0];
+
+  // If the "complete" result has fewer/different entries than a truncated
+  // variant, it may only be a filtered preview. Preserve every visible item
+  // and retain the partial status instead of replacing a longer list.
+  const bestItems = new Set(best.items.map(normalizeToken));
+  const coversTruncated = prepared
+    .filter((entry) => entry.truncated)
+    .every((entry) => entry.items.every((item) => bestItems.has(normalizeToken(item))) &&
+      best.items.length >= entry.items.length);
+  if (!coversTruncated) {
+    const fallback = mergeListValues(values);
+    return { ...fallback, partial: true, text: fallback.text.replace(/(?:,\s*…)?$/, ", …") };
+  }
 
   const distinct = new Set(best.items.map((item) => normalizeToken(item)).filter(Boolean));
   return {
