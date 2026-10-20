@@ -155,11 +155,11 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
 }
 
 function sameKhatian(base: KhatianDetails, row: KhatianIndex): boolean {
-  if (row.ID === base.ID) return true;
+  // Exact internal ID + survey-scoped khatian number are both required.
+  // A same-number result belonging to a neighbouring mouza or entry must
+  // never contribute legal ownership or dag evidence.
+  if (row.ID !== base.ID) return false;
   if (clean(row.KHATIAN_NO) !== clean(base.KHATIAN_NO)) return false;
-
-  // Candidate searches are scoped by JL_NUMBER_ID. Keep that boundary explicit
-  // as a second identity check when both records expose it.
   if (base.JL_NUMBER_ID && row.JL_NUMBER_ID && base.JL_NUMBER_ID !== row.JL_NUMBER_ID) return false;
   return true;
 }
