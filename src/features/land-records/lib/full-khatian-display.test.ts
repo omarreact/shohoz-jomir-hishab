@@ -40,7 +40,7 @@ describe("authoritative Khatian document uses full data rather than a truncated 
       "1948", "1972", "1987", "2003", "2009", "2010", "2116", "3128", "3918",
     ]);
     expect(model.guardians).toEqual(["পিং ছোমেদ খাঁন"]);
-    expect(model.totalLand).toBe("2.0412");
+    expect(model.totalLand).toBe("২.০৪১২ একর");
     expect(model.isPartial).toBe(true);
   });
 
