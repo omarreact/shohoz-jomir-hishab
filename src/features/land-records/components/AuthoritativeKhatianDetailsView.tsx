@@ -4,7 +4,7 @@ import { useMemo, type RefObject } from "react";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
-import { buildKhatianDisplayModel } from "../lib/khatian-display";
+import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
 
 type Props = {
   khatian: KhatianDetails;
@@ -37,11 +37,15 @@ const sectionGreen = "#0f5536";
  */
 export default function AuthoritativeKhatianDetailsView({
   khatian,
+  fullKhatian,
   surveyKey,
   captureRef,
   pageOrientation,
 }: Props) {
-  const model = useMemo(() => buildKhatianDisplayModel(khatian, surveyKey), [khatian, surveyKey]);
+  const model = useMemo(
+    () => buildFullKhatianDisplayModel(khatian, fullKhatian, surveyKey),
+    [khatian, fullKhatian, surveyKey],
+  );
   const guardians = model.guardians.filter(present);
   const hasClass = model.dags.some((dag) => present(dag.landClass));
   const hasTotalArea = model.dags.some((dag) => present(dag.totalArea));
