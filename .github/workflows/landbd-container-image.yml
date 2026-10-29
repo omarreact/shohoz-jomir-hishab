@@ -1,0 +1,94 @@
+name: LandBD Node container image (GitHub)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "Dockerfile.landbd"
+      - ".dockerignore"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/landbd-container-image.yml"
+  workflow_dispatch:
+    inputs:
+      publish_image:
+        description: 'Publish an image to GitHub Container Registry (manual main branch only)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landbd-image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Linux container image (no publishing, no private credentials)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.landbd
+          push: false
+          tags: landbd:verify
+          cache-from: type=gha,scope=landbd-node-container
+          cache-to: type=gha,mode=max,scope=landbd-node-container
+          build-args: |
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+            NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+
+  publish-image:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_image == true && github.ref == 'refs/heads/main'
+    needs: [build-and-verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Verify required public Firebase build variables
+        env:
+          FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+        run: |
+          test -n "$FIREBASE_API_KEY"
+          test -n "$FIREBASE_AUTH_DOMAIN"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_APP_ID"
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish reviewed Linux image to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.landbd
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/landbd-app:sha-${{ github.sha }}
+          cache-from: type=gha,scope=landbd-node-container
+          cache-to: type=gha,mode=max,scope=landbd-node-container
+          build-args: |
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+            NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
