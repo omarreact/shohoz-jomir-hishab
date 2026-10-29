@@ -7,6 +7,9 @@ import { LEGACY_ROUTE_REDIRECTS } from "./src/shared/routing/route-registry";
  * - serverExternalPackages: skip bundling heavy Node-only libs into server graphs
  */
 const nextConfig: NextConfig = {
+  // Only the GitHub-built Cloudflare Container image needs the standalone Node runtime.
+  // Vercel and existing OpenNext builds retain their previous behavior.
+  ...(process.env.LANDBD_CONTAINER_BUILD === "1" ? { output: "standalone" as const } : {}),
   devIndicators: false,
   // Next traces Node exports; the Workers bundler selects ESM/browser exports.
   // Include those alternate files for both route and Node proxy bundles.
