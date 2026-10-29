@@ -165,9 +165,9 @@ export default function NidCopyPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
-                LandBD · BDRIS verified data fill
+                LandBD · জন্মনিবন্ধন যাচাই
               </p>
-              <h1 className="mt-2 text-3xl font-black">NID Copy</h1>
+              <h1 className="mt-2 text-3xl font-black">জন্মনিবন্ধন যাচাই</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                 Enter the 17-digit Birth Registration Number, date of birth and the
                 BDRIS captcha. The captcha is solved by you. After successful
@@ -175,7 +175,7 @@ export default function NidCopyPage() {
               </p>
             </div>
             <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
-              NOT AN OFFICIAL NID
+              জন্মনিবন্ধনের তথ্য যাচাই
             </span>
           </div>
 

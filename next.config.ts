@@ -8,6 +8,15 @@ import { LEGACY_ROUTE_REDIRECTS } from "./src/shared/routing/route-registry";
  */
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Next traces Node exports; the Workers bundler selects ESM/browser exports.
+  // Include those alternate files for both route and Node proxy bundles.
+  outputFileTracingIncludes: {
+    "**/*": [
+      "node_modules/@opentelemetry/api/build/esm/**/*.js",
+      "node_modules/uncrypto/dist/**/*",
+      "node_modules/jwks-rsa/node_modules/jose/dist/**/*",
+    ],
+  },
   async redirects() {
     return [...LEGACY_ROUTE_REDIRECTS];
   },
@@ -55,13 +64,14 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Bundle the fetch-based Upstash client: the experimental Workers proxy
+  // adapter otherwise leaves its relative ESM chunks unresolved.
   serverExternalPackages: [
     "firebase-admin",
     "ioredis",
     "pino",
     "pino-pretty",
     "cloudinary",
-    "@upstash/redis",
   ],
 };
 

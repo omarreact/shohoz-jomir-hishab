@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash,createCipheriv,createDecipheriv,randomBytes } from "node:crypto";
-import { db } from "@/src/modules/database/firebaseAdmin";
+import { db,isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 export type AiProvider="openai"|"gemini";
 export type AiConfig={enabled:boolean;provider:AiProvider;model:string;apiKey:string};
 const defaults:AiConfig={enabled:false,provider:"openai",model:"gpt-4.1-mini",apiKey:""};
@@ -19,6 +19,7 @@ function decrypt(s:string):string{
  return Buffer.concat([d.update(b.subarray(12,b.length-16)),d.final()]).toString("utf8");
 }
 export async function getAiConfig():Promise<AiConfig>{
+ if(!isFirebaseAdminReady())throw new Error("AI সেটিংস সেবা এখন পাওয়া যাচ্ছে না");
  const doc=await db.collection("landbdPrivateConfig").doc("aiProvider").get();
  if(!doc.exists)return defaults;
  const d=doc.data()||{};

@@ -44,6 +44,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { name: "QR ভেরিফিকেশন", path: "/admin/qr-verification", icon: QrCode, roles: [...getAdminNavigationRoles("/admin/qr-verification")] },
   { name: "পেইজ অ্যাক্সেস", path: "/admin/page-access", icon: ShieldAlert, roles: [...getAdminNavigationRoles("/admin/page-access")] },
   { name: "অডিট লগ", path: "/admin/audit-log", icon: History, roles: [...getAdminNavigationRoles("/admin/audit-log")] },
+  { name: "জাতীয় পরিচয়পত্র যাচাই", path: "/admin/nid-verification", icon: ShieldCheck, roles: [...getAdminNavigationRoles("/admin/nid-verification")] },
   { name: "টেস্ট এপিআই", path: "/admin/test-api", icon: Globe, roles: [...getAdminNavigationRoles("/admin/test-api")] },
   { name: "কনটেন্ট CMS", path: "/admin/cms", icon: FileText, roles: [...getAdminNavigationRoles("/admin/cms")] },
   { name: "বিক্রয় ও অর্ডার", path: "/admin/orders", icon: BarChart3, roles: [...getAdminNavigationRoles("/admin/orders")] },

@@ -3,11 +3,19 @@ import {
   cert,
   getApps,
   initializeApp,
+  type App,
 } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
 
 let adminReady = false;
+
+// Next server bundles can evaluate this module more than once in one process.
+// Reusing a project-only app must not turn missing credentials into readiness.
+const firebaseGlobal = globalThis as typeof globalThis & {
+  __landbdFirebaseAdminReadiness?: WeakMap<App, boolean>;
+};
+const readiness = firebaseGlobal.__landbdFirebaseAdminReadiness ??= new WeakMap<App, boolean>();
 
 function normalizePrivateKey(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
@@ -52,7 +60,7 @@ function isGoogleManagedRuntime(): boolean {
 
 function initAdmin(): void {
   if (getApps().length) {
-    adminReady = true;
+    adminReady = readiness.get(getApps()[0]) ?? false;
     return;
   }
 
@@ -121,6 +129,7 @@ function initAdmin(): void {
 }
 
 initAdmin();
+readiness.set(getApps()[0], adminReady);
 
 export function isFirebaseAdminReady(): boolean {
   return adminReady;

@@ -59,3 +59,8 @@ prisma/*.db-wal
 *firebase-adminsdk*.json
 *service-account-key*.json
 /credentials/
+
+# Cloudflare build output and local binding state
+/.open-next/
+/.wrangler/
+/cloudflare-env.d.ts

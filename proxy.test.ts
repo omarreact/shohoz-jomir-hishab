@@ -46,6 +46,13 @@ describe("LandBD request-boundary access policy", () => {
     mockVerifyServerAuth.mockReset();
   });
 
+  it("never caches the proxy's unauthorized NID API response", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    const response = await proxy(new NextRequest("https://landbd.example/api/nid-dob/verify", { method: "POST" }));
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+
   it("restores /admin for a verified Admin when Google's proxy X509 check is unavailable", async () => {
     mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
     mockVerifyServerAuth.mockResolvedValue({
@@ -79,6 +86,17 @@ describe("LandBD request-boundary access policy", () => {
     const settings = await proxy(new NextRequest("https://landbd.example/admin/settings", { headers }));
     expect(settings.status).toBeGreaterThanOrEqual(300);
     expect(settings.headers.get("location")).toContain("/403");
+  });
+
+  it.each([["Editor", false], ["Basic User", false], ["Admin", true]])("protects NID administration for %s", async (role, allowed) => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
+    mockVerifyServerAuth.mockResolvedValue({ id: "synthetic-user", email: "synthetic@example.test", name: "Synthetic", role });
+    const response = await proxy(new NextRequest("https://landbd.example/admin/nid-verification", {
+      headers: { cookie: "access_token=synthetic-token" },
+    }));
+    expect(response.headers.get("x-middleware-next") === "1").toBe(allowed);
+    expect(response.headers.get("x-robots-tag")).toContain("noindex");
+    if (!allowed) expect(response.headers.get("location")).toContain("/403");
   });
 
   it("rejects users without signed staff claims even when a cookie exists", async () => {

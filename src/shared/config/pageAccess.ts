@@ -94,6 +94,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "logged_in",
   },
   {
+    id: "/nid_dob",
+    name: "জাতীয় পরিচয়পত্র যাচাই (পুরনো লিংক)",
+    description: "প্রশাসকের পরিচয় যাচাই টুলে প্রবেশ।",
+    category: "পরীক্ষামূলক",
+    defaultAccess: "admin",
+  },
+  {
     id: "/nid-copy",
     name: "জন্মনিবন্ধন যাচাই",
     description: "অনুমোদিত সদস্যের জন্য সংবেদনশীল নিবন্ধন যাচাই।",
@@ -245,6 +252,7 @@ const PAGE_ACCESS_LEVEL_SET = new Set<string>(PAGE_ACCESS_LEVELS);
 // page-access override accidentally tries to make their route public.
 const MEMBER_MINIMUM_ROUTES = new Set(["/porcha", "/nid-copy"]);
 function enforceMinimumAccess(route: string, level: PageAccessLevel): PageAccessLevel {
+  if (route === "/nid_dob" && (level === "public" || level === "logged_in")) return "admin";
   return MEMBER_MINIMUM_ROUTES.has(route) && level === "public" ? "logged_in" : level;
 }
 

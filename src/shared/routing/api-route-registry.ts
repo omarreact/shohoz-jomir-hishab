@@ -43,6 +43,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/admin/users/[id]", get: "admin", mutate: "admin" },
   { path: "/api/admin/users/create", get: "admin", mutate: "admin" },
   { path: "/api/admin/users", get: "admin", mutate: "admin" },
+  { path: "/api/nid-dob/verify", get: "admin", mutate: "admin" },
   { path: "/api/auth/me", get: "member", mutate: "member" },
   { path: "/api/auth/session", get: "public", mutate: "public" },
   { path: "/api/authorities", get: "public", mutate: "public" },

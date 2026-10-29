@@ -79,3 +79,10 @@ describe("page access registry", () => {
     expect(normalizeStoredPageAccess({ rules: { "/mouza-map": "admin" } })["/mouza-map"]).toBe("admin");
   });
 });
+
+test("cannot relax the legacy administrative NID tool to public or member access", () => {
+  for (const level of ["public", "logged_in"] as const) {
+    expect(getPageAccessLevel("/nid_dob", { "/nid_dob": level })).toBe("admin");
+    expect(sanitizePageAccessRules({ "/nid_dob": level })["/nid_dob"]).toBe("admin");
+  }
+});
