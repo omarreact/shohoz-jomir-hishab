@@ -3,7 +3,7 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 export default defineConfig({
   accountId: "815dd6892edc628128dc65a992086cf9",
   worker: defineWorker({
-    name: "landbd-vinext-canary",
+    name: "landbd-vinext-stage",
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-10-29",
     compatibilityFlags: ["nodejs_compat"],
