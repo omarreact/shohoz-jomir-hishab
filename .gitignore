@@ -64,3 +64,6 @@ prisma/*.db-wal
 /.open-next/
 /.wrangler/
 /cloudflare-env.d.ts
+/dist/
+.vinext/
+.cloudflare/
