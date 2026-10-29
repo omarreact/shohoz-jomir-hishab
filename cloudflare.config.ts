@@ -8,6 +8,12 @@ export default defineConfig({
     compatibilityDate: "2026-10-29",
     compatibilityFlags: ["nodejs_compat"],
     workersDev: true,
+    previewUrls: false,
+    observability: {
+      enabled: true,
+      logs: { enabled: true, headSamplingRate: 1, invocationLogs: true, persist: true },
+      traces: { enabled: true, headSamplingRate: 1 },
+    },
     assets: {
       htmlHandling: "none",
       notFoundHandling: "none",
