@@ -38,7 +38,8 @@ function toScaledArea(area: number): bigint {
   const integerPart = match[2];
   const fractionPart = match[3] ?? "";
   const exponent = Number(match[4] ?? "0");
-  const digits = `${integerPart}${fractionPart}`.replace(/^0+(?=\d)/, "");
+  // Keep leading zeroes: their positions determine the decimal scale.
+  const digits = `${integerPart}${fractionPart}`;
   const decimalPosition = integerPart.length + exponent;
   const scalePower = decimalPosition - digits.length + 6;
   const coefficient = BigInt(digits || "0");
@@ -116,7 +117,8 @@ export function allocatePlotArea(totalArea: number, shares: KhatiyanShare[]): Ar
 
 /** Exact conservation check; epsilon is retained only for source compatibility and is ignored. */
 export function allocationsConserved(totalArea: number, allocations: AreaAllocation[], _epsilon = 0): boolean {
-  const exactTotalNumerator = allocations.reduce((sum, allocation) => sum + allocation.exactAreaScaled, 0n);
+  const totalTil = allocations.reduce((sum, allocation) => sum + allocation.shareTil, 0n);
+  const exactTotalNumerator = toScaledArea(totalArea) * totalTil;
   const expectedAllocated = (exactTotalNumerator + (TIL_PER_FULL_UNIT_BIGINT / 2n)) / TIL_PER_FULL_UNIT_BIGINT;
   const allocated = allocations.reduce((sum, allocation) => sum + allocation.allocatedAreaScaled, 0n);
   return allocated === expectedAllocated;

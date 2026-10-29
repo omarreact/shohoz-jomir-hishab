@@ -29,6 +29,12 @@ describe("Khatiyan calculations", () => {
     expect(total).toBeCloseTo(100, 10);
   });
 
+  it("reports fractional plot areas correctly for partial ownership", () => {
+    const result = buildDetailedResults([owner({ a: 8 })], [plot({ a: "0.25" })], KHATIYAN_UNIT_TIL, toEn, toBn);
+    expect(result.computedResults[0].totalLand).toBe(0.125);
+    expect(result.computedResults[0].ownerPlots[0]).toMatchObject({ totalArea: 0.25, gotArea: 0.125 });
+  });
+
   it("rejects owner shares whose combined total exceeds 16 ana", () => {
     const errors = validateKhatiyanInputs([owner({ a: 10 }), owner({ a: 7 })], [plot()], KHATIYAN_UNIT_TIL);
     expect(errors).toContain("Total owner shares exceed the full Khatiyan unit");
