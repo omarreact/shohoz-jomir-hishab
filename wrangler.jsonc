@@ -32,6 +32,7 @@
     "d1_databases": [
       {
         "binding": "NEXT_TAG_CACHE_D1",
+        "database_name": "landbd-preview-next-tags",
         "database_id": "7ea7a4fe-086b-488b-8c5a-a4e42f603351"
       }
     ],
