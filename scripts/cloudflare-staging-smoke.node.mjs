@@ -8,6 +8,17 @@ import {
 
 const stagingUrl = "https://landbd-vinext-stage.account.workers.dev";
 
+function stagingHealthResponse(overrides = {}) {
+  return Response.json({
+    success: true,
+    service: "landbd",
+    status: "ok",
+    platform: "cloudflare-workers",
+    environment: "staging",
+    ...overrides,
+  });
+}
+
 test("restricts the smoke target to the isolated staging Worker", () => {
   assert.equal(validateStagingUrl(stagingUrl), new URL(stagingUrl).origin);
 
@@ -25,6 +36,9 @@ test("restricts the smoke target to the isolated staging Worker", () => {
 
 test("passes healthy public routes and fails closed on unauthenticated admin access", async () => {
   const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") {
+      return stagingHealthResponse();
+    }
     const path = url.pathname;
     if (path === "/api/public/maintenance") {
       return Response.json({ maintenanceMode: false, degraded: false });
@@ -52,6 +66,9 @@ test("passes healthy public routes and fails closed on unauthenticated admin acc
 
 test("expects maintenance 503 responses without treating them as runtime failures", async () => {
   const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") {
+      return stagingHealthResponse();
+    }
     const path = url.pathname;
     if (path === "/api/public/maintenance") {
       return Response.json({ maintenanceMode: true, degraded: false });
@@ -72,6 +89,9 @@ test("expects maintenance 503 responses without treating them as runtime failure
 
 test("fails when a page returns a Worker exception", async () => {
   const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") {
+      return stagingHealthResponse();
+    }
     if (url.pathname === "/api/public/maintenance") {
       return Response.json({ maintenanceMode: false, degraded: false });
     }
@@ -97,6 +117,9 @@ test("fails when a page returns a Worker exception", async () => {
 
 test("rejects an unauthenticated admin redirect to another origin", async () => {
   const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") {
+      return stagingHealthResponse();
+    }
     if (url.pathname === "/api/public/maintenance") {
       return Response.json({ maintenanceMode: false, degraded: false });
     }
@@ -118,4 +141,58 @@ test("rejects an unauthenticated admin redirect to another origin", async () => 
   const result = await runSmokeChecks(stagingUrl, fetchMock);
   assert.equal(result.passed, false);
   assert.ok(result.checks.some((check) => check.path === "/admin" && !check.passed));
+});
+
+test("rejects a healthy HTTP 200 from the wrong platform or environment", async () => {
+  for (const identity of [
+    { platform: "vercel" },
+    { environment: "production" },
+    { service: "different-app" },
+  ]) {
+    const fetchMock = async (url) => {
+      switch (url.pathname) {
+        case "/api/health":
+          return stagingHealthResponse(identity);
+        case "/api/public/maintenance":
+          return Response.json({ maintenanceMode: false, degraded: false });
+        case "/api/admin/health":
+          return new Response(null, { status: 401 });
+        case "/admin":
+          return new Response(null, {
+            status: 307,
+            headers: { location: "/login" },
+          });
+        case "/__cloudflare-smoke-not-found__":
+          return new Response(null, { status: 404 });
+        default:
+          return new Response(null, { status: 200 });
+      }
+    };
+
+    const result = await runSmokeChecks(stagingUrl, fetchMock);
+    assert.equal(result.passed, false);
+    assert.ok(result.checks.some((check) => check.path === "/api/health" && !check.passed));
+  }
+});
+
+test("rejects a non-JSON health response even with HTTP 200", async () => {
+  const fetchMock = async (url) => {
+    switch (url.pathname) {
+      case "/api/health":
+        return new Response("<html>healthy</html>", { status: 200 });
+      case "/api/public/maintenance":
+        return Response.json({ maintenanceMode: false, degraded: false });
+      case "/api/admin/health":
+        return new Response(null, { status: 401 });
+      case "/admin":
+        return new Response(null, { status: 307, headers: { location: "/login" } });
+      case "/__cloudflare-smoke-not-found__":
+        return new Response(null, { status: 404 });
+      default:
+        return new Response(null, { status: 200 });
+    }
+  };
+  const result = await runSmokeChecks(stagingUrl, fetchMock);
+  assert.equal(result.passed, false);
+  assert.ok(result.checks.some((check) => check.path === "/api/health" && !check.passed));
 });
