@@ -1,6 +1,12 @@
 name: Cloudflare staging HTTP smoke
 
 on:
+  push:
+    branches: [fix/landbd-workers-unified-recovery-20261030]
+    paths:
+      - .github/workflows/cloudflare-staging-smoke.yml
+      - scripts/cloudflare-staging-smoke.mjs
+      - scripts/cloudflare-staging-smoke.node.mjs
   workflow_dispatch:
     inputs:
       staging_url:
@@ -33,5 +39,5 @@ jobs:
 
       - name: Check isolated staging Worker
         env:
-          LANDBD_CLOUDFLARE_STAGING_URL: ${{ inputs.staging_url }}
+          LANDBD_CLOUDFLARE_STAGING_URL: ${{ inputs.staging_url || 'https://landbd-vinext-stage.farukkhanone.workers.dev/' }}
         run: node scripts/cloudflare-staging-smoke.mjs
