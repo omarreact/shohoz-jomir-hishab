@@ -196,3 +196,41 @@ test("rejects a non-JSON health response even with HTTP 200", async () => {
   assert.equal(result.passed, false);
   assert.ok(result.checks.some((check) => check.path === "/api/health" && !check.passed));
 });
+
+test("accepts same-origin permanent redirect only if canonical page serves 200", async () => {
+  const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") return stagingHealthResponse();
+    if (url.pathname === "/api/public/maintenance")
+      return Response.json({ maintenanceMode: false, degraded: false });
+    if (url.pathname === "/api/admin/health") return new Response(null, { status: 401 });
+    if (url.pathname === "/admin")
+      return new Response(null, { status: 307, headers: { location: "/login" } });
+    if (url.pathname === "/__cloudflare-smoke-not-found__")
+      return new Response(null, { status: 404 });
+    if (url.pathname === "/dap-map")
+      return new Response(null, { status: 308, headers: { location: "/dap-map/" } });
+    return new Response(null, { status: 200 });
+  };
+  const result = await runSmokeChecks(stagingUrl, fetchMock);
+  assert.equal(result.passed, true);
+  assert.ok(result.checks.some((x) => x.path === "/dap-map" && x.passed));
+});
+
+test("rejects cross-origin canonical public redirect", async () => {
+  const fetchMock = async (url) => {
+    if (url.pathname === "/api/health") return stagingHealthResponse();
+    if (url.pathname === "/api/public/maintenance")
+      return Response.json({ maintenanceMode: false, degraded: false });
+    if (url.pathname === "/api/admin/health") return new Response(null, { status: 401 });
+    if (url.pathname === "/admin")
+      return new Response(null, { status: 307, headers: { location: "/login" } });
+    if (url.pathname === "/__cloudflare-smoke-not-found__")
+      return new Response(null, { status: 404 });
+    if (url.pathname === "/dap-map")
+      return new Response(null, { status: 308, headers: { location: "https://example.com/dap-map" } });
+    return new Response(null, { status: 200 });
+  };
+  const result = await runSmokeChecks(stagingUrl, fetchMock);
+  assert.equal(result.passed, false);
+  assert.ok(result.checks.some((x) => x.path === "/dap-map" && !x.passed));
+});
