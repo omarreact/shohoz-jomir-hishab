@@ -12,6 +12,21 @@ npm run cf:build
 npm run cf:preview -- --port 8787
 ```
 
+## Staging HTTP release gate
+
+The GitHub Actions workflow **Cloudflare staging HTTP smoke** is a manual,
+read-only check for the isolated `landbd-vinext-stage` Worker. Dispatch it with
+that Worker’s HTTPS `workers.dev` URL. The workflow rejects other hosts and
+checks the homepage, login, `/dap-map`, public health and maintenance endpoints,
+anonymous admin denial, and a missing route. It honors the current maintenance
+setting, so the expected maintenance `503` is not mistaken for an outage.
+
+This smoke test does not log in, change Firestore, or prove authenticated
+Firebase login, admin operations, Firestore reads/writes, PDFs, or RAJUK
+functionality. Those remain separate acceptance gates requiring authorized
+staging credentials and identities. A successful build or this anonymous HTTP
+check alone is not approval for production cutover.
+
 The existing `proxy.ts` remains authoritative for maintenance, Firebase sessions, admin roles, lockout, security headers and page rules. OpenNext 1.20.8's Node proxy support is **experimental**; its maintainers do not guarantee it. Validate protected routes in the local Workers runtime and staging before any production cutover. The obsolete draft's separate gateway must not be deployed alongside this configuration: it duplicates older access rules.
 
 Next 16.3.8 and eslint-config-next are kept aligned with the adapter's minimum Next version. The trace includes in `next.config.ts` supply alternate ESM/browser files selected by the Workers bundler (`@opentelemetry/api`, `uncrypto`, and Firebase Admin's nested `jose`); suppressing unresolved imports or removing authorization would leave a broken runtime.
