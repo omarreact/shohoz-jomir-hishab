@@ -24,6 +24,8 @@ export default defineConfig({
       LANDBD_PLATFORM: bindings.text("cloudflare-workers"),
       LANDBD_ENV: bindings.text("staging"),
       NEXTJS_ENV: bindings.text("production"),
+      // Firestore REST avoids eagerly loading the Node gRPC transport on Workers.
+      FIRESTORE_PREFER_REST: bindings.text("true"),
       LAND_EXPORT_STORAGE_PROVIDER: bindings.text("cloudflare"),
       LANDBD_FILES: bindings.r2({ name: "landbd-vinext-stage-files" }),
       IMAGES: bindings.images(),
