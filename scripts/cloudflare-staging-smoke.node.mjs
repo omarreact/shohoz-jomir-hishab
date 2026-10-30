@@ -8,7 +8,7 @@ import {
 
 const stagingUrl = "https://landbd-vinext-stage.account.workers.dev";
 
-test("accepts only the isolated staging Worker URL", () => {
+test("restricts the smoke target to the isolated staging Worker", () => {
   assert.equal(validateStagingUrl(stagingUrl), new URL(stagingUrl).origin);
 
   for (const value of [
