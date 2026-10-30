@@ -124,7 +124,29 @@ export async function runSmokeChecks(stagingUrl, fetchImpl = fetch) {
   const publicPageStatus = maintenanceMode ? 503 : 200;
   for (const path of ["/", "/dap-map"]) {
     const result = await get(path);
-    record(path, result.status === publicPageStatus, result.status, `${publicPageStatus}`);
+    if ([301, 308].includes(result.status)) {
+      const location = result.response?.headers.get("location") ?? "";
+      let canonical = null;
+      try {
+        const target = new URL(location, origin);
+        if (
+          location &&
+          target.origin === origin &&
+          target.pathname !== path &&
+          target.pathname !== "/login" &&
+          !target.search &&
+          !target.hash
+        ) canonical = target;
+      } catch { /* Invalid redirect is a failed check. */ }
+      if (!canonical) {
+        record(path, false, result.status, `same-origin canonical redirect followed by ${publicPageStatus}`);
+      } else {
+        const follow = await get(canonical.pathname);
+        record(path, follow.status === publicPageStatus, follow.status, `${publicPageStatus} after same-origin ${result.status} redirect`);
+      }
+    } else {
+      record(path, result.status === publicPageStatus, result.status, `${publicPageStatus}`);
+    }
   }
 
   const adminPage = await get("/admin");
