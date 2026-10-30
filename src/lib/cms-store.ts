@@ -1,5 +1,6 @@
 import "server-only";
-import { db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
+// Firebase Admin is loaded only when credentials are configured. Public CMS
+// defaults must render on Workers without evaluating the Node/gRPC client.
 import type { Metadata } from "next";
 export const CMS_SLUGS=["about","privacy","terms","faq","api-docs","homepage","navigation","footer","notice"] as const;
 export type CmsSlug=(typeof CMS_SLUGS)[number];
@@ -30,6 +31,16 @@ export function isCmsSlug(value:unknown):value is CmsSlug{
 export function defaultCmsPage(slug:CmsSlug):CmsPage{return {slug,...CONTENT[slug],revision:0,updatedAt:null};}
 export async function getCmsPage(slug:CmsSlug):Promise<CmsPage>{
  const fallback=defaultCmsPage(slug);
+ const useAdmin =
+   process.env.LANDBD_PLATFORM !== "cloudflare-workers" ||
+   Boolean(
+     process.env.FIREBASE_PROJECT_ID &&
+     process.env.FIREBASE_CLIENT_EMAIL &&
+     process.env.FIREBASE_PRIVATE_KEY,
+   );
+ if (!useAdmin) return fallback;
+ const { db, isFirebaseAdminReady } =
+   await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady())return fallback;
  const snap=await db.collection("landbdCmsPages").doc(slug).get();
  if(!snap.exists)return fallback;
