@@ -33,3 +33,7 @@ jobs:
           CI: 'true'
           NEXT_TELEMETRY_DISABLED: '1'
         run: npm run build:vinext
+      - name: Isolated staging HTTP acceptance gate
+        env:
+          LANDBD_CLOUDFLARE_STAGING_URL: https://landbd-vinext-stage.farukkhanone.workers.dev/
+        run: node scripts/cloudflare-staging-smoke.mjs
