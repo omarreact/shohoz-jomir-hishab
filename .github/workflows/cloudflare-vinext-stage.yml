@@ -1,0 +1,44 @@
+name: LandBD vinext staging validation
+
+on:
+  push:
+    branches: ["fix/cloudflare-vinext-staging-20261029"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-vinext:
+    if: github.repository == 'omarreact/shohoz-jomir-hishab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and regenerate the migration lockfile
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Verify reproducible install
+        run: npm ci --legacy-peer-deps --dry-run --ignore-scripts --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build vinext staging
+        run: npm run build:vinext
+        env:
+          CI: 'true'
+      - name: Commit verified lockfile to staging branch only
+        if: success()
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add package-lock.json
+            git commit -m 'chore: lock validated vinext staging dependencies [skip ci]'
+            git push origin HEAD:fix/cloudflare-vinext-staging-20261029
+          fi

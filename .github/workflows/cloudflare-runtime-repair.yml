@@ -1,0 +1,39 @@
+name: LandBD Workers comprehensive runtime repair
+on:
+  push:
+    branches:
+      - fix/landbd-workers-unified-recovery-20261030
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-workers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated dependencies
+        run: npm install --legacy-peer-deps --no-package-lock --no-audit --no-fund
+      - name: Validate fail-closed runtime policy
+        run: node --test scripts/cloudflare-runtime-regression.mjs
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Vinext compatibility
+        run: npx vinext check
+      - name: Compile Cloudflare Worker without deploying
+        env:
+          CI: 'true'
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build:vinext
+      - name: Isolated staging HTTP acceptance gate
+        env:
+          LANDBD_CLOUDFLARE_STAGING_URL: https://landbd-vinext-stage.farukkhanone.workers.dev/
+        run: node scripts/cloudflare-staging-smoke.mjs

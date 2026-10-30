@@ -1,0 +1,43 @@
+name: Cloudflare staging HTTP smoke
+
+on:
+  push:
+    branches: [fix/landbd-workers-unified-recovery-20261030]
+    paths:
+      - .github/workflows/cloudflare-staging-smoke.yml
+      - scripts/cloudflare-staging-smoke.mjs
+      - scripts/cloudflare-staging-smoke.node.mjs
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: HTTPS URL of the isolated landbd-vinext-stage Worker
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate smoke-check logic
+        run: node --test scripts/cloudflare-staging-smoke.node.mjs
+
+      - name: Check isolated staging Worker
+        env:
+          LANDBD_CLOUDFLARE_STAGING_URL: ${{ inputs.staging_url || 'https://landbd-vinext-stage.farukkhanone.workers.dev/' }}
+        run: node scripts/cloudflare-staging-smoke.mjs
