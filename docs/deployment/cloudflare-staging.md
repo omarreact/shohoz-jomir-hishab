@@ -12,6 +12,50 @@ npm run cf:build
 npm run cf:preview -- --port 8787
 ```
 
+## Read-only configuration audit (2026-10-30)
+
+Verified from connected provider metadata without reading or moving any secret value:
+
+- Cloudflare account **farukkhanone** has an enabled `workers.dev` route for
+  `landbd-vinext-stage`, with a deployed version dated 2026-10-29. The
+  intended isolated staging URL is
+  `https://landbd-vinext-stage.farukkhanone.workers.dev/`.
+  The URL was **not HTTP-verified** from the audit environment because its DNS
+  was unreachable there. An enabled deployment is not runtime acceptance.
+- The staging Worker currently declares `ASSETS`, `IMAGES`,
+  `LANDBD_ENV`, `LANDBD_FILES`, `LANDBD_PLATFORM`,
+  `LAND_EXPORT_STORAGE_PROVIDER`, and `NEXTJS_ENV`.
+- The Vercel LandBD project has production entries for
+  `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`,
+  `FIREBASE_PROJECT_ID`, `RAJUK_API_KEY`, and
+  `LANDBD_LOCKOUT_SECRET`. Only `LANDBD_LOCKOUT_SECRET`
+  is already present as a Cloudflare secret on the **separate**
+  `landbd-app` Worker; this does not make it available to
+  `landbd-vinext-stage`.
+- Client-side Firebase identifiers and Cloudflare storage bindings are
+  **not** substitutes for server-side Firebase Admin authentication.
+  Missing or intentionally absent credentials must never cause admin or
+  protected routes to allow access.
+
+### Release gates remaining
+
+1. Fix the known Worker runtime incompatibility in the Next proxy loader and
+   Firebase Admin / Firestore protobuf code-generation path. Do not remove
+   verification, switch Firestore's authoritative data source, or relax access
+   checks as a workaround.
+2. Pass the read-only smoke gate against the **actual** isolated staging URL,
+   including its health-platform identity and anonymous admin denial.
+3. Before authenticated staging tests, provision **isolated and approved**
+   Firebase Admin credentials and other applicable server secrets through
+   Cloudflare secret bindings. Confirm Vercel/Cloudflare equivalence by name
+   and behavior, never by exposing or committing secret values.
+4. With authorized test identities, verify Firebase token revocation, locked
+   account denial, administrator claims, Firestore access, maintenance 503,
+   RAJUK provider paths, and PDF/R2 outputs. Do not use production customer
+   records for mutation tests.
+5. Document rollback to the existing Vercel deployment and secure explicit
+   approval **before** changing any custom domain or production route.
+
 ## Staging HTTP release gate
 
 The GitHub Actions workflow **Cloudflare staging HTTP smoke** is a manual,
