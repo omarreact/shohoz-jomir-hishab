@@ -91,7 +91,32 @@ export async function runSmokeChecks(stagingUrl, fetchImpl = fetch) {
   }
 
   const apiHealth = await get("/api/health");
-  record("/api/health", apiHealth.status === 200, apiHealth.status, "200");
+  if (apiHealth.status === 200) {
+    try {
+      const health = await apiHealth.response.json();
+      const isCorrectStagingRuntime =
+        health?.success === true &&
+        health.service === "landbd" &&
+        health.status === "ok" &&
+        health.platform === "cloudflare-workers" &&
+        health.environment === "staging";
+      record(
+        "/api/health",
+        isCorrectStagingRuntime,
+        apiHealth.status,
+        "200 with LandBD Cloudflare staging identity",
+      );
+    } catch {
+      record(
+        "/api/health",
+        false,
+        apiHealth.status,
+        "valid JSON identifying LandBD Cloudflare staging",
+      );
+    }
+  } else {
+    record("/api/health", false, apiHealth.status, "200 with staging identity");
+  }
 
   const login = await get("/login");
   record("/login", login.status === 200, login.status, "200");
