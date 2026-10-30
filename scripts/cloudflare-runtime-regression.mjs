@@ -30,9 +30,9 @@ test("Proxy access checks and maintenance checks remain present", () => {
 test("Public CMS and service pricing avoid eager Node Firebase modules", () => {
   const cms = readFileSync("src/lib/cms-store.ts", "utf8");
   const registry = readFileSync("src/lib/services-registry.ts", "utf8");
-  for (const module of [cms, registry]) {
-    assert.doesNotMatch(module, /^import\s+\{[^}]*\}\s+from\s+["']@\/src\/modules\/database\/firebaseAdmin/m);
-    assert.match(module, /await import\(["']@\/src\/modules\/database\/firebaseAdmin["']\)/);
+  for (const sourceText of [cms, registry]) {
+    assert.doesNotMatch(sourceText, /^import\s+\{[^}]*\}\s+from\s+["']@\/src\/modules\/database\/firebaseAdmin/m);
+    assert.match(sourceText, /await import\(["']@\/src\/modules\/database\/firebaseAdmin["']\)/);
   }
   assert.match(registry, /throw new Error\("Service registry unavailable"\)/);
   assert.match(cms, /if \(!useAdmin\) return fallback/);
