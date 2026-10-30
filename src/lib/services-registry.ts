@@ -1,5 +1,5 @@
 import "server-only";
-import { db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
+// Avoid loading Node Firebase Admin from the public homepage on Workers.
 export const SERVICE_DEFINITIONS = [
  {id:"land-area",path:"/land-measurement",name:"জমির পরিমাপ",category:"calculator"},
  {id:"khatiyan",path:"/khatiyan",name:"খতিয়ান অংশের হিসাব",category:"calculator"},
@@ -34,20 +34,37 @@ function normalize(id:ServiceId,doc:Record<string,unknown>|undefined):ServiceRec
  usageLimit:typeof doc?.usageLimit==="number"&&Number.isSafeInteger(doc.usageLimit)&&doc.usageLimit>0?doc.usageLimit:null,
  updatedAt:typeof doc?.updatedAt==="string"?doc.updatedAt:null};
 }
+async function loadAdminRegistry() {
+ if (
+   process.env.LANDBD_PLATFORM === "cloudflare-workers" &&
+   !(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY)
+ ) {
+   throw new Error("Service registry unavailable");
+ }
+ const admin = await import("@/src/modules/database/firebaseAdmin");
+ if (!admin.isFirebaseAdminReady()) {
+   throw new Error("Service registry unavailable");
+ }
+ return admin.db;
+}
 export function servicePrice(s:ServiceRecord){return !s.paid?0:(s.discountBdt??s.priceBdt);}
 export async function getService(id:ServiceId):Promise<ServiceRecord>{
  if(!SERVICE_DEFINITIONS.some(s=>s.id===id))throw new Error("Unknown service");
- if(!isFirebaseAdminReady()){
-  if(process.env.NODE_ENV==="production")throw new Error("Service registry unavailable");
-  return defaultService(id);
+ let db;
+ try { db = await loadAdminRegistry(); }
+ catch (error) {
+   if(process.env.NODE_ENV==="production")throw error;
+   return defaultService(id);
  }
  const snapshot=await db.collection("landbdServicePricing").doc(id).get();
  return normalize(id,snapshot.exists?snapshot.data():undefined);
 }
 export async function getServiceCatalog():Promise<ServiceRecord[]>{
- if(!isFirebaseAdminReady()){
-  if(process.env.NODE_ENV==="production")throw new Error("Service catalog unavailable");
-  return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));
+ let db;
+ try { db = await loadAdminRegistry(); }
+ catch (error) {
+   if(process.env.NODE_ENV==="production")throw error;
+   return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));
  }
  const references=SERVICE_DEFINITIONS.map(s=>db.collection("landbdServicePricing").doc(s.id));
  const snapshots=await db.getAll(...references);
