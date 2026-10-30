@@ -22,6 +22,34 @@
     "LANDBD_ENV": "staging",
     "LAND_EXPORT_STORAGE_PROVIDER": "cloudflare"
   },
+  "previews": {
+    "vars": {
+      "NEXTJS_ENV": "production",
+      "LANDBD_PLATFORM": "cloudflare-workers-preview",
+      "LANDBD_ENV": "staging-preview",
+      "LAND_EXPORT_STORAGE_PROVIDER": "cloudflare"
+    },
+    "d1_databases": [
+      {
+        "binding": "NEXT_TAG_CACHE_D1",
+        "database_name": "landbd-preview-next-tags",
+        "database_id": "7ea7a4fe-086b-488b-8c5a-a4e42f603351"
+      }
+    ],
+    "r2_buckets": [
+      {
+        "binding": "LANDBD_FILES",
+        "bucket_name": "landbd-vinext-stage-files"
+      },
+      {
+        "binding": "NEXT_INC_CACHE_R2_BUCKET",
+        "bucket_name": "landbd-preview-next-cache"
+      }
+    ],
+    "placement": {
+      "mode": "smart"
+    }
+  },
   "r2_buckets": [
     {
       "binding": "LANDBD_FILES",

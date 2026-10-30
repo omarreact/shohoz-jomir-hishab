@@ -1,6 +1,8 @@
 import "server-only";
-import { db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 import type { Metadata } from "next";
+function isCloudflareWorkersRuntime():boolean{
+ return process.env.LANDBD_PLATFORM?.startsWith("cloudflare-workers")===true;
+}
 export const CMS_SLUGS=["about","privacy","terms","faq","api-docs","homepage","navigation","footer","notice"] as const;
 export type CmsSlug=(typeof CMS_SLUGS)[number];
 export type CmsSection={heading:string;body:string};
@@ -30,6 +32,10 @@ export function isCmsSlug(value:unknown):value is CmsSlug{
 export function defaultCmsPage(slug:CmsSlug):CmsPage{return {slug,...CONTENT[slug],revision:0,updatedAt:null};}
 export async function getCmsPage(slug:CmsSlug):Promise<CmsPage>{
  const fallback=defaultCmsPage(slug);
+ // firebase-admin/Firestore protobuf code generation is not supported by workerd.
+ // Keep Cloudflare public rendering read-only and fail safely to versioned content.
+ if(isCloudflareWorkersRuntime())return fallback;
+ const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady())return fallback;
  const snap=await db.collection("landbdCmsPages").doc(slug).get();
  if(!snap.exists)return fallback;

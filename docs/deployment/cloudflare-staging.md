@@ -12,6 +12,65 @@ npm run cf:build
 npm run cf:preview -- --port 8787
 ```
 
+## Read-only configuration audit (2026-10-30)
+
+Verified from connected provider metadata without reading or moving any secret value:
+
+- Cloudflare account **farukkhanone** has an enabled `workers.dev` route for
+  `landbd-vinext-stage`, with a deployed version dated 2026-10-29. The
+  intended isolated staging URL is
+  `https://landbd-vinext-stage.farukkhanone.workers.dev/`.
+  The URL was **not HTTP-verified** from the audit environment because its DNS
+  was unreachable there. An enabled deployment is not runtime acceptance.
+- The staging Worker currently declares `ASSETS`, `IMAGES`,
+  `LANDBD_ENV`, `LANDBD_FILES`, `LANDBD_PLATFORM`,
+  `LAND_EXPORT_STORAGE_PROVIDER`, and `NEXTJS_ENV`.
+- The Vercel LandBD project has production entries for
+  `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`,
+  `FIREBASE_PROJECT_ID`, `RAJUK_API_KEY`, and
+  `LANDBD_LOCKOUT_SECRET`. Only `LANDBD_LOCKOUT_SECRET`
+  is already present as a Cloudflare secret on the **separate**
+  `landbd-app` Worker; this does not make it available to
+  `landbd-vinext-stage`.
+- Client-side Firebase identifiers and Cloudflare storage bindings are
+  **not** substitutes for server-side Firebase Admin authentication.
+  Missing or intentionally absent credentials must never cause admin or
+  protected routes to allow access.
+
+### Release gates remaining
+
+1. Fix the known Worker runtime incompatibility in the Next proxy loader and
+   Firebase Admin / Firestore protobuf code-generation path. Do not remove
+   verification, switch Firestore's authoritative data source, or relax access
+   checks as a workaround.
+2. Pass the read-only smoke gate against the **actual** isolated staging URL,
+   including its health-platform identity and anonymous admin denial.
+3. Before authenticated staging tests, provision **isolated and approved**
+   Firebase Admin credentials and other applicable server secrets through
+   Cloudflare secret bindings. Confirm Vercel/Cloudflare equivalence by name
+   and behavior, never by exposing or committing secret values.
+4. With authorized test identities, verify Firebase token revocation, locked
+   account denial, administrator claims, Firestore access, maintenance 503,
+   RAJUK provider paths, and PDF/R2 outputs. Do not use production customer
+   records for mutation tests.
+5. Document rollback to the existing Vercel deployment and secure explicit
+   approval **before** changing any custom domain or production route.
+
+## Staging HTTP release gate
+
+The GitHub Actions workflow **Cloudflare staging HTTP smoke** is a manual,
+read-only check for the isolated `landbd-vinext-stage` Worker. Dispatch it with
+that Worker’s HTTPS `workers.dev` URL. The workflow rejects other hosts and
+checks the homepage, login, `/dap-map`, public health and maintenance endpoints,
+anonymous admin denial, and a missing route. It honors the current maintenance
+setting, so the expected maintenance `503` is not mistaken for an outage.
+
+This smoke test does not log in, change Firestore, or prove authenticated
+Firebase login, admin operations, Firestore reads/writes, PDFs, or RAJUK
+functionality. Those remain separate acceptance gates requiring authorized
+staging credentials and identities. A successful build or this anonymous HTTP
+check alone is not approval for production cutover.
+
 The existing `proxy.ts` remains authoritative for maintenance, Firebase sessions, admin roles, lockout, security headers and page rules. OpenNext 1.20.8's Node proxy support is **experimental**; its maintainers do not guarantee it. Validate protected routes in the local Workers runtime and staging before any production cutover. The obsolete draft's separate gateway must not be deployed alongside this configuration: it duplicates older access rules.
 
 Next 16.3.8 and eslint-config-next are kept aligned with the adapter's minimum Next version. The trace includes in `next.config.ts` supply alternate ESM/browser files selected by the Workers bundler (`@opentelemetry/api`, `uncrypto`, and Firebase Admin's nested `jose`); suppressing unresolved imports or removing authorization would leave a broken runtime.
