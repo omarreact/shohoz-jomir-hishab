@@ -1,15 +1,14 @@
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
-import MouzaMapClient from "@/src/features/geospatial-map/components/MouzaMapClient";
-import MouzaMapViewer from "@/src/features/mouza-map/MouzaMapViewer";
+import MouzaMapPageTabs from "@/src/features/geospatial-map/components/MouzaMapPageTabs";
 import DynamicPageGate from "@/src/shared/components/DynamicPageGate";
 
+/** Never expose the sample-file browser as an official production record source. */
 export default function MouzaMapPage() {
   return (
-    <DynamicPageGate pageId="/mouza-map" featureName="মৌজা ম্যাপ (PDF)">
+    <DynamicPageGate pageId="/mouza-map" featureName="মৌজা ম্যাপ">
       <ServicePaywallGate serviceId="mouza-map">
-      <MouzaMapViewer />
-      <MouzaMapClient />
-          </ServicePaywallGate>
+        <MouzaMapPageTabs demoBrowserEnabled={process.env.NODE_ENV !== "production"} />
+      </ServicePaywallGate>
     </DynamicPageGate>
   );
 }
