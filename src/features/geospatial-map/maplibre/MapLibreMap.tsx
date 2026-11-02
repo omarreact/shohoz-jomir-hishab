@@ -212,7 +212,7 @@ export default function MapLibreMap() {
           setResults(found);
           setSelected(found[0] ?? null);
           setTab("results");
-          setPanelOpen(false);
+          setPanelOpen(true);
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
@@ -374,7 +374,7 @@ export default function MapLibreMap() {
       setResults(found);
       setSelected(found[0] ?? null);
       setTab("results");
-      setPanelOpen(false);
+      setPanelOpen(true);
       if (mapRef.current) {
         updateSourceData(
           mapRef.current,
