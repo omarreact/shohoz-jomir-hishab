@@ -12,6 +12,9 @@ import { sendPlotToFaraez, sendPlotToKhatiyan } from "@/src/modules/khatiyan/gis
 import type { KhatiyanPlot } from "@/src/shared/types";
 import {
   BASEMAP_SOURCE_DEFINITIONS,
+  BASEMAP_SOURCE_IDS,
+  BASEMAP_LAYER_IDS,
+  type BasemapKey,
   EMPTY_FEATURE_COLLECTION,
   GIS_REQUEST_TIMEOUT_MS,
   HISTORIC_2003_CENTER,
@@ -19,11 +22,11 @@ import {
   VECTOR_SOURCES,
 } from "./types";
 import { BASEMAP_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";
+import { FREE_IMAGERY_OPTIONS } from "./mapConstants";
 import { bindMapViewport } from "./mapViewport";
 import { exportMouzaClippedPng } from "./mouzaClipExport";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
-const SATELLITE_LAYER = BASEMAP_RASTER_LAYERS.satellite;
 const SEARCH_DEBOUNCE_MS = 320;
 const MIN_SEARCH_CHARS = 2;
 
@@ -128,6 +131,8 @@ export default function MouzaExportMap() {
   const [downloadFormat, setDownloadFormat] = useState<"geotiff" | "raw">("geotiff");
   const [downloadLayers, setDownloadLayers] = useState<"rs" | "ms" | "combined">("combined");
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
+  const [basemap, setBasemap] = useState<BasemapKey>("satellite");
+  const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
@@ -250,6 +255,18 @@ export default function MouzaExportMap() {
     [updateSourceData],
   );
 
+  // Switching historical imagery never loses the current Mouza or selected plot.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    for (const key of Object.keys(BASEMAP_LAYER_IDS) as BasemapKey[]) {
+      const layerId = BASEMAP_LAYER_IDS[key];
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, "visibility", key === basemap ? "visible" : "none");
+      }
+    }
+  }, [basemap, mapReady]);
+
   const selectSuggestion = useCallback(
     (item: MouzaSuggestion) => {
       setMouzaSearch(item.mauza);
@@ -283,10 +300,19 @@ export default function MouzaExportMap() {
 
     const onLoad = () => {
       map.resize();
-      if (!map.getSource("basemap-satellite")) {
-        map.addSource("basemap-satellite", BASEMAP_SOURCE_DEFINITIONS.satellite);
+      // Share the same verified basemap registry used by /geospatial-map.
+      for (const key of Object.keys(BASEMAP_SOURCE_DEFINITIONS) as BasemapKey[]) {
+        if (!map.getSource(BASEMAP_SOURCE_IDS[key])) {
+          map.addSource(BASEMAP_SOURCE_IDS[key], BASEMAP_SOURCE_DEFINITIONS[key]);
+        }
+        const layer = BASEMAP_RASTER_LAYERS[key];
+        if (!map.getLayer(layer.id)) {
+          map.addLayer({
+            ...layer,
+            layout: { visibility: key === "satellite" ? "visible" : "none" },
+          });
+        }
       }
-      if (!map.getLayer(SATELLITE_LAYER.id)) map.addLayer(SATELLITE_LAYER);
 
       const vectorSourceIds = [VECTOR_SOURCES.rsBoundary, VECTOR_SOURCES.msBoundary, VECTOR_SOURCES.selectedPlot];
       for (const sourceId of vectorSourceIds) {
@@ -306,6 +332,7 @@ export default function MouzaExportMap() {
       for (const layer of vectorLayers) {
         if (!map.getLayer(layer.id)) map.addLayer(layer);
       }
+      setMapReady(true);
     };
 
     const onClick = async (event: maplibregl.MapMouseEvent) => {
@@ -626,6 +653,28 @@ export default function MouzaExportMap() {
             {status}
           </div>
         ) : null}
+      </div>
+
+
+      <div className="absolute bottom-4 left-3 z-20 w-[min(76vw,270px)] rounded-xl border border-white/60 bg-white/95 p-2.5 text-slate-900 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:text-white">
+        <label htmlFor="landbd-mouza-imagery" className="block text-xs font-bold">স্যাটেলাইট উৎস</label>
+        <select
+          id="landbd-mouza-imagery"
+          value={basemap}
+          onChange={(event) => setBasemap(event.target.value as BasemapKey)}
+          className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          aria-label="মৌজা মানচিত্রের স্যাটেলাইট উৎস"
+        >
+          <option value="satellite">Esri · বিদ্যমান স্যাটেলাইট</option>
+          {FREE_IMAGERY_OPTIONS.map((option) => (
+            <option key={option.key} value={option.key}>{option.label}</option>
+          ))}
+        </select>
+        <p className="mt-1 text-[10px] leading-4 text-slate-600 dark:text-slate-300">
+          {basemap === "satellite"
+            ? "দেখার জন্য; লাইসেন্স ও ছবির তারিখ উৎসভেদে ভিন্ন।"
+            : FREE_IMAGERY_OPTIONS.find((option) => option.key === basemap)?.detail}
+        </p>
       </div>
 
       {selected ? (
