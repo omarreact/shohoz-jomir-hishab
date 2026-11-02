@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import AtlasWorkspaceHeader from "@/src/features/geospatial-map/components/AtlasWorkspaceHeader";
+import OfficialLandSourceDock from "@/src/features/geospatial-map/components/OfficialLandSourceDock";
+import { GIS_COVERAGE_NOTE, LEGAL_SURVEY_NOTE, LAND_SURVEY_LABELS } from "@/src/features/geospatial-map/lib/officialLandSources";
 import {
   AlertCircle,
   CheckCircle2,
@@ -85,11 +89,11 @@ function SelectField({
 }) {
   return (
     <div className="relative min-w-0">
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">{label}</label>
+      <label className="block text-xs font-black text-[#496761]">{label}</label>
       <div className="relative mt-1">
         <select
           {...props}
-          className={`w-full min-w-0 appearance-none rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2.5 pr-10 text-sm text-[var(--foreground)] shadow-sm outline-none transition focus:border-[#17663A] focus:ring-2 focus:ring-[#17663A]/20 disabled:cursor-not-allowed disabled:bg-[var(--secondary)] disabled:text-[var(--muted-foreground)] ${props.className ?? ""}`}
+          className={["min-h-12 w-full min-w-0 appearance-none rounded-2xl border border-[#d4ded3] bg-white px-4 py-3 pr-10 text-sm font-bold text-[#223f42] shadow-sm outline-none transition focus:border-[#c57b4c] focus:ring-2 focus:ring-[#ecd1b7] disabled:cursor-not-allowed disabled:bg-[#edf0e9] disabled:text-[#82938c]",props.className ?? ""].join(" ")}
         >
           {children}
         </select>
@@ -466,312 +470,127 @@ export default function RajukTestPage() {
     !plotInput.trim() ||
     (mode === "rs" ? !plotsLoaded : !loc.selectedMouza || !loc.selectedUpazila);
 
+
   return (
-    <main className="min-h-screen bg-[var(--background)] px-3 py-6 text-[var(--foreground)] sm:px-5 md:px-8 md:py-8">
-      <div className="mx-auto max-w-4xl space-y-5">
-        <header className="space-y-3">
-          <div className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            <Database className="text-[#17663A]" size={28} />
-            রাজউক প্লট অনুসন্ধান
+    <main className="min-h-screen bg-[#f5f3ec] font-sans text-[#244346]">
+      <AtlasWorkspaceHeader active="rajuk" />
+      <section className="relative overflow-hidden border-b border-[#dfe4db] bg-[#e9f0e9]">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[.19]" style={{backgroundImage:"linear-gradient(#98afa4 1px,transparent 1px),linear-gradient(90deg,#98afa4 1px,transparent 1px)",backgroundSize:"32px 32px"}} />
+        <div className="relative mx-auto grid max-w-[1440px] items-center gap-7 px-4 py-10 sm:px-8 lg:grid-cols-[1fr_320px] lg:py-14">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-[#c2d4c7] bg-[#fffdf7] px-3 py-1.5 text-[10px] font-black uppercase tracking-[.16em] text-[#28636c]"><Database size={14}/> RAJUK GIS · Parcel Explorer</p>
+            <h1 className="mt-4 text-4xl font-black leading-[1.16] tracking-[-.055em] text-[#183c41] sm:text-5xl">দাগ নম্বর থেকে <span className="text-[#bd754c]">জমির পরিচয়।</span></h1>
+            <p className="mt-4 max-w-[750px] text-sm leading-7 text-[#5d756e]">জেলা, উপজেলা ও মৌজা বেছে সরাসরি RAJUK ফিচার সার্ভিস থেকে RS/MS দাগের বৈশিষ্ট্য, আনুমানিক ক্ষেত্রফল এবং সীমারেখা যাচাই করুন।</p>
+            <div className="mt-5 flex flex-wrap gap-2"><Link href="/geospatial-map" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#1e5960] px-5 text-sm font-bold text-white"><MapPin size={16}/> মানচিত্রে যান</Link><Link href="/dlrms-khatian" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#b8cdbd] bg-white px-5 text-sm font-bold text-[#2d6063]">জাতীয় খতিয়ান অনুসন্ধান</Link></div>
           </div>
-          <p className="max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
-            আর এস ও এম এস প্লট জেলা, উপজেলা, মৌজা, জে.এল. এবং সঠিক প্লট নম্বর দিয়ে নির্দিষ্টভাবে অনুসন্ধান করুন।
-          </p>
-          <div className="inline-flex rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-1">
-            {(["rs", "ms"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setMode(value)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  mode === value
-                    ? "bg-[var(--card-bg)] text-[#17663A] shadow-sm ring-1 ring-[var(--border-color)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {value === "rs" ? "আর এস প্লট" : "এম এস প্লট"}
-              </button>
-            ))}
+          <div className="rounded-[25px] border border-[#c9d7cd] bg-white/90 p-5 shadow-[0_12px_30px_rgba(30,65,53,.06)]">
+            <span className="text-[10px] font-black tracking-[.16em] text-[#b16b4c]">DATA ORIGIN · RAJUK</span>
+            <p className="mt-2 text-sm font-black">প্রকৃত ফিচার সার্ভিসের তথ্য</p>
+            <p className="mt-2 text-xs leading-6 text-[#6b7b73]">{GIS_COVERAGE_NOTE}</p>
           </div>
-        </header>
+        </div>
+      </section>
 
-        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
-          <div className="mb-4">
-            <h2 className="text-base font-bold">
-              {mode === "rs" ? "আর এস প্লটের এলাকা নির্বাচন" : "নির্দিষ্ট এম এস প্লটের এলাকা নির্বাচন"}
-            </h2>
-            <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-              {mode === "rs"
-                ? "জেলা → উপজেলা → মৌজা/জে.এল. নির্বাচন করে ওই এলাকার আর এস প্লট লোড করুন।"
-                : "জেলা → উপজেলা → মৌজা → জে.এল. নির্বাচন করলে একই এম এস প্লট নম্বরের অপ্রাসঙ্গিক ফলাফল বাদ যাবে।"}
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SelectField
-              label="জেলা"
-              value={loc.dGuid}
-              onChange={(event) => loc.setDGuid(event.target.value)}
-              disabled={loc.loading === "district"}
-              loading={loc.loading === "district"}
-            >
-              <option value="">জেলা নির্বাচন করুন</option>
-              {loc.districts.map((district) => (
-                <option key={district.d_guid} value={district.d_guid}>{district.m_district}</option>
-              ))}
-            </SelectField>
-
-            <SelectField
-              label="থানা / উপজেলা"
-              value={loc.tGuid}
-              onChange={(event) => loc.setTGuid(event.target.value)}
-              disabled={!loc.dGuid || loc.loading === "upazila"}
-              loading={loc.loading === "upazila"}
-            >
-              <option value="">উপজেলা নির্বাচন করুন</option>
-              {loc.upazilas.map((upazila) => (
-                <option key={upazila.t_guid} value={upazila.t_guid}>{upazila.upazila_ps}</option>
-              ))}
-            </SelectField>
-
-            <SelectField
-              label="মৌজা"
-              value={loc.mauzaId}
-              onChange={(event) => loc.setMauzaId(event.target.value)}
-              disabled={!loc.tGuid || loc.loading === "mouza"}
-              loading={loc.loading === "mouza"}
-            >
-              <option value="">{loc.loading === "mouza" ? "লোড হচ্ছে…" : "মৌজা নির্বাচন করুন"}</option>
-              {loc.mouzas.map((mouza) => (
-                <option key={mouza.m_guid} value={mouza.m_guid}>{mouza.mauza} — জে.এল. {mouza.jl_no}</option>
-              ))}
-            </SelectField>
-
-            <div className="min-w-0">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">জে.এল. নম্বর</label>
-              <input
-                type="text"
-                readOnly
-                value={loc.selectedMouza ? String(loc.selectedMouza.jl_no) : ""}
-                placeholder="মৌজা নির্বাচন করলে জে.এল. নম্বর আসবে"
-                className="mt-1 w-full rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-2.5 text-sm font-semibold text-[var(--foreground)] outline-none placeholder:font-normal placeholder:text-[var(--muted-foreground)]"
-                aria-label="জে.এল. নম্বর"
-              />
-            </div>
-          </div>
-
-          {mode === "rs" ? (
-            <button
-              type="button"
-              onClick={() => void loadRsPlots()}
-              disabled={!loc.selectedMouza || loadingPlots}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#17663A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#10552f] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              {loadingPlots ? <Loader2 size={17} className="animate-spin" /> : <Database size={17} />}
-              {loadingPlots ? "আর এস প্লট লোড হচ্ছে…" : "আর এস প্লট লোড করুন"}
-            </button>
-          ) : (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-xs leading-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
-              এম এস-এর বিদ্যমান রাজউক ফিচারসার্ভার ঠিকানা-ধাপ ব্যবহার করেই অনুসন্ধান সংকুচিত করা হচ্ছে; মূল আর এস/এম এস ডেটা উৎস ও এপিআই অপরিবর্তিত।
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
-          <h2 className="text-base font-bold">{prefix} প্লট নম্বর</h2>
-          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-            {mode === "rs"
-              ? plotsLoaded
-                ? `${plots.length.toLocaleString("bn-BD")}টি আর এস প্লট লোড হয়েছে।`
-                : "আগে নির্বাচিত মৌজার আর এস প্লট লোড করুন।"
-              : loc.selectedMouza
-                ? `${loc.selectedMouza.mauza} · জে.এল. ${String(loc.selectedMouza.jl_no).toLocaleString()} — এখন যেমন ৪৭১১ অথবা এম এস-৪৭১১ লিখুন।`
-                : "আগে জেলা, উপজেলা ও মৌজা নির্বাচন করুন; তারপর যেমন ৪৭১১ অথবা এম এস-৪৭১১ লিখুন।"}
-          </p>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              inputMode="text"
-              value={plotInput}
-              onChange={(event) => setPlotInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !searchDisabled) {
-                  event.preventDefault();
-                  void runSearch();
-                }
-              }}
-              placeholder={mode === "rs" ? "যেমন: ৪৬৭ বা আর এস-৪৬৭" : "যেমন: ৪৭১১ বা এম এস-৪৭১১"}
-              disabled={loadingPlots || (mode === "rs" && !plotsLoaded)}
-              className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 py-2.5 text-sm outline-none transition placeholder:text-[var(--muted-foreground)] focus:border-[#17663A] focus:ring-2 focus:ring-[#17663A]/20 disabled:bg-[var(--secondary)]"
-              aria-label={`${prefix} প্লট নম্বর`}
-            />
-            <button
-              type="button"
-              onClick={() => void runSearch()}
-              disabled={searchDisabled}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900"
-            >
-              {loadingPlots && mode === "ms" ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-              {loadingPlots && mode === "ms" ? "খোঁজা হচ্ছে…" : "প্লট খুঁজুন"}
-            </button>
-          </div>
-        </section>
-
-        {error ? (
-          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        ) : null}
-
-        {mode === "ms" && msMatches.length > 1 ? (
-          <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5">
-            <h2 className="text-base font-bold">নির্বাচিত এলাকায় একই নম্বরের এম এস ফলাফল — {msMatches.length.toLocaleString("bn-BD")}টি</h2>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">ঠিকানা ও জমির পরিমাণ মিলিয়ে সঠিক প্লটটি নির্বাচন করুন।</p>
-            <div className="mt-3 grid gap-2">
-              {msMatches.map((feature, index) => {
-                const attributes = feature.attributes as Record<string, unknown>;
-                const address = attrStr(attributes, ["address_search", "address"]);
-                const area = acreFromJsonAttributes(attributes);
-                const active = feature === selected;
-                return (
-                  <button
-                    key={String(attributes.p_guid ?? attributes.objectid ?? index)}
-                    type="button"
-                    onClick={() => setSelected(feature)}
-                    className={`min-h-0 rounded-xl border p-3 text-left transition ${active ? "border-[#17663A] bg-emerald-50 dark:bg-emerald-950/20" : "border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--secondary)]"}`}
-                  >
-                    <span className="block text-sm font-semibold">{address}</span>
-                    <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
-                      {area ? formatAcre(area.acre) : "জমির পরিমাণ পাওয়া যায়নি"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        {selected ? (
-          <section className="space-y-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm sm:p-5 md:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="mx-auto grid max-w-[1440px] items-start gap-6 px-3 pb-14 pt-7 sm:px-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <section className="overflow-hidden rounded-[27px] border border-[#dfe5da] bg-white shadow-[0_12px_35px_rgba(32,59,52,.05)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e9ede5] px-5 py-5 sm:px-7">
               <div>
-                <h2 className="text-base font-bold">প্লটের তথ্য</h2>
-                <p className="text-xs text-[var(--muted-foreground)]">নির্বাচিত {prefix} প্লট</p>
+                <span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">01 / SELECT A SURVEY</span>
+                <h2 className="mt-1 text-xl font-black">কোন জরিপের দাগ খুঁজবেন?</h2>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-[#17663A] dark:bg-emerald-950/30 dark:text-emerald-300">
-                  <MapPin size={13} /> {prefix}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void handleDownload()}
-                  disabled={downloading || printingPdf}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#17663A] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-                >
-                  {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                  {downloading ? "তৈরি হচ্ছে…" : "পিএনজি ডাউনলোড"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handlePdfPrint()}
-                  disabled={printingPdf || downloading}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white dark:text-slate-900"
-                  title="A4 পিডিএফ তৈরি করুন"
-                >
-                  {printingPdf ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
-                  {printingPdf ? "পিডিএফ তৈরি হচ্ছে…" : "পিডিএফ প্রিন্ট"}
-                </button>
+              <div className="inline-flex gap-1 rounded-full border border-[#dfe5dc] bg-[#f4f7f2] p-1" role="group" aria-label="জরিপের ধরন">
+                {(["rs","ms"] as const).map((id)=>(
+                  <button key={id} type="button" onClick={()=>setMode(id)} aria-pressed={mode===id}
+                    className={["min-h-10 rounded-full px-5 text-sm font-black transition",mode===id?"bg-[#1e5960] text-white shadow":"text-[#658078] hover:bg-white"].join(" ")}>{id==="rs"?"আরএস (RS)":"এমএস (MS)"}</button>
+                ))}
               </div>
             </div>
 
-            <div ref={exportRef} className="rounded-xl border border-[var(--border-color)] bg-white p-4 text-slate-900 sm:p-5">
-              <div className="mb-4 border-b border-slate-200 pb-3">
-                <p className="text-lg font-bold text-[#17663A]">সহজ জমির হিসাব · ল্যান্ডবিডি</p>
-                <p className="text-sm font-semibold">রাজউক {prefix} প্লট ফলাফল</p>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-slate-200">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {resultRows.map(({ label, value }) => (
-                      <tr key={label} className="border-b border-slate-100 last:border-0">
-                        <th className="w-[42%] bg-slate-50 px-3 py-2.5 text-left font-medium text-slate-600">{label}</th>
-                        <td className="break-words px-3 py-2.5">{value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {mode === "rs" ? (
-                <div className="mt-4">
-                  <h3 className="mb-2 text-sm font-bold">
-                    এই আর এস প্লটের ভিতরের এম এস প্লট
-                    {loadingMsInside ? " (লোড হচ্ছে…)" : msRows.length ? ` — ${msRows.length}টি` : " — পাওয়া যায়নি"}
-                  </h3>
-                  {msRows.length ? (
-                    <div className="overflow-x-auto rounded-xl border border-violet-200">
-                      <table className="w-full min-w-[28rem] text-sm">
-                        <thead className="bg-violet-50 text-left text-xs text-violet-800">
-                          <tr>
-                            <th className="px-3 py-2">ক্রম</th>
-                            <th className="px-3 py-2">এম এস প্লট নম্বর</th>
-                            <th className="px-3 py-2">পরিমাণ (একর)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {msRows.map((row, index) => (
-                            <tr key={`${row.no}-${index}`} className="border-t border-violet-100">
-                              <td className="px-3 py-2">{index + 1}</td>
-                              <td className="px-3 py-2 font-medium">এম এস-{normalizePlotInput(row.no, "ms")}</td>
-                              <td className="px-3 py-2">{row.acre}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : null}
+            <div className="p-5 sm:p-7">
+              <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[#f2f5ef] p-3"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e2eae3] text-[#2b6770]"><MapPin size={18}/></span><p className="text-xs leading-6 text-[#5a736b]">নির্ভুল অনুসন্ধানের জন্য জেলা → থানা/উপজেলা → মৌজা নির্বাচন করুন। জে.এল. নম্বর সরকারি উৎস থেকে স্বয়ংক্রিয়ভাবে আসবে।</p></div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SelectField label="০১ · জেলা" value={loc.dGuid} onChange={(e)=>loc.setDGuid(e.target.value)} loading={loc.loading==="district"} disabled={loc.loading==="district"}>
+                  <option value="">জেলা নির্বাচন করুন</option>{loc.districts.map((d)=><option key={d.d_guid} value={d.d_guid}>{d.m_district}</option>)}
+                </SelectField>
+                <SelectField label="০২ · থানা / উপজেলা" value={loc.tGuid} onChange={(e)=>loc.setTGuid(e.target.value)} loading={loc.loading==="upazila"} disabled={!loc.dGuid || loc.loading==="upazila"}>
+                  <option value="">উপজেলা নির্বাচন করুন</option>{loc.upazilas.map((u)=><option key={u.t_guid} value={u.t_guid}>{u.upazila_ps}</option>)}
+                </SelectField>
+                <SelectField label="০৩ · মৌজা" value={loc.mauzaId} onChange={(e)=>loc.setMauzaId(e.target.value)} loading={loc.loading==="mouza"} disabled={!loc.tGuid || loc.loading==="mouza"}>
+                  <option value="">{loc.loading==="mouza"?"লোড হচ্ছে…":"মৌজা নির্বাচন করুন"}</option>{loc.mouzas.map((m)=><option key={m.m_guid} value={m.m_guid}>{m.mauza} · JL {m.jl_no}</option>)}
+                </SelectField>
+                <div>
+                  <label htmlFor="atlas-rajuk-jl" className="block text-xs font-black text-[#496761]">০৪ · জে.এল. নম্বর</label>
+                  <input id="atlas-rajuk-jl" readOnly value={loc.selectedMouza ? String(loc.selectedMouza.jl_no) : ""} placeholder="মৌজা নির্বাচনের পরে দেখাবে" className="mt-1.5 min-h-12 w-full rounded-2xl border border-[#e0e5dc] bg-[#f2f5f0] px-4 text-sm font-extrabold text-[#4d6e68]" />
                 </div>
-              ) : null}
-
-              <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-500">
-                জমির পরিমাণ শুধু রাজউক JSON ডেটার বিদ্যমান area field থেকে Acre-এ দেখানো হয়; polygon/coordinate থেকে area গণনা করা হয় না। আনুষ্ঠানিক কাজে সংশ্লিষ্ট সরকারি রেকর্ড যাচাই করুন।
-              </p>
-            </div>
-
-            {isLoggedIn && lastRequestUrl ? (
-              <div className="rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold">প্রযুক্তিগত HTTP অনুরোধ</h3>
-                  <button
-                    type="button"
-                    onClick={() => void handleCopy()}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] px-2.5 py-1 text-xs font-medium"
-                  >
-                    {copied ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} />}
-                    {copied ? "কপি হয়েছে" : "কপি"}
-                  </button>
-                </div>
-                <code className="block break-all rounded-lg bg-[var(--card-bg)] px-3 py-2 font-mono text-xs">GET {lastRequestUrl}</code>
               </div>
-            ) : null}
-
-            <div>
-              <h3 className="mb-2 text-sm font-semibold">প্লট সীমানা (মানচিত্র)</h3>
-              {mode === "rs" ? (
-                <MsAwarePlotMap
-                  feature={selected}
-                  onMsFeaturesChange={(features, loading) => {
-                    setMsInside(features);
-                    setLoadingMsInside(loading);
-                  }}
-                />
-              ) : (
-                <PlotMap feature={selected} />
-              )}
+              {mode==="rs" && <button type="button" disabled={!loc.selectedMouza || loadingPlots} onClick={()=>void loadRsPlots()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d6ce] bg-[#e5f0e9] px-5 text-sm font-black text-[#1c626c] hover:bg-[#d6e8dc] disabled:opacity-40 sm:w-auto">
+                {loadingPlots?<Loader2 size={17} className="animate-spin"/>:<Database size={17}/>} {loadingPlots?"RS দাগ লোড হচ্ছে…":plotsLoaded? "RS দাগ আবার লোড করুন":"এই মৌজার RS দাগ লোড করুন"}
+              </button>}
             </div>
           </section>
-        ) : null}
+
+          <section className="rounded-[27px] border border-[#dfe5da] bg-white p-5 shadow-[0_12px_35px_rgba(32,59,52,.05)] sm:p-7">
+            <div className="mb-4">
+              <span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">02 / IDENTIFY A PARCEL</span>
+              <h2 className="mt-1 text-xl font-black">{prefix} দাগ অনুসন্ধান</h2>
+              <p className="mt-2 text-xs leading-6 text-[#708079]">{mode==="rs" ? (plotsLoaded ? "এই মৌজার "+plots.length.toLocaleString("bn-BD")+"টি দাগ পাওয়া গেছে; নির্দিষ্ট নম্বর লিখুন।" : "প্রথমে উপরের বোতাম থেকে RS দাগ লোড করুন।") : "মৌজা ও JL অনুযায়ী সুনির্দিষ্ট MS দাগ খোঁজা হবে।"}</p>
+            </div>
+            <form onSubmit={(e)=>{e.preventDefault();void runSearch();}} className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-[#d5ded5] bg-[#fcfdf9] px-3 focus-within:border-[#c57b51] focus-within:ring-2 focus-within:ring-[#ead7c2]"><Search size={20} className="text-[#72938d]"/><input inputMode="numeric" aria-label={prefix+" দাগ নম্বর"} value={plotInput} onChange={(e)=>setPlotInput(e.target.value)} placeholder="দাগ নং · যেমন ৬১৮৪" className="min-h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold outline-none placeholder:font-normal"/></div>
+              <button type="submit" disabled={searchDisabled} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#1d5b62] px-6 text-sm font-black text-white hover:bg-[#184b52] disabled:opacity-40">
+                {loadingPlots?<Loader2 size={18} className="animate-spin"/>:<Search size={18}/>} দাগ খুঁজুন
+              </button>
+            </form>
+            {error && <div role="alert" className="mt-4 flex items-start gap-2 rounded-2xl border border-[#f3c8bd] bg-[#fff1eb] p-4 text-xs font-bold leading-6 text-[#a34f38]"><AlertCircle size={18} className="shrink-0"/>{error}</div>}
+            {!error && plotsLoaded && mode==="rs" && !selected && <p className="mt-4 text-xs font-bold text-[#4b7b6d]"><CheckCircle2 size={15} className="mr-1 inline"/> RS জরিপ ডেটা প্রস্তুত · নম্বর দিয়ে খুঁজুন</p>}
+          </section>
+
+          {selected ? (
+            <section ref={exportRef} className="rounded-[27px] border border-[#dfe5da] bg-white p-5 shadow-[0_12px_35px_rgba(32,59,52,.05)] sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">03 / LIVE GIS RECORD</span><h2 className="mt-1 text-2xl font-black">দাগের বিস্তারিত</h2><p className="mt-1 text-xs text-[#667e75]">উৎস RAJUK · {prefix} · {loc.selectedMouza?.mauza || "নির্বাচিত মৌজা"}</p></div>
+                <div className="flex gap-2 print:hidden">
+                  <button type="button" disabled={downloading} onClick={()=>void handleDownload()} aria-label="দাগের তথ্য ছবি ডাউনলোড" className="grid h-11 w-11 place-items-center rounded-xl border border-[#dfe5dd] bg-[#f5f8f2] text-[#296b71] disabled:opacity-40">{downloading?<Loader2 size={18} className="animate-spin"/>:<Download size={18}/>}</button>
+                  <button type="button" disabled={printingPdf} onClick={()=>void handlePdfPrint()} aria-label="দাগের PDF ডাউনলোড" className="grid h-11 w-11 place-items-center rounded-xl border border-[#dfe5dd] bg-[#f5f8f2] text-[#296b71] disabled:opacity-40">{printingPdf?<Loader2 size={18} className="animate-spin"/>:<Printer size={18}/>}</button>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                {resultRows.map((row)=><div key={row.label} className="rounded-2xl border border-[#e5e9e1] bg-[#fbfcf9] p-3.5"><dt className="text-[11px] font-bold text-[#7b8d83]">{row.label}</dt><dd className="mt-1 break-words text-sm font-black text-[#25474b]">{row.value}</dd></div>)}
+              </div>
+              {msMatches.length>1 && <p className="mt-3 text-xs font-semibold text-[#8c623f]">এই দাগ নম্বরের একাধিক MS ফিচার আছে ({msMatches.length})। বর্তমান প্রথম ফিচার দেখানো হয়েছে।</p>}
+              {mode==="rs" && (loadingMsInside || msInside.length>0) && <div className="mt-5 rounded-2xl border border-[#e7e2d8] bg-[#f7f4ed] p-4">
+                <h3 className="text-sm font-black">RS এলাকার মধ্যে MS দাগ {loadingMsInside ? "লোড হচ্ছে…" : "· "+msRows.length.toLocaleString("bn-BD")}</h3>
+                {msRows.length>0?<div className="mt-3 max-h-56 overflow-y-auto"><table className="w-full text-left text-xs"><thead><tr className="text-[#74827b]"><th className="p-2">MS দাগ</th><th className="p-2">ক্ষেত্রফল (একর)</th></tr></thead><tbody>{msRows.map((row,index)=><tr key={row.no+"-"+index} className="border-t border-[#e4e7df]"><td className="p-2 font-bold">{row.no}</td><td className="p-2">{row.acre}</td></tr>)}</tbody></table></div>:null}
+              </div>}
+
+              {isLoggedIn && lastRequestUrl && <div className="mt-5 rounded-xl border border-[#e3e8e1] bg-[#f6f8f3] p-3">
+                <div className="flex items-center justify-between"><p className="text-[11px] font-black">কারিগরি API URL</p><button type="button" onClick={()=>void handleCopy()} className="inline-flex items-center gap-1 text-xs font-bold text-[#24666b]">{copied?<CheckCircle2 size={14}/>:<Copy size={14}/>} {copied?"কপি হয়েছে":"কপি"}</button></div>
+                <code className="mt-2 block break-all text-[10px] text-[#74817b]">GET {lastRequestUrl}</code>
+              </div>}
+              <div className="mt-6">
+                <h3 className="mb-3 text-sm font-black">জরিপ দাগের সীমারেখা</h3>
+                <div className="min-h-[380px] overflow-hidden rounded-[24px] border border-[#dce5da] bg-[#e9efea]">
+                  {mode==="rs"?<MsAwarePlotMap feature={selected} onMsFeaturesChange={(features,loading)=>{setMsInside(features);setLoadingMsInside(loading);}}/>:<PlotMap feature={selected}/>}
+                </div>
+              </div>
+              <p className="mt-4 rounded-xl bg-[#fff2e8] p-3 text-[11px] leading-5 text-[#935a3f]">{LEGAL_SURVEY_NOTE} ক্ষেত্রফল RAJUK JSON attributes থেকে; মালিকানার হিস্যা নয়।</p>
+            </section>
+          ) : (
+            <section className="grid min-h-[250px] place-items-center rounded-[27px] border border-dashed border-[#cadad0] bg-[#ecf1e9] p-6 text-center">
+              <div><MapPin size={28} className="mx-auto text-[#5a9288]"/><h3 className="mt-3 text-lg font-black">দাগ নির্বাচন করলে তথ্য এখানে দেখা যাবে</h3><p className="mt-2 text-xs leading-6 text-[#698078]">কোনো নমুনা ফলাফল দেখানো হয় না। অনুসন্ধান সম্পূর্ণ হলে প্রকৃত RAJUK ডেটা প্রদর্শিত হবে।</p></div>
+            </section>
+          )}
+        </div>
+
+        <aside className="space-y-5 xl:sticky xl:top-5">
+          <OfficialLandSourceDock detailed />
+          <section className="rounded-[24px] border border-[#e1e5dc] bg-white p-5">
+            <h3 className="text-sm font-black">জরিপের উৎস বুঝুন</h3>
+            <p className="mt-2 text-xs leading-6 text-[#73847a]">একই জমির RS ও MS দাগ নম্বর আলাদা হতে পারে। কেবল দাগ নম্বর মিলিয়ে মালিকানা নির্ধারণ করা যায় না।</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">{LAND_SURVEY_LABELS.map((s)=><span key={s.code} title={s.name} className="rounded-full bg-[#eef2eb] px-3 py-1.5 text-[10px] font-black text-[#4d746f]">{s.code}</span>)}</div>
+          </section>
+        </aside>
       </div>
     </main>
   );
