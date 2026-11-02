@@ -164,89 +164,49 @@ export default function VisitorMouzaShareDownload() {
     }
   }, [selectedMouza, downloading]);
 
+
+  const fieldClass = "mt-1.5 min-h-12 w-full rounded-2xl border border-[#d5ded4] bg-white px-3.5 text-sm font-bold text-[#263e3f] outline-none transition focus:border-[#ca7c53] focus:ring-2 focus:ring-[#eacbb0] disabled:bg-[#edf0e9] disabled:text-[#8d9b94]";
   return (
-    <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950/90 p-5 shadow-2xl backdrop-blur">
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/20 text-emerald-400">
-          <MapPinned className="h-5 w-5" />
-        </span>
+    <section aria-label="মৌজা ম্যাপ ডাউনলোড" className="w-full rounded-[26px] border border-[#e0e4d9] bg-white p-5 shadow-[0_12px_40px_rgba(31,60,53,.06)] sm:p-6">
+      <div className="mb-5 flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#dfede5] text-[#1f6570]"><MapPinned size={22}/></span>
+        <div><h2 className="text-xl font-black text-[#1f3e42]">মৌজা ম্যাপ প্রস্তুত করুন</h2><p className="mt-1 text-xs leading-5 text-[#6d807b]">RAJUK ডেটা থেকে নির্বাচিত মৌজার RS ও MS লেয়ার এবং স্যাটেলাইট ব্যাকড্রপ সহ PNG প্রস্তুত হয়।</p></div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label htmlFor="atlas-mouza-district" className="text-xs font-black text-[#466462]">০১ · জেলা</label>
+          <select id="atlas-mouza-district" value={districtGuid} disabled={loadingDistricts || downloading} onChange={(e)=>setDistrictGuid(e.target.value)} className={fieldClass}>
+            <option value="">{loadingDistricts?"জেলা লোড হচ্ছে…":"জেলা নির্বাচন করুন"}</option>
+            {districts.map((d)=><option key={d.d_guid} value={d.d_guid}>{d.m_district}</option>)}
+          </select>
+        </div>
         <div>
-          <h1 className="text-base font-bold text-white">মৌজা ম্যাপ ডাউনলোড</h1>
-          <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            জেলা → উপজেলা → মৌজা নির্বাচন করুন। উচ্চ রেজোলিউশন PNG (স্যাটেলাইট + RS + MS) ডাউনলোড করুন।
-          </p>
+          <label htmlFor="atlas-mouza-upazila" className="text-xs font-black text-[#466462]">০২ · উপজেলা / থানা</label>
+          <select id="atlas-mouza-upazila" value={upazilaGuid} disabled={!districtGuid || loadingUpazilas || downloading} onChange={(e)=>setUpazilaGuid(e.target.value)} className={fieldClass}>
+            <option value="">{loadingUpazilas?"উপজেলা লোড হচ্ছে…":"উপজেলা নির্বাচন করুন"}</option>
+            {upazilas.map((u)=><option key={u.t_guid} value={u.t_guid}>{u.upazila_ps}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="atlas-mouza-name" className="text-xs font-black text-[#466462]">০৩ · মৌজা / জে.এল.</label>
+          <select id="atlas-mouza-name" value={mouzaKey} disabled={!upazilaGuid || loadingMouzas || downloading} onChange={(e)=>setMouzaKey(e.target.value)} className={fieldClass}>
+            <option value="">{loadingMouzas?"মৌজা লোড হচ্ছে…":"মৌজা নির্বাচন করুন"}</option>
+            {mouzas.map((m)=><option key={m.m_guid} value={m.mauza+"|"+m.jl_no}>{m.mauza} · JL {m.jl_no}</option>)}
+          </select>
         </div>
       </div>
-
-      <label className="mb-1 block text-[11px] font-semibold text-slate-300">জেলা</label>
-      <select
-        value={districtGuid}
-        disabled={loadingDistricts || downloading}
-        onChange={(e) => setDistrictGuid(e.target.value)}
-        className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white disabled:opacity-50"
-      >
-        <option value="">{loadingDistricts ? "লোড হচ্ছে…" : "জেলা বাছুন"}</option>
-        {districts.map((d) => (
-          <option key={d.d_guid} value={d.d_guid}>
-            {d.m_district}
-          </option>
-        ))}
-      </select>
-
-      <label className="mb-1 block text-[11px] font-semibold text-slate-300">উপজেলা / থানা</label>
-      <select
-        value={upazilaGuid}
-        disabled={!districtGuid || loadingUpazilas || downloading}
-        onChange={(e) => setUpazilaGuid(e.target.value)}
-        className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white disabled:opacity-50"
-      >
-        <option value="">{loadingUpazilas ? "লোড হচ্ছে…" : "উপজেলা বাছুন"}</option>
-        {upazilas.map((u) => (
-          <option key={u.t_guid} value={u.t_guid}>
-            {u.upazila_ps}
-          </option>
-        ))}
-      </select>
-
-      <label className="mb-1 block text-[11px] font-semibold text-slate-300">মৌজা</label>
-      <select
-        value={mouzaKey}
-        disabled={!upazilaGuid || loadingMouzas || downloading}
-        onChange={(e) => setMouzaKey(e.target.value)}
-        className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white disabled:opacity-50"
-      >
-        <option value="">{loadingMouzas ? "লোড হচ্ছে…" : "মৌজা বাছুন"}</option>
-        {mouzas.map((m) => (
-          <option key={`${m.mauza}|${m.jl_no}`} value={`${m.mauza}|${m.jl_no}`}>
-            {m.mauza}
-            {m.jl_no !== undefined && m.jl_no !== "" ? ` (JL ${m.jl_no})` : ""}
-          </option>
-        ))}
-      </select>
-
-      <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-        আউটপুট: উচ্চ রেজোলিউশন PNG — স্যাটেলাইট + RS/MS, শুধু নির্বাচিত মৌজা। GeoTIFF / RAW / Vector PDF শুধু অ্যাডমিনের জন্য।
-      </p>
-
-      {downloading && (
-        <p className="mb-2 text-[11px] font-medium text-emerald-400">ম্যাপ তৈরি হচ্ছে… ({elapsed}s)</p>
-      )}
-
-      {error && (
-        <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-          {error}
-        </div>
-      )}
-
-      <button
-        type="button"
-        disabled={!selectedMouza || downloading}
-        onClick={() => void download()}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
-      >
-        {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {downloading ? "ডাউনলোড হচ্ছে…" : "উচ্চ রেজোলিউশন PNG ডাউনলোড"}
+      <div className="mt-5 rounded-2xl border border-[#e0e7dd] bg-[#f3f7f1] p-4">
+        <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#507b72]">LIVE SELECTION</p>
+        <p className="mt-1 text-sm font-black text-[#274447]">{selectedMouza ? selectedMouza.mauza+" · JL "+selectedMouza.jl_no : "এখনও কোনো মৌজা নির্বাচন করা হয়নি"}</p>
+        <p className="mt-2 text-xs leading-5 text-[#6b7e78]">উৎস: RAJUK RS/MS · স্যাটেলাইট ব্যাকড্রপ · PNG আউটপুট। GIS ডেটার প্রাপ্যতা ও লাইসেন্স নির্ভরশীল।</p>
+      </div>
+      {error && <div role="alert" className="mt-4 rounded-xl border border-[#f0cbc1] bg-[#fff1ed] px-4 py-3 text-xs font-bold text-[#a34b36]">{error}</div>}
+      {downloading && <p role="status" className="mt-3 text-xs font-bold text-[#1e7177]">নকশা তৈরি হচ্ছে… {elapsed} সেকেন্ড</p>}
+      <button type="button" disabled={!selectedMouza || downloading} onClick={()=>void download()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#1d5a61] px-4 text-sm font-black text-white shadow-[0_6px_18px_rgba(26,91,94,.16)] hover:bg-[#184850] disabled:cursor-not-allowed disabled:opacity-40">
+        {downloading?<Loader2 size={19} className="animate-spin"/>:<Download size={19}/>}
+        {downloading?"ম্যাপ তৈরি হচ্ছে…":"মৌজা ম্যাপ PNG ডাউনলোড"}
       </button>
-    </div>
+      <p className="mt-3 text-[11px] leading-5 text-[#73827d]">এই GIS প্রিভিউ সরকারি প্রত্যয়িত মৌজা নকশা নয়। মূল সরকারি ম্যাপ ও জরিপ নথি যাচাই করুন।</p>
+    </section>
   );
 }
