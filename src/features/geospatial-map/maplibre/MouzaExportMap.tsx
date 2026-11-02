@@ -675,6 +675,9 @@ export default function MouzaExportMap() {
             ? "দেখার জন্য; লাইসেন্স ও ছবির তারিখ উৎসভেদে ভিন্ন।"
             : FREE_IMAGERY_OPTIONS.find((option) => option.key === basemap)?.detail}
         </p>
+        <p className="mt-1 text-[10px] leading-4 text-slate-600 dark:text-slate-300">
+          উৎস পরিবর্তন শুধু মানচিত্র/প্রিভিউ PNG-তে প্রযোজ্য; GeoTIFF/RAW ডাউনলোডে RS/MS ডেটা থাকে।
+        </p>
       </div>
 
       {selected ? (
