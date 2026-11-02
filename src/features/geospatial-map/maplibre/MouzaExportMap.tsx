@@ -489,7 +489,7 @@ export default function MouzaExportMap() {
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-slate-900">
+    <div className="relative h-full w-full overflow-hidden bg-[#e8efe7] text-[#23454a]">
       <div
         ref={containerRef}
         className="absolute inset-0 h-full w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-map]:!w-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
@@ -497,12 +497,12 @@ export default function MouzaExportMap() {
         aria-label="মৌজা মানচিত্র"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-4">
-        <div className="pointer-events-auto rounded-2xl border border-white/60 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-slate-700/70 dark:bg-slate-950/90">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-start gap-2 p-3 sm:flex-row sm:justify-between sm:gap-3 sm:p-4">
+        <div className="pointer-events-auto rounded-[18px] border border-[#d4e2d6] bg-[#fffdf7]/95 p-1.5 shadow-lg backdrop-blur">
           <button
             type="button"
             onClick={() => setMouzaModalOpen((open) => !open)}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1e5a62] px-4 py-2 text-sm font-black text-white transition hover:bg-[#16434b]"
           >
             <Filter className="h-4 w-4" />
             মৌজা ফিল্টার
@@ -510,7 +510,7 @@ export default function MouzaExportMap() {
         </div>
 
         {loadedMouza ? (
-          <div className="pointer-events-auto w-[min(96vw,320px)] space-y-2 rounded-2xl border border-white/60 bg-white/95 p-3 shadow-xl backdrop-blur dark:border-slate-700/70 dark:bg-slate-950/95">
+          <div className="pointer-events-auto max-h-[33vh] w-[min(95vw,320px)] space-y-2 overflow-y-auto rounded-[20px] border border-[#d5dfd5] bg-[#fffdf7]/96 p-3 shadow-xl backdrop-blur sm:max-h-[70vh]">
             <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
               GIS-গ্রেড ডাউনলোড · শুধু {loadedMouza}
             </p>
@@ -546,7 +546,7 @@ export default function MouzaExportMap() {
               type="button"
               onClick={() => void handleGisDownload()}
               disabled={isExporting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-wait disabled:opacity-70 dark:bg-white dark:text-slate-900"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1d5a62] px-3 py-2 text-sm font-black text-white transition hover:bg-[#17444b] disabled:cursor-wait disabled:opacity-70"
             >
               {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {isExporting ? exportPhase || "জেনারেট হচ্ছে…" : downloadFormat === "geotiff" ? "GeoTIFF ডাউনলোড" : "RAW ডাউনলোড"}
@@ -564,7 +564,7 @@ export default function MouzaExportMap() {
       </div>
 
       {mouzaModalOpen ? (
-        <div className="absolute left-3 top-20 z-20 w-[min(92vw,360px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-950">
+        <div className="absolute left-3 top-[75px] z-30 max-h-[65vh] w-[min(92vw,360px)] overflow-y-auto rounded-[24px] border border-[#d2dfd5] bg-[#fffdf7] p-4 shadow-2xl sm:top-20">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">মৌজা নির্বাচন</h2>
@@ -601,7 +601,7 @@ export default function MouzaExportMap() {
                   type="button"
                   disabled={isLoadingMouza}
                   onClick={() => void loadMouzaPolygons(mouzaSearch)}
-                  className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-slate-900"
+                  className="min-h-11 rounded-xl bg-[#1d5a62] px-3 py-2 text-sm font-black text-white disabled:opacity-60"
                 >
                   {isLoadingMouza ? <Loader2 className="h-4 w-4 animate-spin" /> : "লোড"}
                 </button>
@@ -656,13 +656,13 @@ export default function MouzaExportMap() {
       </div>
 
 
-      <div className="absolute bottom-4 left-3 z-20 w-[min(76vw,270px)] rounded-xl border border-white/60 bg-white/95 p-2.5 text-slate-900 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:text-white">
+      <div className={["absolute bottom-3 left-3 z-20 w-[min(78vw,280px)] rounded-[18px] border border-[#d5e1d6] bg-[#fffdf7]/96 p-3 text-[#204248] shadow-xl backdrop-blur",selected ? "hidden sm:block" : ""].join(" ")}>
         <label htmlFor="landbd-mouza-imagery" className="block text-xs font-bold">স্যাটেলাইট উৎস</label>
         <select
           id="landbd-mouza-imagery"
           value={basemap}
           onChange={(event) => setBasemap(event.target.value as BasemapKey)}
-          className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          className="mt-1 min-h-11 w-full rounded-xl border border-[#cbdad1] bg-white px-2 text-xs font-bold text-[#2c5154] focus-visible:outline-2 focus-visible:outline-[#cf7e50]"
           aria-label="মৌজা মানচিত্রের স্যাটেলাইট উৎস"
         >
           <option value="satellite">Esri · বিদ্যমান স্যাটেলাইট</option>
@@ -681,7 +681,7 @@ export default function MouzaExportMap() {
       </div>
 
       {selected ? (
-        <div className="absolute bottom-20 right-3 z-20 w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl backdrop-blur md:bottom-4 dark:border-slate-700 dark:bg-slate-950/95">
+        <div className="absolute inset-x-3 bottom-3 z-30 max-h-[56vh] overflow-y-auto rounded-[24px] border border-[#d5dfd3] bg-[#fffdf7]/98 p-4 text-[#284548] shadow-2xl backdrop-blur sm:inset-x-auto sm:bottom-4 sm:right-3 sm:w-[min(92vw,340px)]">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">দাগের তথ্য</h2>
             <button type="button" onClick={() => setSelected(null)} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="বন্ধ করুন">
@@ -712,7 +712,7 @@ export default function MouzaExportMap() {
             <button type="button" onClick={() => void routeSelectedPlot("khatiyan")} className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
               খতিয়ান
             </button>
-            <button type="button" onClick={() => void routeSelectedPlot("faraez")} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900">
+            <button type="button" onClick={() => void routeSelectedPlot("faraez")} className="rounded-xl bg-[#1d5a62] px-3 py-2 text-xs font-black text-white hover:bg-[#17444b]">
               ফারায়েজ
             </button>
           </div>
