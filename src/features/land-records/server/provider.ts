@@ -15,9 +15,8 @@ export interface LandDataProviders {
   mouzaMaps: MouzaMapProvider;
 }
 
-const useDlrms =
-  process.env.LAND_RECORD_PROVIDER === "dlrms" ||
-  (process.env.NODE_ENV === "production" && process.env.LAND_RECORD_PROVIDER !== "mock");
+// Production must never return synthetic owners, dags, or khatian numbers.
+const useDlrms = process.env.NODE_ENV === "production" || process.env.LAND_RECORD_PROVIDER === "dlrms";
 
 export const providers: LandDataProviders = {
   landRecords: useDlrms ? dlrmsLandRecordProvider : mockLandRecordProvider,
