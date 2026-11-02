@@ -605,7 +605,7 @@ export default function MapLibreMapViewV2({
             <div className="hidden sm:block"><p className="text-[11px] font-black">GIS ও দাগ যাচাই</p><p className="text-[10px] text-[#697c74]">{measureMode ? "পরিমাপ চলছে" : identifyMode ? "দাগ শনাক্ত চালু" : "দাগ শনাক্ত বন্ধ"}</p></div>
           </div>
           <div className="flex items-center gap-1.5">
-            <button type="button" onClick={() => {setIdentifyMode((v) => !v);setMeasurePanelOpen(false);finishMeasurement();}} aria-pressed={identifyMode}
+            <button type="button" onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((v) => !v); setMeasurePanelOpen(false); }} aria-pressed={identifyMode}
               className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[#1e5960] text-white":"bg-[#eaf0e9]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
             <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#f1e3d5] px-3 text-xs font-black text-[#895332]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
             <button type="button" onClick={() => {setPanelOpen(true);setTab("basemap");}} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#eff2eb] px-3 text-xs font-black"><Layers3 size={16}/><span className="hidden sm:inline">বেসম্যাপ</span></button>
