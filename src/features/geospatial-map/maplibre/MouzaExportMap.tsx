@@ -17,8 +17,8 @@ import {
   type BasemapKey,
   EMPTY_FEATURE_COLLECTION,
   GIS_REQUEST_TIMEOUT_MS,
-  HISTORIC_2003_CENTER,
-  HISTORIC_2003_ZOOM,
+  RAJUK_START_CENTER,
+  RAJUK_START_ZOOM,
   VECTOR_SOURCES,
 } from "./types";
 import { BASEMAP_RASTER_LAYERS, VECTOR_LAYER_STYLES } from "./layers";
@@ -286,8 +286,8 @@ export default function MouzaExportMap() {
         sources: {},
         layers: [],
       },
-      center: HISTORIC_2003_CENTER,
-      zoom: HISTORIC_2003_ZOOM,
+      center: RAJUK_START_CENTER,
+      zoom: RAJUK_START_ZOOM,
       minZoom: 8,
       maxZoom: 21,
       renderWorldCopies: false,
