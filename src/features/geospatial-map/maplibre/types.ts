@@ -116,6 +116,9 @@ export const DAP_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 /** Historical map center in MapLibre/GeoJSON order: [longitude, latitude]. */
+export const RAJUK_START_CENTER: LngLatTuple = [90.4125, 23.8103];
+export const RAJUK_START_ZOOM = 12;
+
 export const HISTORIC_2003_CENTER: LngLatTuple = [90.48911986, 23.82810618];
 export const HISTORIC_2003_ZOOM = 14;
 export const MIN_ZOOM_FOR_VECTOR = 14;
