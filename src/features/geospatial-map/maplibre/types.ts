@@ -5,7 +5,7 @@ import type {
   SourceSpecification,
 } from "maplibre-gl";
 
-export type BasemapKey = "osm" | "light" | "satellite" | "satellite2003";
+export type BasemapKey = "osm" | "light" | "satellite" | "sentinel2016" | "satellite2003" | "satellite2010" | "satellite2020" | "satellite2025";
 export type MapRasterKey = "dap" | "rs" | "ms" | "flood" | "boundary" | "transport";
 export type VectorKey = "rsBoundary" | "msBoundary" | "selectedPlot" | "location" | "accuracy" | "rsPlotLabels" | "msPlotLabels";
 
@@ -16,7 +16,11 @@ export const RASTER_SOURCES = {
   basemapOsm: "basemap-osm",
   basemapLight: "basemap-light",
   basemapSatellite: "basemap-satellite",
+  basemapSentinel2016: "basemap-sentinel-2016",
   basemapSatellite2003: "basemap-satellite-2003",
+  basemapSatellite2010: "basemap-satellite-2010",
+  basemapSatellite2020: "basemap-satellite-2020",
+  basemapSatellite2025: "basemap-satellite-2025",
   dap: "raster-dap",
   rs: "raster-rs",
   ms: "raster-ms",
@@ -37,7 +41,11 @@ export const RASTER_LAYERS = {
   basemapOsm: "basemap-osm-layer",
   basemapLight: "basemap-light-layer",
   basemapSatellite: "basemap-satellite-layer",
+  basemapSentinel2016: "basemap-sentinel-2016-layer",
   basemapSatellite2003: "basemap-satellite-2003-layer",
+  basemapSatellite2010: "basemap-satellite-2010-layer",
+  basemapSatellite2020: "basemap-satellite-2020-layer",
+  basemapSatellite2025: "basemap-satellite-2025-layer",
   dap: "raster-dap-layer",
   rs: "raster-rs-layer",
   ms: "raster-ms-layer",
@@ -45,6 +53,29 @@ export const RASTER_LAYERS = {
   boundary: "raster-boundary-layer",
   transport: "raster-transport-layer",
 } as const;
+
+/** Centralized IDs keep the basemap controller and raster registry in sync. */
+export const BASEMAP_SOURCE_IDS: Record<BasemapKey, string> = {
+  osm: RASTER_SOURCES.basemapOsm,
+  light: RASTER_SOURCES.basemapLight,
+  satellite: RASTER_SOURCES.basemapSatellite,
+  sentinel2016: RASTER_SOURCES.basemapSentinel2016,
+  satellite2003: RASTER_SOURCES.basemapSatellite2003,
+  satellite2010: RASTER_SOURCES.basemapSatellite2010,
+  satellite2020: RASTER_SOURCES.basemapSatellite2020,
+  satellite2025: RASTER_SOURCES.basemapSatellite2025,
+};
+
+export const BASEMAP_LAYER_IDS: Record<BasemapKey, string> = {
+  osm: RASTER_LAYERS.basemapOsm,
+  light: RASTER_LAYERS.basemapLight,
+  satellite: RASTER_LAYERS.basemapSatellite,
+  sentinel2016: RASTER_LAYERS.basemapSentinel2016,
+  satellite2003: RASTER_LAYERS.basemapSatellite2003,
+  satellite2010: RASTER_LAYERS.basemapSatellite2010,
+  satellite2020: RASTER_LAYERS.basemapSatellite2020,
+  satellite2025: RASTER_LAYERS.basemapSatellite2025,
+};
 
 export const VECTOR_LAYERS = {
   rsBoundaryFill: "vector-rs-boundary-fill",
@@ -126,14 +157,55 @@ export const BASEMAP_SOURCE_DEFINITIONS: Record<BasemapKey, RasterSourceSpecific
     attribution: "© Esri",
     maxzoom: 21,
   },
+  sentinel2016: {
+    type: "raster",
+    tiles: [
+      "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg",
+    ],
+    tileSize: 256,
+    attribution: '© <a href="https://cloudless.eox.at" target="_blank" rel="noopener noreferrer">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 & 2017)',
+    // CC BY 4.0; the later EOxCloudless free vintages are non-commercial only.
+    maxzoom: 13,
+  },
   satellite2003: {
     type: "raster",
     tiles: [
       "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2003-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
     ],
     tileSize: 256,
+    // NASA MODIS is regional imagery (~250 m), not parcel-level photography.
     attribution: "© NASA GIBS / MODIS Terra · 2003-01-17",
-    maxzoom: 18,
+    maxzoom: 9,
+  },
+  satellite2010: {
+    type: "raster",
+    tiles: [
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2010-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    ],
+    tileSize: 256,
+    // NASA MODIS is regional imagery (~250 m), not parcel-level photography.
+    attribution: "© NASA GIBS / MODIS Terra · 2010-01-17",
+    maxzoom: 9,
+  },
+  satellite2020: {
+    type: "raster",
+    tiles: [
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2020-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    ],
+    tileSize: 256,
+    // NASA MODIS is regional imagery (~250 m), not parcel-level photography.
+    attribution: "© NASA GIBS / MODIS Terra · 2020-01-17",
+    maxzoom: 9,
+  },
+  satellite2025: {
+    type: "raster",
+    tiles: [
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2025-01-17/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    ],
+    tileSize: 256,
+    // NASA MODIS is regional imagery (~250 m), not parcel-level photography.
+    attribution: "© NASA GIBS / MODIS Terra · 2025-01-17",
+    maxzoom: 9,
   },
 };
 

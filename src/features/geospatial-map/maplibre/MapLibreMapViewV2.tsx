@@ -36,6 +36,7 @@ import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { formatBanglaNumber } from "@/src/shared/i18n/bangla";
 import {
   GOOGLE_EARTH_2003_URL,
+  FREE_IMAGERY_OPTIONS,
   LAYERS,
   type LayerKey,
   type Tab,
@@ -780,7 +781,8 @@ export default function MapLibreMapViewV2({
             <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-4 py-3 text-xs leading-5 text-[var(--foreground)]">
               <p className="font-black">মানচিত্র ব্যবহারের নিয়ম</p>
               <p className="mt-1">দাগে চাপুন → জমির তথ্য দেখুন। উপরের সার্চে দাগ নম্বর দিয়ে খুঁজুন। অবস্থান ও পরিমাপের আলাদা বোতাম আছে।</p>
-              <p className="mt-1 text-[var(--muted-foreground)]">RS = রিভিশনাল জরিপ · MS = মহানগর জরিপ। স্তর উপলব্ধ না থাকলে তথ্য অসম্পূর্ণ হতে পারে।</p>
+              <p className="mt-1 text-[var(--muted-foreground)]">RS = রিভিশনাল জরিপ · MS = মহানগর জরিপ। RAJUK প্লট স্তর ঢাকা ও সংশ্লিষ্ট পরিকল্পনা এলাকার জন্য; এটি সারা বাংলাদেশের দাগ ডেটাবেস নয়।</p>
+              <a href="/dlrms-khatian" className="mt-1 inline-block font-bold underline underline-offset-2">দেশব্যাপী খতিয়ান অনুসন্ধান</a>
             </div>
             <div className="grid grid-cols-3 gap-1 border-b border-[var(--border-color)] p-2">
               {(["layers", "basemap", "results"] as Tab[]).map((item) => (
@@ -802,6 +804,7 @@ export default function MapLibreMapViewV2({
                 <div className="space-y-3">
                   <button
                     type="button"
+                    aria-pressed={basemap === "satellite"}
                     onClick={() => setBasemap("satellite")}
                     className={`w-full rounded-2xl border p-4 text-left ${basemap === "satellite" ? "border-[#17663A] bg-emerald-50 dark:bg-emerald-950/40" : "border-[var(--border-color)]"}`}
                   >
@@ -810,22 +813,34 @@ export default function MapLibreMapViewV2({
                   </button>
                   <button
                     type="button"
+                    aria-pressed={basemap === "light"}
                     onClick={() => setBasemap("light")}
                     className={`w-full rounded-2xl border p-4 text-left ${basemap === "light" ? "border-[#17663A] bg-emerald-50 dark:bg-emerald-950/40" : "border-[var(--border-color)]"}`}
                   >
                     <div className="font-black">রাস্তার মানচিত্র</div>
                     <div className="mt-1 text-xs text-[var(--muted-foreground)]">হালকা রাস্তা ও স্থাননাম বেসম্যাপ</div>
                   </button>
-                  {isAdvanced ? (
-                    <button
-                      type="button"
-                      onClick={() => setBasemap("satellite2003")}
-                      className={`w-full rounded-2xl border p-4 text-left ${basemap === "satellite2003" ? "border-[#17663A] bg-emerald-50 dark:bg-emerald-950/40" : "border-[var(--border-color)]"}`}
-                    >
-                      <div className="font-black">ঐতিহাসিক স্যাটেলাইট ২০০৩</div>
-                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">ঐতিহাসিক তুলনার জন্য</div>
-                    </button>
-                  ) : null}
+                  <div className="border-t border-[var(--border-color)] pt-3">
+                    <h3 className="mb-1 text-sm font-black">বিনামূল্যের ঐতিহাসিক স্যাটেলাইট</h3>
+                    <p className="mb-3 text-xs leading-5 text-[var(--muted-foreground)]">
+                      বছর বদলালে আপনার নির্বাচিত স্থান ও জুম অপরিবর্তিত থাকবে। উৎসের ছবির নিজস্ব রেজোলিউশন ও তারিখ প্রযোজ্য।
+                    </p>
+                    <div className="space-y-2">
+                      {FREE_IMAGERY_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          aria-pressed={basemap === option.key}
+                          onClick={() => setBasemap(option.key)}
+                          className={`w-full rounded-2xl border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 ${basemap === option.key ? "border-[#17663A] bg-emerald-50 dark:bg-emerald-950/40" : "border-[var(--border-color)] hover:bg-[var(--secondary)]"}`}
+                        >
+                          <span className="block text-sm font-black">{option.label}</span>
+                          <span className="mt-1 block text-xs text-[var(--muted-foreground)]">{option.description}</span>
+                          <span className="mt-1 block text-[11px] leading-4 text-amber-700 dark:text-amber-300">{option.detail}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : tab === "results" ? (
                 results.length ? (
