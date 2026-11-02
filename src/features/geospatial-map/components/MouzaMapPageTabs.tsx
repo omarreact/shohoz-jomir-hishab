@@ -46,7 +46,7 @@ export default function MouzaMapPageTabs({ demoBrowserEnabled }: { demoBrowserEn
               { id: "sources", label: "সরকারি তথ্যসূত্র", Icon: Landmark },
               ...(demoBrowserEnabled ? [{ id: "demo", label: "নমুনা PDF (ডেভ)", Icon: FileWarning }] : []),
             ] as const).map(({id,label,Icon}) => (
-              <button type="button" key={id} onClick={()=>setMode(id)} aria-pressed={mode===id} className={["inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-xs font-extrabold transition",mode===id?"bg-[#1f555b] text-white shadow-sm":"border border-[#dce3d9] bg-white text-[#58716b] hover:border-[#a6bfb2]"].join(" ")}><Icon size={16}/>{label}</button>
+              <button type="button" key={id} onClick={()=>setMode(id as Mode)} aria-pressed={mode===id} className={["inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-xs font-extrabold transition",mode===id?"bg-[#1f555b] text-white shadow-sm":"border border-[#dce3d9] bg-white text-[#58716b] hover:border-[#a6bfb2]"].join(" ")}><Icon size={16}/>{label}</button>
             ))}
           </div>
           <span className="text-[11px] font-semibold text-[#85918a]">GIS preview ≠ প্রত্যয়িত দলিল</span>
