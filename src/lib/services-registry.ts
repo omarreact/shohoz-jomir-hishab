@@ -1,5 +1,4 @@
 import "server-only";
-import { db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 export const SERVICE_DEFINITIONS = [
  {id:"land-area",path:"/land-measurement",name:"জমির পরিমাপ",category:"calculator"},
  {id:"khatiyan",path:"/khatiyan",name:"খতিয়ান অংশের হিসাব",category:"calculator"},
@@ -37,6 +36,14 @@ function normalize(id:ServiceId,doc:Record<string,unknown>|undefined):ServiceRec
 export function servicePrice(s:ServiceRecord){return !s.paid?0:(s.discountBdt??s.priceBdt);}
 export async function getService(id:ServiceId):Promise<ServiceRecord>{
  if(!SERVICE_DEFINITIONS.some(s=>s.id===id))throw new Error("Unknown service");
+ // Do not evaluate firebase-admin/Firestore inside the Workers sandbox.
+ // Refuse pricing/entitlement decisions when the authoritative backend is absent.
+ if(process.env.LANDBD_PLATFORM==="cloudflare-workers")throw new Error("Service registry unavailable");
+ const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
+ // Do not evaluate firebase-admin/Firestore inside the Workers sandbox.
+ // Refuse pricing/entitlement decisions when the authoritative backend is absent.
+ if(process.env.LANDBD_PLATFORM==="cloudflare-workers")throw new Error("Service registry unavailable");
+ const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady()){
   if(process.env.NODE_ENV==="production")throw new Error("Service registry unavailable");
   return defaultService(id);
