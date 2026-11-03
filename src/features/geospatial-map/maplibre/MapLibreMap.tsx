@@ -14,9 +14,11 @@ import { sendPlotToFaraez, sendPlotToKhatiyan } from "@/src/modules/khatiyan/gis
 import { useLiveLocationTracking } from "@/src/features/geospatial-map/hooks/useLiveLocationTracking";
 import {
   BASEMAP_SOURCE_DEFINITIONS,
+  BASEMAP_SOURCE_IDS,
+  BASEMAP_LAYER_IDS,
   EMPTY_FEATURE_COLLECTION,
-  HISTORIC_2003_CENTER,
-  HISTORIC_2003_ZOOM,
+  RAJUK_START_CENTER,
+  RAJUK_START_ZOOM,
   MIN_ZOOM_FOR_VECTOR,
   RAJUK_RASTER_SOURCE_DEFINITIONS,
   RASTER_LAYERS,
@@ -118,8 +120,8 @@ export default function MapLibreMap() {
         sources: {},
         layers: [],
       },
-      center: HISTORIC_2003_CENTER,
-      zoom: HISTORIC_2003_ZOOM,
+      center: RAJUK_START_CENTER,
+      zoom: RAJUK_START_ZOOM,
       minZoom: 8,
       maxZoom: 21,
       renderWorldCopies: false,
@@ -141,14 +143,7 @@ export default function MapLibreMap() {
     const addSources = () => {
       map.resize();
       (Object.keys(BASEMAP_SOURCE_DEFINITIONS) as BasemapKey[]).forEach((key) => {
-        const sourceId =
-          key === "osm"
-            ? RASTER_SOURCES.basemapOsm
-            : key === "light"
-              ? RASTER_SOURCES.basemapLight
-              : key === "satellite"
-                ? RASTER_SOURCES.basemapSatellite
-                : RASTER_SOURCES.basemapSatellite2003;
+        const sourceId = BASEMAP_SOURCE_IDS[key];
         if (!map.getSource(sourceId)) map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[key]);
       });
       (Object.keys(RAJUK_RASTER_SOURCE_DEFINITIONS) as MapRasterKey[]).forEach((key) => {
@@ -217,7 +212,7 @@ export default function MapLibreMap() {
           setResults(found);
           setSelected(found[0] ?? null);
           setTab("results");
-          setPanelOpen(false);
+          setPanelOpen(true);
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
@@ -333,18 +328,11 @@ export default function MapLibreMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const sourceLayerMap: Record<BasemapKey, string> = {
-      osm: RASTER_LAYERS.basemapOsm,
-      light: RASTER_LAYERS.basemapLight,
-      satellite: RASTER_LAYERS.basemapSatellite,
-      satellite2003: RASTER_LAYERS.basemapSatellite2003,
-    };
+    const sourceLayerMap = BASEMAP_LAYER_IDS;
     (Object.entries(sourceLayerMap) as Array<[BasemapKey, string]>).forEach(([key, layerId]) => {
       if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", key === basemap ? "visible" : "none");
     });
-    if (basemap === "satellite2003") {
-      map.flyTo({ center: HISTORIC_2003_CENTER, zoom: HISTORIC_2003_ZOOM, duration: 700 });
-    }
+    // Preserve the selected parcel, zoom and bearing when comparing years.
   }, [basemap, mapReady]);
 
   useEffect(() => {
@@ -386,7 +374,7 @@ export default function MapLibreMap() {
       setResults(found);
       setSelected(found[0] ?? null);
       setTab("results");
-      setPanelOpen(false);
+      setPanelOpen(true);
       if (mapRef.current) {
         updateSourceData(
           mapRef.current,

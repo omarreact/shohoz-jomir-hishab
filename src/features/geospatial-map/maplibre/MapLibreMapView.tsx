@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, type ComponentProps } from "react";
 import type { Map as MapLibreInstance } from "maplibre-gl";
-import MapLibreMapViewV2 from "./MapLibreMapViewV2";
+import MapLibreMapViewV3 from "./MapLibreMapViewV3";
 import { getBoundMap } from "./mapViewport";
 
-type V2Props = ComponentProps<typeof MapLibreMapViewV2>;
-type Props = Omit<V2Props, "mapRef">;
+type V3Props = ComponentProps<typeof MapLibreMapViewV3>;
+type Props = Omit<V3Props, "mapRef">;
 
 /**
  * Compatibility adapter: the existing map controller still owns the MapLibre
@@ -21,5 +21,5 @@ export default function MapLibreMapView(props: Props) {
     mapRef.current = getBoundMap(props.containerRef.current) ?? null;
   }, [props.containerRef, props.mapReady]);
 
-  return <MapLibreMapViewV2 {...props} mapRef={mapRef} />;
+  return <MapLibreMapViewV3 {...props} mapRef={mapRef} />;
 }

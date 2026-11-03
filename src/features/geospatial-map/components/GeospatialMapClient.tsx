@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { House } from "lucide-react";
 import MapVisitConsent from "@/src/features/geospatial-map/components/MapVisitConsent";
 
 const MapLibreMap = dynamic(
@@ -51,14 +49,6 @@ export default function GeospatialMapClient() {
       }}
     >
       <MapLibreMap />
-      <Link
-        href="/"
-        aria-label="হোমে ফিরে যান"
-        title="হোমে ফিরে যান"
-        className="absolute left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[1200] grid h-11 w-11 place-items-center rounded-2xl border border-[var(--border-color)] bg-white/95 text-[var(--foreground)] shadow-[var(--shadow-md)] backdrop-blur-xl transition hover:bg-[var(--brand-gold-soft)] hover:text-[var(--brand-gold-text)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] sm:left-4 sm:top-4"
-      >
-        <House size={19} />
-      </Link>
       <MapVisitConsent />
     </div>
   );

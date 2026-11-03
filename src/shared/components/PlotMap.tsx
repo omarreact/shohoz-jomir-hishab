@@ -2,8 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
+import { FREE_IMAGERY_OPTIONS } from "@/src/features/geospatial-map/maplibre/mapConstants";
+import { BASEMAP_SOURCE_DEFINITIONS, type BasemapKey } from "@/src/features/geospatial-map/maplibre/types";
 
-type BaseLayer = "street" | "satellite";
+type BaseLayer = "street" | BasemapKey;
+
+function escapeHtml(value: unknown): string {
+  const replacements: Record<string, string> = {
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  };
+  return String(value ?? "").replace(/[&<>"']/g, (char) => replacements[char] ?? char);
+}
+
 
 function ringCentroid(rings: number[][][]): { lat: number; lng: number } | null {
   const ring = rings?.[0];
@@ -23,15 +33,7 @@ function ringCentroid(rings: number[][][]): { lat: number; lng: number } | null 
 function googleMapsUrl(feature: RajukPlotFeature): string | null {
   const c = ringCentroid(feature.geometry.rings);
   if (!c) return null;
-  const label = encodeURIComponent(
-    String(
-      feature.attributes.rs_plot_no ||
-        feature.attributes.ms_plot_no ||
-        feature.attributes.plot_no ||
-        "RAJUK plot",
-    ),
-  );
-  return `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}&query_place_id=${label}`;
+  return `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
 }
 
 function plotLabel(a: Record<string, unknown>, isMs: boolean): string {
@@ -91,17 +93,27 @@ export default function PlotMap({
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         { attribution: "Tiles &copy; Esri", maxZoom: 21 },
       );
+      const historicalLayers = Object.fromEntries(
+        FREE_IMAGERY_OPTIONS.map((option) => {
+          const source = BASEMAP_SOURCE_DEFINITIONS[option.key];
+          return [option.key, L.tileLayer(source.tiles?.[0] || "", {
+            attribution: source.attribution || option.label,
+            maxNativeZoom: source.maxzoom ?? 9,
+            maxZoom: 21,
+          })];
+        }),
+      );
       const rsOverlay = L.tileLayer("/api/rajuk/tile/rs/{z}/{y}/{x}", {
         attribution: "&copy; RAJUK RS",
         maxZoom: 21,
-        opacity: 0.75,
+        opacity: 0.45,
         errorTileUrl:
           "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
       });
       const msOverlay = L.tileLayer("/api/rajuk/tile/ms/{z}/{y}/{x}", {
         attribution: "&copy; RAJUK MS",
         maxZoom: 21,
-        opacity: 0.75,
+        opacity: 0.45,
         errorTileUrl:
           "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
       });
@@ -113,6 +125,7 @@ export default function PlotMap({
       layersRef.current = {
         street,
         satellite,
+        ...historicalLayers,
         rsOverlay,
         msOverlay,
         boundaries,
@@ -137,14 +150,13 @@ export default function PlotMap({
 
   useEffect(() => {
     const map = leafletRef.current;
-    const { street, satellite } = layersRef.current;
-    if (!map || !street || !satellite) return;
-    if (base === "satellite") {
-      map.removeLayer(street);
-      if (!map.hasLayer(satellite)) satellite.addTo(map);
-    } else {
-      map.removeLayer(satellite);
-      if (!map.hasLayer(street)) street.addTo(map);
+    if (!map || !ready) return;
+    const baseKeys: BaseLayer[] = ["street", "satellite", ...FREE_IMAGERY_OPTIONS.map((option) => option.key)];
+    for (const key of baseKeys) {
+      const layer = layersRef.current[key];
+      if (!layer) continue;
+      if (key === base && !map.hasLayer(layer)) layer.addTo(map);
+      if (key !== base && map.hasLayer(layer)) map.removeLayer(layer);
     }
   }, [base, ready]);
 
@@ -196,7 +208,7 @@ export default function PlotMap({
         const item = L.geoJSON(geojson, { style }).addTo(target);
         const label = plotLabel(a, isMs);
         item.bindPopup(
-          `<strong>${label}</strong><br/>${String(a.address_search || "")}`,
+          `<strong>${escapeHtml(label)}</strong><br/>${escapeHtml(a.address_search)}`,
         );
 
         const c = ringCentroid(f.geometry.rings);
@@ -208,7 +220,7 @@ export default function PlotMap({
               : "#b45309";
           const icon = L.divIcon({
             className: "",
-            html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;font-size:10px;font-weight:700;line-height:1;padding:2px 5px;border-radius:4px;color:#fff;background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.4)">${label}</div>`,
+            html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;font-size:10px;font-weight:700;line-height:1;padding:2px 5px;border-radius:4px;color:#fff;background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.4)">${escapeHtml(label)}</div>`,
             iconSize: [0, 0],
             iconAnchor: [0, 0],
           });
@@ -229,21 +241,17 @@ export default function PlotMap({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border bg-white p-0.5 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setBase("street")}
-            className={`rounded-md px-3 py-1.5 ${base === "street" ? "bg-slate-900 text-white" : "text-slate-600"}`}
-          >
-            Street
-          </button>
-          <button
-            type="button"
-            onClick={() => setBase("satellite")}
-            className={`rounded-md px-3 py-1.5 ${base === "satellite" ? "bg-slate-900 text-white" : "text-slate-600"}`}
-          >
-            Satellite
-          </button>
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-[#e2e8df] bg-[#f5f7f2] p-1 text-[11px] font-bold">
+          {([
+            {key:"satellite" as const,label:"স্যাটেলাইট"},
+            {key:"street" as const,label:"রাস্তা"},
+            ...FREE_IMAGERY_OPTIONS.map((option)=>({key:option.key,label:option.label})),
+          ]).map((option)=>(
+            <button key={option.key} type="button" aria-pressed={base===option.key} onClick={()=>setBase(option.key)}
+              className={["min-h-10 shrink-0 rounded-xl px-3 transition",base===option.key?"bg-[#1d5960] text-white":"text-[#5e766e] hover:bg-white"].join(" ")}>
+              {option.label}
+            </button>
+          ))}
         </div>
         <label className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800">
           <input
@@ -274,12 +282,11 @@ export default function PlotMap({
       </div>
       <div
         ref={mapRef}
-        className="h-[360px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 md:h-[420px]"
+        className="h-[350px] w-full overflow-hidden rounded-2xl border border-[#cfded2] bg-[#e6eee8] md:h-[440px]"
         aria-label="Plot boundaries map"
       />
-      <p className="text-xs text-slate-500">
-        Selected RS is green. MS plots inside it are purple with plot numbers on
-        the map. Toggle RS/MS Mauza tile layers above.
+      <p className="text-[11px] leading-5 text-[#697f76]">
+        RS/MS দাগ RAJUK ফিচার সার্ভিস থেকে; ঐতিহাসিক MODIS খুব কম বিস্তারিত দেয়। উপরে জরিপ স্তর চালু/বন্ধ করুন। মূল জরিপ নথি যাচাই করুন।
       </p>
     </div>
   );
