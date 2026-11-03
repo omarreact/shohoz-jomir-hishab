@@ -61,4 +61,8 @@ run("./node_modules/.bin/vinext", ["check"]);
 // to hijack vinext deploy and invoke opennextjs-cloudflare instead.
 // Remove them only in this disposable Cloudflare build checkout.
 rmSync(".open-next", { recursive: true, force: true });
+// Wrangler may auto-detect the repository's OpenNext adapter and redirect
+// this Vinext deployment to `opennextjs-cloudflare deploy`.
+// Keep Wrangler in its normal Worker deployment path for Vinext artifacts.
+process.env.OPEN_NEXT_DEPLOY = "true";
 run("npx", ["@vinext/cloudflare", "deploy"]);
