@@ -57,4 +57,8 @@ run("./node_modules/.bin/vinext", [
   "init", "--platform=cloudflare", "--legacy-wrangler-cloudflare-init", "--skip-check",
 ]);
 run("./node_modules/.bin/vinext", ["check"]);
-// OpenNext artifacts restored from the shared build cache can cause Wrangler\n// to hijack vinext deploy and invoke opennextjs-cloudflare instead.\n// Remove them only in this disposable Cloudflare build checkout.\nrmSync(".open-next", { recursive: true, force: true });\nrun("npx", ["@vinext/cloudflare", "deploy"]);
+// OpenNext artifacts restored from the shared build cache can cause Wrangler
+// to hijack vinext deploy and invoke opennextjs-cloudflare instead.
+// Remove them only in this disposable Cloudflare build checkout.
+rmSync(".open-next", { recursive: true, force: true });
+run("npx", ["@vinext/cloudflare", "deploy"]);
