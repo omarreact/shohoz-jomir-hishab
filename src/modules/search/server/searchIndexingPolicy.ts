@@ -1,5 +1,4 @@
 import "server-only";
-import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 import { parseSearchIndexingEnabled } from "@/src/lib/search-indexing-config";
 
 const TTL_MS = 5000;
@@ -16,12 +15,18 @@ export async function getSearchIndexingEnabled(): Promise<boolean> {
   inFlight = (async () => {
     let value = false;
     try {
-      if (isFirebaseAdminReady()) {
-        const doc = await Promise.race([
-          collections.settings.doc("searchIndexingEnabled").get(),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("indexing-policy-timeout")), 5000)),
-        ]);
-        value = parseSearchIndexingEnabled(doc.data()?.value);
+      // The Firebase Admin Firestore SDK uses dynamic code generation,
+      // which Cloudflare Workers forbids. Keep Cloudflare noindex by default;
+      // Vercel retains the authoritative Firestore toggle.
+      if (process.env.LANDBD_PLATFORM !== "cloudflare-workers") {
+        const { collections, isFirebaseAdminReady } = await import("@/src/modules/database/firebaseAdmin");
+        if (isFirebaseAdminReady()) {
+          const doc = await Promise.race([
+            collections.settings.doc("searchIndexingEnabled").get(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("indexing-policy-timeout")), 5000)),
+          ]);
+          value = parseSearchIndexingEnabled(doc.data()?.value);
+        }
       }
     } catch (error) {
       console.warn("[LandBD search indexing] fail closed:", error instanceof Error ? error.message : "unknown");
