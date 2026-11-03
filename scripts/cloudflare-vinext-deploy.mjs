@@ -4,7 +4,7 @@
  * Keep the source wrangler.jsonc for OpenNext development while generating a
  * vinext-compatible copy in this isolated build checkout.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
 function run(command, args) {
@@ -57,4 +57,4 @@ run("./node_modules/.bin/vinext", [
   "init", "--platform=cloudflare", "--legacy-wrangler-cloudflare-init", "--skip-check",
 ]);
 run("./node_modules/.bin/vinext", ["check"]);
-run("npx", ["@vinext/cloudflare", "deploy"]);
+// OpenNext artifacts restored from the shared build cache can cause Wrangler\n// to hijack vinext deploy and invoke opennextjs-cloudflare instead.\n// Remove them only in this disposable Cloudflare build checkout.\nrmSync(".open-next", { recursive: true, force: true });\nrun("npx", ["@vinext/cloudflare", "deploy"]);
