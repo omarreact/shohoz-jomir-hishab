@@ -1,5 +1,4 @@
 import "server-only";
-import { db, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 export const SERVICE_DEFINITIONS = [
  {id:"land-area",path:"/land-measurement",name:"জমির পরিমাপ",category:"calculator"},
  {id:"khatiyan",path:"/khatiyan",name:"খতিয়ান অংশের হিসাব",category:"calculator"},
@@ -35,8 +34,19 @@ function normalize(id:ServiceId,doc:Record<string,unknown>|undefined):ServiceRec
  updatedAt:typeof doc?.updatedAt==="string"?doc.updatedAt:null};
 }
 export function servicePrice(s:ServiceRecord){return !s.paid?0:(s.discountBdt??s.priceBdt);}
+
+async function getAuthoritativeServiceStore() {
+ // Firebase Admin's Firestore internals are not supported in Cloudflare Workers.
+ // Refuse privileged pricing/entitlement decisions rather than guessing.
+ if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+  throw new Error("Service registry unavailable");
+ }
+ return import("@/src/modules/database/firebaseAdmin");
+}
+
 export async function getService(id:ServiceId):Promise<ServiceRecord>{
  if(!SERVICE_DEFINITIONS.some(s=>s.id===id))throw new Error("Unknown service");
+ const {db,isFirebaseAdminReady}=await getAuthoritativeServiceStore();
  if(!isFirebaseAdminReady()){
   if(process.env.NODE_ENV==="production")throw new Error("Service registry unavailable");
   return defaultService(id);
@@ -44,7 +54,9 @@ export async function getService(id:ServiceId):Promise<ServiceRecord>{
  const snapshot=await db.collection("landbdServicePricing").doc(id).get();
  return normalize(id,snapshot.exists?snapshot.data():undefined);
 }
+
 export async function getServiceCatalog():Promise<ServiceRecord[]>{
+ const {db,isFirebaseAdminReady}=await getAuthoritativeServiceStore();
  if(!isFirebaseAdminReady()){
   if(process.env.NODE_ENV==="production")throw new Error("Service catalog unavailable");
   return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));
@@ -53,6 +65,7 @@ export async function getServiceCatalog():Promise<ServiceRecord[]>{
  const snapshots=await db.getAll(...references);
  return SERVICE_DEFINITIONS.map((s,i)=>normalize(s.id,snapshots[i].exists?snapshots[i].data():undefined));
 }
+
 export function isServiceId(v:unknown):v is ServiceId{
  return typeof v==="string"&&SERVICE_DEFINITIONS.some(s=>s.id===v);
 }
