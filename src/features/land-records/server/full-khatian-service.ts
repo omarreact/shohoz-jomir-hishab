@@ -7,6 +7,7 @@ import { getLisfProvider } from "./lisf-provider";
 import {
   extractStructuredPublicRecord,
   extractVerifiedMirrorCompactRow,
+  mirrorRecordMatchesBase,
   fetchStrictPublicMirrorRecord,
   publicMirrorBaseUrl,
   restoreOfficialDetailBase,
@@ -455,7 +456,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
 
   const officialStructured = extractStructuredPublicRecord(rebuilt.PUBLIC_RECORD, "DLRMS_PUBLIC");
-  const [mirrorRecord, mirrorDagRecords] = await Promise.all([
+  const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
           surveyKey: input.surveyKey,
@@ -468,6 +469,17 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       ? fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
       : Promise.resolve([]),
   ]);
+  // Reject misidentified mirror payloads before structured extraction.
+  const mirrorRecord = mirrorRecordMatchesBase(rebuilt, unverifiedMirrorRecord)
+    ? unverifiedMirrorRecord : null;
+  const mirrorDagRecords = unverifiedMirrorDagRecords.filter((row) =>
+    mirrorRecordMatchesBase(rebuilt, row));
+  if (unverifiedMirrorRecord && !mirrorRecord) {
+    warnings.push("Unverified mirror record ID/JL mismatch; source ignored.");
+  }
+  if (mirrorDagRecords.length !== unverifiedMirrorDagRecords.length) {
+    warnings.push("Cross-khatian mirror dag rows rejected before enrichment.");
+  }
   let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
   for (const record of mirrorDagRecords) {
     const filtered = extractStructuredPublicRecord(record, "DLRMS_PUBLIC");

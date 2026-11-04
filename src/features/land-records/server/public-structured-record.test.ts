@@ -2,6 +2,7 @@ import type { KhatianDetails } from "../types";
 import {
   extractStructuredPublicRecord,
   extractVerifiedMirrorCompactRow,
+  mirrorRecordMatchesBase,
   fetchStrictPublicMirrorRecord,
   restoreOfficialDetailBase,
 } from "./public-structured-record";
@@ -15,6 +16,22 @@ describe("public structured khatian record helpers", () => {
 
   afterAll(() => {
     process.env = originalEnv;
+  });
+
+  it("rejects mirror rows with mismatched ID, khatian number or JL", () => {
+    const official = { ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911 };
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 999, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "350", JL_NUMBER_ID: 382911,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382912,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
+    })).toBe(true);
   });
 
   it("extracts structured owner and dag details without inventing relationships", () => {

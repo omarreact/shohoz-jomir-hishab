@@ -190,17 +190,23 @@ export function extractStructuredPublicRecord(
  * Never import arbitrary properties, authentication keys or a neighbouring
  * mouza's owners into our source model.
  */
+export function mirrorRecordMatchesBase(
+  base: Pick<KhatianIndex, "ID" | "KHATIAN_NO" | "JL_NUMBER_ID">,
+  record: Record<string, unknown> | null,
+): boolean {
+  if (!record || Number(record.ID ?? record.id) !== base.ID) return false;
+  const recordNo = record.KHATIAN_NO ?? record.khatianNo;
+  if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return false;
+  const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
+  if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return false;
+  return true;
+}
+
 export function extractVerifiedMirrorCompactRow(
   base: KhatianIndex,
   record: Record<string, unknown> | null,
 ): KhatianIndex | null {
-  if (!record || Number(record.ID ?? record.id) !== base.ID) return null;
-
-  const recordNo = record.KHATIAN_NO ?? record.khatianNo;
-  if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return null;
-
-  const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
-  if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return null;
+  if (!mirrorRecordMatchesBase(base, record)) return null;
 
   const select = (...keys: string[]): string => {
     for (const key of keys) {
