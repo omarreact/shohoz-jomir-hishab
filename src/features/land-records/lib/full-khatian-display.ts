@@ -39,9 +39,17 @@ export function buildFullKhatianDisplayModel(
     fatherOrHusband: row.fatherOrHusband,
   }));
 
-  // A full source list may be longer than a compact string. Never replace an
-  // existing longer list with a shorter deduplicated or provisional one.
-  const owners = fromFull.length > model.owners.length
+  // When a structured owner list contains exactly the same source names
+  // (including duplicate-name multiplicity), its own linked guardian/share
+  // fields can be displayed without guessing based on compact row order.
+  const compactNames = model.owners.map((row) => key(row.name)).sort();
+  const structuredNames = fromFull.map((row) => key(row.name)).sort();
+  const completeNameMatch = structuredNames.length === compactNames.length &&
+    structuredNames.every((name, index) => name === compactNames[index]);
+
+  // Never replace a longer compact list with a shorter structured subset.
+  const owners = fromFull.length > model.owners.length ||
+      (completeNameMatch && fromFull.some((row) => row.fatherOrHusband || row.share))
     ? fromFull
     : model.owners.map((row) => {
         const candidates = ownersByName.get(key(row.name)) ?? [];
