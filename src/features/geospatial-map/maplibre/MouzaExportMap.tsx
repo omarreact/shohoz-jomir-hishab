@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { GeoJSONSource, Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry, Polygon } from "geojson";
 import { Download, Filter, Loader2, Search, X } from "lucide-react";
@@ -277,6 +278,8 @@ export default function MouzaExportMap() {
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    configureMapLibreWorker();
 
     const map = new maplibregl.Map({
       container: containerRef.current,
