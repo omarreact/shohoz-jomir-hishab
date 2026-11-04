@@ -550,7 +550,7 @@ export default function RajukTestPage() {
             <div className="mb-4">
               <span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">02 / IDENTIFY A PARCEL</span>
               <h2 className="mt-1 text-xl font-black">{prefix} দাগ অনুসন্ধান</h2>
-              <p className="mt-2 text-xs leading-6 text-[#708079]">{mode==="rs" ? (plotsLoaded ? "প্রাথমিক তালিকায় "+plots.length.toLocaleString("bn-BD")+"টি দাগ লোড হয়েছে। তালিকার বাইরের দাগও সরাসরি নম্বর দিয়ে খুঁজতে পারবেন।" : "মৌজা নির্বাচন করে সরাসরি দাগ নম্বর লিখুন। পূর্ণ তালিকার জন্য উপরের ঐচ্ছিক বোতাম ব্যবহার করুন।") : "মৌজা ও JL অনুযায়ী সুনির্দিষ্ট MS দাগ খোঁজা হবে।"}</p>
+              <p className="mt-2 text-xs leading-6 text-[#708079]">{mode==="rs" ? (plotsLoaded ? "প্রাথমিক তালিকায় "+plots.length.toLocaleString("bn-BD")+"টি দাগ লোড হয়েছে। তালিকার বাইরের দাগও সরাসরি নম্বর দিয়ে খুঁজতে পারবেন।" : "মৌজা নির্বাচন করে সরাসরি দাগ নম্বর লিখুন। প্রাথমিক (সর্বোচ্চ ২,০০০) তালিকা দেখতে উপরের ঐচ্ছিক বোতাম ব্যবহার করুন।") : "মৌজা ও JL অনুযায়ী সুনির্দিষ্ট MS দাগ খোঁজা হবে।"}</p>
             </div>
             <form onSubmit={(e)=>{e.preventDefault();void runSearch();}} className="flex flex-col gap-2 sm:flex-row">
               <div className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-[#d5ded5] bg-[#fcfdf9] px-3 focus-within:border-[#c57b51] focus-within:ring-2 focus-within:ring-[#ead7c2]"><Search size={20} className="text-[#72938d]"/><input inputMode="numeric" aria-label={prefix+" দাগ নম্বর"} value={plotInput} onChange={(e)=>setPlotInput(e.target.value)} placeholder="দাগ নং · যেমন ৬১৮৪" className="min-h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold outline-none placeholder:font-normal"/></div>
