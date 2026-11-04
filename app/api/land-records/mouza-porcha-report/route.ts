@@ -1,6 +1,6 @@
 import type { NextRequest as LandBDNextRequest } from "next/server";
 import { checkServiceAccess } from "@/src/lib/service-entitlement";
-import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
+import { KhatianPageSchema, idParam, khatianSearchText, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
 import { z } from "zod";
@@ -28,12 +28,14 @@ export async function GET(request: Request) {
 
     const page = positivePage.parse(params.get("page") ?? "1");
     const size = pageSize.parse(params.get("pageSize") ?? "100");
+    const khatianNo = khatianSearchText.parse(params.get("khatianNo") || undefined);
 
     const data = await providers.landRecords.listKhatians({
       surveyKey,
       jlNumberId,
       page,
       pageSize: size,
+      khatianNo,
     });
 
     return ok(KhatianPageSchema.parse(data));
