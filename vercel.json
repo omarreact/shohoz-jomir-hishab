@@ -5,6 +5,9 @@
   "installCommand": "npm install --no-audit --no-fund --prefer-offline",
   "buildCommand": "next build --webpack",
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
   }
 }
