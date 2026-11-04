@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
@@ -111,6 +112,8 @@ export default function MapLibreMap() {
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    configureMapLibreWorker();
 
     // Check support before constructing the map: some browsers throw synchronously
     // rather than emitting the MapLibre "error" event.
