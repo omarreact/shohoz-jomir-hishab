@@ -155,8 +155,8 @@ export function useSurveyKhatian() {
 
   const resetKhatianDetails = useCallback(() => {
     // Discard late responses when navigating away or changing area/survey.
-    nextId("khatian");
-    nextId("khatianBase");
+    requestIds.current.khatian = (requestIds.current.khatian ?? 0) + 1;
+    requestIds.current.khatianBase = (requestIds.current.khatianBase ?? 0) + 1;
     fullDetailResolved.current = false;
     setSelectedKhatian(null);
     setSelectedFullKhatian(null);
