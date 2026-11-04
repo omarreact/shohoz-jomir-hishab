@@ -1,5 +1,5 @@
 import type { NextRequest as LandBDNextRequest } from "next/server";
-import { enforceServiceAccess } from "@/src/lib/service-entitlement";
+import { checkServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
@@ -16,7 +16,7 @@ const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", 
  * mouza is never materialized in one serverless request.
  */
 export async function GET(request: Request) {
-  const denied=await enforceServiceAccess(request as LandBDNextRequest,"mouza-porcha");
+  const denied=await checkServiceAccess(request as LandBDNextRequest,"mouza-porcha");
   if(denied)return denied;
   try {
     const params = new URL(request.url).searchParams;
