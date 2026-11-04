@@ -1,12 +1,21 @@
 import { citizenPrintMatchesExpected } from "./citizen-khatian-match";
 import type { DlrmsCitizenPrint } from "../dlrms-citizen";
 
-const fixture = {
+const fixture: DlrmsCitizenPrint = {
+  source: "DLRMS_CITIZEN",
+  applicationId: 1000,
+  fetchedAt: "2026-11-04T00:00:00.000Z",
   khatian: {
     id: 100, khatianNo: "349", surveyId: 7, jlNumberId: 382911,
     mouzaName: "পাতিরা", districtName: "ঢাকা",
   },
-} as DlrmsCitizenPrint;
+  totalPages: 0,
+  pages: [],
+  summary: {
+    occupantText: [], shareText: [], dagText: [], landTypeText: [],
+    areaText: [], rentText: [], remarks: [],
+  },
+};
 
 const selected = {
   khatianNo: "৩৪৯", surveyId: 7, jlNumberId: 382911,
