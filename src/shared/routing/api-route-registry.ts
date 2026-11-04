@@ -64,6 +64,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/land-records/full-khatian/status", get: "public", mutate: "public" },
   { path: "/api/land-records/full-khatian/verify/[uuid]", get: "public", mutate: "public" },
   { path: "/api/land-records/khatian/verification", get: "public", mutate: "public" },
+  { path: "/api/land-records/khatian-preview/[surveyKey]/[id]", get: "public", mutate: "public" },
   { path: "/api/land-records/khatians/[surveyKey]/[id]", get: "public", mutate: "public" },
   { path: "/api/land-records/khatians", get: "public", mutate: "public" },
   { path: "/api/land-records/mouza-porcha-report/hal-sabek", get: "public", mutate: "public" },
