@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Eye, Loader2, Search } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
-import { KhatianDetailsSchema } from "../schemas";
-import type { KhatianDetails, KhatianIndex } from "../types";
+import { KhatianDetailsSchema, KhatianPageSchema } from "../schemas";
+import type { KhatianDetails, KhatianIndex, KhatianPage } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
 
 type Props = {
@@ -66,6 +66,9 @@ export default function MouzaKhatianDetails(props: Props) {
   const { rows, surveyKey, jlNumberId } = props;
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [lookupRows, setLookupRows] = useState<KhatianIndex[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [official, setOfficial] = useState<KhatianDetails | null>(null);
   const [full, setFull] = useState<FullKhatian | null>(null);
   const [baseLoading, setBaseLoading] = useState(false);
@@ -73,18 +76,49 @@ export default function MouzaKhatianDetails(props: Props) {
   const [baseError, setBaseError] = useState<string | null>(null);
   const [fullError, setFullError] = useState<string | null>(null);
 
+  const availableRows = rows.length ? rows : lookupRows;
   const selectedRow = useMemo(
-    () => rows.find((item) => item.ID === selectedId) ?? null,
-    [rows, selectedId],
+    () => availableRows.find((item) => item.ID === selectedId) ?? null,
+    [availableRows, selectedId],
   );
 
   const matches = useMemo(() => {
     const term = normalizeDigits(query.trim());
     if (!term) return [];
-    return rows.filter((item) =>
+    return availableRows.filter((item) =>
       normalizeDigits(item.KHATIAN_NO).includes(term),
     ).slice(0, 25);
-  }, [rows, query]);
+  }, [availableRows, query]);
+
+  const lookupSingleKhatian = async () => {
+    const khatianNo = query.trim();
+    if (!khatianNo || !surveyKey || !jlNumberId || searching) return;
+    if (rows.length) return; // A generated report already has the indexed rows.
+    setSearching(true);
+    setLookupError(null);
+    setLookupRows([]);
+    setSelectedId(null);
+    try {
+      const params = new URLSearchParams({
+        surveyKey,
+        jlNumberId: String(jlNumberId),
+        khatianNo,
+        page: "1",
+        pageSize: "25",
+      });
+      const result = await fetchKhatian<KhatianPage>(
+        "/api/land-records/mouza-porcha-report?" + params,
+        KhatianPageSchema,
+        new AbortController().signal,
+      );
+      setLookupRows(result.items);
+      if (!result.items.length) setLookupError("এই মৌজায় খতিয়ান নম্বরটি পাওয়া যায়নি।");
+    } catch (error) {
+      setLookupError(error instanceof Error ? error.message : "খতিয়ান অনুসন্ধানে সমস্যা হয়েছে।");
+    } finally {
+      setSearching(false);
+    }
+  };
 
   useEffect(() => {
     if (!selectedRow || !surveyKey || !jlNumberId) return;
@@ -168,13 +202,29 @@ export default function MouzaKhatianDetails(props: Props) {
           id="mouza-khatian-search"
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setLookupRows([]);
+            setLookupError(null);
+          }}
           placeholder="যেমন: ৩৪৯"
           className="min-h-11 w-full rounded-lg border border-[var(--border-color)] bg-white py-2 pl-10 pr-3 text-sm text-[var(--foreground)]"
         />
       </div>
+      {!rows.length ? (
+        <button
+          type="button"
+          onClick={() => void lookupSingleKhatian()}
+          disabled={!query.trim() || searching}
+          className="landbd-primary-button inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-bold disabled:opacity-60"
+        >
+          {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+          নির্দিষ্ট খতিয়ান খুঁজুন
+        </button>
+      ) : null}
+      {lookupError ? <p role="alert" className="text-sm text-amber-800">{lookupError}</p> : null}
 
-      {query.trim() ? (
+      {query.trim() && (rows.length > 0 || lookupRows.length > 0) ? (
         <div className="flex flex-wrap gap-2" role="group" aria-label="খতিয়ান বাছাই">
           {matches.length ? matches.map((row) => (
             <button
@@ -185,7 +235,7 @@ export default function MouzaKhatianDetails(props: Props) {
             >
               <Eye size={15} /> খতিয়ান {row.KHATIAN_NO}
             </button>
-          )) : <p className="text-sm text-[var(--muted-foreground)]">এই মৌজার রিপোর্টে খতিয়ানটি পাওয়া যায়নি।</p>}
+          )) : <p className="text-sm text-[var(--muted-foreground)]">এই মৌজায় খতিয়ানটি পাওয়া যায়নি।</p>}
         </div>
       ) : null}
 
