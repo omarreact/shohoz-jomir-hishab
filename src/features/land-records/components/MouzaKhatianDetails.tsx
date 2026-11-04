@@ -187,6 +187,7 @@ export default function MouzaKhatianDetails(props: Props) {
   }, [selectedRow, surveyKey, jlNumberId, props.surveyId, props.surveyName, props.divisionName, props.districtName, props.upazilaName, props.mouzaName, props.jlNumber]);
 
   return (
+    <>
     <section className="mt-6 space-y-4 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 print:hidden sm:p-5" aria-label="নির্দিষ্ট মৌজা খতিয়ানের বিস্তারিত">
       <div>
         <h2 className="text-lg font-black text-[var(--foreground)]">মৌজার নির্দিষ্ট খতিয়ানের বিস্তারিত</h2>
@@ -275,18 +276,22 @@ export default function MouzaKhatianDetails(props: Props) {
             fullKhatianFailed={Boolean(fullError)}
             surveyKey={surveyKey}
           />
-          <CitizenKhatianRecovery
-            key={selectedRow.ID}
-            expected={{
-              khatianNo: selectedRow.KHATIAN_NO,
-              jlNumberId,
-              surveyId: props.surveyId,
-              mouzaName: props.mouzaName,
-              districtName: props.districtName,
-            }}
-          />
+
         </div>
       ) : null}
     </section>
+    {selectedRow && official ? (
+      <CitizenKhatianRecovery
+        key={selectedRow.ID}
+        expected={{
+          khatianNo: selectedRow.KHATIAN_NO,
+          jlNumberId,
+          surveyId: props.surveyId,
+          mouzaName: props.mouzaName,
+          districtName: props.districtName,
+        }}
+      />
+    ) : null}
+    </>
   );
 }
