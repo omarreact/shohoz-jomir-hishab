@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
@@ -112,7 +113,18 @@ export default function MapLibreMap() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    configureMapLibreWorker();
+
+    // Check support before constructing the map: some browsers throw synchronously
+    // rather than emitting the MapLibre "error" event.
+    if (typeof window.WebGL2RenderingContext === "undefined") {
+      setInitError("এই ব্রাউজারে জিআইএস মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
+      return;
+    }
+
+    let map: MapLibreInstance;
+    try {
+      map = new maplibregl.Map({
       container: containerRef.current,
       style: {
         version: 8,
@@ -126,7 +138,12 @@ export default function MapLibreMap() {
       maxZoom: 21,
       renderWorldCopies: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    });
+      });
+    } catch (error) {
+      logger.error("MapLibre constructor failed", error);
+      setInitError("GIS মানচিত্র চালু করা যায়নি। WebGL2 সমর্থিত ব্রাউজারে আবার চেষ্টা করুন।");
+      return;
+    }
     mapRef.current = map;
     const handleMapError = (event: { error?: unknown }) => {
       const detail = event.error instanceof Error ? event.error.message : String(event.error ?? "");

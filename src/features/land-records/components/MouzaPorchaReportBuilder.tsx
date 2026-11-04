@@ -12,6 +12,7 @@ import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
+import MouzaKhatianDetails from "./MouzaKhatianDetails";
 import {
   buildMouzaReportRows,
   stableReportPayload,
@@ -125,6 +126,7 @@ export default function MouzaPorchaReportBuilder() {
   const [pdfPreview, setPdfPreview] = useState<PdfPreviewDocument | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const selectedDivision = divisions.find((item) => item.BBS_CODE === division);
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
   const selectedSurvey = surveys.find((item) => String(item.SURVEY_ID) === surveyId);
@@ -631,6 +633,23 @@ export default function MouzaPorchaReportBuilder() {
           </Card>
         </section>
 
+
+            {!generating && surveyKey && selectedSurvey && selectedMouza ? (
+              <MouzaKhatianDetails
+                key={surveyKey + ":" + selectedMouza.ID}
+                rows={rows}
+                surveyKey={surveyKey}
+                surveyId={selectedSurvey.SURVEY_ID}
+                surveyName={selectedSurvey.LOCAL_NAME}
+                jlNumberId={selectedMouza.ID}
+                jlNumber={selectedMouza.JL_NUMBER}
+                divisionName={selectedDivision?.NAME ?? ""}
+                districtName={selectedDistrict?.NAME ?? ""}
+                upazilaName={selectedUpazila?.NAME ?? ""}
+                mouzaName={selectedMouza.MOUZA_NAME}
+              />
+            ) : null}
+
         {rows.length > 0 ? (
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
@@ -683,6 +702,7 @@ export default function MouzaPorchaReportBuilder() {
                 pageOrientation={pageOrientation}
               />
             </div>
+
           </section>
         ) : null}
       </main>

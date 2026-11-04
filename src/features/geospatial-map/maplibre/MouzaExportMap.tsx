@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { GeoJSONSource, Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry, Polygon } from "geojson";
 import { Download, Filter, Loader2, Search, X } from "lucide-react";
@@ -133,6 +134,7 @@ export default function MouzaExportMap() {
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
   const [mapReady, setMapReady] = useState(false);
+  const [mapInitError, setMapInitError] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
@@ -278,7 +280,15 @@ export default function MouzaExportMap() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    configureMapLibreWorker();
+    if (typeof window.WebGL2RenderingContext === "undefined") {
+      setMapInitError("এই ব্রাউজারে GIS মানচিত্রের জন্য WebGL2 প্রয়োজন।");
+      return;
+    }
+
+    let map: MapLibreInstance;
+    try {
+      map = new maplibregl.Map({
       container: containerRef.current,
       style: {
         version: 8,
@@ -294,8 +304,17 @@ export default function MouzaExportMap() {
       canvasContextAttributes: {
         preserveDrawingBuffer: true,
       },
-    });
+      });
+    } catch {
+      setMapInitError("GIS মানচিত্র চালু করা যায়নি। WebGL2 সমর্থিত ব্রাউজারে চেষ্টা করুন।");
+      return;
+    }
     mapRef.current = map;
+    const handleMapError = (event: { error?: unknown }) => {
+      const reason = event.error instanceof Error ? event.error.message : String(event.error ?? "");
+      if (/webgl|gpu|worker/i.test(reason)) setMapInitError("GIS রেন্ডারার চালু করা যায়নি। WebGL2 এবং ব্রাউজারের GPU সেটিংস যাচাই করুন।");
+    };
+    map.on("error", handleMapError);
     const unbindViewport = bindMapViewport(map, containerRef.current!);
 
     const onLoad = () => {
@@ -369,6 +388,7 @@ export default function MouzaExportMap() {
     map.on("click", onClick);
     return () => {
       unbindViewport();
+      map.off("error", handleMapError);
       map.off("load", onLoad);
       map.off("click", onClick);
       map.remove();
@@ -496,6 +516,15 @@ export default function MouzaExportMap() {
         style={{ width: "100%", height: "100%", minHeight: 480 }}
         aria-label="মৌজা মানচিত্র"
       />
+
+      {mapInitError && (
+        <div role="alert" className="absolute inset-0 z-[70] grid place-items-center bg-[#f3f1e9] p-5 text-center">
+          <div className="max-w-sm rounded-2xl border border-[#d9e3d8] bg-white p-6 text-sm font-bold leading-7 text-[#1d565c] shadow-xl">
+            <p>{mapInitError}</p>
+            <button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl bg-[#1d565c] px-5 text-white">পুনরায় চেষ্টা করুন</button>
+          </div>
+        </div>
+      )}
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-start gap-2 p-3 sm:flex-row sm:justify-between sm:gap-3 sm:p-4">
         <div className="pointer-events-auto rounded-[18px] border border-[#d4e2d6] bg-[#fffdf7]/95 p-1.5 shadow-lg backdrop-blur">

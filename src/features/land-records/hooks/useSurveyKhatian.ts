@@ -34,6 +34,7 @@ export function useSurveyKhatian() {
   const lastKhatianContext = useRef<FullKhatianRequestContext | null>(null);
   const fullKhatianCache = useRef(new Map<string, FullKhatian>());
   const fullKhatianInflight = useRef(new Map<string, Promise<FullKhatian>>());
+  const fullDetailResolved = useRef(false);
   const nextId = (key: string) => (requestIds.current[key] = (requestIds.current[key] ?? 0) + 1);
   const isLatest = (key: string, id: number) => requestIds.current[key] === id;
   const run = useCallback(async <T,>(key: string, task: () => Promise<T>, onData: (value: T) => void) => {
@@ -86,7 +87,28 @@ export function useSurveyKhatian() {
       resolvedContext?.verificationUuid ?? "",
     ].join("|");
 
+    fullDetailResolved.current = false;
     setSelectedFullKhatian(null);
+
+    // The official detail endpoint is much faster than optional full enrichment.
+    // Show its sourced fields even when verification/mirror providers time out.
+    // Do not let a late base response overwrite an already enriched full record.
+    void run(
+      "khatianBase",
+      () => landRecordsApi.khatianPreview(surveyKey, id).catch(() => null),
+      (base) => {
+        if (!base || fullDetailResolved.current) return;
+        setSelectedKhatian((current) => current?.ID === id ? {
+          ...current,
+          ...base,
+          DIVISION_NAME: base.DIVISION_NAME || current.DIVISION_NAME,
+          DISTRICT_NAME: base.DISTRICT_NAME || current.DISTRICT_NAME,
+          UPAZILA_NAME: base.UPAZILA_NAME || current.UPAZILA_NAME,
+          MOUZA_NAME: base.MOUZA_NAME || current.MOUZA_NAME,
+          JL_NUMBER: base.JL_NUMBER || current.JL_NUMBER,
+        } : base);
+      },
+    );
 
     const fetchFull = () => {
       const cached = fullKhatianCache.current.get(cacheKey);
@@ -118,6 +140,7 @@ export function useSurveyKhatian() {
       "khatian",
       fetchFull,
       (full) => {
+        fullDetailResolved.current = true;
         setSelectedFullKhatian(full);
         setSelectedKhatian({
           ...full.base,
@@ -129,6 +152,18 @@ export function useSurveyKhatian() {
       },
     );
   }, [run]);
+
+  const resetKhatianDetails = useCallback(() => {
+    // Discard late responses when navigating away or changing area/survey.
+    requestIds.current.khatian = (requestIds.current.khatian ?? 0) + 1;
+    requestIds.current.khatianBase = (requestIds.current.khatianBase ?? 0) + 1;
+    fullDetailResolved.current = false;
+    setSelectedKhatian(null);
+    setSelectedFullKhatian(null);
+    setLoading((current) => ({ ...current, khatian: false, khatianBase: false }));
+    setError(null);
+  }, []);
+
   return {
     divisions,
     districts,
@@ -146,6 +181,7 @@ export function useSurveyKhatian() {
     loadMouzas,
     loadKhatians,
     loadKhatian,
+    resetKhatianDetails,
     setDistricts,
     setUpazilas,
     setSurveys,

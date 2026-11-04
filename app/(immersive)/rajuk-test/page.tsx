@@ -256,8 +256,12 @@ export default function RajukTestPage() {
   const [downloading, setDownloading] = useState(false);
   const [printingPdf, setPrintingPdf] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const plotRequestEpochRef = useRef(0);
 
   useEffect(() => {
+    // Invalidate any in-flight RS list or RS/MS lookup when the selected area changes.
+    plotRequestEpochRef.current += 1;
+    setLoadingPlots(false);
     setPlots([]);
     setPlotsLoaded(false);
     setSelected(null);
@@ -270,6 +274,7 @@ export default function RajukTestPage() {
 
   const loadRsPlots = useCallback(async () => {
     if (!loc.selectedMouza || !loc.selectedUpazila) return;
+    const requestEpoch = ++plotRequestEpochRef.current;
     setLoadingPlots(true);
     setSearchError("");
     setSelected(null);
@@ -287,18 +292,21 @@ export default function RajukTestPage() {
     setLastRequestUrl(url);
     try {
       const data = await apiJson(url);
+      if (requestEpoch !== plotRequestEpochRef.current) return;
       setPlots((data.features ?? []) as RajukPlotFeature[]);
       setPlotsLoaded(true);
     } catch (reason) {
+      if (requestEpoch !== plotRequestEpochRef.current) return;
       loc.setError(reason instanceof Error ? reason.message : "আর এস প্লট লোড করা যায়নি");
       setPlots([]);
       setPlotsLoaded(false);
     } finally {
-      setLoadingPlots(false);
+      if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
     }
   }, [loc.selectedMouza, loc.selectedUpazila, loc.setError]);
 
   const runSearch = useCallback(async () => {
+    const requestEpoch = ++plotRequestEpochRef.current;
     setSearchError("");
     setSelected(null);
     setMsMatches([]);
@@ -330,6 +338,7 @@ export default function RajukTestPage() {
       setLoadingPlots(true);
       try {
         const data = await apiJson(url);
+        if (requestEpoch !== plotRequestEpochRef.current) return;
         const features = ((data.features ?? []) as RajukPlotFeature[]).filter(
           (feature) => normalizePlotInput(plotNo(feature, "ms"), "ms") === bare,
         );
@@ -340,39 +349,60 @@ export default function RajukTestPage() {
         setMsMatches(features);
         setSelected(features[0]);
       } catch (reason) {
-        setSearchError(reason instanceof Error ? reason.message : "এম এস প্লট অনুসন্ধান করা যায়নি।");
+        if (requestEpoch === plotRequestEpochRef.current) {
+          setSearchError(reason instanceof Error ? reason.message : "এম এস প্লট অনুসন্ধান করা যায়নি।");
+        }
       } finally {
-        setLoadingPlots(false);
+        if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
       }
       return;
     }
 
-    if (!plotsLoaded || plots.length === 0) {
-      setSearchError("আগে আর এস প্লট লোড করুন।");
+    if (!loc.selectedMouza || !loc.selectedUpazila) {
+      setSearchError("আর এস প্লট খুঁজতে আগে জেলা, উপজেলা ও মৌজা নির্বাচন করুন।");
       return;
     }
 
-    const match = plots.find((feature) => {
+    const matchesPlot = (feature: RajukPlotFeature) => {
       const normalized = normalizePlotInput(plotNo(feature, "rs"), "rs");
       const plain = String((feature.attributes as Record<string, unknown>).plot_no ?? "").trim();
       return normalized === bare || plain === bare || plain.replace(/^0+/, "") === bare;
+    };
+    const query = new URLSearchParams({
+      action: "plots",
+      kind: "rs",
+      mouza: loc.selectedMouza.mauza,
+      jl: String(loc.selectedMouza.jl_no),
+      upazila: loc.selectedUpazila.upazila_ps,
+      rs_plot_no: bare,
+      limit: "50",
     });
-    if (!match) {
-      setSearchError(`আর এস প্লট ${bare} পাওয়া যায়নি।`);
+    const url = `/api/rajuk/query?${query}`;
+    setLastRequestUrl(url);
+
+    // The optional bulk list is capped at 2,000 rows. Never report "not found"
+    // merely because a matching plot lies outside that first page.
+    const cached = plots.find(matchesPlot);
+    if (cached) {
+      setSelected(cached);
       return;
     }
-    setSelected(match);
-    if (loc.selectedMouza && loc.selectedUpazila) {
-      const query = new URLSearchParams({
-        action: "plots",
-        kind: "rs",
-        mouza: loc.selectedMouza.mauza,
-        jl: String(loc.selectedMouza.jl_no),
-        upazila: loc.selectedUpazila.upazila_ps,
-        rs_plot_no: plotNo(match, "rs") || bare,
-        limit: "1",
-      });
-      setLastRequestUrl(`/api/rajuk/query?${query}`);
+    setLoadingPlots(true);
+    try {
+      const data = await apiJson(url);
+      if (requestEpoch !== plotRequestEpochRef.current) return;
+      const found = ((data.features ?? []) as RajukPlotFeature[]).find(matchesPlot);
+      if (!found) {
+        setSearchError(`নির্বাচিত এলাকায় আর এস প্লট ${bare} পাওয়া যায়নি।`);
+        return;
+      }
+      setSelected(found);
+    } catch (reason) {
+      if (requestEpoch === plotRequestEpochRef.current) {
+        setSearchError(reason instanceof Error ? reason.message : "আর এস প্লট অনুসন্ধান করা যায়নি।");
+      }
+    } finally {
+      if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
     }
   }, [plotInput, mode, plotsLoaded, plots, loc.selectedMouza, loc.selectedUpazila]);
 
@@ -468,7 +498,7 @@ export default function RajukTestPage() {
   const searchDisabled =
     loadingPlots ||
     !plotInput.trim() ||
-    (mode === "rs" ? !plotsLoaded : !loc.selectedMouza || !loc.selectedUpazila);
+    !loc.selectedMouza || !loc.selectedUpazila;
 
 
   return (
@@ -534,7 +564,7 @@ export default function RajukTestPage() {
             <div className="mb-4">
               <span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">02 / IDENTIFY A PARCEL</span>
               <h2 className="mt-1 text-xl font-black">{prefix} দাগ অনুসন্ধান</h2>
-              <p className="mt-2 text-xs leading-6 text-[#708079]">{mode==="rs" ? (plotsLoaded ? "এই মৌজার "+plots.length.toLocaleString("bn-BD")+"টি দাগ পাওয়া গেছে; নির্দিষ্ট নম্বর লিখুন।" : "প্রথমে উপরের বোতাম থেকে RS দাগ লোড করুন।") : "মৌজা ও JL অনুযায়ী সুনির্দিষ্ট MS দাগ খোঁজা হবে।"}</p>
+              <p className="mt-2 text-xs leading-6 text-[#708079]">{mode==="rs" ? (plotsLoaded ? "প্রাথমিক তালিকায় "+plots.length.toLocaleString("bn-BD")+"টি দাগ লোড হয়েছে। তালিকার বাইরের দাগও সরাসরি নম্বর দিয়ে খুঁজতে পারবেন।" : "মৌজা নির্বাচন করে সরাসরি দাগ নম্বর লিখুন। প্রাথমিক (সর্বোচ্চ ২,০০০) তালিকা দেখতে উপরের ঐচ্ছিক বোতাম ব্যবহার করুন।") : "মৌজা ও JL অনুযায়ী সুনির্দিষ্ট MS দাগ খোঁজা হবে।"}</p>
             </div>
             <form onSubmit={(e)=>{e.preventDefault();void runSearch();}} className="flex flex-col gap-2 sm:flex-row">
               <div className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl border border-[#d5ded5] bg-[#fcfdf9] px-3 focus-within:border-[#c57b51] focus-within:ring-2 focus-within:ring-[#ead7c2]"><Search size={20} className="text-[#72938d]"/><input inputMode="numeric" aria-label={prefix+" দাগ নম্বর"} value={plotInput} onChange={(e)=>setPlotInput(e.target.value)} placeholder="দাগ নং · যেমন ৬১৮৪" className="min-h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold outline-none placeholder:font-normal"/></div>

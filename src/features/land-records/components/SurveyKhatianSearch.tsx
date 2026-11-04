@@ -41,6 +41,7 @@ export default function SurveyKhatianSearch() {
     loadMouzas,
     loadKhatians,
     loadKhatian,
+    resetKhatianDetails,
     setDistricts,
     setUpazilas,
     setSurveys,
@@ -110,7 +111,7 @@ export default function SurveyKhatianSearch() {
 
   const resetResults = () => {
     setKhatians(null);
-    setSelectedKhatian(null);
+    resetKhatianDetails();
     setPage(1);
     setLocalError(null);
     setViewMode("search");
@@ -237,7 +238,7 @@ export default function SurveyKhatianSearch() {
 
   const backToSearch = () => {
     setViewMode("search");
-    setSelectedKhatian(null);
+    resetKhatianDetails();
   };
 
   const displayedError = localError || error;
