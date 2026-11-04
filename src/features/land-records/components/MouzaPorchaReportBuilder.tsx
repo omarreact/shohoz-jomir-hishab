@@ -12,6 +12,7 @@ import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
 import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
+import MouzaKhatianDetails from "./MouzaKhatianDetails";
 import {
   buildMouzaReportRows,
   stableReportPayload,
@@ -125,6 +126,7 @@ export default function MouzaPorchaReportBuilder() {
   const [pdfPreview, setPdfPreview] = useState<PdfPreviewDocument | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const selectedDivision = divisions.find((item) => item.BBS_CODE === division);
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
   const selectedSurvey = surveys.find((item) => String(item.SURVEY_ID) === surveyId);
@@ -683,6 +685,21 @@ export default function MouzaPorchaReportBuilder() {
                 pageOrientation={pageOrientation}
               />
             </div>
+            {!generating && surveyKey && selectedSurvey && selectedMouza ? (
+              <MouzaKhatianDetails
+                key={surveyKey + ":" + selectedMouza.ID + ":" + (reportMeta?.reportId ?? "")}
+                rows={rows}
+                surveyKey={surveyKey}
+                surveyId={selectedSurvey.SURVEY_ID}
+                surveyName={selectedSurvey.LOCAL_NAME}
+                jlNumberId={selectedMouza.ID}
+                jlNumber={selectedMouza.JL_NUMBER}
+                divisionName={selectedDivision?.NAME ?? ""}
+                districtName={selectedDistrict?.NAME ?? ""}
+                upazilaName={selectedUpazila?.NAME ?? ""}
+                mouzaName={selectedMouza.MOUZA_NAME}
+              />
+            ) : null}
           </section>
         ) : null}
       </main>
