@@ -72,6 +72,18 @@ describe("authoritative Khatian document uses full data rather than a truncated 
     } as unknown as FullKhatian, "BRS");
     expect(structured.owners.map((owner) => owner.fatherOrHusband))
       .toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
+
+    const exact = buildFullKhatianDisplayModel({
+      ...preview, OWNERS: "সিরাজদ্দিন,সিরাজদ্দিন", DAGS: "1948",
+    }, {
+      owners: [
+        { name: "সিরাজদ্দিন", fatherOrHusband: "আলম উদ্দিন", source: "DLRMS_PUBLIC" },
+        { name: "সিরাজদ্দিন", fatherOrHusband: "মহিউদ্দিন", source: "DLRMS_PUBLIC" },
+      ],
+      dags: [],
+    } as unknown as FullKhatian, "BRS");
+    expect(exact.owners.map((owner) => owner.fatherOrHusband))
+      .toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
   });
 
   it("keeps separate sourced land-class rows under one dag without double-counting the plot", () => {
