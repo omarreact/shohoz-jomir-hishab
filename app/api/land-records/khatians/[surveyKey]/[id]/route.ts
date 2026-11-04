@@ -1,4 +1,4 @@
-import { enforceServiceAccess } from "@/src/lib/service-entitlement";
+import { checkServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianDetailsSchema, idParam, khatianSearchText } from "@/src/features/land-records/schemas";
 import { reconstructKhatian } from "@/src/features/land-records/server/khatian-reconstruction";
 import { providers } from "@/src/features/land-records/server/provider";
@@ -24,7 +24,7 @@ async function safeSearch(input: Parameters<typeof providers.landRecords.listKha
 }
 
 export async function GET(request: Request, context: { params: Promise<{ surveyKey: string; id: string }> }) {
-  const denied=await enforceServiceAccess(request,"dlrms-khatian");
+  const denied=await checkServiceAccess(request,"dlrms-khatian");
   if(denied)return denied;
   try {
     const params = await context.params;
