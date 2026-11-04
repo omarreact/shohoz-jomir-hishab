@@ -140,11 +140,36 @@ function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKha
 }
 
 function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatianDag[]): FullKhatianDag[] {
-  if (!enriched.length) return publicRows;
-  const byDag = new Map<string, FullKhatianDag>();
-  for (const item of publicRows) byDag.set(item.dagNo.trim(), item);
-  for (const item of enriched) byDag.set(item.dagNo.trim(), item);
-  return [...byDag.values()];
+  // A dag may have more than one verified class/area row. A Map keyed only by
+  // dag number silently discarded those legal sub-rows.
+  const meaningful = (row: FullKhatianDag) =>
+    Boolean(row.landType || row.agriculturalType || row.totalAreaRaw ||
+      row.khatianAreaRaw || row.remarks || row.isGovernmentOwned !== undefined ||
+      row.isRoad !== undefined || row.isWetland !== undefined ||
+      row.isForest !== undefined || row.isReligiousType !== undefined);
+  const identity = (row: FullKhatianDag) =>
+    [row.dagNo, row.landType, row.agriculturalType, row.totalAreaRaw,
+      row.khatianAreaRaw, row.remarks, row.isGovernmentOwned, row.isRoad,
+      row.isWetland, row.isForest, row.isReligiousType]
+      .map((value) => String(value ?? "").trim()).join("|");
+  const result: FullKhatianDag[] = [];
+  for (const candidate of [...enriched, ...publicRows]) {
+    const sameNo = result.filter((row) => row.dagNo.trim() === candidate.dagNo.trim());
+    if (!sameNo.length) {
+      result.push(candidate);
+      continue;
+    }
+    if (!meaningful(candidate) && sameNo.some(meaningful)) continue;
+    if (meaningful(candidate) && sameNo.every((row) => !meaningful(row))) {
+      for (let i = result.length - 1; i >= 0; i -= 1) {
+        if (result[i].dagNo.trim() === candidate.dagNo.trim()) result.splice(i, 1);
+      }
+      result.push(candidate);
+      continue;
+    }
+    if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
+  }
+  return result;
 }
 
 async function safeSearch(
