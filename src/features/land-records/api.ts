@@ -66,9 +66,10 @@ async function get<T>(
   path: string,
   schema: { parse(value: unknown): T },
   params?: Record<string, string | number>,
+  timeoutMs?: number,
 ): Promise<T> {
   try {
-    const response = await client.get(path, { params });
+    const response = await client.get(path, { params, ...(timeoutMs ? { timeout: timeoutMs } : {}) });
     return schema.parse(response.data);
   } catch (error) {
     throw new Error(apiErrorMessage(error));
@@ -156,11 +157,14 @@ export const landRecordsApi = {
       `/full-khatian/${surveyKey}/${id}`,
       FullKhatianSchema,
       fullKhatianParams(context),
+      90_000,
     ),
   fullKhatianByVerificationUuid: (uuid: string) =>
     get<FullKhatian>(
       `/full-khatian/verify/${encodeURIComponent(uuid)}`,
       FullKhatianSchema,
+      undefined,
+      90_000,
     ),
   citizenInvoice: (token: string, invoiceOrOrderId: string) =>
     post<DlrmsCitizenInvoice>(
