@@ -3,5 +3,12 @@
   "framework": "nextjs",
   "fluid": true,
   "installCommand": "npm install --no-audit --no-fund --prefer-offline",
-  "buildCommand": "next build --webpack"
+  "buildCommand": "next build --webpack",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true,
+      "release/landbd-pr146-preserve-prod-20261104": true
+    }
+  }
 }
