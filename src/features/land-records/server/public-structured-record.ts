@@ -206,7 +206,7 @@ export function extractVerifiedMirrorCompactRow(
   base: KhatianIndex,
   record: Record<string, unknown> | null,
 ): KhatianIndex | null {
-  if (!mirrorRecordMatchesBase(base, record)) return null;
+  if (!record || !mirrorRecordMatchesBase(base, record)) return null;
 
   const select = (...keys: string[]): string => {
     for (const key of keys) {
