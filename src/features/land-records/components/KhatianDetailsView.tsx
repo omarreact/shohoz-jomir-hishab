@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState, type RefObject } from "react";
 import { Download, Eye, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
+import { isPartialPublicRecord } from "../lib/khatian-display";
 import type { KhatianDetails } from "../types";
 import {
   exportKhatianPdf,
@@ -62,11 +63,14 @@ export default function KhatianDetailsView({
   const resolvedFullKhatian =
     fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
+  const isIncomplete = Boolean(resolvedFullKhatian && isPartialPublicRecord(resolvedFullKhatian.base));
 
   const handleDownloadPdf = useCallback(
     async (orientation: KhatianPdfOrientation, delivery: "download" | "return" = "download") => {
-      if (!resolvedFullKhatian) {
-        setExportError("পূর্ণ খতিয়ানের তথ্য লোড না হওয়া পর্যন্ত PDF তৈরি করা যাবে না।");
+      if (!resolvedFullKhatian || isIncomplete) {
+        setExportError(isIncomplete
+          ? "উৎসের মালিক/অভিভাবক/দাগ তালিকা অসম্পূর্ণ; সম্পূর্ণ PDF তৈরি করা যাবে না।"
+          : "পূর্ণ খতিয়ানের তথ্য লোড না হওয়া পর্যন্ত PDF তৈরি করা যাবে না।");
         return;
       }
       const source = resolvedCaptureRef.current;
@@ -98,10 +102,10 @@ export default function KhatianDetailsView({
         setExporting(null);
       }
     },
-    [khatian, resolvedCaptureRef, resolvedFullKhatian, surveyKey],
+    [khatian, resolvedCaptureRef, resolvedFullKhatian, surveyKey, isIncomplete],
   );
 
-  const isBusy = exporting !== null || fullKhatianLoading || !resolvedFullKhatian;
+  const isBusy = exporting !== null || fullKhatianLoading || !resolvedFullKhatian || isIncomplete;
 
   return (
     <div
@@ -224,9 +228,12 @@ export default function KhatianDetailsView({
         </button>
       </div>
 
-      {!resolvedFullKhatian ? (
+      {!resolvedFullKhatian || isIncomplete ? (
         <p className="mb-2 text-sm font-semibold text-amber-800 print:hidden" role="status">
-          {fullKhatianLoading ? "সম্পূর্ণ খতিয়ানের তথ্য যাচাই হচ্ছে; PDF সাময়িকভাবে বন্ধ।" : fullKhatianFailed ? "পূর্ণ রেকর্ড লোড হয়নি। আবার চেষ্টা করুন; অসম্পূর্ণ PDF তৈরি করা হচ্ছে না।" : "সম্পূর্ণ রেকর্ড প্রস্তুত হলে PDF অপশন সক্রিয় হবে।"}
+          {fullKhatianLoading ? "সম্পূর্ণ খতিয়ানের তথ্য যাচাই হচ্ছে; PDF সাময়িকভাবে বন্ধ।"
+            : isIncomplete ? "উৎসে সব মালিক, অভিভাবক বা দাগ প্রকাশিত হয়নি। অসম্পূর্ণ তথ্য দিয়ে সম্পূর্ণ খতিয়ানের PDF তৈরি বন্ধ।"
+            : fullKhatianFailed ? "পূর্ণ রেকর্ড লোড হয়নি। আবার চেষ্টা করুন; অসম্পূর্ণ PDF তৈরি করা হচ্ছে না।"
+            : "সম্পূর্ণ রেকর্ড প্রস্তুত হলে PDF অপশন সক্রিয় হবে।"}
         </p>
       ) : null}
       {exportError ? (

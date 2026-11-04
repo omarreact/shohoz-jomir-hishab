@@ -59,6 +59,24 @@ describe("public structured khatian record helpers", () => {
     ]);
   });
 
+  it("retains verified same-name owners with different guardians or shares and multi-class dag rows", () => {
+    const record = extractStructuredPublicRecord({
+      OWNER_DETAILS: [
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "আলম উদ্দিন", SHARE: "১/২" },
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "মহিউদ্দিন", SHARE: "১/৪" },
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "আলম উদ্দিন", SHARE: "১/২" },
+      ],
+      DAG_DETAILS: [
+        { DAG_NO: "১৯৭৪", LAND_CLASS: "নাল", KHATIAN_AREA: "0.20" },
+        { DAG_NO: "১৯৭৪", LAND_CLASS: "ভিটা", KHATIAN_AREA: "0.10" },
+      ],
+    });
+    expect(record.owners).toHaveLength(2);
+    expect(record.owners.map((row) => row.fatherOrHusband)).toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
+    expect(record.dags).toHaveLength(2);
+    expect(record.dags.map((row) => row.landType)).toEqual(["নাল", "ভিটা"]);
+  });
+
   it("restores official detail compact fields before later reconstruction", () => {
     const base = {
       ID: 10,

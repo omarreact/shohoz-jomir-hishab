@@ -92,8 +92,9 @@ function normalizedKey(value: string): string {
 function dedupeOwners(rows: FullKhatianOwner[]): FullKhatianOwner[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = normalizedKey(row.name);
-    if (!key || seen.has(key)) return false;
+    const key = [row.name, row.fatherOrHusband, row.address, row.shareRaw]
+      .map((part) => normalizedKey(part ?? "")).join("|");
+    if (!normalizedKey(row.name) || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -102,8 +103,9 @@ function dedupeOwners(rows: FullKhatianOwner[]): FullKhatianOwner[] {
 function dedupeDags(rows: FullKhatianDag[]): FullKhatianDag[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = normalizedKey(row.dagNo);
-    if (!key || seen.has(key)) return false;
+    const key = [row.dagNo, row.landType, row.agriculturalType, row.totalAreaRaw, row.khatianAreaRaw, row.remarks]
+      .map((part) => normalizedKey(part ?? "")).join("|");
+    if (!normalizedKey(row.dagNo) || seen.has(key)) return false;
     seen.add(key);
     return true;
   });

@@ -28,20 +28,35 @@ export function buildFullKhatianDisplayModel(
   const authoritativeOwners = full.owners.filter(
     (row) => row.source !== "LISF_MOCK" && row.name.trim(),
   );
-  const ownersByName = new Map(authoritativeOwners.map((row) => [key(row.name), row]));
+  const ownersByName = new Map<string, typeof authoritativeOwners>();
+  for (const owner of authoritativeOwners) {
+    const normalized = key(owner.name);
+    ownersByName.set(normalized, [...(ownersByName.get(normalized) ?? []), owner]);
+  }
   const fromFull = authoritativeOwners.map((row) => ({
     name: row.name,
     share: row.shareRaw,
+    fatherOrHusband: row.fatherOrHusband,
   }));
 
   // A full source list may be longer than a compact string. Never replace an
   // existing longer list with a shorter deduplicated or provisional one.
   const owners = fromFull.length > model.owners.length
     ? fromFull
-    : model.owners.map((row) => ({
-        ...row,
-        share: row.share || ownersByName.get(key(row.name))?.shareRaw,
-      }));
+    : model.owners.map((row, index) => {
+        const positional = authoritativeOwners[index];
+        const candidates = ownersByName.get(key(row.name)) ?? [];
+        // Duplicate names may describe different people. Pair a guardian only
+        // with the matching source row at the same position, or a unique name.
+        const verified = positional && key(positional.name) === key(row.name)
+          ? positional
+          : candidates.length === 1 ? candidates[0] : undefined;
+        return {
+          ...row,
+          share: row.share || verified?.shareRaw,
+          fatherOrHusband: verified?.fatherOrHusband,
+        };
+      });
 
   const sourceDags = full.dags.filter((row) => row.source !== "LISF_MOCK" && row.dagNo.trim());
   const fullDags = new Map(sourceDags.map((row) => [key(row.dagNo), row]));

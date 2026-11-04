@@ -15,6 +15,8 @@ export interface ParsedOwnerRow {
   name: string;
   /** Individual share when present in structured public data. */
   share?: string;
+  /** Only attach when an authoritative source supplies this exact owner relationship. */
+  fatherOrHusband?: string;
 }
 
 export interface ParsedDagRow {

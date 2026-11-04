@@ -44,6 +44,23 @@ describe("authoritative Khatian document uses full data rather than a truncated 
     expect(model.isPartial).toBe(true);
   });
 
+  it("only attaches verified father/guardian to the correct same-name owner row", () => {
+    const model = buildFullKhatianDisplayModel({
+      ...preview, OWNERS: "সিরাজদ্দিন,সিরাজদ্দিন,অন্য মালিক", DAGS: "1948",
+    }, {
+      owners: [
+        { name: "সিরাজদ্দিন", fatherOrHusband: "আলম উদ্দিন", shareRaw: "১/২", source: "DLRMS_PUBLIC" },
+        { name: "সিরাজদ্দিন", fatherOrHusband: "মহিউদ্দিন", shareRaw: "১/৪", source: "DLRMS_PUBLIC" },
+      ],
+      dags: [],
+    } as FullKhatian, "BRS");
+    expect(model.owners).toEqual([
+      { name: "সিরাজদ্দিন", share: "১/২", fatherOrHusband: "আলম উদ্দিন" },
+      { name: "সিরাজদ্দিন", share: "১/৪", fatherOrHusband: "মহিউদ্দিন" },
+      { name: "অন্য মালিক", share: undefined, fatherOrHusband: undefined },
+    ]);
+  });
+
   it("does not introduce mock owners or replace longer public lists with deduplicated rows", () => {
     const model = buildFullKhatianDisplayModel({
       ...preview,
