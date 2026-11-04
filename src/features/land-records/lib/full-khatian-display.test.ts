@@ -53,7 +53,7 @@ describe("authoritative Khatian document uses full data rather than a truncated 
         { name: "সিরাজদ্দিন", fatherOrHusband: "মহিউদ্দিন", shareRaw: "১/৪", source: "DLRMS_PUBLIC" },
       ],
       dags: [],
-    } as FullKhatian, "BRS");
+    } as unknown as FullKhatian, "BRS");
     expect(model.owners).toEqual([
       { name: "সিরাজদ্দিন", share: "১/২", fatherOrHusband: "আলম উদ্দিন" },
       { name: "সিরাজদ্দিন", share: "১/৪", fatherOrHusband: "মহিউদ্দিন" },
