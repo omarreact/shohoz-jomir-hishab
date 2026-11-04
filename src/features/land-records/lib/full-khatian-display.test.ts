@@ -44,7 +44,7 @@ describe("authoritative Khatian document uses full data rather than a truncated 
     expect(model.isPartial).toBe(true);
   });
 
-  it("only attaches verified father/guardian to the correct same-name owner row", () => {
+  it("does not guess duplicate-owner guardian relationships from compact row order", () => {
     const model = buildFullKhatianDisplayModel({
       ...preview, OWNERS: "সিরাজদ্দিন,সিরাজদ্দিন,অন্য মালিক", DAGS: "1948",
     }, {
@@ -54,11 +54,24 @@ describe("authoritative Khatian document uses full data rather than a truncated 
       ],
       dags: [],
     } as unknown as FullKhatian, "BRS");
+    // Only two structured owners exist for three compact source owners.
+    // Do not assume the first two compact rows match the structured order.
     expect(model.owners).toEqual([
-      { name: "সিরাজদ্দিন", share: "১/২", fatherOrHusband: "আলম উদ্দিন" },
-      { name: "সিরাজদ্দিন", share: "১/৪", fatherOrHusband: "মহিউদ্দিন" },
+      { name: "সিরাজদ্দিন", share: undefined, fatherOrHusband: undefined },
+      { name: "সিরাজদ্দিন", share: undefined, fatherOrHusband: undefined },
       { name: "অন্য মালিক", share: undefined, fatherOrHusband: undefined },
     ]);
+    const structured = buildFullKhatianDisplayModel({
+      ...preview, OWNERS: "সিরাজদ্দিন", DAGS: "1948",
+    }, {
+      owners: [
+        { name: "সিরাজদ্দিন", fatherOrHusband: "আলম উদ্দিন", shareRaw: "১/২", source: "DLRMS_PUBLIC" },
+        { name: "সিরাজদ্দিন", fatherOrHusband: "মহিউদ্দিন", shareRaw: "১/৪", source: "DLRMS_PUBLIC" },
+      ],
+      dags: [],
+    } as unknown as FullKhatian, "BRS");
+    expect(structured.owners.map((owner) => owner.fatherOrHusband))
+      .toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
   });
 
   it("keeps separate sourced land-class rows under one dag without double-counting the plot", () => {
