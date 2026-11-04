@@ -21,6 +21,7 @@ import {
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
+import CitizenKhatianRecovery from "./CitizenKhatianRecovery";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
@@ -587,6 +588,16 @@ export default function SurveyKhatianSearch() {
                   fullKhatianLoading={Boolean(loading.khatian)}
                   fullKhatianFailed={!loading.khatian && Boolean(error)}
                   surveyKey={surveyKey}
+                />
+                <CitizenKhatianRecovery
+                  key={selectedKhatian.ID}
+                  expected={{
+                    khatianNo: selectedKhatian.KHATIAN_NO,
+                    jlNumberId: selectedMouza?.ID,
+                    surveyId: selectedSurvey?.SURVEY_ID,
+                    mouzaName: selectedMouza?.MOUZA_NAME,
+                    districtName: selectedDistrict?.NAME,
+                  }}
                 />
               </>
             ) : loading.khatian ? (

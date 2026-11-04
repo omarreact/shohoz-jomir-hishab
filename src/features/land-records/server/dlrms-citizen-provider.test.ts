@@ -137,7 +137,7 @@ describe("DLRMS citizen authenticated provider", () => {
     expect(JSON.stringify(invoice)).not.toContain("must-not-leak");
   });
 
-  it("normalizes print-khatian page fields without returning BODY html", async () => {
+  it("normalizes print page fields and returns only inert BODY text", async () => {
     const { fetchDlrmsCitizenPrintKhatian } = await import("./dlrms-citizen-provider");
 
     const result = await fetchDlrmsCitizenPrintKhatian(
@@ -157,6 +157,10 @@ describe("DLRMS citizen authenticated provider", () => {
       "আবদুল আজিজ খাঁ\nপিং রমন খাঁ\nসাং নিজ",
     );
     expect(result.pages[0]?.fields).not.toHaveProperty("BODY");
+    expect(result.pages[0]?.bodyText).toContain("ignored");
+    expect(result.pages[0]?.bodyText).not.toContain("alert");
+    expect(result.pages[0]?.bodyText).not.toContain("<script>");
+    expect(result.pages[0]?.bodyText).not.toContain("<table>");
     expect(result.summary.dagText).toContain("৪৫৭");
     expect(result.summary.landTypeText).toContain("বাড়ী");
     expect(result.summary.areaText).toContain("১৩");

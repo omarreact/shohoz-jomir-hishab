@@ -173,6 +173,16 @@ const PAGE_META_FIELDS = new Set([
   "NAME",
 ]);
 
+/** Recover official print body text without exposing executable source HTML. */
+export function safeCitizenPrintBodyText(body: unknown): string | undefined {
+  if (typeof body !== "string") return undefined;
+  const inertMarkup = body.slice(0, 64_000)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style|iframe|svg|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(/<\/?(?:td|th|tr|p|div|li|section|article|h[1-6])\b[^>]*>/gi, "\n");
+  return cleanDlrmsCitizenText(inertMarkup).slice(0, 32_000) || undefined;
+}
+
 function pageFields(page: JsonRecord): Record<string, string> {
   const output: Record<string, string> = {};
   for (const [key, raw] of Object.entries(page)) {
@@ -343,7 +353,7 @@ export async function fetchDlrmsCitizenPrintKhatian(
       const page = asRecord(raw);
       const id = numberValue(page, "ID") ?? 0;
       const khatianId = numberValue(page, "KHATIAN_ID") ?? 0;
-      if (!id || !khatianId) return null;
+      if (!id || !khatianId || khatianId !== numberValue(khatian, "ID")) return null;
       return {
         id,
         khatianId,
@@ -352,9 +362,11 @@ export async function fetchDlrmsCitizenPrintKhatian(
         pageOrder: numberValue(page, "PAGE_ORDER") ?? null,
         templateType: numberValue(page, "TEMPLATE_TYPE") ?? null,
         fields: pageFields(page),
+        bodyText: safeCitizenPrintBodyText(page.BODY),
       };
     })
-    .filter((page): page is NonNullable<typeof page> => Boolean(page));
+    .filter((page): page is NonNullable<typeof page> => Boolean(page))
+    .sort((left, right) => (left.pageOrder ?? Number.MAX_SAFE_INTEGER) - (right.pageOrder ?? Number.MAX_SAFE_INTEGER));
 
   return DlrmsCitizenPrintSchema.parse({
     source: "DLRMS_CITIZEN",

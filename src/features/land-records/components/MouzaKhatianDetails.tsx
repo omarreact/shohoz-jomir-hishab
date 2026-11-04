@@ -6,6 +6,7 @@ import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import { KhatianDetailsSchema, KhatianPageSchema } from "../schemas";
 import type { KhatianDetails, KhatianIndex, KhatianPage } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
+import CitizenKhatianRecovery from "./CitizenKhatianRecovery";
 
 type Props = {
   rows: KhatianIndex[];
@@ -273,6 +274,16 @@ export default function MouzaKhatianDetails(props: Props) {
             fullKhatianLoading={fullLoading}
             fullKhatianFailed={Boolean(fullError)}
             surveyKey={surveyKey}
+          />
+          <CitizenKhatianRecovery
+            key={selectedRow.ID}
+            expected={{
+              khatianNo: selectedRow.KHATIAN_NO,
+              jlNumberId,
+              surveyId: props.surveyId,
+              mouzaName: props.mouzaName,
+              districtName: props.districtName,
+            }}
           />
         </div>
       ) : null}
