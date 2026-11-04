@@ -114,7 +114,7 @@ export default function MapLibreMap() {
 
     // Check support before constructing the map: some browsers throw synchronously
     // rather than emitting the MapLibre "error" event.
-    if (!maplibregl.supported()) {
+    if (typeof window.WebGL2RenderingContext === "undefined") {
       setInitError("এই ব্রাউজারে জিআইএস মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
       return;
     }
