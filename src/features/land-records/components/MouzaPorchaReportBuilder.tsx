@@ -633,6 +633,23 @@ export default function MouzaPorchaReportBuilder() {
           </Card>
         </section>
 
+
+            {!generating && surveyKey && selectedSurvey && selectedMouza ? (
+              <MouzaKhatianDetails
+                key={surveyKey + ":" + selectedMouza.ID}
+                rows={rows}
+                surveyKey={surveyKey}
+                surveyId={selectedSurvey.SURVEY_ID}
+                surveyName={selectedSurvey.LOCAL_NAME}
+                jlNumberId={selectedMouza.ID}
+                jlNumber={selectedMouza.JL_NUMBER}
+                divisionName={selectedDivision?.NAME ?? ""}
+                districtName={selectedDistrict?.NAME ?? ""}
+                upazilaName={selectedUpazila?.NAME ?? ""}
+                mouzaName={selectedMouza.MOUZA_NAME}
+              />
+            ) : null}
+
         {rows.length > 0 ? (
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
@@ -685,21 +702,7 @@ export default function MouzaPorchaReportBuilder() {
                 pageOrientation={pageOrientation}
               />
             </div>
-            {!generating && surveyKey && selectedSurvey && selectedMouza ? (
-              <MouzaKhatianDetails
-                key={surveyKey + ":" + selectedMouza.ID + ":" + (reportMeta?.reportId ?? "")}
-                rows={rows}
-                surveyKey={surveyKey}
-                surveyId={selectedSurvey.SURVEY_ID}
-                surveyName={selectedSurvey.LOCAL_NAME}
-                jlNumberId={selectedMouza.ID}
-                jlNumber={selectedMouza.JL_NUMBER}
-                divisionName={selectedDivision?.NAME ?? ""}
-                districtName={selectedDistrict?.NAME ?? ""}
-                upazilaName={selectedUpazila?.NAME ?? ""}
-                mouzaName={selectedMouza.MOUZA_NAME}
-              />
-            ) : null}
+
           </section>
         ) : null}
       </main>
