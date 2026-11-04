@@ -23,6 +23,7 @@ import { useGeneratePDF } from "@/src/shared/hooks/useGeneratePDF";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Input } from "@/src/shared/ui/Input";
 import { landRecordsApi } from "../api";
+import { citizenPrintMatchesExpected, type CitizenExpectedKhatian } from "../lib/citizen-khatian-match";
 import type {
   DlrmsCitizenApplication,
   DlrmsCitizenInvoice,
@@ -137,6 +138,14 @@ function PageFields({ page }: { page: DlrmsCitizenPage }) {
       ) : (
         <p className="mt-3 text-sm text-[var(--muted-foreground)]">এই source page-এ আলাদা field value পাওয়া যায়নি।</p>
       )}
+      {page.bodyText ? (
+        <details className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3">
+          <summary className="cursor-pointer text-xs font-bold text-emerald-900">
+            সরকারি পৃষ্ঠার অতিরিক্ত পাঠ্য (নিরাপদ plain text)
+          </summary>
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[var(--foreground)]">{page.bodyText}</p>
+        </details>
+      ) : null}
     </section>
   );
 }
@@ -226,7 +235,7 @@ function CitizenPrintReport({
   );
 }
 
-export default function DlrmsCitizenImport() {
+export default function DlrmsCitizenImport({ expected }: { expected?: CitizenExpectedKhatian }) {
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [token, setToken] = useState("");
   const [invoiceRef, setInvoiceRef] = useState("");
@@ -285,6 +294,10 @@ export default function DlrmsCitizenImport() {
     setPrintResult(null);
     try {
       const result = await landRecordsApi.citizenPrintKhatian(token, id);
+      if (expected && !citizenPrintMatchesExpected(result, expected)) {
+        setError("এই নাগরিক আবেদনটির খতিয়ান নম্বর, জরিপ বা মৌজা নির্বাচিত রেকর্ডের সঙ্গে মেলেনি। অন্য খতিয়ানকে এখানে পূর্ণ রেকর্ড হিসেবে দেখানো যাবে না।");
+        return;
+      }
       setApplicationId(String(id));
       setPrintResult(result);
       requestAnimationFrame(() => {

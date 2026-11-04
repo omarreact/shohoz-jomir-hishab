@@ -1,5 +1,7 @@
 "use client";
 
+import { isPartialPublicRecord } from "../lib/khatian-display";
+
 import { useEffect, useMemo, useState } from "react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
@@ -19,6 +21,7 @@ import {
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
+import CitizenKhatianRecovery from "./CitizenKhatianRecovery";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
@@ -557,6 +560,17 @@ export default function SurveyKhatianSearch() {
                     দ্রুত preview প্রস্তুত। পূর্ণ মালিক/দাগ/উৎস তথ্য পটভূমিতে যাচাই হচ্ছে…
                   </div>
                 ) : null}
+                {!loading.khatian && selectedFullKhatian && isPartialPublicRecord(selectedFullKhatian.base) ? (
+                  <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 print:hidden" role="status">
+                    মূল DLRMS তালিকায় সব মালিক, অভিভাবক ও দাগ প্রকাশিত হয়নি। এখানে শুধু যাচাইকৃত তথ্য দেখানো হচ্ছে।
+                    <button type="button" className="ml-2 font-bold underline" onClick={() => showDetails(selectedKhatian ?? selectedFullKhatian.base)}>
+                      পুনরায় পূর্ণ যাচাই (ক্রেডিট প্রযোজ্য হতে পারে)
+                    </button>
+                    <a href="https://dlrms.land.gov.bd/" target="_blank" rel="noopener noreferrer" className="ml-2 font-bold underline">
+                      সরকারি খতিয়ান সেবা
+                    </a>
+                  </div>
+                ) : null}
                 {!loading.khatian && error ? (
                   <div
                     className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-800 print:hidden"
@@ -574,6 +588,16 @@ export default function SurveyKhatianSearch() {
                   fullKhatianLoading={Boolean(loading.khatian)}
                   fullKhatianFailed={!loading.khatian && Boolean(error)}
                   surveyKey={surveyKey}
+                />
+                <CitizenKhatianRecovery
+                  key={selectedKhatian.ID}
+                  expected={{
+                    khatianNo: selectedKhatian.KHATIAN_NO,
+                    jlNumberId: selectedMouza?.ID,
+                    surveyId: selectedSurvey?.SURVEY_ID,
+                    mouzaName: selectedMouza?.MOUZA_NAME,
+                    districtName: selectedDistrict?.NAME,
+                  }}
                 />
               </>
             ) : loading.khatian ? (

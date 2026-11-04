@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, release/landbd-pr146-preserve-prod-20261104]
+    branches: [main, release/landbd-pr146-preserve-prod-20261104, fix/khatian-source-fidelity-20261104]
   pull_request:
     branches: [main]
 
@@ -43,6 +43,7 @@ jobs:
           src/features/land-records/server/khatian-reconstruction.test.ts
           src/features/land-records/server/dlrms-public-extras.test.ts
           src/features/land-records/server/dlrms-citizen-provider.test.ts
+          src/features/land-records/lib/citizen-khatian-match.test.ts
           src/features/land-records/server/full-khatian-service.test.ts
 
       - name: Tests

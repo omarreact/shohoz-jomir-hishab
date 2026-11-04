@@ -7,6 +7,7 @@ import { getLisfProvider } from "./lisf-provider";
 import {
   extractStructuredPublicRecord,
   extractVerifiedMirrorCompactRow,
+  mirrorRecordMatchesBase,
   fetchStrictPublicMirrorRecord,
   publicMirrorBaseUrl,
   restoreOfficialDetailBase,
@@ -129,22 +130,65 @@ function publicDags(base: KhatianDetails, tracking?: KhatianTracking): FullKhati
 }
 
 function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
-  if (!enriched.length) return publicRows;
-  const output = [...enriched];
-  const known = new Set(enriched.map((item) => item.name.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD")));
-  for (const item of publicRows) {
-    const key = item.name.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
-    if (!known.has(key)) output.push(item);
+  // Equal names alone do not prove that the source lists refer to the same
+  // ownership entry. Parent, share and address can distinguish separate rows.
+  const normalize = (text: string | undefined) =>
+    (text ?? "").replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
+  const detail = (row: FullKhatianOwner) =>
+    Boolean(row.fatherOrHusband || row.shareRaw || row.address);
+  const identity = (row: FullKhatianOwner) =>
+    [row.name, row.fatherOrHusband, row.shareRaw, row.address].map(normalize).join("|");
+  const result: FullKhatianOwner[] = [];
+  for (const candidate of [...enriched, ...publicRows]) {
+    const sameName = result.filter((row) => normalize(row.name) === normalize(candidate.name));
+    if (!sameName.length) {
+      result.push(candidate);
+      continue;
+    }
+    if (!detail(candidate) && sameName.some(detail)) continue;
+    if (detail(candidate) && sameName.every((row) => !detail(row))) {
+      for (let i = result.length - 1; i >= 0; i -= 1) {
+        if (normalize(result[i].name) === normalize(candidate.name)) result.splice(i, 1);
+      }
+      result.push(candidate);
+      continue;
+    }
+    if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
   }
-  return output;
+  return result;
 }
 
 function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatianDag[]): FullKhatianDag[] {
-  if (!enriched.length) return publicRows;
-  const byDag = new Map<string, FullKhatianDag>();
-  for (const item of publicRows) byDag.set(item.dagNo.trim(), item);
-  for (const item of enriched) byDag.set(item.dagNo.trim(), item);
-  return [...byDag.values()];
+  // A dag may have more than one verified class/area row. A Map keyed only by
+  // dag number silently discarded those legal sub-rows.
+  const meaningful = (row: FullKhatianDag) =>
+    Boolean(row.landType || row.agriculturalType || row.totalAreaRaw ||
+      row.khatianAreaRaw || row.remarks || row.isGovernmentOwned !== undefined ||
+      row.isRoad !== undefined || row.isWetland !== undefined ||
+      row.isForest !== undefined || row.isReligiousType !== undefined);
+  const identity = (row: FullKhatianDag) =>
+    [row.dagNo, row.landType, row.agriculturalType, row.totalAreaRaw,
+      row.khatianAreaRaw, row.remarks, row.isGovernmentOwned, row.isRoad,
+      row.isWetland, row.isForest, row.isReligiousType]
+      .map((value) => String(value ?? "").trim()).join("|");
+  const result: FullKhatianDag[] = [];
+  for (const candidate of [...enriched, ...publicRows]) {
+    const sameNo = result.filter((row) => row.dagNo.trim() === candidate.dagNo.trim());
+    if (!sameNo.length) {
+      result.push(candidate);
+      continue;
+    }
+    if (!meaningful(candidate) && sameNo.some(meaningful)) continue;
+    if (meaningful(candidate) && sameNo.every((row) => !meaningful(row))) {
+      for (let i = result.length - 1; i >= 0; i -= 1) {
+        if (result[i].dagNo.trim() === candidate.dagNo.trim()) result.splice(i, 1);
+      }
+      result.push(candidate);
+      continue;
+    }
+    if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
+  }
+  return result;
 }
 
 async function safeSearch(
@@ -412,7 +456,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
 
   const officialStructured = extractStructuredPublicRecord(rebuilt.PUBLIC_RECORD, "DLRMS_PUBLIC");
-  const [mirrorRecord, mirrorDagRecords] = await Promise.all([
+  const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
           surveyKey: input.surveyKey,
@@ -425,6 +469,17 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       ? fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
       : Promise.resolve([]),
   ]);
+  // Reject misidentified mirror payloads before structured extraction.
+  const mirrorRecord = mirrorRecordMatchesBase(rebuilt, unverifiedMirrorRecord)
+    ? unverifiedMirrorRecord : null;
+  const mirrorDagRecords = unverifiedMirrorDagRecords.filter((row) =>
+    mirrorRecordMatchesBase(rebuilt, row));
+  if (unverifiedMirrorRecord && !mirrorRecord) {
+    warnings.push("Unverified mirror record ID/JL mismatch; source ignored.");
+  }
+  if (mirrorDagRecords.length !== unverifiedMirrorDagRecords.length) {
+    warnings.push("Cross-khatian mirror dag rows rejected before enrichment.");
+  }
   let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
   for (const record of mirrorDagRecords) {
     const filtered = extractStructuredPublicRecord(record, "DLRMS_PUBLIC");

@@ -46,6 +46,8 @@ export const DlrmsCitizenPageSchema = z.object({
   pageOrder: z.number().int().nullable().optional(),
   templateType: z.number().int().nullable().optional(),
   fields: z.record(z.string(), z.string()),
+  /** Inert text recovered from the source BODY; raw HTML is never sent. */
+  bodyText: z.string().max(32_000).optional(),
 });
 
 export type DlrmsCitizenPage = z.infer<typeof DlrmsCitizenPageSchema>;

@@ -52,6 +52,7 @@ export default function AuthoritativeKhatianDetailsView({
   const hasKhatianArea = model.dags.some((dag) => present(dag.shareArea || dag.area));
   const hasShare = model.dags.some((dag) => present(dag.khatianShare));
   const hasOwnerShare = model.owners.some((owner) => present(owner.share));
+  const hasVerifiedGuardian = model.owners.some((owner) => present(owner.fatherOrHusband));
   // formatAcre already includes the Bengali unit; never append "একর" twice.
   const totalLand = model.totalLand ? bangla(model.totalLand) : "উৎসে নেই";
   const quality = model.reconstruction?.FIELD_QUALITY as
@@ -136,9 +137,9 @@ export default function AuthoritativeKhatianDetailsView({
                 <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(khatian.JL_NUMBER)}</td>
               </tr>
               <tr>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>মালিক সংখ্যা</th>
+                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত মালিক{ownerPartial ? " (আংশিক)" : ""}</th>
                 <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}{ownerPartial ? " (আংশিক)" : ""}</td>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>দাগ সংখ্যা / মোট জমি</th>
+                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত দাগ / মোট জমি</th>
                 <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""} / {totalLand}</td>
               </tr>
 
@@ -157,7 +158,8 @@ export default function AuthoritativeKhatianDetailsView({
               </tr>
               <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
                 <th className="w-12 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>ক্রম</th>
-                <th colSpan={hasOwnerShare ? 4 : 5} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>মালিকের নাম</th>
+                <th colSpan={5 - Number(hasOwnerShare) - Number(hasVerifiedGuardian)} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>মালিকের নাম</th>
+                {hasVerifiedGuardian ? <th className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>পিতা/স্বামী (উৎসে সংযুক্ত)</th> : null}
                 {hasOwnerShare ? (
                   <th className="w-24 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>অংশ</th>
                 ) : null}
@@ -165,7 +167,8 @@ export default function AuthoritativeKhatianDetailsView({
               {model.owners.length ? model.owners.map((owner, index) => (
                 <tr key={`${owner.name}-${index}`} style={{ backgroundColor: index % 2 ? tableSoft : "#ffffff" }}>
                   <td className="border px-2 py-1.5 text-center font-bold" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                  <td colSpan={hasOwnerShare ? 4 : 5} className="border px-2 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{owner.name || "—"}</td>
+                  <td colSpan={5 - Number(hasOwnerShare) - Number(hasVerifiedGuardian)} className="border px-2 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{owner.name || "—"}</td>
+                  {hasVerifiedGuardian ? <td className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{owner.fatherOrHusband || "—"}</td> : null}
                   {hasOwnerShare ? (
                     <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{present(owner.share) ? bangla(owner.share) : "—"}</td>
                   ) : null}
