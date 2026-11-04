@@ -95,7 +95,7 @@ export function useSurveyKhatian() {
     // Do not let a late base response overwrite an already enriched full record.
     void run(
       "khatianBase",
-      () => landRecordsApi.khatian(surveyKey, id, resolvedContext).catch(() => null),
+      () => landRecordsApi.khatianPreview(surveyKey, id).catch(() => null),
       (base) => {
         if (!base || fullDetailResolved.current) return;
         setSelectedKhatian((current) => current?.ID === id ? {
