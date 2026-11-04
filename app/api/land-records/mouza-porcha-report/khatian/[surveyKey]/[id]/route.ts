@@ -24,12 +24,9 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ surveyKey: string; id: string }> },
 ) {
-  // An official base preview is non-consuming; the full record uses the
-  // existing paid-service credit policy. Never charge twice for one view.
-  const fullRequested = new URL(request.url).searchParams.get("detail") === "full";
-  const denied = fullRequested
-    ? await enforceServiceAccess(request, "mouza-porcha")
-    : await checkServiceAccess(request, "mouza-porcha");
+  // Read access is checked without spending credits; charge the paid full
+  // detail request only after verifying its official mouza identity.
+  const denied = await checkServiceAccess(request, "mouza-porcha");
   if (denied) return denied;
 
   try {
@@ -73,6 +70,8 @@ export async function GET(
 
     if (parsedDetail.data === "base") return ok(official);
 
+    const billableDenied = await enforceServiceAccess(request, "mouza-porcha");
+    if (billableDenied) return billableDenied;
     const full = FullKhatianSchema.parse(
       await getFullKhatian({ surveyKey: survey.data, id, jlNumberId }, request.signal),
     );
