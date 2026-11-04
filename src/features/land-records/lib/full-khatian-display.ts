@@ -43,14 +43,12 @@ export function buildFullKhatianDisplayModel(
   // existing longer list with a shorter deduplicated or provisional one.
   const owners = fromFull.length > model.owners.length
     ? fromFull
-    : model.owners.map((row, index) => {
-        const positional = authoritativeOwners[index];
+    : model.owners.map((row) => {
         const candidates = ownersByName.get(key(row.name)) ?? [];
-        // Duplicate names may describe different people. Pair a guardian only
-        // with the matching source row at the same position, or a unique name.
-        const verified = positional && key(positional.name) === key(row.name)
-          ? positional
-          : candidates.length === 1 ? candidates[0] : undefined;
+        // The compact list and structured list may have different ordering.
+        // Without the same unique owner identity, never guess which guardian
+        // belongs to a duplicate name. Fully structured rows remain paired.
+        const verified = candidates.length === 1 ? candidates[0] : undefined;
         return {
           ...row,
           share: row.share || verified?.shareRaw,
