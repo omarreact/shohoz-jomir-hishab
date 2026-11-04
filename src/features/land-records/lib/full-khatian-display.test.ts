@@ -61,6 +61,24 @@ describe("authoritative Khatian document uses full data rather than a truncated 
     ]);
   });
 
+  it("keeps separate sourced land-class rows under one dag without double-counting the plot", () => {
+    const model = buildFullKhatianDisplayModel({
+      ...preview, DAGS: "1974", OWNERS: "মালিক ১",
+    }, {
+      owners: [{ name: "মালিক ১", source: "DLRMS_PUBLIC" }],
+      dags: [
+        { dagNo: "1974", landType: "নাল", khatianAreaRaw: "0.20", source: "DLRMS_PUBLIC" },
+        { dagNo: "1974", landType: "ভিটা", khatianAreaRaw: "0.10", source: "DLRMS_PUBLIC" },
+      ],
+    } as unknown as FullKhatian, "BRS");
+
+    expect(model.dags).toHaveLength(2);
+    expect(model.dags.map((row) => row.dagNo)).toEqual(["1974", "1974"]);
+    expect(model.dags.map((row) => row.landClass)).toEqual(["নাল", "ভিটা"]);
+    expect(model.dags[0].shareArea).not.toEqual(model.dags[1].shareArea);
+    expect(model.dagCount).toBe(1);
+  });
+
   it("does not introduce mock owners or replace longer public lists with deduplicated rows", () => {
     const model = buildFullKhatianDisplayModel({
       ...preview,
