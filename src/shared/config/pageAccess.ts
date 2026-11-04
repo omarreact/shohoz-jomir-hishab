@@ -164,6 +164,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "admin",
   },
   {
+    id: "/rajuk-test-legacy",
+    name: "রাজউক প্লট QA (পূর্ববর্তী সংস্করণ)",
+    description: "আগের RAJUK প্লট টেস্ট UI সংরক্ষিত; শুধুমাত্র অনুমোদিত অ্যাডমিনের জন্য।",
+    category: "পরীক্ষামূলক",
+    defaultAccess: "admin",
+  },
+  {
     id: "/land-measurement",
     name: "জমি পরিমাপ",
     description: "জমির পরিমাণ ও ইউনিট রূপান্তর।",
