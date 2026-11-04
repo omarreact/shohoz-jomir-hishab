@@ -129,14 +129,32 @@ function publicDags(base: KhatianDetails, tracking?: KhatianTracking): FullKhati
 }
 
 function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
-  if (!enriched.length) return publicRows;
-  const output = [...enriched];
-  const known = new Set(enriched.map((item) => item.name.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD")));
-  for (const item of publicRows) {
-    const key = item.name.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
-    if (!known.has(key)) output.push(item);
+  // Equal names alone do not prove that the source lists refer to the same
+  // ownership entry. Parent, share and address can distinguish separate rows.
+  const normalize = (text: string | undefined) =>
+    (text ?? "").replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
+  const detail = (row: FullKhatianOwner) =>
+    Boolean(row.fatherOrHusband || row.shareRaw || row.address);
+  const identity = (row: FullKhatianOwner) =>
+    [row.name, row.fatherOrHusband, row.shareRaw, row.address].map(normalize).join("|");
+  const result: FullKhatianOwner[] = [];
+  for (const candidate of [...enriched, ...publicRows]) {
+    const sameName = result.filter((row) => normalize(row.name) === normalize(candidate.name));
+    if (!sameName.length) {
+      result.push(candidate);
+      continue;
+    }
+    if (!detail(candidate) && sameName.some(detail)) continue;
+    if (detail(candidate) && sameName.every((row) => !detail(row))) {
+      for (let i = result.length - 1; i >= 0; i -= 1) {
+        if (normalize(result[i].name) === normalize(candidate.name)) result.splice(i, 1);
+      }
+      result.push(candidate);
+      continue;
+    }
+    if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
   }
-  return output;
+  return result;
 }
 
 function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatianDag[]): FullKhatianDag[] {
