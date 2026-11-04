@@ -1,6 +1,6 @@
 import type { NextRequest as LandBDNextRequest } from "next/server";
-import { enforceServiceAccess } from "@/src/lib/service-entitlement";
-import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
+import { checkServiceAccess, enforceServiceAccess } from "@/src/lib/service-entitlement";
+import { KhatianPageSchema, idParam, khatianSearchText, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
 import { z } from "zod";
@@ -16,7 +16,12 @@ const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", 
  * mouza is never materialized in one serverless request.
  */
 export async function GET(request: Request) {
-  const denied=await enforceServiceAccess(request as LandBDNextRequest,"mouza-porcha");
+  const searchTerm = new URL(request.url).searchParams.get("khatianNo")?.trim();
+  // Targeted lookup is a non-consuming search; generating the full mouza
+  // report remains a billable operation exactly as before.
+  const denied = searchTerm
+    ? await checkServiceAccess(request as LandBDNextRequest, "mouza-porcha")
+    : await enforceServiceAccess(request as LandBDNextRequest, "mouza-porcha");
   if(denied)return denied;
   try {
     const params = new URL(request.url).searchParams;
@@ -28,12 +33,14 @@ export async function GET(request: Request) {
 
     const page = positivePage.parse(params.get("page") ?? "1");
     const size = pageSize.parse(params.get("pageSize") ?? "100");
+    const khatianNo = khatianSearchText.parse(params.get("khatianNo") || undefined);
 
     const data = await providers.landRecords.listKhatians({
       surveyKey,
       jlNumberId,
       page,
       pageSize: size,
+      khatianNo,
     });
 
     return ok(KhatianPageSchema.parse(data));

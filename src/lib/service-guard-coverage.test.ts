@@ -3,6 +3,7 @@ import path from "node:path";
 
 const nonConsumingRoutes=[
  "app/api/land-records/khatians/route.ts",
+ "app/api/land-records/khatian-preview/[surveyKey]/[id]/route.ts",
  "app/api/mouza-provider/browse/route.ts",
  "app/api/porcha/route.ts",
  "app/api/land-records/dag-map-area/route.ts",
@@ -13,6 +14,7 @@ const billableRoutes=[
  "app/api/land-records/full-khatian/[surveyKey]/[id]/route.ts",
  "app/api/land-records/khatians/[surveyKey]/[id]/route.ts",
  "app/api/land-records/mouza-porcha-report/route.ts",
+ "app/api/land-records/mouza-porcha-report/khatian/[surveyKey]/[id]/route.ts",
  "app/api/land-records/mouza-porcha-report/hal-sabek/route.ts",
  "app/api/mouza-map/download/route.ts",
  "app/api/mouza-provider/file/route.ts",
