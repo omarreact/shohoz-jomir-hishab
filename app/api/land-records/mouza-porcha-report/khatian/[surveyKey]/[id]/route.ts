@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { checkServiceAccess } from "@/src/lib/service-entitlement";
+import { checkServiceAccess, enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { FullKhatianSchema } from "@/src/features/land-records/full-khatian";
 import { khatianMatchesMouza } from "@/src/features/land-records/lib/mouza-khatian-identity";
 import { KhatianDetailsSchema, idParam } from "@/src/features/land-records/schemas";
@@ -24,7 +24,12 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ surveyKey: string; id: string }> },
 ) {
-  const denied = await checkServiceAccess(request, "mouza-porcha");
+  // An official base preview is non-consuming; the full record uses the
+  // existing paid-service credit policy. Never charge twice for one view.
+  const fullRequested = new URL(request.url).searchParams.get("detail") === "full";
+  const denied = fullRequested
+    ? await enforceServiceAccess(request, "mouza-porcha")
+    : await checkServiceAccess(request, "mouza-porcha");
   if (denied) return denied;
 
   try {
