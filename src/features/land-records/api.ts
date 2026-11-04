@@ -152,6 +152,11 @@ export const landRecordsApi = {
       params,
     );
   },
+  khatianPreview: (surveyKey: string, id: number) =>
+    get<KhatianDetails>(
+      "/khatian-preview/" + encodeURIComponent(surveyKey) + "/" + id,
+      KhatianDetailsSchema,
+    ),
   fullKhatian: (surveyKey: string, id: number, context?: FullKhatianRequestContext) =>
     get<FullKhatian>(
       `/full-khatian/${surveyKey}/${id}`,
