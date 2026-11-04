@@ -11,6 +11,7 @@ describe("LandBD paid service endpoint authorization",()=>{
   "app/api/land-records/khatians/[surveyKey]/[id]/route.ts",
   "app/api/land-records/resolve-khatian/route.ts",
   "app/api/land-records/mouza-porcha-report/route.ts",
+  "app/api/land-records/mouza-porcha-report/khatian/[surveyKey]/[id]/route.ts",
   "app/api/land-records/mouza-porcha-report/hal-sabek/route.ts",
   "app/api/mouza-map/download/route.ts",
   "app/api/mouza-provider/file/route.ts",
