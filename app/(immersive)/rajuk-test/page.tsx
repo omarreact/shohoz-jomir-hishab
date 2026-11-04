@@ -256,8 +256,12 @@ export default function RajukTestPage() {
   const [downloading, setDownloading] = useState(false);
   const [printingPdf, setPrintingPdf] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const plotRequestEpochRef = useRef(0);
 
   useEffect(() => {
+    // Invalidate any in-flight RS list or RS/MS lookup when the selected area changes.
+    plotRequestEpochRef.current += 1;
+    setLoadingPlots(false);
     setPlots([]);
     setPlotsLoaded(false);
     setSelected(null);
@@ -270,6 +274,7 @@ export default function RajukTestPage() {
 
   const loadRsPlots = useCallback(async () => {
     if (!loc.selectedMouza || !loc.selectedUpazila) return;
+    const requestEpoch = ++plotRequestEpochRef.current;
     setLoadingPlots(true);
     setSearchError("");
     setSelected(null);
@@ -287,18 +292,21 @@ export default function RajukTestPage() {
     setLastRequestUrl(url);
     try {
       const data = await apiJson(url);
+      if (requestEpoch !== plotRequestEpochRef.current) return;
       setPlots((data.features ?? []) as RajukPlotFeature[]);
       setPlotsLoaded(true);
     } catch (reason) {
+      if (requestEpoch !== plotRequestEpochRef.current) return;
       loc.setError(reason instanceof Error ? reason.message : "আর এস প্লট লোড করা যায়নি");
       setPlots([]);
       setPlotsLoaded(false);
     } finally {
-      setLoadingPlots(false);
+      if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
     }
   }, [loc.selectedMouza, loc.selectedUpazila, loc.setError]);
 
   const runSearch = useCallback(async () => {
+    const requestEpoch = ++plotRequestEpochRef.current;
     setSearchError("");
     setSelected(null);
     setMsMatches([]);
@@ -330,6 +338,7 @@ export default function RajukTestPage() {
       setLoadingPlots(true);
       try {
         const data = await apiJson(url);
+        if (requestEpoch !== plotRequestEpochRef.current) return;
         const features = ((data.features ?? []) as RajukPlotFeature[]).filter(
           (feature) => normalizePlotInput(plotNo(feature, "ms"), "ms") === bare,
         );
@@ -340,9 +349,11 @@ export default function RajukTestPage() {
         setMsMatches(features);
         setSelected(features[0]);
       } catch (reason) {
-        setSearchError(reason instanceof Error ? reason.message : "এম এস প্লট অনুসন্ধান করা যায়নি।");
+        if (requestEpoch === plotRequestEpochRef.current) {
+          setSearchError(reason instanceof Error ? reason.message : "এম এস প্লট অনুসন্ধান করা যায়নি।");
+        }
       } finally {
-        setLoadingPlots(false);
+        if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
       }
       return;
     }
@@ -379,6 +390,7 @@ export default function RajukTestPage() {
     setLoadingPlots(true);
     try {
       const data = await apiJson(url);
+      if (requestEpoch !== plotRequestEpochRef.current) return;
       const found = ((data.features ?? []) as RajukPlotFeature[]).find(matchesPlot);
       if (!found) {
         setSearchError(`নির্বাচিত এলাকায় আর এস প্লট ${bare} পাওয়া যায়নি।`);
@@ -386,9 +398,11 @@ export default function RajukTestPage() {
       }
       setSelected(found);
     } catch (reason) {
-      setSearchError(reason instanceof Error ? reason.message : "আর এস প্লট অনুসন্ধান করা যায়নি।");
+      if (requestEpoch === plotRequestEpochRef.current) {
+        setSearchError(reason instanceof Error ? reason.message : "আর এস প্লট অনুসন্ধান করা যায়নি।");
+      }
     } finally {
-      setLoadingPlots(false);
+      if (requestEpoch === plotRequestEpochRef.current) setLoadingPlots(false);
     }
   }, [plotInput, mode, plotsLoaded, plots, loc.selectedMouza, loc.selectedUpazila]);
 
