@@ -365,8 +365,9 @@ export async function fetchDlrmsCitizenPrintKhatian(
         bodyText: safeCitizenPrintBodyText(page.BODY),
       };
     })
-    .filter((page): page is NonNullable<typeof page> => Boolean(page))
-    .sort((left, right) => (left.pageOrder ?? Number.MAX_SAFE_INTEGER) - (right.pageOrder ?? Number.MAX_SAFE_INTEGER));
+    // The official response order is authoritative; PAGE_ORDER can be null
+    // for the first page and should not move it to the end.
+    .filter((page): page is NonNullable<typeof page> => Boolean(page));
 
   return DlrmsCitizenPrintSchema.parse({
     source: "DLRMS_CITIZEN",
