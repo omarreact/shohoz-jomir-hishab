@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, release/landbd-pr146-preserve-prod-20261104]
+    branches: [main, release/landbd-pr146-preserve-prod-20261104, fix/khatian-source-fidelity-20261104]
   pull_request:
     branches: [main]
 
