@@ -59,27 +59,42 @@ export function buildFullKhatianDisplayModel(
       });
 
   const sourceDags = full.dags.filter((row) => row.source !== "LISF_MOCK" && row.dagNo.trim());
-  const fullDags = new Map(sourceDags.map((row) => [key(row.dagNo), row]));
-  const converted = (dagNo: string, previous?: ParsedDagRow): ParsedDagRow => {
-    const row = fullDags.get(key(dagNo));
-    if (!row) return previous ?? { dagNo };
-    return {
-      dagNo: previous?.dagNo || row.dagNo,
-      landClass: previous?.landClass || row.landType || row.agriculturalType,
-      area: previous?.area || area(row.khatianAreaRaw),
-      shareArea: previous?.shareArea || area(row.khatianAreaRaw),
-      totalArea: previous?.totalArea || area(row.totalAreaRaw),
-      khatianShare: previous?.khatianShare,
-    };
-  };
-
-  const dags = model.dags.map((row) => converted(row.dagNo, row));
-  const seen = new Set(dags.map((dag) => key(dag.dagNo)));
+  const detailedDags = new Map<string, typeof sourceDags>();
   for (const row of sourceDags) {
-    if (!seen.has(key(row.dagNo))) {
-      dags.push(converted(row.dagNo));
-      seen.add(key(row.dagNo));
+    const number = key(row.dagNo);
+    detailedDags.set(number, [...(detailedDags.get(number) ?? []), row]);
+  }
+  const converted = (
+    row: (typeof sourceDags)[number],
+    previous?: ParsedDagRow,
+  ): ParsedDagRow => ({
+    dagNo: previous?.dagNo || row.dagNo,
+    landClass: row.landType || row.agriculturalType || previous?.landClass,
+    area: area(row.khatianAreaRaw) || previous?.area,
+    shareArea: area(row.khatianAreaRaw) || previous?.shareArea,
+    totalArea: area(row.totalAreaRaw) || previous?.totalArea,
+    khatianShare: previous?.khatianShare,
+  });
+  const dags: ParsedDagRow[] = [];
+  const seen = new Set<string>();
+  for (const row of model.dags) {
+    const number = key(row.dagNo);
+    if (seen.has(number)) continue;
+    seen.add(number);
+    const variants = detailedDags.get(number);
+    if (!variants?.length) {
+      dags.push(row);
+      continue;
     }
+    // Keep each explicitly sourced land-class/area variant as a separate row.
+    variants.forEach((variant, index) => {
+      dags.push(converted(variant, index === 0 ? row : undefined));
+    });
+  }
+  for (const [number, variants] of detailedDags) {
+    if (seen.has(number)) continue;
+    seen.add(number);
+    variants.forEach((variant) => dags.push(converted(variant)));
   }
 
   return {
@@ -87,7 +102,7 @@ export function buildFullKhatianDisplayModel(
     owners,
     dags,
     ownerCount: owners.length,
-    dagCount: dags.length,
+    dagCount: new Set(dags.map((row) => key(row.dagNo))).size,
     hasOwnerShares: owners.some((row) => Boolean(row.share)),
     hasDagAreas: dags.some((row) => Boolean(row.area || row.shareArea || row.totalArea)),
     hasLandClass: dags.some((row) => Boolean(row.landClass)),
