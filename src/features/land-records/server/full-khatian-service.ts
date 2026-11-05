@@ -473,7 +473,14 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   // Preserve the list before any additional mirror fetch. Newly added names
   // or dag numbers must never be attributed to the government gateway.
   const sourceKey = (value: string) => value.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
-  const preMirrorOwners = new Set(splitList(rebuilt.OWNERS).map(sourceKey));
+  // Track the number of each published name, not only whether it appears.
+  // The second occurrence of a name supplied by a mirror is mirror evidence,
+  // even when the official compact index already contains that name once.
+  const preMirrorOwnerCounts = new Map<string, number>();
+  for (const name of splitList(rebuilt.OWNERS)) {
+    const normalized = sourceKey(name);
+    preMirrorOwnerCounts.set(normalized, (preMirrorOwnerCounts.get(normalized) ?? 0) + 1);
+  }
   const preMirrorDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
   const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
@@ -581,10 +588,17 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   const structuredDags = useAuthorizedLisf
     ? mergeStructuredDags(structuredPublicDags, lisf.dags)
     : structuredPublicDags;
-  const compactOwners = publicOwners(rebuilt).map((row) => ({
-    ...row,
-    source: preMirrorOwners.has(sourceKey(row.name)) ? row.source : ("DLRMS_MIRROR" as const),
-  }));
+  const compactOwnerOccurrences = new Map<string, number>();
+  const compactOwners = publicOwners(rebuilt).map((row) => {
+    const normalized = sourceKey(row.name);
+    const occurrence = (compactOwnerOccurrences.get(normalized) ?? 0) + 1;
+    compactOwnerOccurrences.set(normalized, occurrence);
+    return {
+      ...row,
+      source: occurrence <= (preMirrorOwnerCounts.get(normalized) ?? 0)
+        ? row.source : ("DLRMS_MIRROR" as const),
+    };
+  });
   const compactDags = publicDags(rebuilt, tracking).map((row) => ({
     ...row,
     source: preMirrorDags.has(sourceKey(row.dagNo)) ? row.source : ("DLRMS_MIRROR" as const),
