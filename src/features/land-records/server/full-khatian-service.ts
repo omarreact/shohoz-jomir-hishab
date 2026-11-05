@@ -178,7 +178,18 @@ function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKha
     });
     result.push(...fallbacks.slice(0, count - matching));
   }
-  return result;
+
+  // Keep the official compact owner order; newly discovered rows without a
+  // compact counterpart follow it. Repeated names use occurrence-aware matching.
+  const remaining = [...result];
+  const ordered: FullKhatianOwner[] = [];
+  for (const row of publicRows) {
+    let index = remaining.findIndex((item) =>
+      normalize(item.name) === normalize(row.name) && item.source === row.source);
+    if (index < 0) index = remaining.findIndex((item) => normalize(item.name) === normalize(row.name));
+    if (index >= 0) ordered.push(...remaining.splice(index, 1));
+  }
+  return [...ordered, ...remaining];
 }
 
 function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatianDag[]): FullKhatianDag[] {
