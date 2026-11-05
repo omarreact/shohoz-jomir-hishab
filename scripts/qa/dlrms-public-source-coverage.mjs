@@ -8,10 +8,10 @@ const ORIGIN="https://dlrms.land.gov.bd";
 const API="https://gateway.dlrms.land.gov.bd/core-api/api/public";
 const TARGETS=[
   {survey:"BRS",jlNumberId:382911,khatianNo:"349",expectedId:7940305},
-  {survey:"RS",jlNumberId:382911},
-  {survey:"SA",jlNumberId:382911},
-  {survey:"CS",jlNumberId:382911},
-  {survey:"BS",jlNumberId:382911},
+  {survey:"RS",surveyId:2},
+  {survey:"SA",surveyId:3},
+  {survey:"CS",surveyId:1},
+  {survey:"BS",surveyId:4},
 ];
 const asRecord=(v)=>v && typeof v==="object" && !Array.isArray(v)?v:null;
 const envelope=(v)=>asRecord(v?.data)??asRecord(v)??{};
@@ -80,13 +80,13 @@ async function bootstrap(){
     return {status:null,token:null,error:e?.name==="TimeoutError"?"TIMEOUT":"NETWORK"};
   }
 }
-function pickSample(rows,target){
+function pickSample(rows,target,jlNumberId){
   return rows.find((row)=>{
     const id=Number(row.ID??row.id);
     if(!Number.isSafeInteger(id)||id<=0)return false;
     if(target.expectedId!==undefined&&target.expectedId!==id)return false;
     if(target.khatianNo&&String(row.KHATIAN_NO??row.khatianNo??"").trim()!==target.khatianNo)return false;
-    return Number(row.JL_NUMBER_ID??row.jlNumberId??target.jlNumberId)===target.jlNumberId;
+    return Number(row.JL_NUMBER_ID??row.jlNumberId??jlNumberId)===jlNumberId;
   });
 }
 const session=await bootstrap();
@@ -102,20 +102,44 @@ if(!session.token){
 }
 let verifiedSampleCount=0,partialSampleCount=0;
 for(const target of TARGETS){
+  const outcome={
+    survey:target.survey,query:target.khatianNo?"KNOWN_KHATIAN":"SURVEY_SAMPLE",
+  };
+  let jlNumberId=target.jlNumberId;
+  if(!jlNumberId){
+    const mouzaUrl=new URL(API+"/mouzas/jl-numbers");
+    mouzaUrl.searchParams.set("DISTRICT_BBS_CODE","26");
+    mouzaUrl.searchParams.set("UPAZILA_BBS_CODE","26");
+    mouzaUrl.searchParams.set("SURVEY_ID",String(target.surveyId));
+    const mouza=await publicGet(mouzaUrl,session.token);
+    const available=mouza.data?records(mouza.data):[];
+    const matches=available.filter((row)=>Number(row.SURVEY_ID??row.surveyId)===target.surveyId
+      && Number.isSafeInteger(Number(row.ID??row.id))
+      && Number(row.ID??row.id)>0);
+    const selected=matches.find((row)=>Number(row.MOUZA_ID??row.mouzaId)===71947)??matches[0];
+    outcome.mouzaLookupStatus=mouza.status;
+    outcome.mouzaRowCount=available.length;
+    outcome.mouzaLocated=Boolean(selected);
+    outcome.preferredMouzaFound=Boolean(selected&&Number(selected.MOUZA_ID??selected.mouzaId)===71947);
+    if(!selected){
+      console.log("DLRMS_PUBLIC_QA_SAMPLE",JSON.stringify(outcome));
+      continue;
+    }
+    jlNumberId=Number(selected.ID??selected.id);
+  }
   const url=new URL(API+"/index-khatian/"+target.survey);
   url.searchParams.set("SURVEY",target.survey);
-  url.searchParams.set("JL_NUMBER_ID",String(target.jlNumberId));
+  url.searchParams.set("JL_NUMBER_ID",String(jlNumberId));
   url.searchParams.set("PAGE_NO","1");
   url.searchParams.set("PAGE_SIZE","5");
   if(target.khatianNo)url.searchParams.set("KHATIAN_NO",target.khatianNo);
   const listing=await publicGet(url,session.token);
   const rows=listing.data?records(listing.data):[];
-  const candidate=pickSample(rows,target);
-  const outcome={
-    survey:target.survey,query:target.khatianNo?"KNOWN_KHATIAN":"SURVEY_SAMPLE",
+  const candidate=pickSample(rows,target,jlNumberId);
+  Object.assign(outcome,{
     listStatus:listing.status,listError:listing.error??null,
     listRowCount:rows.length,identityMatched:Boolean(candidate),
-  };
+  });
   if(candidate){
     outcome.listFields=coverage(candidate);
     const id=Number(candidate.ID??candidate.id);
@@ -126,7 +150,7 @@ for(const target of TARGETS){
       const selected=envelope(detail.data);
       outcome.detailIdentityMatched=Number(selected.ID??selected.id)===id
         &&(!selected.KHATIAN_NO||String(selected.KHATIAN_NO).trim()===String(candidate.KHATIAN_NO).trim())
-        &&(!selected.JL_NUMBER_ID||Number(selected.JL_NUMBER_ID)===target.jlNumberId);
+        &&(!selected.JL_NUMBER_ID||Number(selected.JL_NUMBER_ID)===jlNumberId);
       if(outcome.detailIdentityMatched){
         outcome.detailFields=coverage(selected);
         verifiedSampleCount++;
