@@ -212,6 +212,58 @@ describe("DLRMS citizen authenticated provider", () => {
     expect(JSON.stringify(result)).not.toContain("PRIVATE-MOBILE");
   });
 
+  it("uses legacy pages when structured arrays are present but empty", async () => {
+    fetchMock.mockImplementationOnce(async () => Response.json({
+      success: true,
+      data: {
+        khatian: { ID: 900, KHATIAN_NO: "349", OWNERS: [], DAGS: [] },
+        khatianPages: [
+          { ID: 1, KHATIAN_ID: 900, NAME: "প্রথমপাতা", DAG_NONG: "৪৫৭" },
+        ],
+      },
+    }));
+
+    const { fetchDlrmsCitizenPrintKhatian } = await import("./dlrms-citizen-provider");
+    const result = await fetchDlrmsCitizenPrintKhatian("test.header.signature", 123456);
+
+    expect(result.recordVariant).toBe("legacy-pages");
+    expect(result.pages).toHaveLength(1);
+    expect(result.owners).toHaveLength(0);
+    expect(result.dags).toHaveLength(0);
+    expect(result.summary.dagText).toContain("৪৫৭");
+  });
+
+  it("rejects any malformed structured row rather than silently losing owners or area", async () => {
+    const { fetchDlrmsCitizenPrintKhatian } = await import("./dlrms-citizen-provider");
+    const invalidCases = [
+      {
+        owners: [{ ID: 12, OWNER_NAME: "প্রথম মালিক" }, { OWNER_NAME: "দ্বিতীয় মালিক" }],
+        dags: [],
+      },
+      {
+        owners: [],
+        dags: [
+          { ID: 1001, DAG_NUMBER: "1974", KHATIAN_DAG_AREA: "0.15" },
+          { ID: 0, DAG_NUMBER: "1975", KHATIAN_DAG_AREA: "0.20" },
+        ],
+      },
+      {
+        owners: [],
+        dags: [{ ID: Number.MAX_SAFE_INTEGER + 1, DAG_NUMBER: "1974", KHATIAN_DAG_AREA: "0.35" }],
+      },
+    ];
+
+    for (const { owners, dags } of invalidCases) {
+      fetchMock.mockImplementationOnce(async () => Response.json({
+        success: true,
+        data: { khatian: { ID: 900, KHATIAN_NO: "349", OWNERS: owners, DAGS: dags } },
+      }));
+
+      await expect(fetchDlrmsCitizenPrintKhatian("test.header.signature", 123456))
+        .rejects.toMatchObject({ status: 422 });
+    }
+  });
+
   it("rejects a print response with neither structured rows nor legacy pages", async () => {
     fetchMock.mockImplementationOnce(async () =>
       Response.json({ success: true, data: { khatian: { ID: 900, KHATIAN_NO: "349" } } }),
