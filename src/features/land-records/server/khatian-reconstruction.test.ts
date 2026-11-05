@@ -41,6 +41,38 @@ describe("official tracking owner-row multiplicity", () => {
   });
 });
 
+describe("partial public owner rows with repeated names", () => {
+  const namesakeBase = {
+    ...base,
+    OWNERS: "সিরাজদ্দিন, সিরাজদ্দিন, …",
+  };
+
+  it("keeps two identical published owners when an exact search returns one", () => {
+    const rebuilt = reconstructKhatian(namesakeBase, [{
+      ID: base.ID, KHATIAN_NO: base.KHATIAN_NO,
+      JL_NUMBER_ID: base.JL_NUMBER_ID, MOUZA_ID: base.MOUZA_ID,
+      OWNERS: "সিরাজদ্দিন", DAGS: "", GUARDIANS: "",
+    }]);
+    expect(rebuilt.OWNERS).toBe("সিরাজদ্দিন, সিরাজদ্দিন, …");
+    expect((rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      UPSTREAM_TRUNCATION_REMAINS: boolean,
+    }).UPSTREAM_TRUNCATION_REMAINS).toBe(true);
+  });
+
+  it("does not call a longer name list complete if it has too few namesakes", () => {
+    const rebuilt = reconstructKhatian(namesakeBase, [{
+      ID: base.ID, KHATIAN_NO: base.KHATIAN_NO,
+      JL_NUMBER_ID: base.JL_NUMBER_ID, MOUZA_ID: base.MOUZA_ID,
+      OWNERS: "সিরাজদ্দিন, অন্য মালিক, তৃতীয় মালিক",
+      DAGS: "", GUARDIANS: "",
+    }]);
+    expect(rebuilt.OWNERS).toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক, তৃতীয় মালিক, …");
+    expect((rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      UPSTREAM_TRUNCATION_REMAINS: boolean,
+    }).UPSTREAM_TRUNCATION_REMAINS).toBe(true);
+  });
+});
+
 describe("khatian reconstruction", () => {
   it("merges all returned variants for the same khatian and preserves verified hidden search evidence", () => {
     const rows: KhatianIndex[] = [
