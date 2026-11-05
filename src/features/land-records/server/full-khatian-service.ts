@@ -113,7 +113,7 @@ async function resolveBbsCodesFromPublicLocation(
   }
 }
 
-function publicOwners(base: KhatianDetails, tracking?: KhatianTracking): FullKhatianOwner[] {
+function publicOwners(base: KhatianDetails): FullKhatianOwner[] {
   // The compact owner list has already been reconciled with matched tracking.
   // Unlike dag numbers, identical owner names can represent distinct source rows.
   const names = splitList(base.OWNERS);
@@ -581,7 +581,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   const structuredDags = useAuthorizedLisf
     ? mergeStructuredDags(structuredPublicDags, lisf.dags)
     : structuredPublicDags;
-  const compactOwners = publicOwners(rebuilt, tracking).map((row) => ({
+  const compactOwners = publicOwners(rebuilt).map((row) => ({
     ...row,
     source: preMirrorOwners.has(sourceKey(row.name)) ? row.source : ("DLRMS_MIRROR" as const),
   }));
