@@ -1,6 +1,6 @@
 import { FullKhatianSchema, type FullKhatian, type FullKhatianDag, type FullKhatianOwner, type KhatianTracking, type SourceEvidence } from "../full-khatian";
 import type { KhatianDetails, KhatianPage } from "../types";
-import { reconstructKhatian } from "./khatian-reconstruction";
+import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
 import { getLisfProvider } from "./lisf-provider";
@@ -114,10 +114,9 @@ async function resolveBbsCodesFromPublicLocation(
 }
 
 function publicOwners(base: KhatianDetails, tracking?: KhatianTracking): FullKhatianOwner[] {
-  const names = unique([
-    ...splitList(base.OWNERS),
-    ...(tracking?.matchesBaseRecord ? splitList(tracking.owners) : []),
-  ]);
+  // The compact owner list has already been reconciled with matched tracking.
+  // Unlike dag numbers, identical owner names can represent distinct source rows.
+  const names = splitList(base.OWNERS);
   return names.map((name) => ({ name, source: "DLRMS_PUBLIC" as const }));
 }
 
@@ -154,6 +153,20 @@ function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKha
       continue;
     }
     if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
+  }
+  // Enrichment may identify only one of several same-name owner entries.
+  // Keep the original published row count, without copying a guardian/share
+  // from the identified person to their still-unlinked namesakes.
+  const required = new Map<string, number>();
+  for (const owner of publicRows) {
+    const name = normalize(owner.name);
+    required.set(name, (required.get(name) ?? 0) + 1);
+  }
+  for (const [name, count] of required) {
+    const matching = result.filter((row) => normalize(row.name) === name).length;
+    if (matching >= count) continue;
+    const fallbacks = publicRows.filter((row) => normalize(row.name) === name);
+    result.push(...fallbacks.slice(0, count - matching));
   }
   return result;
 }
@@ -300,7 +313,7 @@ async function fetchFilteredMirrorRecords(
 
 function enrichBaseFromTracking(base: KhatianDetails, tracking: KhatianTracking | undefined): KhatianDetails {
   if (!tracking?.matchesBaseRecord) return base;
-  const owners = unique([...splitList(base.OWNERS), ...splitList(tracking.owners)]).join(", ");
+  const owners = mergeTrackingOwnerRows(base.OWNERS, tracking.owners);
   const dags = unique([...splitList(base.DAGS), ...splitList(tracking.dags)]).join(", ");
   return {
     ...base,
@@ -325,11 +338,12 @@ function enrichBaseFromStructuredPublic(
   owners: FullKhatianOwner[],
   dags: FullKhatianDag[],
 ): KhatianDetails {
-  const ownerNames = unique([...splitList(base.OWNERS), ...owners.map((item) => item.name)]);
+  // Structured owner rows must not collapse repeated same-name entries.
+  const ownerNames = mergeTrackingOwnerRows(base.OWNERS, owners.map((item) => item.name).join(", "));
   const dagNumbers = unique([...splitList(base.DAGS), ...dags.map((item) => item.dagNo)]);
   return {
     ...base,
-    OWNERS: ownerNames.join(", ") || base.OWNERS,
+    OWNERS: ownerNames || base.OWNERS,
     DAGS: dagNumbers.join(", ") || base.DAGS,
     PUBLIC_RECORD: {
       ...(base.PUBLIC_RECORD ?? {}),
