@@ -423,11 +423,36 @@ export default function MouzaPorchaReportBuilder() {
   };
 
 
+  // Verify the actual rendered document contains every fetched index row.
+  // This prevents a pagination regression from silently producing an
+  // apparently complete report with missing or duplicated khatians.
+  const verifyRenderedRows = (): boolean => {
+    const source = document.getElementById("mouza-porcha-report");
+    if (!source) return false;
+    const ids = Array.from(source.querySelectorAll<HTMLTableRowElement>("tr[data-report-source-id]"))
+      .map((node) => Number(node.dataset.reportSourceId));
+    return ids.length === rows.length &&
+      new Set(ids).size === rows.length &&
+      ids.every((id, index) => id === rows[index].ID);
+  };
+
+  const handleBrowserPrint = () => {
+    if (!verifyRenderedRows()) {
+      setLocalError("প্রিন্টে খতিয়ানের সারি মেলেনি। তথ্য বাদ পড়ার ঝুঁকি থাকায় প্রিন্ট বন্ধ করা হয়েছে।");
+      return;
+    }
+    window.print();
+  };
+
   const handlePdf = async (action: "preview" | "download") => {
     if (!rows.length || phase !== "done" || generating || pdfBusy) return;
     const source = document.getElementById("mouza-porcha-report");
     if (!source) {
       setLocalError("রিপোর্টের প্রিভিউ পাওয়া যায়নি। আবার রিপোর্ট তৈরি করুন।");
+      return;
+    }
+    if (!verifyRenderedRows()) {
+      setLocalError("PDF-তে সব খতিয়ানের সারি পাওয়া যায়নি; তথ্য বাদ পড়ার ঝুঁকি থাকায় PDF তৈরি বন্ধ।");
       return;
     }
 
@@ -657,7 +682,7 @@ export default function MouzaPorchaReportBuilder() {
                   {pdfBusy === "download" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   {pdfBusy === "download" ? "ডাউনলোড তৈরি হচ্ছে…" : "PDF ডাউনলোড"}
                 </button>
-                <ResultPrintButton disabled={generating || phase !== "done" || pdfBusy !== null} className="rounded-[12px]" />
+                <ResultPrintButton onClick={handleBrowserPrint} disabled={generating || phase !== "done" || pdfBusy !== null} className="rounded-[12px]" />
               </div>
             </div>
 

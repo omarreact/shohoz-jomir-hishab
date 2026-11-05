@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { landRecordsApi, type FullKhatianRequestContext } from "../api";
 import type { FullKhatian } from "../full-khatian";
+import { isPartialPublicRecord } from "../lib/khatian-display";
 import type { Division, District, Upazila, Survey, Mouza, KhatianDetails, KhatianPage, KhatianSearchInput } from "../types";
 
 function normalizePlace(value: string | undefined): string {
@@ -97,7 +98,10 @@ export function useSurveyKhatian() {
 
       const request = landRecordsApi.fullKhatian(surveyKey, id, resolvedContext)
         .then((full) => {
-          fullKhatianCache.current.set(cacheKey, full);
+          // Missing source rows are retryable; cache only a demonstrably
+          // non-truncated base instead of pinning incomplete owner/dag lists.
+          if (isPartialPublicRecord(full.base)) fullKhatianCache.current.delete(cacheKey);
+          else fullKhatianCache.current.set(cacheKey, full);
           // Keep a small hot cache for back/forward and repeated opens.
           while (fullKhatianCache.current.size > 24) {
             const oldest = fullKhatianCache.current.keys().next().value;

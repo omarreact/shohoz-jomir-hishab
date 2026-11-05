@@ -92,8 +92,9 @@ function normalizedKey(value: string): string {
 function dedupeOwners(rows: FullKhatianOwner[]): FullKhatianOwner[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = normalizedKey(row.name);
-    if (!key || seen.has(key)) return false;
+    const key = [row.name, row.fatherOrHusband, row.address, row.shareRaw]
+      .map((part) => normalizedKey(part ?? "")).join("|");
+    if (!normalizedKey(row.name) || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -102,8 +103,9 @@ function dedupeOwners(rows: FullKhatianOwner[]): FullKhatianOwner[] {
 function dedupeDags(rows: FullKhatianDag[]): FullKhatianDag[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = normalizedKey(row.dagNo);
-    if (!key || seen.has(key)) return false;
+    const key = [row.dagNo, row.landType, row.agriculturalType, row.totalAreaRaw, row.khatianAreaRaw, row.remarks]
+      .map((part) => normalizedKey(part ?? "")).join("|");
+    if (!normalizedKey(row.dagNo) || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -188,17 +190,23 @@ export function extractStructuredPublicRecord(
  * Never import arbitrary properties, authentication keys or a neighbouring
  * mouza's owners into our source model.
  */
+export function mirrorRecordMatchesBase(
+  base: Pick<KhatianIndex, "ID" | "KHATIAN_NO" | "JL_NUMBER_ID">,
+  record: Record<string, unknown> | null,
+): boolean {
+  if (!record || Number(record.ID ?? record.id) !== base.ID) return false;
+  const recordNo = record.KHATIAN_NO ?? record.khatianNo;
+  if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return false;
+  const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
+  if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return false;
+  return true;
+}
+
 export function extractVerifiedMirrorCompactRow(
   base: KhatianIndex,
   record: Record<string, unknown> | null,
 ): KhatianIndex | null {
-  if (!record || Number(record.ID ?? record.id) !== base.ID) return null;
-
-  const recordNo = record.KHATIAN_NO ?? record.khatianNo;
-  if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return null;
-
-  const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
-  if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return null;
+  if (!record || !mirrorRecordMatchesBase(base, record)) return null;
 
   const select = (...keys: string[]): string => {
     for (const key of keys) {

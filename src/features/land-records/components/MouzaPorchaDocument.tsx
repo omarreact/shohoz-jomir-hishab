@@ -164,8 +164,8 @@ export default function MouzaPorchaDocument({
                       <tr>
                         <td>হাল/সাবেক mapping</td>
                         <td><strong>{includeHalSabek ? mappedKhatianCount + " / " + completeCount : "অন্তর্ভুক্ত নয়"}</strong></td>
-                        <td>সংগ্রহ অবস্থা</td>
-                        <td><strong>{isCountComplete ? "সম্পূর্ণ" : "আংশিক"}</strong></td>
+                        <td>সূচি সংগ্রহ</td>
+                        <td><strong>{isCountComplete ? "সংখ্যায় পূর্ণ" : "আংশিক"}</strong></td>
                         <td>রিপোর্ট অবস্থা</td>
                         <td><strong>{reportMeta?.verificationRegistered ? "যাচাইযোগ্য" : "তথ্যভিত্তিক"}</strong></td>
                       </tr>
@@ -179,6 +179,11 @@ export default function MouzaPorchaDocument({
                       এটি সরকারি রেকর্ড অনুপস্থিত থাকার প্রমাণ নয়।
                     </p>
                   ) : null}
+
+                  <p className="report-collection-note">
+                    সংখ্যায় পূর্ণ মানে শুধু প্রত্যাশিত সংখ্যক খতিয়ান-সূচি পাওয়া গেছে; প্রতিটি মালিক, অভিভাবক ও দাগ সম্পূর্ণ হওয়ার নিশ্চয়তা নয়।
+                    সম্পূরক তথ্য তৃতীয়-পক্ষের mirror থেকে আসতে পারে; সরকারি মূল নথিতে যাচাই করুন।
+                  </p>
 
                   {includeHalSabek && unavailableMappingCount > 0 ? (
                     <p className="report-collection-note">

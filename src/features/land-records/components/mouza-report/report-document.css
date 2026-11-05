@@ -1116,3 +1116,42 @@
         }
 
       
+/* Browser Print / Save as PDF safety: logical A4 preview pages must not clip
+   tall khatian rows or create alternating footer-only physical pages.
+   Preserve source text; allow Chromium to paginate the table naturally. */
+@media print {
+  @page { margin: 7mm; }
+
+  #mouza-porcha-report .report-page.report-page-portrait,
+  #mouza-porcha-report .report-page.report-page-landscape {
+    page: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 0 5mm !important;
+    margin: 0 !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+    break-inside: auto !important;
+  }
+
+  #mouza-porcha-report .report-table-wrapper,
+  #mouza-porcha-report .report-table {
+    overflow: visible !important;
+  }
+  #mouza-porcha-report .report-table thead {
+    display: table-header-group !important;
+  }
+  #mouza-porcha-report .report-table tbody tr {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  #mouza-porcha-report .report-page-footer,
+  #mouza-porcha-report .report-page-ribbon {
+    position: static !important;
+    bottom: auto !important;
+    margin-top: 2mm !important;
+    break-inside: avoid !important;
+  }
+}
