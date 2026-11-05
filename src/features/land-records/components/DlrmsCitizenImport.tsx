@@ -187,6 +187,7 @@ function CitizenPrintReport({
           ["ভলিউম", result.khatian.volumeNo || "—"],
           ["DLRMS Khatian ID", String(result.khatian.id || "—")],
           ["Source pages", String(result.totalPages)],
+          ["Format", result.recordVariant === "structured-rows" ? "Structured rows" : "Legacy pages"],
         ].map(([label, value]) => (
           <div key={label} className="rounded-[10px] border border-[var(--border-color)] bg-[var(--canvas)] px-3 py-2.5">
             <p className="text-[10px] font-bold text-[var(--muted-foreground)]">{label}</p>
@@ -200,6 +201,71 @@ function CitizenPrintReport({
         print response থেকে নেওয়া। এটি সরকারি certified copy-এর বিকল্প নয়; আইনগত ব্যবহারে মূল
         DLRMS নথির সাথে যাচাই করুন।
       </div>
+
+
+      {result.recordVariant === "structured-rows" ? (
+        <div className="mt-5 space-y-4">
+          <section className="rounded-[14px] border border-[var(--border-color)] p-4">
+            <h3 className="text-base font-black text-[var(--foreground)]">স্বত্বাধিকারী ও অভিভাবক ({result.owners.length})</h3>
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">প্রতিটি অভিভাবক ও পিতার নাম সংশ্লিষ্ট উৎসের owner row থেকেই নেওয়া হয়েছে।</p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[600px] border-collapse text-left text-xs sm:text-sm">
+                <thead><tr className="border-b border-[var(--border-color)] bg-[var(--canvas)]">
+                  <th scope="col" className="p-2">ক্রম</th><th scope="col" className="p-2">স্বত্বাধিকারী</th>
+                  <th scope="col" className="p-2">পিতার নাম</th><th scope="col" className="p-2">অভিভাবক ও ঠিকানা</th>
+                  <th scope="col" className="p-2">ঠিকানা</th>
+                </tr></thead>
+                <tbody>
+                  {result.owners.map((owner, index) => (
+                    <tr key={owner.id} className="border-b border-[var(--border-color)] align-top">
+                      <td className="p-2">{owner.ownerNo ?? index + 1}</td>
+                      <td className="p-2">{owner.name || "—"}</td>
+                      <td className="p-2">{owner.fatherName || "—"}</td>
+                      <td className="whitespace-pre-line p-2">{owner.guardianAndAddress || "—"}</td>
+                      <td className="whitespace-pre-line p-2">{owner.address || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!result.owners.length ? <p className="p-3 text-amber-800">এই response-এ owner row নেই।</p> : null}
+            </div>
+          </section>
+
+          <section className="rounded-[14px] border border-[var(--border-color)] p-4">
+            <h3 className="text-base font-black text-[var(--foreground)]">দাগভিত্তিক জমির বিবরণ ({result.dags.length}টি উৎস row)</h3>
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              একই দাগে একাধিক জমির শ্রেণি থাকলে আলাদা row দেখানো হয়েছে। পরিমাণের raw সংখ্যাগুলো DLRMS-এর উৎস অনুযায়ী; একক সরকারি নথিতে যাচাই করুন।
+            </p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[620px] border-collapse text-left text-xs sm:text-sm">
+                <thead><tr className="border-b border-[var(--border-color)] bg-[var(--canvas)]">
+                  <th scope="col" className="p-2">দাগ নং</th><th scope="col" className="p-2">জমির শ্রেণি</th>
+                  <th scope="col" className="p-2">দাগের মোট পরিমাণ (raw)</th>
+                  <th scope="col" className="p-2">এই খতিয়ানের পরিমাণ (raw)</th>
+                  <th scope="col" className="p-2">অংশ (raw)</th>
+                </tr></thead>
+                <tbody>
+                  {result.dags.map((dag) => (
+                    <tr key={dag.id} className="border-b border-[var(--border-color)] align-top">
+                      <td className="p-2">{dag.dagNumber || "—"}</td>
+                      <td className="p-2">{dag.landType || "—"}</td>
+                      <td className="p-2">{dag.totalDagAreaRaw ?? "—"}</td>
+                      <td className="p-2">{dag.khatianDagAreaRaw ?? "—"}</td>
+                      <td className="p-2">{dag.khatianDagPortionRaw ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!result.dags.length ? <p className="p-3 text-amber-800">এই response-এ dag row নেই।</p> : null}
+            </div>
+            {result.totalKhatianDagAreaRaw ? (
+              <p className="mt-3 text-sm font-black text-[var(--foreground)]">
+                এই খতিয়ানের দাগভিত্তিক পরিমাণের যোগফল (raw): {result.totalKhatianDagAreaRaw}
+              </p>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         <SummaryList label="দখলকার / স্বত্বাধিকারী" values={summary.occupantText} />

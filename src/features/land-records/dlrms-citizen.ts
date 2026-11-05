@@ -50,10 +50,40 @@ export const DlrmsCitizenPageSchema = z.object({
 
 export type DlrmsCitizenPage = z.infer<typeof DlrmsCitizenPageSchema>;
 
+
+/** Structured citizen-print rows; deliberately exclude NID, mobile and other identity credentials. */
+export const DlrmsCitizenOwnerSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+  fatherName: z.string().optional(),
+  guardianAndAddress: z.string().optional(),
+  address: z.string().optional(),
+  ownerNo: z.number().int().optional(),
+  ownerGroup: z.number().int().optional(),
+  ownerAreaRaw: z.string().optional(),
+});
+export type DlrmsCitizenOwner = z.infer<typeof DlrmsCitizenOwnerSchema>;
+
+export const DlrmsCitizenDagSchema = z.object({
+  id: z.number().int().positive(),
+  dagNumber: z.string(),
+  landType: z.string(),
+  totalDagAreaRaw: z.string().optional(),
+  khatianDagAreaRaw: z.string().optional(),
+  khatianDagPortionRaw: z.string().optional(),
+  landTypeId: z.number().int().optional(),
+  remarks: z.string().optional(),
+});
+export type DlrmsCitizenDag = z.infer<typeof DlrmsCitizenDagSchema>;
+
 export const DlrmsCitizenPrintSchema = z.object({
   source: z.literal("DLRMS_CITIZEN"),
   applicationId: z.number().int().positive(),
   fetchedAt: z.string(),
+  recordVariant: z.enum(["structured-rows", "legacy-pages", "unknown"]),
+  owners: z.array(DlrmsCitizenOwnerSchema),
+  dags: z.array(DlrmsCitizenDagSchema),
+  totalKhatianDagAreaRaw: z.string().optional(),
   khatian: z.object({
     id: z.number().int().positive(),
     identity: z.string().optional(),
