@@ -502,7 +502,21 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     const normalized = sourceKey(name);
     preMirrorOwnerCounts.set(normalized, (preMirrorOwnerCounts.get(normalized) ?? 0) + 1);
   }
-  const preMirrorDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
+  // Official structured rows can be fuller than the official compact text.
+  // They are first-party evidence, never mirror additions.
+  const officialStructuredCounts = new Map<string, number>();
+  for (const owner of officialStructured.owners) {
+    const normalized = sourceKey(owner.name);
+    officialStructuredCounts.set(normalized, (officialStructuredCounts.get(normalized) ?? 0) + 1);
+    preMirrorOwnerCounts.set(normalized, Math.max(
+      preMirrorOwnerCounts.get(normalized) ?? 0,
+      officialStructuredCounts.get(normalized) ?? 0,
+    ));
+  }
+  const preMirrorDags = new Set([
+    ...splitList(rebuilt.DAGS).map(sourceKey),
+    ...officialStructured.dags.map((dag) => sourceKey(dag.dagNo)),
+  ]);
   const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
