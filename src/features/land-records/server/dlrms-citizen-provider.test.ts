@@ -163,6 +163,64 @@ describe("DLRMS citizen authenticated provider", () => {
     expect(result.summary.remarks).toContain("টিন ২ ঘর ১");
   });
 
+
+  it("normalizes the redacted 2026-11-05 HAR structured rows without leaking identifiers", async () => {
+    fetchMock.mockImplementationOnce(async (_input: string | URL | Request, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("user-token")).toBe("Bearer test.header.signature");
+      return Response.json({
+        success: true,
+        data: {
+          khatian: {
+            ID: 900,
+            KHATIAN_NO: "349",
+            SURVEY_ID: 7,
+            JL_NUMBER_ID: 55,
+            MOUZA_ID: 88,
+            MOUZA: { ID: 88, NAME: "পাতিরা", DISTRICT_NAME: "ঢাকা", UPAZILA_NAME: "গুলশান" },
+            MOUZA_JL_NUMBER: { ID: 55, JL_NUMBER: "5" },
+            OWNERS: [
+              { ID: 12, OWNER_NAME: "পরীক্ষা ব্যক্তি", FATHER_NAME: "পরীক্ষা পিতা",
+                OWNER_GUARDIAN_AND_ADDRESS: "পিং পরীক্ষা পিতা", OWNER_ADDRESS: "পরীক্ষা ঠিকানা",
+                OWNER_NO: 1, OWNER_AREA: 0.35, NID_NUMBER: "PII-DO-NOT-LEAK",
+                OWNER_MOBILE: "PRIVATE-MOBILE" },
+              { ID: 13, OWNER_NAME: "পরীক্ষা ব্যক্তি", FATHER_NAME: "অন্য পিতা", OWNER_NO: 2 },
+            ],
+            DAGS: [
+              { ID: 1001, DAG_NUMBER: "1974", LAND_TYPE: "নাল",
+                TOTAL_DAG_AREA: 0.3, KHATIAN_DAG_AREA: 0.15, LAND_TYPE_ID: 2 },
+              { ID: 1002, DAG_NUMBER: "1974", LAND_TYPE: "বাড়ী",
+                TOTAL_DAG_AREA: 0.2, KHATIAN_DAG_AREA: 0.20, LAND_TYPE_ID: 3 },
+            ],
+          },
+          application: { DISTRICT_NAME: "ঢাকা" },
+        },
+      });
+    });
+    const { fetchDlrmsCitizenPrintKhatian } = await import("./dlrms-citizen-provider");
+    const result = await fetchDlrmsCitizenPrintKhatian("test.header.signature", 123456);
+    expect(result.recordVariant).toBe("structured-rows");
+    expect(result.pages).toHaveLength(0);
+    expect(result.owners).toHaveLength(2);
+    expect(result.owners[0].fatherName).toBe("পরীক্ষা পিতা");
+    expect(result.owners[1].name).toBe(result.owners[0].name);
+    expect(result.dags).toHaveLength(2);
+    expect(result.dags.map((dag) => dag.landType)).toEqual(["নাল", "বাড়ী"]);
+    expect(result.totalKhatianDagAreaRaw).toBe("0.35");
+    expect(result.khatian).toMatchObject({ mouzaName: "পাতিরা", jlNumber: "5", districtName: "ঢাকা" });
+    expect(JSON.stringify(result)).not.toContain("PII-DO-NOT-LEAK");
+    expect(JSON.stringify(result)).not.toContain("PRIVATE-MOBILE");
+  });
+
+  it("rejects a print response with neither structured rows nor legacy pages", async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      Response.json({ success: true, data: { khatian: { ID: 900, KHATIAN_NO: "349" } } }),
+    );
+    const { fetchDlrmsCitizenPrintKhatian } = await import("./dlrms-citizen-provider");
+    await expect(fetchDlrmsCitizenPrintKhatian("test.header.signature", 123456))
+      .rejects.toThrow("কোনো ব্যবহারযোগ্য");
+  });
+
   it("rejects malformed tokens before calling DLRMS", async () => {
     const { fetchDlrmsCitizenInvoice } = await import("./dlrms-citizen-provider");
 
