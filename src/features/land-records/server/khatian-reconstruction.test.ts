@@ -47,6 +47,17 @@ describe("partial public owner rows with repeated names", () => {
     OWNERS: "সিরাজদ্দিন, সিরাজদ্দিন, …",
   };
 
+  it("does not mark genuinely absent owner and guardian lists as truncated", () => {
+    const rebuilt = reconstructKhatian({
+      ...base, OWNERS: "", GUARDIANS: "",
+    }, []);
+    const quality = (rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      FIELD_QUALITY: { OWNERS: { PARTIAL: boolean }, GUARDIANS: { PARTIAL: boolean } },
+    }).FIELD_QUALITY;
+    expect(quality.OWNERS.PARTIAL).toBe(false);
+    expect(quality.GUARDIANS.PARTIAL).toBe(false);
+  });
+
   it("keeps two identical published owners when an exact search returns one", () => {
     const rebuilt = reconstructKhatian(namesakeBase, [{
       ID: base.ID, KHATIAN_NO: base.KHATIAN_NO,
