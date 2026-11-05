@@ -8,6 +8,8 @@ import { KhatianDetailsSchema } from "./schemas";
  */
 export const LandRecordSourceSchema = z.enum([
   "DLRMS_PUBLIC",
+  /** Third-party mirror is never an authenticated government source. */
+  "DLRMS_MIRROR",
   "DLRMS_TRACKING",
   "DLRMS_HAL_SABEK",
   "LISF_AUTHORIZED",
