@@ -34,6 +34,46 @@ function splitVisibleItems(value: string): string[] {
     .filter((item) => item && item !== "..." && item !== "…");
 }
 
+/**
+ * Merge independently verified owner rows without treating repeated names as a set.
+ * Same-name entries are distinct published rows; tracking may contribute additional
+ * occurrences but must never erase a partial marker with a shorter preview.
+ */
+export function mergeTrackingOwnerRows(primary: string, tracking?: string): string {
+  const original = clean(primary);
+  const additional = clean(tracking);
+  if (!additional) return original;
+  if (!original) return additional;
+
+  const originalRows = splitVisibleItems(original);
+  const additionalRows = splitVisibleItems(additional);
+  const originalCounts = new Map<string, number>();
+  for (const name of originalRows) {
+    const normalized = normalizeToken(name);
+    originalCounts.set(normalized, (originalCounts.get(normalized) ?? 0) + 1);
+  }
+
+  const additionalCounts = new Map<string, number>();
+  const extraRows: string[] = [];
+  for (const name of additionalRows) {
+    const normalized = normalizeToken(name);
+    const occurrence = (additionalCounts.get(normalized) ?? 0) + 1;
+    additionalCounts.set(normalized, occurrence);
+    if (occurrence > (originalCounts.get(normalized) ?? 0)) extraRows.push(name);
+  }
+
+  // Do not downgrade an already complete or explicitly truncated list with a
+  // shorter single-name tracking preview.
+  if (!extraRows.length) return original;
+
+  const coversOriginal = [...originalCounts].every(
+    ([name, count]) => (additionalCounts.get(name) ?? 0) >= count,
+  );
+  const partial = isTruncated(additional) || (isTruncated(original) && !coversOriginal);
+  const combined = [...originalRows, ...extraRows].join(", ");
+  return partial ? `${combined}, …` : combined;
+}
+
 interface MergedListValue {
   text: string;
   partial: boolean;
