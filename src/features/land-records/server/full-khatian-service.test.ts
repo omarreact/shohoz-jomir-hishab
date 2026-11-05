@@ -288,6 +288,9 @@ describe("FullKhatian service", () => {
     // class/area records. Never collapse those legal rows by dag number.
     expect(new Set(full.dags.map((dag) => dag.dagNo)).size).toBe(9);
     expect(full.dags).toHaveLength(10);
+    expect(full.owners.find((owner) => owner.name === "খোদেজা খাতুন")?.source).toBe("DLRMS_MIRROR");
+    expect(full.dags.filter((dag) => dag.dagNo === "1948").every((dag) => dag.source === "DLRMS_MIRROR")).toBe(true);
+    expect(full.evidence).toContainEqual(expect.objectContaining({ source: "DLRMS_MIRROR", official: false }));
     expect(full.dags.filter((dag) => dag.dagNo === "1948")
       .map((dag) => dag.landType)).toEqual(["নাল", "ভিটা"]);
     expect((full.base.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
