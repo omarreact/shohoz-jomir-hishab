@@ -1,4 +1,4 @@
-import { reconstructKhatian } from "./khatian-reconstruction";
+import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import type { KhatianDetails, KhatianIndex } from "../types";
 
 const base: KhatianDetails = {
@@ -21,6 +21,25 @@ const base: KhatianDetails = {
   SURVEY_NAME: "সি এস",
   PUBLIC_RECORD: { ID: 786385, KHATIAN_NO: "1" },
 };
+
+describe("official tracking owner-row multiplicity", () => {
+  it("does not turn a two-owner truncated list into a one-owner complete result", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, সিরাজদ্দিন, …", "সিরাজদ্দিন"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, …");
+  });
+
+  it("preserves repeated names and safely adds independently reported rows", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, সিরাজদ্দিন", "সিরাজদ্দিন, অন্য মালিক"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক");
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন", "সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক");
+  });
+
+  it("keeps the partial marker when added tracking data cannot cover all visible owners", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, রহিম, …", "সিরাজদ্দিন, করিম"))
+      .toBe("সিরাজদ্দিন, রহিম, করিম, …");
+  });
+});
 
 describe("khatian reconstruction", () => {
   it("merges all returned variants for the same khatian and preserves verified hidden search evidence", () => {
