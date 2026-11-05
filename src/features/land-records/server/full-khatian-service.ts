@@ -456,6 +456,11 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   rebuilt = enrichBaseFromTracking(rebuilt, tracking);
 
   const officialStructured = extractStructuredPublicRecord(rebuilt.PUBLIC_RECORD, "DLRMS_PUBLIC");
+  // Preserve the list before any additional mirror fetch. Newly added names
+  // or dag numbers must never be attributed to the government gateway.
+  const sourceKey = (value: string) => value.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
+  const preMirrorOwners = new Set(splitList(rebuilt.OWNERS).map(sourceKey));
+  const preMirrorDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
   const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
@@ -480,9 +485,9 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   if (mirrorDagRecords.length !== unverifiedMirrorDagRecords.length) {
     warnings.push("Cross-khatian mirror dag rows rejected before enrichment.");
   }
-  let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_PUBLIC");
+  let mirrorStructured = extractStructuredPublicRecord(mirrorRecord ?? undefined, "DLRMS_MIRROR");
   for (const record of mirrorDagRecords) {
-    const filtered = extractStructuredPublicRecord(record, "DLRMS_PUBLIC");
+    const filtered = extractStructuredPublicRecord(record, "DLRMS_MIRROR");
     mirrorStructured = {
       owners: mergeStructuredOwners(mirrorStructured.owners, filtered.owners),
       dags: mergeStructuredDags(mirrorStructured.dags, filtered.dags),
@@ -562,8 +567,16 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   const structuredDags = useAuthorizedLisf
     ? mergeStructuredDags(structuredPublicDags, lisf.dags)
     : structuredPublicDags;
-  const owners = mergeStructuredOwners(publicOwners(rebuilt, tracking), structuredOwners);
-  const dags = mergeStructuredDags(publicDags(rebuilt, tracking), structuredDags);
+  const compactOwners = publicOwners(rebuilt, tracking).map((row) => ({
+    ...row,
+    source: preMirrorOwners.has(sourceKey(row.name)) ? row.source : ("DLRMS_MIRROR" as const),
+  }));
+  const compactDags = publicDags(rebuilt, tracking).map((row) => ({
+    ...row,
+    source: preMirrorDags.has(sourceKey(row.dagNo)) ? row.source : ("DLRMS_MIRROR" as const),
+  }));
+  const owners = mergeStructuredOwners(compactOwners, structuredOwners);
+  const dags = mergeStructuredDags(compactDags, structuredDags);
 
   const evidence: SourceEvidence[] = [
     {
@@ -577,13 +590,16 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   ];
   if (mirrorRecord || mirrorDagRecords.length) {
     evidence.push({
-      field: "strict-ID public mirror expansion and filtered structured owner/dag details",
-      source: "DLRMS_PUBLIC",
+      field: "third-party mirror owner/dag expansion (not a government-issued record)",
+      source: "DLRMS_MIRROR",
       endpoint: `${publicMirrorBaseUrl()}/index-khatian/${input.surveyKey}`,
       official: false,
       access: "public",
       fetchedAt,
     });
+  }
+  if (mirrorRecord || mirrorDagRecords.length) {
+    warnings.push("কিছু তথ্য তৃতীয়-পক্ষের mirror থেকে এসেছে; এটি সরকারি প্রত্যয়ন নয়। মূল পর্চার সঙ্গে যাচাই করুন।");
   }
   if (tracking) {
     evidence.push({
