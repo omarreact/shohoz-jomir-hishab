@@ -165,7 +165,17 @@ function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKha
   for (const [name, count] of required) {
     const matching = result.filter((row) => normalize(row.name) === name).length;
     if (matching >= count) continue;
-    const fallbacks = publicRows.filter((row) => normalize(row.name) === name);
+    const existingBySource = new Map<string, number>();
+    for (const row of result.filter((item) => normalize(item.name) === name)) {
+      existingBySource.set(row.source, (existingBySource.get(row.source) ?? 0) + 1);
+    }
+    const visitedBySource = new Map<string, number>();
+    const fallbacks = publicRows.filter((row) => {
+      if (normalize(row.name) !== name) return false;
+      const occurrence = (visitedBySource.get(row.source) ?? 0) + 1;
+      visitedBySource.set(row.source, occurrence);
+      return occurrence > (existingBySource.get(row.source) ?? 0);
+    });
     result.push(...fallbacks.slice(0, count - matching));
   }
   return result;
