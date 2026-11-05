@@ -1,0 +1,26 @@
+name: DLRMS Public Source Coverage QA (Read Only)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/qa/dlrms-public-source-coverage.mjs"
+      - ".github/workflows/dlrms-public-source-coverage.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dlrms-public-source-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-source-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Read-only official DLRMS coverage (no citizen token or personal-data logs)
+        run: node scripts/qa/dlrms-public-source-coverage.mjs

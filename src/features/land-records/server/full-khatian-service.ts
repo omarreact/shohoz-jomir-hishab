@@ -1,6 +1,6 @@
 import { FullKhatianSchema, type FullKhatian, type FullKhatianDag, type FullKhatianOwner, type KhatianTracking, type SourceEvidence } from "../full-khatian";
 import type { KhatianDetails, KhatianPage } from "../types";
-import { reconstructKhatian } from "./khatian-reconstruction";
+import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
 import { getLisfProvider } from "./lisf-provider";
@@ -113,11 +113,10 @@ async function resolveBbsCodesFromPublicLocation(
   }
 }
 
-function publicOwners(base: KhatianDetails, tracking?: KhatianTracking): FullKhatianOwner[] {
-  const names = unique([
-    ...splitList(base.OWNERS),
-    ...(tracking?.matchesBaseRecord ? splitList(tracking.owners) : []),
-  ]);
+function publicOwners(base: KhatianDetails): FullKhatianOwner[] {
+  // The compact owner list has already been reconciled with matched tracking.
+  // Unlike dag numbers, identical owner names can represent distinct source rows.
+  const names = splitList(base.OWNERS);
   return names.map((name) => ({ name, source: "DLRMS_PUBLIC" as const }));
 }
 
@@ -155,7 +154,42 @@ function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKha
     }
     if (!result.some((row) => identity(row) === identity(candidate))) result.push(candidate);
   }
-  return result;
+  // Enrichment may identify only one of several same-name owner entries.
+  // Keep the original published row count, without copying a guardian/share
+  // from the identified person to their still-unlinked namesakes.
+  const required = new Map<string, number>();
+  for (const owner of publicRows) {
+    const name = normalize(owner.name);
+    required.set(name, (required.get(name) ?? 0) + 1);
+  }
+  for (const [name, count] of required) {
+    const matching = result.filter((row) => normalize(row.name) === name).length;
+    if (matching >= count) continue;
+    const existingBySource = new Map<string, number>();
+    for (const row of result.filter((item) => normalize(item.name) === name)) {
+      existingBySource.set(row.source, (existingBySource.get(row.source) ?? 0) + 1);
+    }
+    const visitedBySource = new Map<string, number>();
+    const fallbacks = publicRows.filter((row) => {
+      if (normalize(row.name) !== name) return false;
+      const occurrence = (visitedBySource.get(row.source) ?? 0) + 1;
+      visitedBySource.set(row.source, occurrence);
+      return occurrence > (existingBySource.get(row.source) ?? 0);
+    });
+    result.push(...fallbacks.slice(0, count - matching));
+  }
+
+  // Keep the official compact owner order; newly discovered rows without a
+  // compact counterpart follow it. Repeated names use occurrence-aware matching.
+  const remaining = [...result];
+  const ordered: FullKhatianOwner[] = [];
+  for (const row of publicRows) {
+    let index = remaining.findIndex((item) =>
+      normalize(item.name) === normalize(row.name) && item.source === row.source);
+    if (index < 0) index = remaining.findIndex((item) => normalize(item.name) === normalize(row.name));
+    if (index >= 0) ordered.push(...remaining.splice(index, 1));
+  }
+  return [...ordered, ...remaining];
 }
 
 function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatianDag[]): FullKhatianDag[] {
@@ -300,7 +334,7 @@ async function fetchFilteredMirrorRecords(
 
 function enrichBaseFromTracking(base: KhatianDetails, tracking: KhatianTracking | undefined): KhatianDetails {
   if (!tracking?.matchesBaseRecord) return base;
-  const owners = unique([...splitList(base.OWNERS), ...splitList(tracking.owners)]).join(", ");
+  const owners = mergeTrackingOwnerRows(base.OWNERS, tracking.owners);
   const dags = unique([...splitList(base.DAGS), ...splitList(tracking.dags)]).join(", ");
   return {
     ...base,
@@ -325,11 +359,12 @@ function enrichBaseFromStructuredPublic(
   owners: FullKhatianOwner[],
   dags: FullKhatianDag[],
 ): KhatianDetails {
-  const ownerNames = unique([...splitList(base.OWNERS), ...owners.map((item) => item.name)]);
+  // Structured owner rows must not collapse repeated same-name entries.
+  const ownerNames = mergeTrackingOwnerRows(base.OWNERS, owners.map((item) => item.name).join(", "));
   const dagNumbers = unique([...splitList(base.DAGS), ...dags.map((item) => item.dagNo)]);
   return {
     ...base,
-    OWNERS: ownerNames.join(", ") || base.OWNERS,
+    OWNERS: ownerNames || base.OWNERS,
     DAGS: dagNumbers.join(", ") || base.DAGS,
     PUBLIC_RECORD: {
       ...(base.PUBLIC_RECORD ?? {}),
@@ -459,8 +494,29 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   // Preserve the list before any additional mirror fetch. Newly added names
   // or dag numbers must never be attributed to the government gateway.
   const sourceKey = (value: string) => value.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
-  const preMirrorOwners = new Set(splitList(rebuilt.OWNERS).map(sourceKey));
-  const preMirrorDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
+  // Track the number of each published name, not only whether it appears.
+  // The second occurrence of a name supplied by a mirror is mirror evidence,
+  // even when the official compact index already contains that name once.
+  const preMirrorOwnerCounts = new Map<string, number>();
+  for (const name of splitList(rebuilt.OWNERS)) {
+    const normalized = sourceKey(name);
+    preMirrorOwnerCounts.set(normalized, (preMirrorOwnerCounts.get(normalized) ?? 0) + 1);
+  }
+  // Official structured rows can be fuller than the official compact text.
+  // They are first-party evidence, never mirror additions.
+  const officialStructuredCounts = new Map<string, number>();
+  for (const owner of officialStructured.owners) {
+    const normalized = sourceKey(owner.name);
+    officialStructuredCounts.set(normalized, (officialStructuredCounts.get(normalized) ?? 0) + 1);
+    preMirrorOwnerCounts.set(normalized, Math.max(
+      preMirrorOwnerCounts.get(normalized) ?? 0,
+      officialStructuredCounts.get(normalized) ?? 0,
+    ));
+  }
+  const preMirrorDags = new Set([
+    ...splitList(rebuilt.DAGS).map(sourceKey),
+    ...officialStructured.dags.map((dag) => sourceKey(dag.dagNo)),
+  ]);
   const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
     rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
@@ -567,10 +623,17 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   const structuredDags = useAuthorizedLisf
     ? mergeStructuredDags(structuredPublicDags, lisf.dags)
     : structuredPublicDags;
-  const compactOwners = publicOwners(rebuilt, tracking).map((row) => ({
-    ...row,
-    source: preMirrorOwners.has(sourceKey(row.name)) ? row.source : ("DLRMS_MIRROR" as const),
-  }));
+  const compactOwnerOccurrences = new Map<string, number>();
+  const compactOwners = publicOwners(rebuilt).map((row) => {
+    const normalized = sourceKey(row.name);
+    const occurrence = (compactOwnerOccurrences.get(normalized) ?? 0) + 1;
+    compactOwnerOccurrences.set(normalized, occurrence);
+    return {
+      ...row,
+      source: occurrence <= (preMirrorOwnerCounts.get(normalized) ?? 0)
+        ? row.source : ("DLRMS_MIRROR" as const),
+    };
+  });
   const compactDags = publicDags(rebuilt, tracking).map((row) => ({
     ...row,
     source: preMirrorDags.has(sourceKey(row.dagNo)) ? row.source : ("DLRMS_MIRROR" as const),

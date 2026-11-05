@@ -47,16 +47,38 @@ export function buildFullKhatianDisplayModel(
   const completeNameMatch = structuredNames.length === compactNames.length &&
     structuredNames.every((name, index) => name === compactNames[index]);
 
-  // Never replace a longer compact list with a shorter structured subset.
-  const owners = fromFull.length > model.owners.length ||
-      (completeNameMatch && fromFull.some((row) => row.fatherOrHusband || row.share))
-    ? fromFull
+  // Count name occurrences, not just unique names. The full source may omit
+  // an owner still visible in the compact row, or carry several namesakes.
+  const compactCounts = new Map<string, number>();
+  const fullCounts = new Map<string, number>();
+  for (const owner of model.owners) {
+    const name = key(owner.name);
+    compactCounts.set(name, (compactCounts.get(name) ?? 0) + 1);
+  }
+  for (const owner of fromFull) {
+    const name = key(owner.name);
+    fullCounts.set(name, (fullCounts.get(name) ?? 0) + 1);
+  }
+  const consumedCompact = new Map<string, number>();
+  const compactRowsMissingFromFull = model.owners.filter((owner) => {
+    const name = key(owner.name);
+    const occurrence = (consumedCompact.get(name) ?? 0) + 1;
+    consumedCompact.set(name, occurrence);
+    return occurrence > (fullCounts.get(name) ?? 0);
+  });
+
+  // When full data gives more rows, include all remaining compact evidence
+  // instead of silently discarding a name missing from the enriched subset.
+  const preferFullRows = fromFull.length > model.owners.length ||
+    (completeNameMatch && fromFull.some((row) => row.fatherOrHusband || row.share));
+  const owners = preferFullRows
+    ? [...fromFull, ...compactRowsMissingFromFull]
     : model.owners.map((row) => {
         const candidates = ownersByName.get(key(row.name)) ?? [];
-        // The compact list and structured list may have different ordering.
-        // Without the same unique owner identity, never guess which guardian
-        // belongs to a duplicate name. Fully structured rows remain paired.
-        const verified = candidates.length === 1 ? candidates[0] : undefined;
+        // Never attach one person's parent/share to two same-name compact
+        // entries when the upstream has not individually linked those rows.
+        const verified = compactCounts.get(key(row.name)) === 1 && candidates.length === 1
+          ? candidates[0] : undefined;
         return {
           ...row,
           share: row.share || verified?.shareRaw,
