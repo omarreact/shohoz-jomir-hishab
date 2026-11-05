@@ -340,7 +340,9 @@ function normalizeStructuredOwners(khatian: JsonRecord) {
   return khatian.OWNERS.flatMap((raw: unknown) => {
     const row = asRecord(raw);
     const id = numberValue(row, "ID");
-    if (!id || !Number.isSafeInteger(id) || id <= 0) return [];
+    if (!id || !Number.isSafeInteger(id) || id <= 0) {
+      throw new DlrmsCitizenError("DLRMS print response-এ মালিকের তথ্যের পরিচয় অসম্পূর্ণ।", 422);
+    }
     return [{
       id,
       name: cleanDlrmsCitizenText(row.OWNER_NAME),
@@ -360,7 +362,9 @@ function normalizeStructuredDags(khatian: JsonRecord) {
   return khatian.DAGS.flatMap((raw: unknown) => {
     const row = asRecord(raw);
     const id = numberValue(row, "ID");
-    if (!id || !Number.isSafeInteger(id) || id <= 0) return [];
+    if (!id || !Number.isSafeInteger(id) || id <= 0) {
+      throw new DlrmsCitizenError("DLRMS print response-এ দাগ তথ্যের পরিচয় অসম্পূর্ণ।", 422);
+    }
     const rawArea = (key: string) => row[key] == null ? undefined : String(row[key]);
     return [{
       id,
@@ -416,11 +420,12 @@ export async function fetchDlrmsCitizenPrintKhatian(
 
   const owners = normalizeStructuredOwners(khatian);
   const dags = normalizeStructuredDags(khatian);
-  const hasStructuredRows = Array.isArray(khatian.OWNERS) || Array.isArray(khatian.DAGS);
+  // Empty structured arrays may accompany usable legacy page responses.
+  const hasStructuredRows = owners.length > 0 || dags.length > 0;
   const recordVariant = hasStructuredRows
     ? "structured-rows"
     : pages.length ? "legacy-pages" : "unknown";
-  if (recordVariant === "unknown" || (hasStructuredRows && !owners.length && !dags.length && !pages.length)) {
+  if (recordVariant === "unknown") {
     throw new DlrmsCitizenError("DLRMS print response-এ কোনো ব্যবহারযোগ্য খতিয়ান তথ্য নেই।", 422);
   }
 
