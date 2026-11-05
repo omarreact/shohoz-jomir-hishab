@@ -122,6 +122,57 @@ describe("FullKhatian service", () => {
     expect(listUpazilas).not.toHaveBeenCalled();
   });
 
+  it("keeps three published owner rows when two people share the same name", async () => {
+    const owners = "সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক";
+    const getKhatian = jest.fn(async () => ({
+      ...baseRecord, OWNERS: owners, GUARDIANS: "", DAGS: "1",
+      PUBLIC_RECORD: { ID: 8088264, KHATIAN_NO: "12", OWNERS: owners, DAGS: "1", GUARDIANS: "" },
+    }));
+    const listKhatians = jest.fn(async () => ({
+      items: [{
+        ID: 8088264, KHATIAN_NO: "12", OWNERS: owners, DAGS: "1",
+        GUARDIANS: "", JL_NUMBER_ID: 381831, MOUZA_ID: 0, TOTAL_LAND: "0.5088",
+      }],
+      page: 1, pageSize: 100, total: 1, hasNextPage: false,
+    }));
+    jest.doMock("./provider", () => ({
+      providers: { landRecords: {
+        getKhatian, listKhatians,
+        listDivisions: jest.fn(), listDistricts: jest.fn(), listUpazilas: jest.fn(),
+      } },
+    }));
+    jest.doMock("./dlrms-public-extras", () => ({
+      DLRMS_PUBLIC_EXTRA_ENDPOINTS: { tracking: "tracking", halSabek: "hal-sabek" },
+      fetchPublicHalSabek: jest.fn(async () => []),
+      fetchPublicKhatianTracking: jest.fn(),
+    }));
+    jest.doMock("./lisf-provider", () => ({
+      getLisfProvider: () => ({ enrichKhatian: async () => ({
+        status: "disabled" as const, owners: [], dags: [],
+        referenceKhatians: [], referenceDags: [], deeds: [],
+      }) }),
+    }));
+    jest.doMock("./public-structured-record", () => ({
+      ...jest.requireActual("./public-structured-record"),
+      fetchStrictPublicMirrorRecord: jest.fn(async () => null),
+    }));
+
+    const { getFullKhatian } = await import("./full-khatian-service");
+    const full = await getFullKhatian({
+      surveyKey: "BRS", id: 8088264, jlNumberId: 381831,
+      divisionBbsCode: "30", districtBbsCode: "26", upazilaBbsCode: "72",
+      tracking: {
+        displayCode: "synthetic-owner-test", khatianNo: "12",
+        jlNumberId: 381831, owners: "সিরাজদ্দিন", dags: "1",
+        matchesBaseRecord: true,
+      },
+    });
+
+    expect(full.base.OWNERS).toBe(owners);
+    expect(full.owners.map((row) => row.name))
+      .toEqual(["সিরাজদ্দিন", "সিরাজদ্দিন", "অন্য মালিক"]);
+  });
+
   it("requeries every published dag for fuller DLRMS variants", async () => {
     const getKhatian = jest.fn(async () => ({
       ...baseRecord,
