@@ -323,7 +323,7 @@ export async function fetchDlrmsCitizenInvoice(
 
 /** Exact decimal addition of source area fields; no binary floating-point rounding. */
 function sumKhatianDagAreas(raw: string[]): string | undefined {
-  if (!raw.length || raw.some((value) => !/^\\d+(?:\\.\\d+)?$/.test(value))) return undefined;
+  if (!raw.length || raw.some((value) => !/^[0-9]+(?:[.][0-9]+)?$/.test(value))) return undefined;
   const precision = Math.max(...raw.map((value) => (value.split(".")[1] ?? "").length));
   const scale = 10n ** BigInt(precision);
   const total = raw.reduce((sum, value) => {
@@ -332,7 +332,7 @@ function sumKhatianDagAreas(raw: string[]): string | undefined {
   }, 0n);
   if (!precision) return total.toString();
   return `${total / scale}.${(total % scale).toString().padStart(precision, "0")}`
-    .replace(/0+$/, "").replace(/\\.$/, "");
+    .replace(/0+$/, "").replace(/[.]$/, "");
 }
 
 function normalizeStructuredOwners(khatian: JsonRecord) {
