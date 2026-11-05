@@ -138,6 +138,21 @@ function mergeListValues(values: Array<string | undefined>, verifiedExactItems: 
   };
 }
 
+function mergePartialOrderedRecordLists(values: Array<string | undefined>): MergedListValue {
+  const sourceLists = values.map(clean).filter(Boolean);
+  let combined = sourceLists[0] ?? "";
+  for (const candidate of sourceLists.slice(1)) {
+    combined = mergeTrackingOwnerRows(combined, candidate);
+  }
+  const rows = splitVisibleItems(combined);
+  return {
+    text: rows.length ? `${rows.join(", ")}, …` : "",
+    partial: true,
+    truncatedInputs: sourceLists.filter(isTruncated).length,
+    distinctItems: new Set(rows.map(normalizeToken)).size,
+  };
+}
+
 /**
  * Owner and guardian lists are ordered record rows, not mathematical sets.
  * The same visible name may legitimately occur more than once (for example,
@@ -162,7 +177,7 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
   const truncatedInputs = prepared.filter((entry) => entry.truncated).length;
   const complete = prepared.filter((entry) => !entry.truncated);
 
-  if (!complete.length) return mergeListValues(values);
+  if (!complete.length) return mergePartialOrderedRecordLists(values);
 
   const best = complete
     .slice()
@@ -175,15 +190,23 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
   // If the "complete" result has fewer/different entries than a truncated
   // variant, it may only be a filtered preview. Preserve every visible item
   // and retain the partial status instead of replacing a longer list.
-  const bestItems = new Set(best.items.map(normalizeToken));
+  const bestCounts = new Map<string, number>();
+  for (const item of best.items) {
+    const name = normalizeToken(item);
+    bestCounts.set(name, (bestCounts.get(name) ?? 0) + 1);
+  }
   const coversTruncated = prepared
     .filter((entry) => entry.truncated)
-    .every((entry) => entry.items.every((item) => bestItems.has(normalizeToken(item))) &&
-      best.items.length > entry.items.length);
-  if (!coversTruncated) {
-    const fallback = mergeListValues(values);
-    return { ...fallback, partial: true, text: fallback.text.replace(/(?:,\s*…)?$/, ", …") };
-  }
+    .every((entry) => {
+      if (best.items.length <= entry.items.length) return false;
+      const expected = new Map<string, number>();
+      for (const item of entry.items) {
+        const name = normalizeToken(item);
+        expected.set(name, (expected.get(name) ?? 0) + 1);
+      }
+      return [...expected].every(([name, count]) => (bestCounts.get(name) ?? 0) >= count);
+    });
+  if (!coversTruncated) return mergePartialOrderedRecordLists(values);
 
   const distinct = new Set(best.items.map((item) => normalizeToken(item)).filter(Boolean));
   return {
