@@ -177,7 +177,11 @@ function mergeOrderedRecordList(values: Array<string | undefined>): MergedListVa
   const truncatedInputs = prepared.filter((entry) => entry.truncated).length;
   const complete = prepared.filter((entry) => !entry.truncated);
 
-  if (!complete.length) return mergePartialOrderedRecordLists(values);
+  if (!complete.length) {
+    return values.some((value) => isTruncated(value ?? ""))
+      ? mergePartialOrderedRecordLists(values)
+      : mergeListValues(values);
+  }
 
   const best = complete
     .slice()
