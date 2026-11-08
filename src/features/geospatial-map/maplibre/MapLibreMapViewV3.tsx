@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import RajukStyleMapHeader from "./RajukStyleMapHeader";
 import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
 import RajukMapControls from "./RajukMapControls";
@@ -16,7 +15,6 @@ import {
   Layers3,
   Loader2,
   Map as MapIcon,
-  MapPin,
   MousePointer2,
   Pentagon,
   Ruler,
@@ -45,7 +43,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import type { BasemapKey } from "./types";
-import { canToggleRasterLayer, setRasterLayerVisibility } from "./layerControlPolicy";
+import { canToggleRasterLayer } from "./layerControlPolicy";
 import { detailRows, isMsFeature, msNumber, rsNumber } from "./mapUtils";
 import {
   measurementFeatureCollection,
@@ -424,7 +422,6 @@ export default function MapLibreMapViewV2({
         className="absolute inset-0 h-full w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[var(--brand-green-soft)]/50 to-transparent pb-24" />
       <div className="absolute inset-x-0 top-0 z-[90]"><RajukStyleMapHeader /></div>
 
       <div className="absolute left-3 top-[78px] z-[60] lg:hidden">
@@ -436,17 +433,8 @@ export default function MapLibreMapViewV2({
       <aside
         id="atlas-map-workspace-panel"
         aria-label="GIS অনুসন্ধান ও লেয়ার নিয়ন্ত্রণ"
-        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,342px)] flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
+        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,320px)] flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
       >
-        <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-5 pb-3 pt-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green-soft)] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[var(--primary)]">LANDBD · GIS MASTER PLAN</span>
-            <span className="text-[11px] font-bold text-[var(--muted-foreground)]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
-          </div>
-          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[var(--foreground)]">RAJUK-ধাঁচের <span className="text-[var(--primary)]">GIS ম্যাপ</span></h1>
-          <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">দাগ অনুসন্ধান, ভূমি-ব্যবহার, জরিপ লেয়ার ও বেসম্যাপ তুলনা।</p>
-        </div>
-
         <RajukPlotFinder
           plotNo={plotNo}
           setPlotNo={setPlotNo}
@@ -467,51 +455,34 @@ export default function MapLibreMapViewV2({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
           {tab === "layers" ? (
-            <>
-              <div className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
-                <h2 className="text-sm font-black text-[var(--foreground)]">ক্যাডাস্ট্রাল লেয়ার</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">আরএস ও এমএস স্তর checkbox দিয়ে পৃথকভাবে দেখান/লুকান; ম্যাপের ডান পাশে দ্রুত লেয়ার প্যানেলও রয়েছে।</p>
-                {isAdvanced ? (
-                  <div className="mt-3 space-y-2">
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>আরএস দাগ ও লেবেল</span><input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>এমএস দাগ ও লেবেল</span><input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
-                  </div>
-                ) : <p className="mt-2 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-[11px] leading-5 text-[var(--muted-foreground)]">দাগ সীমানা উপলব্ধ থাকলে দেখানো হয়। বিস্তারিত লেয়ার নিয়ন্ত্রণ লগইনের পর পাওয়া যাবে।</p>}
-              </div>
-
-              {LAYERS.map((layer) => (
-                <section key={layer.key} className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
-                  <label className="flex cursor-pointer items-start justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-2 text-sm font-extrabold"><i aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{backgroundColor:layer.color}} /> {layer.label}</span>
-                      <span className="mt-1 block text-[11px] leading-4 text-[var(--muted-foreground)]">{layer.description}</span>
-                    </span>
-                    <input type="checkbox" checked={layers[layer.key]} disabled={!canToggleRasterLayer(layer.key, isAdvanced)} onChange={(e) => setLayers((v) => setRasterLayerVisibility(v, layer.key, e.target.checked, isAdvanced))} className="mt-1 h-5 w-5 shrink-0 accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40" />
-                  </label>
-                  {canToggleRasterLayer(layer.key, isAdvanced) && (
-                    <div className="mt-3">
-                      <div className="mb-1 flex justify-between text-[10px] font-bold text-[var(--muted-foreground)]"><span>স্বচ্ছতা</span><span>{bn(opacity[layer.key]*100,0)}%</span></div>
-                      <input aria-label={layer.label + " স্বচ্ছতা"} type="range" min="0" max="1" step=".05" value={opacity[layer.key]} onChange={(e) => setOpacity((v) => ({...v,[layer.key]:Number(e.target.value)}))} className="w-full accent-[var(--primary)]" />
-                    </div>
-                  )}
-                </section>
-              ))}
-              <section aria-label="মানচিত্র লেজেন্ড" className="rounded-md border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
-                <h3 className="mb-2 text-xs font-black text-[var(--primary)]">Map legend / লেজেন্ড</h3>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-[var(--foreground)]">
-                  {LAYERS.map((layer) => (
-                    <span key={layer.key} className="flex items-center gap-2">
-                      <i aria-hidden="true" className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
+            <section aria-label="লেয়ারের স্বচ্ছতা" className="space-y-3">
+              <p className="rounded-xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] px-3 py-2.5 text-xs leading-5 text-[var(--foreground)]">
+                লেয়ার চালু বা বন্ধ করতে ম্যাপের ডান পাশে <strong>লেয়ার</strong> বোতাম ব্যবহার করুন।
+              </p>
+              <h2 className="text-sm font-black">লেয়ারের স্বচ্ছতা</h2>
+              {LAYERS.filter((layer) => canToggleRasterLayer(layer.key, isAdvanced)).map((layer) => (
+                <div key={layer.key} className="rounded-xl border border-[var(--border-color)] bg-white px-3 py-2.5">
+                  <div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <i aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{backgroundColor:layer.color}}/>
                       {layer.label}
                     </span>
-                  ))}
-                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#dc2626]"/> RS দাগ</span>
-                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#7c3aed]"/> MS দাগ</span>
+                    <span className="shrink-0 text-[var(--muted-foreground)]">
+                      {layers[layer.key] ? `${bn(opacity[layer.key] * 100, 0)}%` : "বন্ধ"}
+                    </span>
+                  </div>
+                  <input
+                    aria-label={layer.label + " স্বচ্ছতা"}
+                    type="range" min="0" max="1" step=".05"
+                    disabled={!layers[layer.key]}
+                    value={opacity[layer.key]}
+                    onChange={(e) => setOpacity((previous) => ({...previous, [layer.key]: Number(e.target.value)}))}
+                    className="w-full accent-[var(--primary)] disabled:opacity-40"
+                  />
                 </div>
-                <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
-              </section>
-              <Link href="/rajuk-test" className="flex min-h-11 items-center justify-between rounded-xl border border-[var(--border-color)] bg-[var(--brand-green-soft)] px-4 text-xs font-extrabold text-[var(--primary)]">বিস্তারিত RS/MS অনুসন্ধান <ChevronUp size={17} className="rotate-90" /></Link>
-            </>
+              ))}
+              {!isAdvanced && <p className="text-[11px] leading-5 text-[var(--muted-foreground)]">উন্নত পরিকল্পনা লেয়ার দেখতে লগইন প্রয়োজন।</p>}
+            </section>
           ) : tab === "basemap" ? (
             <>
               <h2 className="text-sm font-black">ভিত্তি মানচিত্র</h2>
@@ -522,13 +493,12 @@ export default function MapLibreMapViewV2({
                 </button>
               ))}
               <div className="border-t border-[var(--border-color)] pt-3">
-                <div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-black">ঐতিহাসিক চিত্র</h3><span className="text-[10px] font-bold text-[var(--muted-foreground)]">FREE DATA</span></div>
-                <p className="mb-3 text-[11px] leading-5 text-[var(--muted-foreground)]">উৎস পরিবর্তনে বর্তমান দাগ ও ম্যাপের অবস্থান একই থাকবে। কিছু স্যাটেলাইট চিত্রে খুব কম বিস্তারিত দেখা যায়।</p>
+                <h3 className="mb-2 text-sm font-black">ঐতিহাসিক চিত্র</h3>
                 {FREE_IMAGERY_OPTIONS.map((option) => (
                   <button key={option.key} type="button" aria-pressed={basemap===option.key} onClick={() => setBasemap(option.key)} className={["mb-2 block w-full rounded-xl border p-3 text-left",basemap===option.key?"border-[var(--primary)] bg-[var(--brand-green-faint)]":"border-[var(--border-color)] bg-white hover:border-[var(--primary)]"].join(" ")}>
                     <span className="block text-xs font-black">{option.label}</span>
                     <span className="mt-1 block text-[11px] text-[var(--muted-foreground)]">{option.description}</span>
-                    <span className="mt-1 block text-[10px] leading-4 text-[var(--muted-foreground)]">{option.detail}</span>
+
                   </button>
                 ))}
               </div>
@@ -558,8 +528,13 @@ export default function MapLibreMapViewV2({
             </>
           )}
 
-          <OfficialLandSourceDock detailed />
-          <p className="pb-4 text-[10px] leading-5 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
+          <details className="rounded-xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
+            <summary className="cursor-pointer text-xs font-bold text-[var(--primary)]">সরকারি উৎস ও তথ্যের সীমাবদ্ধতা</summary>
+            <div className="mt-3">
+              <OfficialLandSourceDock detailed />
+              <p className="mt-3 text-[10px] leading-5 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
+            </div>
+          </details>
         </div>
       </aside>
 
@@ -594,11 +569,11 @@ export default function MapLibreMapViewV2({
         </div>
       )}
 
-      <div className="absolute inset-x-3 bottom-4 z-[58] mx-auto max-w-[850px] lg:left-[372px] lg:right-5">
+      <div className="absolute inset-x-3 bottom-4 z-[58] mx-auto max-w-[580px] lg:left-[342px] lg:right-5">
         {measurePanelOpen && (
           <div className="mb-2 rounded-[24px] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-2xl">
             <div className="flex items-center justify-between gap-2">
-              <div><p className="text-xs font-black">পরিমাপ ও জরিপ টুলস</p><p className="text-[10px] text-[var(--muted-foreground)]">মানচিত্রে ট্যাপ করে বিন্দু বসান</p></div>
+              <p className="text-xs font-black">পরিমাপ · মানচিত্রে বিন্দু বসান</p>
               <button type="button" onClick={() => setMeasurePanelOpen(false)} aria-label="পরিমাপ প্যানেল বন্ধ" className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--secondary)]"><ChevronDown size={18}/></button>
             </div>
             <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
@@ -622,17 +597,23 @@ export default function MapLibreMapViewV2({
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between gap-2 rounded-[22px] border border-[var(--border-color)] bg-[var(--card-bg)]/98 p-2 shadow-[0_14px_50px_rgba(11,45,30,.14)] backdrop-blur-sm">
-          <div className="flex items-center gap-2 pl-1">
-            <span className="hidden h-8 w-8 place-items-center rounded-xl bg-[var(--brand-green-soft)] text-[var(--primary)] sm:grid"><MapPin size={17}/></span>
-            <div className="hidden sm:block"><p className="text-[11px] font-black">GIS ও দাগ যাচাই</p><p className="text-[10px] text-[var(--muted-foreground)]">{measureMode ? "পরিমাপ চলছে" : identifyMode ? "দাগ শনাক্ত চালু" : "দাগ শনাক্ত বন্ধ"}</p></div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button type="button" onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((v) => !v); setMeasurePanelOpen(false); }} aria-pressed={identifyMode}
-              className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[var(--primary)] text-white":"bg-[var(--secondary)]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
-            <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--brand-green-soft)] px-3 text-xs font-black text-[var(--primary)]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
-            <button type="button" onClick={() => {setPanelOpen(true);setTab("basemap");}} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#eff2eb] px-3 text-xs font-black"><Layers3 size={16}/><span className="hidden sm:inline">বেসম্যাপ</span></button>
-          </div>
+        <div className="mx-auto flex w-fit items-center gap-1.5 rounded-2xl border border-[var(--border-color)] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(11,45,30,.14)] backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((current) => !current); setMeasurePanelOpen(false); }}
+            aria-pressed={identifyMode}
+            className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-bold", identifyMode ? "bg-[var(--primary)] text-white" : "bg-[var(--secondary)] text-[var(--foreground)]"].join(" ")}
+          >
+            <MousePointer2 size={17} /> দাগ
+          </button>
+          <button
+            type="button"
+            onClick={() => setMeasurePanelOpen((current) => !current)}
+            aria-expanded={measurePanelOpen}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--brand-green-soft)] px-3 text-xs font-bold text-[var(--primary)]"
+          >
+            <Ruler size={17} /> মাপ {measurePanelOpen ? <ChevronDown size={13}/> : <ChevronUp size={13}/>}
+          </button>
         </div>
       </div>
 
