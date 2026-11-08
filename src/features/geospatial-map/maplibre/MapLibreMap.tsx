@@ -460,6 +460,7 @@ export default function MapLibreMap() {
   return (
     <MapLibreMapView
       containerRef={containerRef}
+      mapRef={mapRef}
       initError={initError}
       mapReady={mapReady}
       vectorStatus={vectorStatus}
