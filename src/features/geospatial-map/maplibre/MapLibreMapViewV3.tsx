@@ -15,6 +15,7 @@ import {
   Layers3,
   Loader2,
   Map as MapIcon,
+  MapPin,
   MousePointer2,
   Pentagon,
   Ruler,
