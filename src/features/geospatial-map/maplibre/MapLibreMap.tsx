@@ -50,6 +50,7 @@ import {
 import MapLibreMapView from "./MapLibreMapView";
 import type { PlotSearchOptions } from "./RajukPlotFinder";
 import { bindMapViewport } from "./mapViewport";
+import { shouldShowSurveyBoundary } from "./layerControlPolicy";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
 
@@ -359,18 +360,21 @@ export default function MapLibreMap() {
         map.setPaintProperty(layerId, "raster-opacity", opacity[key]);
       }
     });
+    // Hiding the RS/MS raster group must also hide its vector boundaries and labels.
+    const rsBoundariesVisible = shouldShowSurveyBoundary(layers.rs, showRsBoundary);
+    const msBoundariesVisible = shouldShowSurveyBoundary(layers.ms, showMsBoundary);
     if (map.getLayer(VECTOR_LAYERS.rsBoundaryFill))
-      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryFill, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryFill, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.rsBoundaryLine))
-      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryLine, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryLine, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.rsPlotLabels))
-      map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryFill))
-      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryFill, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryFill, "visibility", msBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryLine))
-      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", msBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msPlotLabels))
-      map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", msBoundariesVisible ? "visible" : "none");
   }, [layers, opacity, showRsBoundary, showMsBoundary, mapReady]);
 
   const searchPlots = useCallback(async (options?: PlotSearchOptions) => {
