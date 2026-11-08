@@ -89,7 +89,6 @@ type Props = {
   showMsBoundary: boolean;
   setShowMsBoundary: (value: boolean | ((current: boolean) => boolean)) => void;
   results: RajukPlotFeature[];
-  setResults: (value: RajukPlotFeature[]) => void;
   clearResults: () => void;
   selected: RajukPlotFeature | null;
   selectResult: (feature: RajukPlotFeature) => void;
@@ -216,7 +215,6 @@ export default function MapLibreMapViewV2({
   showMsBoundary,
   setShowMsBoundary,
   results,
-  setResults,
   clearResults,
   selected,
   selectResult,
