@@ -5,6 +5,10 @@
   "installCommand": "npm install --no-audit --no-fund --prefer-offline",
   "buildCommand": "next build --webpack",
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": {
+      "*": false,
+      "main": false,
+      "feat/rajuk-style-geospatial-workspace-20261108": true
+    }
   }
 }
