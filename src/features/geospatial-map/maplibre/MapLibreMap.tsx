@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
@@ -47,6 +48,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import MapLibreMapView from "./MapLibreMapView";
+import type { PlotSearchOptions } from "./RajukPlotFinder";
 import { bindMapViewport } from "./mapViewport";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
@@ -112,7 +114,14 @@ export default function MapLibreMap() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    let map: MapLibreInstance;
+    try {
+      configureMapLibreWorker();
+      if (typeof window.WebGL2RenderingContext === "undefined") {
+        setInitError("এই ব্রাউজারে GIS মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
+        return;
+      }
+      map = new maplibregl.Map({
       container: containerRef.current,
       style: {
         version: 8,
@@ -126,7 +135,12 @@ export default function MapLibreMap() {
       maxZoom: 21,
       renderWorldCopies: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    });
+      });
+    } catch (error) {
+      logger.error("MapLibre GIS initialization failed", error);
+      setInitError("GIS মানচিত্র চালু করা যায়নি। WebGL2 সমর্থিত ব্রাউজারে আবার চেষ্টা করুন।");
+      return;
+    }
     mapRef.current = map;
     const handleMapError = (event: { error?: unknown }) => {
       const detail = event.error instanceof Error ? event.error.message : String(event.error ?? "");
@@ -359,14 +373,22 @@ export default function MapLibreMap() {
       map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");
   }, [layers, opacity, showRsBoundary, showMsBoundary, mapReady]);
 
-  const searchPlots = useCallback(async () => {
-    const raw = plotNo.trim();
+  const searchPlots = useCallback(async (options?: PlotSearchOptions) => {
+    const raw = plotNo.trim().replace(/[০-৯]/g, (digit) => String(digit.charCodeAt(0) - 0x09e6));
     if (!raw) return notify("দাগ নম্বর লিখুন");
     const numeric = Number(raw);
     if (!Number.isInteger(numeric) || numeric < 0) return notify("দাগ নম্বর সঠিক নয়");
     setSearching(true);
     try {
-      const params = new URLSearchParams({ action: "plots", plot_no: String(numeric), kind: "all", limit: "50" });
+      const params = new URLSearchParams({
+        action: "plots",
+        plot_no: String(numeric),
+        kind: options?.kind ?? "all",
+        limit: "50",
+      });
+      if (options?.mouza) params.set("mouza", options.mouza);
+      if (options?.jl) params.set("jl", options.jl);
+      if (options?.upazila) params.set("upazila", options.upazila);
       const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`);
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "দাগ খোঁজা যায়নি");
       const data = (await response.json()) as { features?: RajukPlotFeature[] };
@@ -441,6 +463,13 @@ export default function MapLibreMap() {
     }
   }, []);
 
+  const clearResults = useCallback(() => {
+    setResults([]);
+    setSelected(null);
+    const map = mapRef.current;
+    if (map) updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
+  }, []);
+
   const activeDetails = selected
     ? (isMsFeature(selected) ? detailRows(selected, "ms") : detailRows(selected, "rs")).map(([label, value]) => ({
         label,
@@ -451,6 +480,7 @@ export default function MapLibreMap() {
   return (
     <MapLibreMapView
       containerRef={containerRef}
+      mapRef={mapRef}
       initError={initError}
       mapReady={mapReady}
       vectorStatus={vectorStatus}
@@ -477,7 +507,7 @@ export default function MapLibreMap() {
       showMsBoundary={showMsBoundary}
       setShowMsBoundary={setShowMsBoundary}
       results={results}
-      setResults={setResults}
+      clearResults={clearResults}
       selected={selected}
       selectResult={selectResult}
       toast={toast}
