@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import type { Map as MapLibreInstance } from "maplibre-gl";
-import { Compass, Download, Expand, Home, Loader2, LocateFixed, Minus, Plus, Printer } from "lucide-react";
+import { Compass, Download, Expand, Home, Loader2, LocateFixed, MoreHorizontal, Minus, Plus, Printer } from "lucide-react";
 import { DAP_BOUNDS } from "./types";
 
 type Props = {
@@ -19,12 +19,22 @@ const buttonClass = "grid h-10 w-10 place-items-center border-b border-[var(--bo
 
 export default function RajukMapControls({ mapRef, mapReady, locating, goToMyLocation, resetNorth, toggleThreeD, threeD }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [moreOpen]);
 
   const fullExtent = () => {
     mapRef.current?.fitBounds(
@@ -65,20 +75,28 @@ export default function RajukMapControls({ mapRef, mapReady, locating, goToMyLoc
 
   return (
     <div className="absolute right-3 top-[79px] z-[56] flex max-h-[calc(100dvh-160px)] flex-col items-end gap-2 lg:right-4" aria-label="GIS মানচিত্র টুলবার">
-      <div className="overflow-hidden rounded-md border border-[var(--border-color)] shadow-[0_4px_18px_rgba(20,40,70,.2)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-white shadow-[0_4px_18px_rgba(11,45,30,.16)]">
         <button type="button" className={buttonClass} aria-label="জুম বাড়ান" title="Zoom in" disabled={!mapReady} onClick={() => mapRef.current?.zoomIn({ duration: 200 })}><Plus size={18}/></button>
         <button type="button" className={buttonClass} aria-label="জুম কমান" title="Zoom out" disabled={!mapReady} onClick={() => mapRef.current?.zoomOut({ duration: 200 })}><Minus size={18}/></button>
-        <button type="button" className={buttonClass} aria-label="পুরো RAJUK ম্যাপ এলাকা" title="Full extent" disabled={!mapReady} onClick={fullExtent}><Home size={18}/></button>
-        <button type="button" className={buttonClass} aria-label="উত্তর দিক ঠিক করুন" title="North" disabled={!mapReady} onClick={resetNorth}><Compass size={18}/></button>
         <button type="button" className={buttonClass} aria-label="আমার অবস্থান" title="My location" disabled={!mapReady || locating} onClick={goToMyLocation}>{locating ? <Loader2 size={18} className="animate-spin"/> : <LocateFixed size={18}/>}</button>
-        <button type="button" className={buttonClass + (threeD ? " !bg-[var(--brand-green-soft)]" : "")} aria-label="ত্রিমাত্রিক ভিউ" title="3D view" aria-pressed={threeD} disabled={!mapReady} onClick={toggleThreeD}><span className="text-xs font-black">3D</span></button>
-        <button type="button" className={buttonClass + (fullscreen ? " !bg-[var(--brand-green-soft)]" : "")} aria-label="পূর্ণপর্দা" title="Fullscreen" aria-pressed={fullscreen} disabled={!mapReady} onClick={() => void toggleFullscreen()}><Expand size={17}/></button>
+        <button
+          type="button" className={buttonClass + (moreOpen ? " !bg-[var(--brand-green-soft)]" : "")}
+          aria-label="আরও ম্যাপ টুল" title="More map tools"
+          aria-expanded={moreOpen} aria-controls="gis-map-advanced-controls"
+          onClick={() => setMoreOpen((current) => !current)}
+        ><MoreHorizontal size={19}/></button>
       </div>
-      <div className="overflow-hidden rounded-md border border-[var(--border-color)] shadow-md">
-        <button type="button" className={buttonClass} aria-label="মানচিত্র PNG সংরক্ষণ" title="Save map PNG" disabled={!mapReady} onClick={savePng}><Download size={17}/></button>
-        <button type="button" className={buttonClass} aria-label="মানচিত্র প্রিন্ট" title="Print map" disabled={!mapReady} onClick={() => window.print()}><Printer size={17}/></button>
-      </div>
-      {feedback && <div role="alert" className="w-[180px] rounded-md bg-[#fff1ed] px-2 py-2 text-right text-[11px] leading-4 text-[#a73a28] shadow" >{feedback}</div>}
+      {moreOpen && (
+        <div id="gis-map-advanced-controls" aria-label="অতিরিক্ত ম্যাপ টুল" className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-white shadow-md">
+          <button type="button" className={buttonClass} aria-label="পুরো RAJUK ম্যাপ এলাকা" title="Full extent" disabled={!mapReady} onClick={fullExtent}><Home size={18}/></button>
+          <button type="button" className={buttonClass} aria-label="উত্তর দিক ঠিক করুন" title="North" disabled={!mapReady} onClick={resetNorth}><Compass size={18}/></button>
+          <button type="button" className={buttonClass + (threeD ? " !bg-[var(--brand-green-soft)]" : "")} aria-label="ত্রিমাত্রিক ভিউ" title="3D view" aria-pressed={threeD} disabled={!mapReady} onClick={toggleThreeD}><span className="text-xs font-black">3D</span></button>
+          <button type="button" className={buttonClass + (fullscreen ? " !bg-[var(--brand-green-soft)]" : "")} aria-label="পূর্ণপর্দা" title="Fullscreen" aria-pressed={fullscreen} disabled={!mapReady} onClick={() => void toggleFullscreen()}><Expand size={17}/></button>
+          <button type="button" className={buttonClass} aria-label="মানচিত্র PNG সংরক্ষণ" title="Save map PNG" disabled={!mapReady} onClick={savePng}><Download size={17}/></button>
+          <button type="button" className={buttonClass} aria-label="মানচিত্র প্রিন্ট" title="Print map" disabled={!mapReady} onClick={() => window.print()}><Printer size={17}/></button>
+        </div>
+      )}
+      {feedback && <div role="alert" className="w-[180px] rounded-xl bg-[#fff1ed] px-2 py-2 text-right text-[11px] leading-4 text-[#a73a28] shadow" >{feedback}</div>}
     </div>
   );
 }
