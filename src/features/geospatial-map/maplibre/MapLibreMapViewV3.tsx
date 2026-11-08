@@ -5,6 +5,7 @@ import RajukStyleMapHeader from "./RajukStyleMapHeader";
 import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
 import RajukMapControls from "./RajukMapControls";
 import RajukCoordinateStatus from "./RajukCoordinateStatus";
+import RajukParcelInspector from "./RajukParcelInspector";
 import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
@@ -89,6 +90,7 @@ type Props = {
   setShowMsBoundary: (value: boolean | ((current: boolean) => boolean)) => void;
   results: RajukPlotFeature[];
   setResults: (value: RajukPlotFeature[]) => void;
+  clearResults: () => void;
   selected: RajukPlotFeature | null;
   selectResult: (feature: RajukPlotFeature) => void;
   toast: string;
@@ -215,6 +217,7 @@ export default function MapLibreMapViewV2({
   setShowMsBoundary,
   results,
   setResults,
+  clearResults,
   selected,
   selectResult,
   toast,
@@ -536,12 +539,22 @@ export default function MapLibreMapViewV2({
               <h2 className="text-sm font-black">ম্যাপে পাওয়া দাগ</h2>
               <p className="text-[11px] leading-5 text-[#637a75]">আরএস: {bn(rsResults.length,0)} · এমএস: {bn(msResults.length,0)}। ফলাফল সরাসরি RAJUK সার্ভিস থেকে আসে।</p>
               {results.length ? <>
-                <button type="button" onClick={() => setResults([])} className="text-xs font-bold text-[#af603b] underline">ফলাফলের তালিকা মুছুন</button>
+                <button type="button" onClick={clearResults} className="text-xs font-bold text-[#af603b] underline">ফলাফলের তালিকা মুছুন</button>
                 <div className="space-y-2">
-                  {rsResults.map((feature,index) => <PlotCard key={"rs-"+(feature.plotId??index)} kind="rs" feature={feature} active={selected?.plotId===feature.plotId} onSelect={() => selectResult(feature)}/>)}
-                  {msResults.map((feature,index) => <PlotCard key={"ms-"+(feature.plotId??index)} kind="ms" feature={feature} active={selected?.plotId===feature.plotId} onSelect={() => selectResult(feature)}/>)}
+                  {rsResults.map((feature,index) => <PlotCard key={"rs-"+(feature.plotId??index)} kind="rs" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
+                  {msResults.map((feature,index) => <PlotCard key={"ms-"+(feature.plotId??index)} kind="ms" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
                 </div>
               </> : <div className="rounded-2xl border border-dashed border-[#cbd8cb] bg-white p-6 text-center text-xs leading-6 text-[#73847d]">দাগ বাছাই করুন বা উপরের অনুসন্ধান থেকে একটি দাগ নম্বর লিখুন।</div>}
+              {selected && (
+                <div className="xl:hidden">
+                  <RajukParcelInspector
+                    selected={selected}
+                    activeDetails={activeDetails}
+                    routingCalculator={routingCalculator}
+                    validateAndRoute={validateAndRoute}
+                  />
+                </div>
+              )}
             </>
           )}
 
@@ -561,26 +574,14 @@ export default function MapLibreMapViewV2({
       />
 
       {selected && (
-        <section aria-label="নির্বাচিত দাগের বিস্তারিত" className="absolute right-[64px] top-[96px] z-[50] hidden max-h-[calc(100dvh-235px)] w-[min(27vw,300px)] overflow-y-auto rounded-[24px] border border-[#d9dfd6] bg-[#fffdf7]/98 p-4 shadow-2xl xl:block">
-          <div className="mb-2 inline-flex rounded-full bg-[#e3eeeb] px-3 py-1 text-[10px] font-black uppercase tracking-[.13em] text-[#216268]">PARCEL INSPECTOR</div>
-          <h2 className="text-lg font-black">নির্বাচিত দাগ</h2>
-          <dl className="mt-3 space-y-2">
-            {activeDetails.map((row) => (
-              <div key={row.label} className="flex justify-between gap-3 border-b border-[#edf0e8] py-2 text-[11px]">
-                <dt className="text-[#69817b]">{row.label}</dt><dd className="max-w-[53%] break-words text-right font-black">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <details className="mt-3 rounded-md border border-[#dce5ef] bg-[#f5f9fc] p-2.5">
-            <summary className="cursor-pointer text-xs font-black text-[#174a78]">ভূমি ব্যবহার / DAP বিশ্লেষণ</summary>
-            <p className="mt-2 text-[11px] leading-5 text-[#5f7184]">প্রস্তাবিত ভূমি-ব্যবহার ও বন্যা ঝুঁকির লেয়ার বাম পাশ থেকে চালু করা যায়। নির্দিষ্ট প্লটের সরকারি DAP শ্রেণিবিন্যাস এই ডেটা রেসপন্সে যাচাই করা হয়নি।</p>
-          </details>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" disabled={routingCalculator !== null} onClick={() => void validateAndRoute("khatiyan",selected)} className="min-h-10 rounded-xl bg-[#1b5960] px-2 text-[11px] font-bold text-white disabled:opacity-50">খতিয়ান হিসাব</button>
-            <button type="button" disabled={routingCalculator !== null} onClick={() => void validateAndRoute("faraez",selected)} className="min-h-10 rounded-xl border border-[#ccdbd3] bg-white px-2 text-[11px] font-bold disabled:opacity-50">ফারায়েজ</button>
-          </div>
-          <p className="mt-2 text-[10px] leading-4 text-[#9d694a]">GIS তথ্য আনুমানিক; সার্টিফায়েড সীমানা/মালিকানা নয়।</p>
-        </section>
+        <div className="absolute right-[64px] top-[96px] z-[50] hidden max-h-[calc(100dvh-235px)] w-[min(27vw,300px)] overflow-y-auto rounded-lg shadow-2xl xl:block">
+          <RajukParcelInspector
+            selected={selected}
+            activeDetails={activeDetails}
+            routingCalculator={routingCalculator}
+            validateAndRoute={validateAndRoute}
+          />
+        </div>
       )}
 
       <div className="absolute inset-x-3 bottom-4 z-[58] mx-auto max-w-[850px] lg:left-[372px] lg:right-5">
