@@ -101,7 +101,7 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
 
   return (
     <form
-      className="space-y-3 border-b border-[var(--border-color)] bg-white px-4 py-4"
+      className="space-y-2.5 border-b border-[var(--border-color)] bg-white px-4 py-3"
       onSubmit={(event) => {
         event.preventDefault();
         // A partially selected hierarchy should not silently broaden the query.
@@ -158,7 +158,6 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
       </div>
       {lookupError && <p role="alert" className="rounded-md bg-[#fff1ed] px-2.5 py-2 text-[11px] leading-5 text-[#a43a24]">{lookupError}। শুধু দাগ নম্বর দিয়েও খোঁজা যাবে।</p>}
       {vectorStatus && <p role="status" className="text-[11px] leading-5 text-[var(--muted-foreground)]">{vectorStatus}</p>}
-      <p className="text-[10px] leading-4 text-[var(--muted-foreground)]">উৎস: LandBD-এর বিদ্যমান RAJUK GIS সংযোগ। এলাকার বাইরে ফলাফল নাও থাকতে পারে।</p>
     </form>
   );
 }
