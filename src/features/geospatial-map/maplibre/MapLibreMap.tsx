@@ -450,6 +450,13 @@ export default function MapLibreMap() {
     }
   }, []);
 
+  const clearResults = useCallback(() => {
+    setResults([]);
+    setSelected(null);
+    const map = mapRef.current;
+    if (map) updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
+  }, []);
+
   const activeDetails = selected
     ? (isMsFeature(selected) ? detailRows(selected, "ms") : detailRows(selected, "rs")).map(([label, value]) => ({
         label,
@@ -487,7 +494,7 @@ export default function MapLibreMap() {
       showMsBoundary={showMsBoundary}
       setShowMsBoundary={setShowMsBoundary}
       results={results}
-      setResults={setResults}
+      clearResults={clearResults}
       selected={selected}
       selectResult={selectResult}
       toast={toast}
