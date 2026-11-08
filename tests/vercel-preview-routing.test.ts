@@ -21,7 +21,7 @@ describe("Vercel deployment safety gate for LandBD", () => {
     expect(rules).toEqual({
       "*": false,
       main: false,
-      "feat/gis-layer-checkbox-controls-20261108": true,
+      "refactor/gis-minimal-map-ui-20261108": true,
     });
   });
 });
