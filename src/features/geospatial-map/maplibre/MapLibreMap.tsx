@@ -47,6 +47,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import MapLibreMapView from "./MapLibreMapView";
+import type { PlotSearchOptions } from "./RajukPlotFinder";
 import { bindMapViewport } from "./mapViewport";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
@@ -359,14 +360,22 @@ export default function MapLibreMap() {
       map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");
   }, [layers, opacity, showRsBoundary, showMsBoundary, mapReady]);
 
-  const searchPlots = useCallback(async () => {
-    const raw = plotNo.trim();
+  const searchPlots = useCallback(async (options?: PlotSearchOptions) => {
+    const raw = plotNo.trim().replace(/[০-৯]/g, (digit) => String(digit.charCodeAt(0) - 0x09e6));
     if (!raw) return notify("দাগ নম্বর লিখুন");
     const numeric = Number(raw);
     if (!Number.isInteger(numeric) || numeric < 0) return notify("দাগ নম্বর সঠিক নয়");
     setSearching(true);
     try {
-      const params = new URLSearchParams({ action: "plots", plot_no: String(numeric), kind: "all", limit: "50" });
+      const params = new URLSearchParams({
+        action: "plots",
+        plot_no: String(numeric),
+        kind: options?.kind ?? "all",
+        limit: "50",
+      });
+      if (options?.mouza) params.set("mouza", options.mouza);
+      if (options?.jl) params.set("jl", options.jl);
+      if (options?.upazila) params.set("upazila", options.upazila);
       const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`);
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "দাগ খোঁজা যায়নি");
       const data = (await response.json()) as { features?: RajukPlotFeature[] };
