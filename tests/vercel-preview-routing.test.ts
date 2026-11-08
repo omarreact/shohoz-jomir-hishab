@@ -7,7 +7,7 @@ type Config = {
   };
 };
 
-describe("Vercel deployment safety gate for LandBD GIS", () => {
+describe("Vercel deployment safety gate for LandBD", () => {
   const config = JSON.parse(readFileSync(join(process.cwd(), "vercel.json"), "utf8")) as Config;
   const rules = config.git?.deploymentEnabled;
 
@@ -21,7 +21,7 @@ describe("Vercel deployment safety gate for LandBD GIS", () => {
     expect(rules).toEqual({
       "*": false,
       main: false,
-      "feat/rajuk-style-geospatial-workspace-20261108": true,
+      "fix/home-banner-hide-pricing-20261108": true,
     });
   });
 });
