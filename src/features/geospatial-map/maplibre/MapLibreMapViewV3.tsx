@@ -6,6 +6,7 @@ import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
 import RajukMapControls from "./RajukMapControls";
 import RajukCoordinateStatus from "./RajukCoordinateStatus";
 import RajukParcelInspector from "./RajukParcelInspector";
+import RajukLayerSwitcher from "./RajukLayerSwitcher";
 import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
@@ -44,6 +45,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import type { BasemapKey } from "./types";
+import { canToggleRasterLayer, setRasterLayerVisibility } from "./layerControlPolicy";
 import { detailRows, isMsFeature, msNumber, rsNumber } from "./mapUtils";
 import {
   measurementFeatureCollection,
@@ -468,7 +470,7 @@ export default function MapLibreMapViewV2({
             <>
               <div className="rounded-2xl border border-[#e6e4d9] bg-white p-3.5">
                 <h2 className="text-sm font-black text-[#214649]">ক্যাডাস্ট্রাল লেয়ার</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[#71817c]">আরএস ও এমএস দাগ একসাথে দেখা ও পৃথকভাবে নিয়ন্ত্রণ করা যাবে।</p>
+                <p className="mt-1 text-[11px] leading-5 text-[#71817c]">আরএস ও এমএস স্তর checkbox দিয়ে পৃথকভাবে দেখান/লুকান; ম্যাপের ডান পাশে দ্রুত লেয়ার প্যানেলও রয়েছে।</p>
                 {isAdvanced ? (
                   <div className="mt-3 space-y-2">
                     <label className="flex min-h-10 items-center justify-between rounded-xl bg-[#f4f7f3] px-3 text-xs font-bold"><span>আরএস দাগ ও লেবেল</span><input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} className="h-4 w-4 accent-[#1c6068]" /></label>
@@ -484,9 +486,9 @@ export default function MapLibreMapViewV2({
                       <span className="flex items-center gap-2 text-sm font-extrabold"><i aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{backgroundColor:layer.color}} /> {layer.label}</span>
                       <span className="mt-1 block text-[11px] leading-4 text-[#6c8079]">{layer.description}</span>
                     </span>
-                    <input type="checkbox" checked={layers[layer.key]} disabled={!isAdvanced} onChange={(e) => setLayers((v) => ({...v,[layer.key]:e.target.checked}))} className="mt-1 h-4 w-4 accent-[#1d6065]" />
+                    <input type="checkbox" checked={layers[layer.key]} disabled={!canToggleRasterLayer(layer.key, isAdvanced)} onChange={(e) => setLayers((v) => setRasterLayerVisibility(v, layer.key, e.target.checked, isAdvanced))} className="mt-1 h-5 w-5 shrink-0 accent-[#1264a3] disabled:cursor-not-allowed disabled:opacity-40" />
                   </label>
-                  {isAdvanced && (
+                  {canToggleRasterLayer(layer.key, isAdvanced) && (
                     <div className="mt-3">
                       <div className="mb-1 flex justify-between text-[10px] font-bold text-[#68817a]"><span>স্বচ্ছতা</span><span>{bn(opacity[layer.key]*100,0)}%</span></div>
                       <input aria-label={layer.label + " স্বচ্ছতা"} type="range" min="0" max="1" step=".05" value={opacity[layer.key]} onChange={(e) => setOpacity((v) => ({...v,[layer.key]:Number(e.target.value)}))} className="w-full accent-[#d1744d]" />
@@ -560,6 +562,16 @@ export default function MapLibreMapViewV2({
           <p className="pb-4 text-[10px] leading-5 text-[#74827d]">{LEGAL_SURVEY_NOTE}</p>
         </div>
       </aside>
+
+      <RajukLayerSwitcher
+        layers={layers}
+        setLayers={setLayers}
+        showRsBoundary={showRsBoundary}
+        setShowRsBoundary={setShowRsBoundary}
+        showMsBoundary={showMsBoundary}
+        setShowMsBoundary={setShowMsBoundary}
+        isAdvanced={isAdvanced}
+      />
 
       <RajukMapControls
         mapRef={mapRef}
