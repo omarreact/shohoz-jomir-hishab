@@ -7,7 +7,7 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true,
+      "main": false,
       "fix/home-banner-hide-pricing-20261108": true
     }
   }
