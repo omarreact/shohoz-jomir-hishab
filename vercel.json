@@ -7,8 +7,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": false,
-      "fix/home-banner-hide-pricing-20261108": true
+      "main": true,
+      "feat/gis-layer-checkbox-controls-20261108": true
     }
   }
 }
