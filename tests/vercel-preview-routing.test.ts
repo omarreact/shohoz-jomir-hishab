@@ -11,16 +11,16 @@ describe("Vercel deployment safety gate for LandBD", () => {
   const config = JSON.parse(readFileSync(join(process.cwd(), "vercel.json"), "utf8")) as Config;
   const rules = config.git?.deploymentEnabled;
 
-  test("production branch enabled for this explicitly authorized release", () => {
+  test("production branch disabled again after approved GIS release", () => {
     expect(typeof rules).toBe("object");
-    expect((rules as Record<string, boolean>).main).toBe(true);
+    expect((rules as Record<string, boolean>).main).toBe(false);
     expect((rules as Record<string, boolean>)["*"]).toBe(false);
   });
 
-  test("only main and the reviewed preview branch are enabled", () => {
+  test("only the reviewed preview branch remains enabled", () => {
     expect(rules).toEqual({
       "*": false,
-      main: true,
+      main: false,
       "feat/gis-layer-checkbox-controls-20261108": true,
     });
   });
