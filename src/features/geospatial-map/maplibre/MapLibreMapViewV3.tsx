@@ -166,21 +166,21 @@ function PlotCard({
       onClick={onSelect}
       className={`w-full rounded-2xl border p-3 text-left transition ${
         active
-          ? "border-[#ce7950] bg-[#fff2e5] shadow-sm"
-          : "border-[#dfdfd2] bg-white hover:bg-[#f5f1e9]"
+          ? "border-[var(--primary)] bg-[var(--brand-green-faint)] shadow-sm"
+          : "border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]"
       }`}
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="rounded-lg bg-[#15535a] px-2 py-0.5 text-xs font-bold text-white">
           {kind === "rs" ? "আরএস" : "এমএস"}
         </span>
-        <span className="text-sm font-bold text-[#203a3d]">{title}</span>
+        <span className="text-sm font-bold text-[var(--foreground)]">{title}</span>
       </div>
       <div className="space-y-1.5">
         {rows.slice(0, 5).map(([label, value]) => (
           <div key={label} className="flex items-start justify-between gap-3 text-xs">
-            <span className="shrink-0 text-[#657978]">{label}</span>
-            <span className="text-right font-semibold text-[#203a3d]">{value}</span>
+            <span className="shrink-0 text-[var(--muted-foreground)]">{label}</span>
+            <span className="text-right font-semibold text-[var(--foreground)]">{value}</span>
           </div>
         ))}
       </div>
@@ -403,12 +403,12 @@ export default function MapLibreMapViewV2({
 
   if (initError) {
     return (
-      <div className="grid h-full place-items-center bg-[#f3f0e7] px-6 text-center text-[#204046]">
-        <div className="max-w-md rounded-[28px] border border-[#e3ddcf] bg-white p-8 shadow-xl">
-          <MapIcon className="mx-auto text-[#ca7b53]" size={30} />
+      <div className="grid h-full place-items-center bg-[var(--background)] px-6 text-center text-[var(--foreground)]">
+        <div className="max-w-md rounded-[28px] border border-[var(--border-color)] bg-white p-8 shadow-xl">
+          <MapIcon className="mx-auto text-[var(--primary)]" size={30} />
           <h2 className="mt-3 text-xl font-black">মানচিত্র চালু হয়নি</h2>
-          <p className="mt-2 text-sm leading-6 text-[#697c7a]">{initError}</p>
-          <button type="button" className="mt-5 min-h-11 rounded-full bg-[#20474d] px-6 text-sm font-bold text-white" onClick={() => window.location.reload()}>
+          <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{initError}</p>
+          <button type="button" className="mt-5 min-h-11 rounded-full bg-[var(--primary)] px-6 text-sm font-bold text-white" onClick={() => window.location.reload()}>
             পুনরায় চেষ্টা
           </button>
         </div>
@@ -417,18 +417,18 @@ export default function MapLibreMapViewV2({
   }
 
   return (
-    <main className="relative h-full min-h-0 w-full overflow-hidden bg-[#e9eee8] font-sans text-[#203a3d] [&_.maplibregl-ctrl-group]:!hidden [&_.maplibregl-ctrl-scale]:!rounded-full [&_.maplibregl-ctrl-scale]:!border-0 [&_.maplibregl-ctrl-scale]:!bg-white/95 [&_.maplibregl-ctrl-scale]:!px-3 [&_.maplibregl-ctrl-scale]:!py-2 [&_.maplibregl-ctrl-scale]:!font-bold">
+    <main className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--background)] font-sans text-[var(--foreground)] [&_.maplibregl-ctrl-group]:!hidden [&_.maplibregl-ctrl-scale]:!rounded-full [&_.maplibregl-ctrl-scale]:!border-0 [&_.maplibregl-ctrl-scale]:!bg-white/95 [&_.maplibregl-ctrl-scale]:!px-3 [&_.maplibregl-ctrl-scale]:!py-2 [&_.maplibregl-ctrl-scale]:!font-bold">
       <div
         ref={containerRef}
         aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"
         className="absolute inset-0 h-full w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[#d9e5dd]/50 to-transparent pb-24" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[var(--brand-green-soft)]/50 to-transparent pb-24" />
       <div className="absolute inset-x-0 top-0 z-[90]"><RajukStyleMapHeader /></div>
 
       <div className="absolute left-3 top-[78px] z-[60] lg:hidden">
-        <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-full border border-[#d9ded5] bg-[#fffdf6] px-4 text-sm font-extrabold text-[#264a4d] shadow-lg">
+        <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-4 text-sm font-extrabold text-[var(--primary)] shadow-lg">
           {panelOpen ? <X size={17} /> : <Layers3 size={17} />} {panelOpen ? "প্যানেল বন্ধ" : "ম্যাপ ও তথ্য"}
         </button>
       </div>
@@ -436,15 +436,15 @@ export default function MapLibreMapViewV2({
       <aside
         id="atlas-map-workspace-panel"
         aria-label="GIS অনুসন্ধান ও লেয়ার নিয়ন্ত্রণ"
-        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,342px)] flex-col overflow-hidden rounded-lg border border-[#cdd9e6] bg-white/98 shadow-[0_20px_70px_rgba(19,50,49,.2)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
+        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,342px)] flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
       >
-        <div className="border-b border-[#d9e4ed] bg-[#f1f6fc] px-5 pb-3 pt-3">
+        <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-5 pb-3 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dcecf9] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[#0d578c]">LANDBD · GIS MASTER PLAN</span>
-            <span className="text-[11px] font-bold text-[#7c8580]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green-soft)] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[var(--primary)]">LANDBD · GIS MASTER PLAN</span>
+            <span className="text-[11px] font-bold text-[var(--muted-foreground)]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
           </div>
-          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[#193b40]">RAJUK-ধাঁচের <span className="text-[#1261a6]">GIS ম্যাপ</span></h1>
-          <p className="mt-2 text-xs leading-5 text-[#70807b]">দাগ অনুসন্ধান, ভূমি-ব্যবহার, জরিপ লেয়ার ও বেসম্যাপ তুলনা।</p>
+          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[var(--foreground)]">RAJUK-ধাঁচের <span className="text-[var(--primary)]">GIS ম্যাপ</span></h1>
+          <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">দাগ অনুসন্ধান, ভূমি-ব্যবহার, জরিপ লেয়ার ও বেসম্যাপ তুলনা।</p>
         </div>
 
         <RajukPlotFinder
@@ -455,10 +455,10 @@ export default function MapLibreMapViewV2({
           vectorStatus={vectorStatus}
         />
 
-        <div className="grid grid-cols-3 gap-1 border-y border-[#e6e9e1] bg-white px-3 py-2">
+        <div className="grid grid-cols-3 gap-1 border-y border-[var(--border-color)] bg-white px-3 py-2">
           {(["layers", "basemap", "results"] as Tab[]).map((item) => (
             <button key={item} type="button" onClick={() => setTab(item)} aria-pressed={tab === item}
-              className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[#0a4c85] text-white" : "text-[#6d7b78] hover:bg-[#f0f4ed]"].join(" ")}>
+              className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"].join(" ")}>
               {item === "layers" ? "জরিপ স্তর" : item === "basemap" ? "স্যাটেলাইট" : "দাগ তালিকা"}
               {item === "results" && results.length > 0 ? <span className="ml-1 text-[10px]">({bn(results.length,0)})</span> : null}
             </button>
@@ -468,37 +468,37 @@ export default function MapLibreMapViewV2({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
           {tab === "layers" ? (
             <>
-              <div className="rounded-2xl border border-[#e6e4d9] bg-white p-3.5">
-                <h2 className="text-sm font-black text-[#214649]">ক্যাডাস্ট্রাল লেয়ার</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[#71817c]">আরএস ও এমএস স্তর checkbox দিয়ে পৃথকভাবে দেখান/লুকান; ম্যাপের ডান পাশে দ্রুত লেয়ার প্যানেলও রয়েছে।</p>
+              <div className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
+                <h2 className="text-sm font-black text-[var(--foreground)]">ক্যাডাস্ট্রাল লেয়ার</h2>
+                <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">আরএস ও এমএস স্তর checkbox দিয়ে পৃথকভাবে দেখান/লুকান; ম্যাপের ডান পাশে দ্রুত লেয়ার প্যানেলও রয়েছে।</p>
                 {isAdvanced ? (
                   <div className="mt-3 space-y-2">
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[#f4f7f3] px-3 text-xs font-bold"><span>আরএস দাগ ও লেবেল</span><input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} className="h-4 w-4 accent-[#1c6068]" /></label>
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[#f4f7f3] px-3 text-xs font-bold"><span>এমএস দাগ ও লেবেল</span><input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} className="h-4 w-4 accent-[#1c6068]" /></label>
+                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>আরএস দাগ ও লেবেল</span><input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
+                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>এমএস দাগ ও লেবেল</span><input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
                   </div>
-                ) : <p className="mt-2 rounded-xl bg-[#f1f4eb] px-3 py-2 text-[11px] leading-5 text-[#61726b]">দাগ সীমানা উপলব্ধ থাকলে দেখানো হয়। বিস্তারিত লেয়ার নিয়ন্ত্রণ লগইনের পর পাওয়া যাবে।</p>}
+                ) : <p className="mt-2 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-[11px] leading-5 text-[var(--muted-foreground)]">দাগ সীমানা উপলব্ধ থাকলে দেখানো হয়। বিস্তারিত লেয়ার নিয়ন্ত্রণ লগইনের পর পাওয়া যাবে।</p>}
               </div>
 
               {LAYERS.map((layer) => (
-                <section key={layer.key} className="rounded-2xl border border-[#e2e4dc] bg-white p-3.5">
+                <section key={layer.key} className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
                   <label className="flex cursor-pointer items-start justify-between gap-3">
                     <span className="min-w-0">
                       <span className="flex items-center gap-2 text-sm font-extrabold"><i aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{backgroundColor:layer.color}} /> {layer.label}</span>
-                      <span className="mt-1 block text-[11px] leading-4 text-[#6c8079]">{layer.description}</span>
+                      <span className="mt-1 block text-[11px] leading-4 text-[var(--muted-foreground)]">{layer.description}</span>
                     </span>
-                    <input type="checkbox" checked={layers[layer.key]} disabled={!canToggleRasterLayer(layer.key, isAdvanced)} onChange={(e) => setLayers((v) => setRasterLayerVisibility(v, layer.key, e.target.checked, isAdvanced))} className="mt-1 h-5 w-5 shrink-0 accent-[#1264a3] disabled:cursor-not-allowed disabled:opacity-40" />
+                    <input type="checkbox" checked={layers[layer.key]} disabled={!canToggleRasterLayer(layer.key, isAdvanced)} onChange={(e) => setLayers((v) => setRasterLayerVisibility(v, layer.key, e.target.checked, isAdvanced))} className="mt-1 h-5 w-5 shrink-0 accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40" />
                   </label>
                   {canToggleRasterLayer(layer.key, isAdvanced) && (
                     <div className="mt-3">
-                      <div className="mb-1 flex justify-between text-[10px] font-bold text-[#68817a]"><span>স্বচ্ছতা</span><span>{bn(opacity[layer.key]*100,0)}%</span></div>
-                      <input aria-label={layer.label + " স্বচ্ছতা"} type="range" min="0" max="1" step=".05" value={opacity[layer.key]} onChange={(e) => setOpacity((v) => ({...v,[layer.key]:Number(e.target.value)}))} className="w-full accent-[#d1744d]" />
+                      <div className="mb-1 flex justify-between text-[10px] font-bold text-[var(--muted-foreground)]"><span>স্বচ্ছতা</span><span>{bn(opacity[layer.key]*100,0)}%</span></div>
+                      <input aria-label={layer.label + " স্বচ্ছতা"} type="range" min="0" max="1" step=".05" value={opacity[layer.key]} onChange={(e) => setOpacity((v) => ({...v,[layer.key]:Number(e.target.value)}))} className="w-full accent-[var(--primary)]" />
                     </div>
                   )}
                 </section>
               ))}
-              <section aria-label="মানচিত্র লেজেন্ড" className="rounded-md border border-[#d8e3ed] bg-[#f7fbff] p-3">
-                <h3 className="mb-2 text-xs font-black text-[#184d7c]">Map legend / লেজেন্ড</h3>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-[#425e79]">
+              <section aria-label="মানচিত্র লেজেন্ড" className="rounded-md border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
+                <h3 className="mb-2 text-xs font-black text-[var(--primary)]">Map legend / লেজেন্ড</h3>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-[var(--foreground)]">
                   {LAYERS.map((layer) => (
                     <span key={layer.key} className="flex items-center gap-2">
                       <i aria-hidden="true" className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
@@ -508,43 +508,43 @@ export default function MapLibreMapViewV2({
                   <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#dc2626]"/> RS দাগ</span>
                   <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#7c3aed]"/> MS দাগ</span>
                 </div>
-                <p className="mt-2 text-[10px] text-[#627b90]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
+                <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
               </section>
-              <Link href="/rajuk-test" className="flex min-h-11 items-center justify-between rounded-xl border border-[#c8d8d1] bg-[#eaf2ee] px-4 text-xs font-extrabold text-[#22616a]">বিস্তারিত RS/MS অনুসন্ধান <ChevronUp size={17} className="rotate-90" /></Link>
+              <Link href="/rajuk-test" className="flex min-h-11 items-center justify-between rounded-xl border border-[var(--border-color)] bg-[var(--brand-green-soft)] px-4 text-xs font-extrabold text-[var(--primary)]">বিস্তারিত RS/MS অনুসন্ধান <ChevronUp size={17} className="rotate-90" /></Link>
             </>
           ) : tab === "basemap" ? (
             <>
               <h2 className="text-sm font-black">ভিত্তি মানচিত্র</h2>
               {([["satellite","সাম্প্রতিক স্যাটেলাইট","Esri World Imagery · উৎসভেদে তারিখ/রেজোলিউশন ভিন্ন"],["light","রাস্তার মানচিত্র","CARTO / OpenStreetMap রোড বেসম্যাপ"]] as const).map(([key,label,detail]) => (
-                <button key={key} onClick={() => setBasemap(key)} aria-pressed={basemap===key} type="button" className={["w-full rounded-2xl border p-4 text-left transition",basemap===key?"border-[#cd7952] bg-[#fff1e7] ring-1 ring-[#d58d69]":"border-[#e1e4da] bg-white hover:bg-[#f0f4ee]"].join(" ")}>
-                  <span className="flex items-center gap-2 text-sm font-black"><MapIcon size={16} className="text-[#24636a]"/>{label}</span>
-                  <span className="mt-1.5 block text-[11px] leading-4 text-[#617772]">{detail}</span>
+                <button key={key} onClick={() => setBasemap(key)} aria-pressed={basemap===key} type="button" className={["w-full rounded-2xl border p-4 text-left transition",basemap===key?"border-[var(--primary)] bg-[var(--brand-green-faint)] ring-1 ring-[var(--primary)]":"border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]"].join(" ")}>
+                  <span className="flex items-center gap-2 text-sm font-black"><MapIcon size={16} className="text-[var(--primary)]"/>{label}</span>
+                  <span className="mt-1.5 block text-[11px] leading-4 text-[var(--muted-foreground)]">{detail}</span>
                 </button>
               ))}
-              <div className="border-t border-[#e2e6da] pt-3">
-                <div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-black">ঐতিহাসিক চিত্র</h3><span className="text-[10px] font-bold text-[#a16d4f]">FREE DATA</span></div>
-                <p className="mb-3 text-[11px] leading-5 text-[#6b7e77]">উৎস পরিবর্তনে বর্তমান দাগ ও ম্যাপের অবস্থান একই থাকবে। কিছু স্যাটেলাইট চিত্রে খুব কম বিস্তারিত দেখা যায়।</p>
+              <div className="border-t border-[var(--border-color)] pt-3">
+                <div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-black">ঐতিহাসিক চিত্র</h3><span className="text-[10px] font-bold text-[var(--muted-foreground)]">FREE DATA</span></div>
+                <p className="mb-3 text-[11px] leading-5 text-[var(--muted-foreground)]">উৎস পরিবর্তনে বর্তমান দাগ ও ম্যাপের অবস্থান একই থাকবে। কিছু স্যাটেলাইট চিত্রে খুব কম বিস্তারিত দেখা যায়।</p>
                 {FREE_IMAGERY_OPTIONS.map((option) => (
-                  <button key={option.key} type="button" aria-pressed={basemap===option.key} onClick={() => setBasemap(option.key)} className={["mb-2 block w-full rounded-xl border p-3 text-left",basemap===option.key?"border-[#ce7950] bg-[#fff1e7]":"border-[#e1e5db] bg-white hover:border-[#b4c9c0]"].join(" ")}>
+                  <button key={option.key} type="button" aria-pressed={basemap===option.key} onClick={() => setBasemap(option.key)} className={["mb-2 block w-full rounded-xl border p-3 text-left",basemap===option.key?"border-[var(--primary)] bg-[var(--brand-green-faint)]":"border-[var(--border-color)] bg-white hover:border-[var(--primary)]"].join(" ")}>
                     <span className="block text-xs font-black">{option.label}</span>
-                    <span className="mt-1 block text-[11px] text-[#607b79]">{option.description}</span>
-                    <span className="mt-1 block text-[10px] leading-4 text-[#a05b40]">{option.detail}</span>
+                    <span className="mt-1 block text-[11px] text-[var(--muted-foreground)]">{option.description}</span>
+                    <span className="mt-1 block text-[10px] leading-4 text-[var(--muted-foreground)]">{option.detail}</span>
                   </button>
                 ))}
               </div>
-              {basemap === "satellite2003" && <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noopener noreferrer" className="block rounded-xl bg-[#e7ede8] p-3 text-xs font-bold text-[#1b565b] underline">Google Earth-এ আলাদা ঐতিহাসিক উৎস দেখুন</a>}
+              {basemap === "satellite2003" && <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noopener noreferrer" className="block rounded-xl bg-[var(--brand-green-faint)] p-3 text-xs font-bold text-[var(--primary)] underline">Google Earth-এ আলাদা ঐতিহাসিক উৎস দেখুন</a>}
             </>
           ) : (
             <>
               <h2 className="text-sm font-black">ম্যাপে পাওয়া দাগ</h2>
-              <p className="text-[11px] leading-5 text-[#637a75]">আরএস: {bn(rsResults.length,0)} · এমএস: {bn(msResults.length,0)}। ফলাফল সরাসরি RAJUK সার্ভিস থেকে আসে।</p>
+              <p className="text-[11px] leading-5 text-[var(--muted-foreground)]">আরএস: {bn(rsResults.length,0)} · এমএস: {bn(msResults.length,0)}। ফলাফল সরাসরি RAJUK সার্ভিস থেকে আসে।</p>
               {results.length ? <>
-                <button type="button" onClick={clearResults} className="text-xs font-bold text-[#af603b] underline">ফলাফলের তালিকা মুছুন</button>
+                <button type="button" onClick={clearResults} className="text-xs font-bold text-[var(--primary)] underline">ফলাফলের তালিকা মুছুন</button>
                 <div className="space-y-2">
                   {rsResults.map((feature,index) => <PlotCard key={"rs-"+(feature.plotId??index)} kind="rs" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
                   {msResults.map((feature,index) => <PlotCard key={"ms-"+(feature.plotId??index)} kind="ms" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
                 </div>
-              </> : <div className="rounded-2xl border border-dashed border-[#cbd8cb] bg-white p-6 text-center text-xs leading-6 text-[#73847d]">দাগ বাছাই করুন বা উপরের অনুসন্ধান থেকে একটি দাগ নম্বর লিখুন।</div>}
+              </> : <div className="rounded-2xl border border-dashed border-[var(--border-color)] bg-white p-6 text-center text-xs leading-6 text-[var(--muted-foreground)]">দাগ বাছাই করুন বা উপরের অনুসন্ধান থেকে একটি দাগ নম্বর লিখুন।</div>}
               {selected && (
                 <div className="xl:hidden">
                   <RajukParcelInspector
@@ -559,7 +559,7 @@ export default function MapLibreMapViewV2({
           )}
 
           <OfficialLandSourceDock detailed />
-          <p className="pb-4 text-[10px] leading-5 text-[#74827d]">{LEGAL_SURVEY_NOTE}</p>
+          <p className="pb-4 text-[10px] leading-5 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
         </div>
       </aside>
 
@@ -596,25 +596,25 @@ export default function MapLibreMapViewV2({
 
       <div className="absolute inset-x-3 bottom-4 z-[58] mx-auto max-w-[850px] lg:left-[372px] lg:right-5">
         {measurePanelOpen && (
-          <div className="mb-2 rounded-[24px] border border-[#d7ded3] bg-[#fffdf7] p-3 shadow-2xl">
+          <div className="mb-2 rounded-[24px] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-2xl">
             <div className="flex items-center justify-between gap-2">
-              <div><p className="text-xs font-black">পরিমাপ ও জরিপ টুলস</p><p className="text-[10px] text-[#6e817a]">মানচিত্রে ট্যাপ করে বিন্দু বসান</p></div>
-              <button type="button" onClick={() => setMeasurePanelOpen(false)} aria-label="পরিমাপ প্যানেল বন্ধ" className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0f2ec]"><ChevronDown size={18}/></button>
+              <div><p className="text-xs font-black">পরিমাপ ও জরিপ টুলস</p><p className="text-[10px] text-[var(--muted-foreground)]">মানচিত্রে ট্যাপ করে বিন্দু বসান</p></div>
+              <button type="button" onClick={() => setMeasurePanelOpen(false)} aria-label="পরিমাপ প্যানেল বন্ধ" className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--secondary)]"><ChevronDown size={18}/></button>
             </div>
             <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
               {MEASURE_TOOLS.map(({mode,label,icon:Icon}) => (
                 <button key={mode} type="button" onClick={() => startMeasurement(mode)} aria-pressed={measureMode===mode}
-                  className={["flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs font-bold",measureMode===mode?"bg-[#d9784b] text-white":"bg-[#eff3ed] text-[#365b5d]"].join(" ")}>
+                  className={["flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs font-bold",measureMode===mode?"bg-[#d9784b] text-white":"bg-[var(--secondary)] text-[var(--foreground)]"].join(" ")}>
                   <Icon size={16}/>{label}
                 </button>
               ))}
-              <button type="button" disabled={!measurePoints.length} onClick={undoMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[#f0f1eb] px-3 text-xs font-bold disabled:opacity-30"><Undo2 size={16}/>ফেরান</button>
-              <button type="button" onClick={clearMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[#f8e6e1] px-3 text-xs font-bold text-[#a34c34]"><Trash2 size={16}/>মুছুন</button>
+              <button type="button" disabled={!measurePoints.length} onClick={undoMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold disabled:opacity-30"><Undo2 size={16}/>ফেরান</button>
+              <button type="button" onClick={clearMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[var(--brand-green-faint)] px-3 text-xs font-bold text-[var(--muted-foreground)]"><Trash2 size={16}/>মুছুন</button>
             </div>
             {measureMode && (
               <button type="button" onClick={finishMeasurement} className="mt-2 rounded-lg border border-[#b8ccc1] px-3 py-2 text-xs font-bold">মাপ শেষ করুন</button>
             )}
-            <div role="status" className="mt-2 rounded-xl bg-[#f4f7f0] px-3 py-2 text-xs font-bold text-[#23484d]">
+            <div role="status" className="mt-2 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-xs font-bold text-[var(--foreground)]">
               {measureKind==="point" && summary.point ? <>অক্ষাংশ {bn(summary.point[1],6)} · দ্রাঘিমাংশ {bn(summary.point[0],6)}</> :
                (measureKind==="line" || measureKind==="distance") && summary.distanceMeters ? <>দূরত্ব {bn(summary.distanceMeters,2)} মিটার · {bn(summary.distanceMeters*3.28084,2)} ফুট</> :
                summary.area.isValid ? <>আয়তন {bn(summary.area.shotok,4)} শতাংশ · {bn(summary.area.katha,4)} কাঠা · {bn(summary.area.acre,4)} একর</> :
@@ -622,15 +622,15 @@ export default function MapLibreMapViewV2({
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between gap-2 rounded-[22px] border border-[#e0e2da] bg-[#fffdf7]/98 p-2 shadow-[0_14px_50px_rgba(19,50,49,.18)] backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-2 rounded-[22px] border border-[var(--border-color)] bg-[var(--card-bg)]/98 p-2 shadow-[0_14px_50px_rgba(11,45,30,.14)] backdrop-blur-sm">
           <div className="flex items-center gap-2 pl-1">
-            <span className="hidden h-8 w-8 place-items-center rounded-xl bg-[#e3eeea] text-[#225e64] sm:grid"><MapPin size={17}/></span>
-            <div className="hidden sm:block"><p className="text-[11px] font-black">GIS ও দাগ যাচাই</p><p className="text-[10px] text-[#697c74]">{measureMode ? "পরিমাপ চলছে" : identifyMode ? "দাগ শনাক্ত চালু" : "দাগ শনাক্ত বন্ধ"}</p></div>
+            <span className="hidden h-8 w-8 place-items-center rounded-xl bg-[var(--brand-green-soft)] text-[var(--primary)] sm:grid"><MapPin size={17}/></span>
+            <div className="hidden sm:block"><p className="text-[11px] font-black">GIS ও দাগ যাচাই</p><p className="text-[10px] text-[var(--muted-foreground)]">{measureMode ? "পরিমাপ চলছে" : identifyMode ? "দাগ শনাক্ত চালু" : "দাগ শনাক্ত বন্ধ"}</p></div>
           </div>
           <div className="flex items-center gap-1.5">
             <button type="button" onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((v) => !v); setMeasurePanelOpen(false); }} aria-pressed={identifyMode}
-              className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[#1e5960] text-white":"bg-[#eaf0e9]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
-            <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#f1e3d5] px-3 text-xs font-black text-[#895332]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
+              className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[var(--primary)] text-white":"bg-[var(--secondary)]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
+            <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--brand-green-soft)] px-3 text-xs font-black text-[var(--primary)]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
             <button type="button" onClick={() => {setPanelOpen(true);setTab("basemap");}} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#eff2eb] px-3 text-xs font-black"><Layers3 size={16}/><span className="hidden sm:inline">বেসম্যাপ</span></button>
           </div>
         </div>
@@ -638,9 +638,9 @@ export default function MapLibreMapViewV2({
 
       <RajukCoordinateStatus mapRef={mapRef} mapReady={mapReady} />
 
-      {toast && <div role="status" className="absolute left-1/2 top-[76px] z-[100] w-[min(90vw,390px)] -translate-x-1/2 rounded-2xl bg-[#20474d] px-4 py-3 text-center text-xs font-bold text-white shadow-2xl">{toast}</div>}
+      {toast && <div role="status" className="absolute left-1/2 top-[76px] z-[100] w-[min(90vw,390px)] -translate-x-1/2 rounded-2xl bg-[var(--primary)] px-4 py-3 text-center text-xs font-bold text-white shadow-2xl">{toast}</div>}
 
-      {!mapReady && <div className="pointer-events-none absolute inset-0 z-[28] grid place-items-center bg-[#ebeee8]/70"><div className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black shadow-xl"><Loader2 size={18} className="animate-spin"/> GIS মানচিত্র তৈরি হচ্ছে…</div></div>}
+      {!mapReady && <div className="pointer-events-none absolute inset-0 z-[28] grid place-items-center bg-[var(--background)]/70"><div className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black shadow-xl"><Loader2 size={18} className="animate-spin"/> GIS মানচিত্র তৈরি হচ্ছে…</div></div>}
     </main>
   );
 }
