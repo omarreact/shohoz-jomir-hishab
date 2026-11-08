@@ -524,7 +524,7 @@ export default function MouzaExportMap() {
             <button type="button" onClick={() => window.location.reload()} className="mt-4 min-h-11 rounded-xl bg-[#1d565c] px-5 text-white">পুনরায় চেষ্টা করুন</button>
           </div>
         </div>
-      )
+      )}
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-start gap-2 p-3 sm:flex-row sm:justify-between sm:gap-3 sm:p-4">
         <div className="pointer-events-auto rounded-[18px] border border-[#d4e2d6] bg-[#fffdf7]/95 p-1.5 shadow-lg backdrop-blur">
