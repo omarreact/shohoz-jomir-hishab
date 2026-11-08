@@ -8,7 +8,7 @@
     "deploymentEnabled": {
       "*": false,
       "main": false,
-      "feat/rajuk-style-geospatial-workspace-20261108": true
+      "fix/home-banner-hide-pricing-20261108": true
     }
   }
 }
