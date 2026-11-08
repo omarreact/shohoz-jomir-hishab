@@ -33,7 +33,7 @@ async function getOptions<T>(params: URLSearchParams, signal: AbortSignal): Prom
  * if the upstream location service is unavailable.
  */
 export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPlots, vectorStatus }: Props) {
-  const [kind, setKind] = useState<PlotSearchOptions["kind"]>("rs");
+  const [kind, setKind] = useState<PlotSearchOptions["kind"]>("all");
   const [districts, setDistricts] = useState<RajukDistrict[]>([]);
   const [upazilas, setUpazilas] = useState<RajukUpazila[]>([]);
   const [mouzas, setMouzas] = useState<RajukMauza[]>([]);
