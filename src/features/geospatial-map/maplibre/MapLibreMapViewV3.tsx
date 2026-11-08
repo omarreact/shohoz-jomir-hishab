@@ -1,25 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import AtlasWorkspaceHeader from "../components/AtlasWorkspaceHeader";
+import RajukStyleMapHeader from "./RajukStyleMapHeader";
+import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
+import RajukMapControls from "./RajukMapControls";
+import RajukCoordinateStatus from "./RajukCoordinateStatus";
 import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
   ChevronDown,
   ChevronUp,
-  Compass,
   Crosshair,
   Layers3,
   Loader2,
-  LocateFixed,
   Map as MapIcon,
   MapPin,
-  Minus,
   MousePointer2,
   Pentagon,
-  Plus,
   Ruler,
-  Search,
   Square,
   Trash2,
   Undo2,
@@ -64,7 +62,7 @@ type Props = {
   plotNo: string;
   setPlotNo: (value: string) => void;
   searching: boolean;
-  searchPlots: () => void;
+  searchPlots: (options?: PlotSearchOptions) => void;
   goToMyLocation: () => void;
   locating: boolean;
   identifyMode: boolean;
@@ -424,9 +422,9 @@ export default function MapLibreMapViewV2({
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[#d9e5dd]/50 to-transparent pb-24" />
-      <div className="absolute inset-x-0 top-0 z-[90]"><AtlasWorkspaceHeader active="map" compact /></div>
+      <div className="absolute inset-x-0 top-0 z-[90]"><RajukStyleMapHeader /></div>
 
-      <div className="absolute left-3 top-[82px] z-[60] lg:hidden">
+      <div className="absolute left-3 top-[78px] z-[60] lg:hidden">
         <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-full border border-[#d9ded5] bg-[#fffdf6] px-4 text-sm font-extrabold text-[#264a4d] shadow-lg">
           {panelOpen ? <X size={17} /> : <Layers3 size={17} />} {panelOpen ? "প্যানেল বন্ধ" : "ম্যাপ ও তথ্য"}
         </button>
@@ -435,33 +433,29 @@ export default function MapLibreMapViewV2({
       <aside
         id="atlas-map-workspace-panel"
         aria-label="GIS অনুসন্ধান ও লেয়ার নিয়ন্ত্রণ"
-        className={["absolute bottom-3 left-3 top-[145px] z-[65] w-[min(90vw,342px)] flex-col overflow-hidden rounded-[26px] border border-[#d8ded7] bg-[#fbfaf5]/98 shadow-[0_20px_70px_rgba(19,50,49,.2)] backdrop-blur-sm lg:top-[82px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
+        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,342px)] flex-col overflow-hidden rounded-lg border border-[#cdd9e6] bg-white/98 shadow-[0_20px_70px_rgba(19,50,49,.2)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
       >
-        <div className="border-b border-[#e1e2d8] bg-[#f7f4eb] px-5 pb-4 pt-4">
+        <div className="border-b border-[#d9e4ed] bg-[#f1f6fc] px-5 pb-3 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e3ebe2] px-3 py-1 text-[10px] font-extrabold tracking-[.16em] text-[#25616a]">LANDBD · SURVEY ATLAS</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dcecf9] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[#0d578c]">LANDBD · GIS MASTER PLAN</span>
             <span className="text-[11px] font-bold text-[#7c8580]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
           </div>
-          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[#193b40]">জমির মানচিত্র,<br/><span className="text-[#b66d47]">এক জায়গায়।</span></h1>
-          <p className="mt-2 text-xs leading-5 text-[#70807b]">দাগ নম্বর খুঁজুন, জরিপ স্তর তুলনা করুন ও সরকারি উৎস যাচাই করুন।</p>
+          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[#193b40]">RAJUK-ধাঁচের <span className="text-[#1261a6]">GIS ম্যাপ</span></h1>
+          <p className="mt-2 text-xs leading-5 text-[#70807b]">দাগ অনুসন্ধান, ভূমি-ব্যবহার, জরিপ লেয়ার ও বেসম্যাপ তুলনা।</p>
         </div>
 
-        <form onSubmit={(event) => { event.preventDefault(); searchPlots(); }} className="px-4 pb-3 pt-4">
-          <label htmlFor="atlas-dag-search" className="mb-1.5 block text-xs font-extrabold text-[#36595d]">দাগ নম্বর দিয়ে খুঁজুন</label>
-          <div className="flex items-center gap-2 rounded-2xl border border-[#cedbd5] bg-white p-1.5 shadow-[0_2px_7px_rgba(30,65,62,.05)] focus-within:border-[#c0784e]">
-            <Search size={18} className="ml-2 shrink-0 text-[#6d918e]" />
-            <input id="atlas-dag-search" inputMode="numeric" value={plotNo} onChange={(event) => setPlotNo(event.target.value)} placeholder="উদাহরণ: ৩৪৯" className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm font-semibold text-[#213d40] outline-none placeholder:font-normal placeholder:text-[#8a9c96]" />
-            <button type="submit" disabled={searching || !plotNo.trim()} className="grid min-h-10 min-w-11 place-items-center rounded-xl bg-[#1b5960] text-white hover:bg-[#13434a] disabled:opacity-40" aria-label="দাগ অনুসন্ধান">
-              {searching ? <Loader2 size={19} className="animate-spin" /> : <Search size={19} />}
-            </button>
-          </div>
-          {vectorStatus && <p role="status" className="mt-2 text-[11px] leading-4 text-[#597470]">{vectorStatus}</p>}
-        </form>
+        <RajukPlotFinder
+          plotNo={plotNo}
+          setPlotNo={setPlotNo}
+          searching={searching}
+          searchPlots={searchPlots}
+          vectorStatus={vectorStatus}
+        />
 
         <div className="grid grid-cols-3 gap-1 border-y border-[#e6e9e1] bg-white px-3 py-2">
           {(["layers", "basemap", "results"] as Tab[]).map((item) => (
             <button key={item} type="button" onClick={() => setTab(item)} aria-pressed={tab === item}
-              className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[#1d5056] text-white" : "text-[#6d7b78] hover:bg-[#f0f4ed]"].join(" ")}>
+              className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[#0a4c85] text-white" : "text-[#6d7b78] hover:bg-[#f0f4ed]"].join(" ")}>
               {item === "layers" ? "জরিপ স্তর" : item === "basemap" ? "স্যাটেলাইট" : "দাগ তালিকা"}
               {item === "results" && results.length > 0 ? <span className="ml-1 text-[10px]">({bn(results.length,0)})</span> : null}
             </button>
@@ -499,6 +493,20 @@ export default function MapLibreMapViewV2({
                   )}
                 </section>
               ))}
+              <section aria-label="মানচিত্র লেজেন্ড" className="rounded-md border border-[#d8e3ed] bg-[#f7fbff] p-3">
+                <h3 className="mb-2 text-xs font-black text-[#184d7c]">Map legend / লেজেন্ড</h3>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-[#425e79]">
+                  {LAYERS.map((layer) => (
+                    <span key={layer.key} className="flex items-center gap-2">
+                      <i aria-hidden="true" className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
+                      {layer.label}
+                    </span>
+                  ))}
+                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#dc2626]"/> RS দাগ</span>
+                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#7c3aed]"/> MS দাগ</span>
+                </div>
+                <p className="mt-2 text-[10px] text-[#627b90]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
+              </section>
               <Link href="/rajuk-test" className="flex min-h-11 items-center justify-between rounded-xl border border-[#c8d8d1] bg-[#eaf2ee] px-4 text-xs font-extrabold text-[#22616a]">বিস্তারিত RS/MS অনুসন্ধান <ChevronUp size={17} className="rotate-90" /></Link>
             </>
           ) : tab === "basemap" ? (
@@ -542,18 +550,18 @@ export default function MapLibreMapViewV2({
         </div>
       </aside>
 
-      <div className="absolute right-3 top-[82px] z-[55] flex flex-col gap-2 lg:right-5">
-        <div className="overflow-hidden rounded-2xl border border-[#d6ded5] bg-[#fffdf7] shadow-xl">
-          <button type="button" onClick={() => mapRef.current?.zoomIn({duration:220})} aria-label="জুম বাড়ান" className="grid h-11 w-11 place-items-center border-b border-[#e5e8de] hover:bg-[#eaf0ea]"><Plus size={20}/></button>
-          <button type="button" onClick={() => mapRef.current?.zoomOut({duration:220})} aria-label="জুম কমান" className="grid h-11 w-11 place-items-center hover:bg-[#eaf0ea]"><Minus size={20}/></button>
-        </div>
-        <button type="button" onClick={resetNorth} aria-label="উত্তর দিক ঠিক করুন" className="grid h-11 w-11 place-items-center rounded-2xl border border-[#d6ded5] bg-[#fffdf7] shadow-lg hover:bg-[#eaf0ea]"><Compass size={19}/></button>
-        <button type="button" onClick={goToMyLocation} disabled={locating} aria-label="আমার অবস্থান" className="grid h-11 w-11 place-items-center rounded-2xl border border-[#d6ded5] bg-[#fffdf7] shadow-lg hover:bg-[#eaf0ea] disabled:opacity-50">{locating?<Loader2 size={19} className="animate-spin"/>:<LocateFixed size={19}/>}</button>
-        <button type="button" onClick={toggleThreeD} aria-pressed={threeD} aria-label="ত্রিমাত্রিক ভিউ" className={["grid h-11 w-11 place-items-center rounded-2xl border text-sm font-black shadow-lg",threeD?"border-[#1c5960] bg-[#1c5960] text-white":"border-[#d6ded5] bg-[#fffdf7]"].join(" ")}>3D</button>
-      </div>
+      <RajukMapControls
+        mapRef={mapRef}
+        mapReady={mapReady}
+        locating={locating}
+        goToMyLocation={goToMyLocation}
+        resetNorth={resetNorth}
+        toggleThreeD={toggleThreeD}
+        threeD={threeD}
+      />
 
       {selected && (
-        <section aria-label="নির্বাচিত দাগের বিস্তারিত" className="absolute right-3 top-[315px] z-[50] hidden max-h-[calc(100dvh-450px)] w-[min(27vw,300px)] overflow-y-auto rounded-[24px] border border-[#d9dfd6] bg-[#fffdf7]/98 p-4 shadow-2xl xl:block">
+        <section aria-label="নির্বাচিত দাগের বিস্তারিত" className="absolute right-[64px] top-[96px] z-[50] hidden max-h-[calc(100dvh-235px)] w-[min(27vw,300px)] overflow-y-auto rounded-[24px] border border-[#d9dfd6] bg-[#fffdf7]/98 p-4 shadow-2xl xl:block">
           <div className="mb-2 inline-flex rounded-full bg-[#e3eeeb] px-3 py-1 text-[10px] font-black uppercase tracking-[.13em] text-[#216268]">PARCEL INSPECTOR</div>
           <h2 className="text-lg font-black">নির্বাচিত দাগ</h2>
           <dl className="mt-3 space-y-2">
@@ -563,6 +571,10 @@ export default function MapLibreMapViewV2({
               </div>
             ))}
           </dl>
+          <details className="mt-3 rounded-md border border-[#dce5ef] bg-[#f5f9fc] p-2.5">
+            <summary className="cursor-pointer text-xs font-black text-[#174a78]">ভূমি ব্যবহার / DAP বিশ্লেষণ</summary>
+            <p className="mt-2 text-[11px] leading-5 text-[#5f7184]">প্রস্তাবিত ভূমি-ব্যবহার ও বন্যা ঝুঁকির লেয়ার বাম পাশ থেকে চালু করা যায়। নির্দিষ্ট প্লটের সরকারি DAP শ্রেণিবিন্যাস এই ডেটা রেসপন্সে যাচাই করা হয়নি।</p>
+          </details>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button type="button" disabled={routingCalculator !== null} onClick={() => void validateAndRoute("khatiyan",selected)} className="min-h-10 rounded-xl bg-[#1b5960] px-2 text-[11px] font-bold text-white disabled:opacity-50">খতিয়ান হিসাব</button>
             <button type="button" disabled={routingCalculator !== null} onClick={() => void validateAndRoute("faraez",selected)} className="min-h-10 rounded-xl border border-[#ccdbd3] bg-white px-2 text-[11px] font-bold disabled:opacity-50">ফারায়েজ</button>
@@ -612,6 +624,8 @@ export default function MapLibreMapViewV2({
           </div>
         </div>
       </div>
+
+      <RajukCoordinateStatus mapRef={mapRef} mapReady={mapReady} />
 
       {toast && <div role="status" className="absolute left-1/2 top-[76px] z-[100] w-[min(90vw,390px)] -translate-x-1/2 rounded-2xl bg-[#20474d] px-4 py-3 text-center text-xs font-bold text-white shadow-2xl">{toast}</div>}
 
