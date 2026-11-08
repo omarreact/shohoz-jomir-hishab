@@ -42,7 +42,7 @@ export default function RajukCoordinateStatus({ mapRef, mapReady }: { mapRef: Re
 
   if (!position) return null;
   return (
-    <div className="absolute bottom-[102px] left-3 z-[45] flex max-w-[calc(100vw-24px)] items-center gap-2 rounded-md border border-[var(--border-color)] bg-white/95 px-2.5 py-1.5 text-[10px] font-semibold text-[var(--foreground)] shadow-sm lg:bottom-4 lg:left-[366px]" aria-label="মানচিত্র স্থানাঙ্ক">
+    <div className="absolute bottom-[102px] left-3 z-[45] flex max-w-[calc(100vw-24px)] items-center gap-2 rounded-md border border-[var(--border-color)] bg-white/95 px-2.5 py-1.5 text-[10px] font-semibold text-[var(--foreground)] shadow-sm lg:bottom-4 lg:left-[342px]" aria-label="মানচিত্র স্থানাঙ্ক">
       <span className="truncate tabular-nums">Lat {position.lat.toFixed(5)} · Lon {position.lng.toFixed(5)} · Z {position.zoom.toFixed(1)}</span>
       <button type="button" title="Copy coordinates" aria-label="স্থানাঙ্ক কপি" onClick={() => void copy()} className="grid min-h-7 min-w-7 place-items-center rounded hover:bg-[var(--brand-green-faint)]"><Copy size={13}/></button>
       {copied && <span role="status">কপি হয়েছে</span>}
