@@ -416,7 +416,7 @@ export default function MapLibreMap() {
           }
         }
         if (!bounds.isEmpty()) {
-          mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 18, duration: 700 });
+          mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 19, duration: 700 });
         }
       }
     } catch (error) {
@@ -462,7 +462,7 @@ export default function MapLibreMap() {
       if (rings.length) {
         const bounds = new maplibregl.LngLatBounds();
         rings.flat().forEach(([lng, lat]) => bounds.extend([lng, lat]));
-        map.fitBounds(bounds, { padding: 80, maxZoom: 18, duration: 600 });
+        map.fitBounds(bounds, { padding: 80, maxZoom: 19, duration: 600 });
       }
     }
   }, []);
