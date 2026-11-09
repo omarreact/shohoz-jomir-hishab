@@ -32,15 +32,15 @@ export const PUBLIC_LAYER_VISIBILITY: Record<LayerKey, boolean> = {
 
 export const PUBLIC_LAYER_OPACITY: Record<LayerKey, number> = {
   dap: 1,
-  rs: 0.44,
-  ms: 0.36,
+  rs: 0.20,
+  ms: 0.14,
   flood: 1,
   boundary: 1,
   transport: 1,
 };
 
 export const ADVANCED_LAYER_VISIBILITY = Object.fromEntries(LAYERS.map((layer) => [layer.key, layer.defaultVisible])) as Record<LayerKey, boolean>;
-export const ADVANCED_LAYER_OPACITY = Object.fromEntries(LAYERS.map((layer) => [layer.key, layer.key === "ms" ? 0.36 : layer.key === "rs" ? 0.44 : 0.72])) as Record<LayerKey, number>;
+export const ADVANCED_LAYER_OPACITY = Object.fromEntries(LAYERS.map((layer) => [layer.key, layer.key === "ms" ? 0.14 : layer.key === "rs" ? 0.20 : 0.72])) as Record<LayerKey, number>;
 
 // OSM: blocked by tile.openstreetmap.org policy (x-blocked).
 // Carto light: usable after removing Leaflet {r} token.
