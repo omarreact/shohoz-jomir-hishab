@@ -7,7 +7,7 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true,
+      "main": false,
       "feat/gis-layer-checkbox-controls-20261108": true,
       "feat/landbd-hires-plot-view-20261109": true
     }
