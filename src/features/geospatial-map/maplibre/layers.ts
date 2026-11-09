@@ -102,6 +102,10 @@ export const BASEMAP_RASTER_LAYERS: Record<BasemapKey, RasterLayerSpecification>
   light: { id: RASTER_LAYERS.basemapLight, type: "raster", source: RASTER_SOURCES.basemapLight, paint: { "raster-opacity": 1 } },
   satellite: { id: RASTER_LAYERS.basemapSatellite, type: "raster", source: RASTER_SOURCES.basemapSatellite, paint: { "raster-opacity": 1 } },
   satellite2003: { id: RASTER_LAYERS.basemapSatellite2003, type: "raster", source: RASTER_SOURCES.basemapSatellite2003, paint: { "raster-opacity": 1 } },
+  sentinel2016: { id: RASTER_LAYERS.basemapSentinel2016, type: "raster", source: RASTER_SOURCES.basemapSentinel2016, paint: { "raster-opacity": 1 } },
+  satellite2010: { id: RASTER_LAYERS.basemapSatellite2010, type: "raster", source: RASTER_SOURCES.basemapSatellite2010, paint: { "raster-opacity": 1 } },
+  satellite2020: { id: RASTER_LAYERS.basemapSatellite2020, type: "raster", source: RASTER_SOURCES.basemapSatellite2020, paint: { "raster-opacity": 1 } },
+  satellite2025: { id: RASTER_LAYERS.basemapSatellite2025, type: "raster", source: RASTER_SOURCES.basemapSatellite2025, paint: { "raster-opacity": 1 } },
 };
 
 export const RAJUK_RASTER_LAYERS: Record<MapRasterKey, RasterLayerSpecification> = {

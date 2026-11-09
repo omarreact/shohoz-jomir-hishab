@@ -19,9 +19,8 @@ export async function getSearchIndexingEnabled(): Promise<boolean> {
   inFlight = (async () => {
     let value = false;
     try {
-      // firebase-admin/Firestore currently relies on runtime features that are
-      // not supported by workerd. Do not initialize it from the Cloudflare
-      // proxy bundle; NOINDEX is the existing fail-closed policy.
+      // Firebase Admin's Firestore runtime is not supported by workerd.
+      // Preserve the existing fail-closed NOINDEX policy on Workers.
       if (!isCloudflareWorkersRuntime()) {
         const { collections, isFirebaseAdminReady } = await import(
           "@/src/modules/database/firebaseAdmin"
@@ -30,10 +29,7 @@ export async function getSearchIndexingEnabled(): Promise<boolean> {
           const doc = await Promise.race([
             collections.settings.doc("searchIndexingEnabled").get(),
             new Promise<never>((_, reject) =>
-              setTimeout(
-                () => reject(new Error("indexing-policy-timeout")),
-                5000,
-              ),
+              setTimeout(() => reject(new Error("indexing-policy-timeout")), 5000),
             ),
           ]);
           value = parseSearchIndexingEnabled(doc.data()?.value);

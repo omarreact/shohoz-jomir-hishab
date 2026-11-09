@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as maplibregl from "maplibre-gl";
+import { configureMapLibreWorker } from "./configureMapLibreWorker";
 import type { Map as MapLibreInstance } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
@@ -14,9 +15,11 @@ import { sendPlotToFaraez, sendPlotToKhatiyan } from "@/src/modules/khatiyan/gis
 import { useLiveLocationTracking } from "@/src/features/geospatial-map/hooks/useLiveLocationTracking";
 import {
   BASEMAP_SOURCE_DEFINITIONS,
+  BASEMAP_SOURCE_IDS,
+  BASEMAP_LAYER_IDS,
   EMPTY_FEATURE_COLLECTION,
-  HISTORIC_2003_CENTER,
-  HISTORIC_2003_ZOOM,
+  RAJUK_START_CENTER,
+  RAJUK_START_ZOOM,
   MIN_ZOOM_FOR_VECTOR,
   RAJUK_RASTER_SOURCE_DEFINITIONS,
   RASTER_LAYERS,
@@ -45,7 +48,9 @@ import {
   type Tab,
 } from "./mapConstants";
 import MapLibreMapView from "./MapLibreMapView";
+import type { PlotSearchOptions } from "./RajukPlotFinder";
 import { bindMapViewport } from "./mapViewport";
+import { shouldShowSurveyBoundary } from "./layerControlPolicy";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
 
@@ -110,7 +115,14 @@ export default function MapLibreMap() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    let map: MapLibreInstance;
+    try {
+      configureMapLibreWorker();
+      if (typeof window.WebGL2RenderingContext === "undefined") {
+        setInitError("এই ব্রাউজারে GIS মানচিত্র চালাতে WebGL2 সমর্থন প্রয়োজন।");
+        return;
+      }
+      map = new maplibregl.Map({
       container: containerRef.current,
       style: {
         version: 8,
@@ -118,13 +130,18 @@ export default function MapLibreMap() {
         sources: {},
         layers: [],
       },
-      center: HISTORIC_2003_CENTER,
-      zoom: HISTORIC_2003_ZOOM,
+      center: RAJUK_START_CENTER,
+      zoom: RAJUK_START_ZOOM,
       minZoom: 8,
       maxZoom: 21,
       renderWorldCopies: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    });
+      });
+    } catch (error) {
+      logger.error("MapLibre GIS initialization failed", error);
+      setInitError("GIS মানচিত্র চালু করা যায়নি। WebGL2 সমর্থিত ব্রাউজারে আবার চেষ্টা করুন।");
+      return;
+    }
     mapRef.current = map;
     const handleMapError = (event: { error?: unknown }) => {
       const detail = event.error instanceof Error ? event.error.message : String(event.error ?? "");
@@ -141,14 +158,7 @@ export default function MapLibreMap() {
     const addSources = () => {
       map.resize();
       (Object.keys(BASEMAP_SOURCE_DEFINITIONS) as BasemapKey[]).forEach((key) => {
-        const sourceId =
-          key === "osm"
-            ? RASTER_SOURCES.basemapOsm
-            : key === "light"
-              ? RASTER_SOURCES.basemapLight
-              : key === "satellite"
-                ? RASTER_SOURCES.basemapSatellite
-                : RASTER_SOURCES.basemapSatellite2003;
+        const sourceId = BASEMAP_SOURCE_IDS[key];
         if (!map.getSource(sourceId)) map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[key]);
       });
       (Object.keys(RAJUK_RASTER_SOURCE_DEFINITIONS) as MapRasterKey[]).forEach((key) => {
@@ -217,7 +227,7 @@ export default function MapLibreMap() {
           setResults(found);
           setSelected(found[0] ?? null);
           setTab("results");
-          setPanelOpen(false);
+          setPanelOpen(true);
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
@@ -333,18 +343,11 @@ export default function MapLibreMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const sourceLayerMap: Record<BasemapKey, string> = {
-      osm: RASTER_LAYERS.basemapOsm,
-      light: RASTER_LAYERS.basemapLight,
-      satellite: RASTER_LAYERS.basemapSatellite,
-      satellite2003: RASTER_LAYERS.basemapSatellite2003,
-    };
+    const sourceLayerMap = BASEMAP_LAYER_IDS;
     (Object.entries(sourceLayerMap) as Array<[BasemapKey, string]>).forEach(([key, layerId]) => {
       if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", key === basemap ? "visible" : "none");
     });
-    if (basemap === "satellite2003") {
-      map.flyTo({ center: HISTORIC_2003_CENTER, zoom: HISTORIC_2003_ZOOM, duration: 700 });
-    }
+    // Preserve the selected parcel, zoom and bearing when comparing years.
   }, [basemap, mapReady]);
 
   useEffect(() => {
@@ -357,28 +360,39 @@ export default function MapLibreMap() {
         map.setPaintProperty(layerId, "raster-opacity", opacity[key]);
       }
     });
+    // Hiding the RS/MS raster group must also hide its vector boundaries and labels.
+    const rsBoundariesVisible = shouldShowSurveyBoundary(layers.rs, showRsBoundary);
+    const msBoundariesVisible = shouldShowSurveyBoundary(layers.ms, showMsBoundary);
     if (map.getLayer(VECTOR_LAYERS.rsBoundaryFill))
-      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryFill, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryFill, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.rsBoundaryLine))
-      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryLine, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsBoundaryLine, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.rsPlotLabels))
-      map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", showRsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.rsPlotLabels, "visibility", rsBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryFill))
-      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryFill, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryFill, "visibility", msBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msBoundaryLine))
-      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msBoundaryLine, "visibility", msBoundariesVisible ? "visible" : "none");
     if (map.getLayer(VECTOR_LAYERS.msPlotLabels))
-      map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", showMsBoundary ? "visible" : "none");
+      map.setLayoutProperty(VECTOR_LAYERS.msPlotLabels, "visibility", msBoundariesVisible ? "visible" : "none");
   }, [layers, opacity, showRsBoundary, showMsBoundary, mapReady]);
 
-  const searchPlots = useCallback(async () => {
-    const raw = plotNo.trim();
+  const searchPlots = useCallback(async (options?: PlotSearchOptions) => {
+    const raw = plotNo.trim().replace(/[০-৯]/g, (digit) => String(digit.charCodeAt(0) - 0x09e6));
     if (!raw) return notify("দাগ নম্বর লিখুন");
     const numeric = Number(raw);
     if (!Number.isInteger(numeric) || numeric < 0) return notify("দাগ নম্বর সঠিক নয়");
     setSearching(true);
     try {
-      const params = new URLSearchParams({ action: "plots", plot_no: String(numeric), kind: "all", limit: "50" });
+      const params = new URLSearchParams({
+        action: "plots",
+        plot_no: String(numeric),
+        kind: options?.kind ?? "all",
+        limit: "50",
+      });
+      if (options?.mouza) params.set("mouza", options.mouza);
+      if (options?.jl) params.set("jl", options.jl);
+      if (options?.upazila) params.set("upazila", options.upazila);
       const response = await fetchWithTimeout(`/api/rajuk/query?${params.toString()}`);
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "দাগ খোঁজা যায়নি");
       const data = (await response.json()) as { features?: RajukPlotFeature[] };
@@ -386,7 +400,7 @@ export default function MapLibreMap() {
       setResults(found);
       setSelected(found[0] ?? null);
       setTab("results");
-      setPanelOpen(false);
+      setPanelOpen(true);
       if (mapRef.current) {
         updateSourceData(
           mapRef.current,
@@ -453,6 +467,13 @@ export default function MapLibreMap() {
     }
   }, []);
 
+  const clearResults = useCallback(() => {
+    setResults([]);
+    setSelected(null);
+    const map = mapRef.current;
+    if (map) updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
+  }, []);
+
   const activeDetails = selected
     ? (isMsFeature(selected) ? detailRows(selected, "ms") : detailRows(selected, "rs")).map(([label, value]) => ({
         label,
@@ -463,6 +484,7 @@ export default function MapLibreMap() {
   return (
     <MapLibreMapView
       containerRef={containerRef}
+      mapRef={mapRef}
       initError={initError}
       mapReady={mapReady}
       vectorStatus={vectorStatus}
@@ -489,7 +511,7 @@ export default function MapLibreMap() {
       showMsBoundary={showMsBoundary}
       setShowMsBoundary={setShowMsBoundary}
       results={results}
-      setResults={setResults}
+      clearResults={clearResults}
       selected={selected}
       selectResult={selectResult}
       toast={toast}

@@ -77,7 +77,7 @@ export default function ReportTable({
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={row.segmentKey}>
+          <tr key={row.segmentKey} data-report-source-id={row.sourceId}>
             {columns.map((column) => {
               if (column.key === "serial") {
                 return <td key={column.key} className="report-serial-number">{startIndex + index + 1}</td>;

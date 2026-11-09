@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex,nofollow">
+<title>LandBD — Bangladesh Land Information</title>
+<meta name="description" content="LandBD entry point for cadastral maps, GIS previews, khatian services and land information.">
+<style>
+:root{--ink:#183b42;--muted:#617777;--accent:#1e636c;--bg:#f4f5ef;--line:#d8e2dc}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans Bengali","Segoe UI",sans-serif;line-height:1.65}
+a{color:inherit}.shell{width:min(1100px,calc(100% - 40px));margin:auto}
+header{border-bottom:1px solid var(--line);background:#fff}.nav{min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font-weight:850;letter-spacing:-.06em;font-size:1.65rem;text-decoration:none}.brand span{color:#d48b57}.eyebrow{text-transform:uppercase;font-size:.7rem;letter-spacing:.16em;font-weight:800;color:#3e777a}
+.hero{padding:84px 0 66px;background:radial-gradient(ellipse at 85% 0%,#d4ebe2,transparent 48%);border-bottom:1px solid var(--line)}
+h1{font-weight:850;letter-spacing:-.055em;line-height:1.16;font-size:clamp(2.35rem,6vw,4.7rem);max-width:900px;margin:16px 0}
+.lead{color:var(--muted);max-width:680px;font-size:1.05rem;margin:0 0 28px}.actions{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;min-height:46px;padding:11px 19px;align-items:center;justify-content:center;border:1px solid #bad1c7;border-radius:999px;text-decoration:none;font-weight:750;font-size:.93rem;background:white}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn:focus-visible,a:focus-visible{outline:3px solid #e8a56b;outline-offset:3px}
+section.cards{padding:44px 0 74px}h2{font-size:1.45rem;letter-spacing:-.035em;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.card{display:block;text-decoration:none;border:1px solid var(--line);border-radius:20px;background:white;padding:24px;min-height:175px;transition:transform .15s,border-color .15s}.card:hover{transform:translateY(-3px);border-color:#9ab9ad}.card strong{display:block;font-size:1.05rem}.card p{margin:8px 0 0;color:var(--muted);font-size:.89rem}.icon{display:block;font-size:1.45rem;margin-bottom:12px}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:.81rem}
+footer .shell{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}footer a{text-decoration:underline}
+@media(max-width:730px){.grid{grid-template-columns:1fr}.hero{padding:56px 0}.card{min-height:130px}.nav{min-height:65px}}
+</style>
+</head>
+<body>
+<header><nav class="shell nav" aria-label="Primary"><a class="brand" href="./">Land<span>BD</span></a><a class="btn" href="https://landbd-app.farukkhanone.workers.dev/">Open application ↗</a></nav></header>
+<main>
+<section class="hero"><div class="shell"><div class="eyebrow">Bangladesh • Land information workspace</div><h1>জমির তথ্য, মৌজা নকশা ও GIS — এক জায়গায়।</h1>
+<p class="lead">LandBD-এর মূল অ্যাপ্লিকেশন Cloudflare Workers-এ চলে। এই GitHub Pages সাইটটি একটি স্থির প্রবেশপথ; খতিয়ান অনুসন্ধান, মানচিত্র এবং লগইনের জন্য মূল অ্যাপ্লিকেশন খুলুন।</p>
+<div class="actions"><a class="btn primary" href="https://landbd-app.farukkhanone.workers.dev/">মূল LandBD অ্যাপ খুলুন ↗</a><a class="btn" href="https://landbd.pincodeit.com/">Vercel সংস্করণ ↗</a></div></div></section>
+<section class="cards shell" aria-label="LandBD tools"><h2>দ্রুত সেবা / Explore LandBD</h2><div class="grid">
+<a class="card" href="https://landbd-app.farukkhanone.workers.dev/mouza-map"><span class="icon" aria-hidden="true">🗺️</span><strong>মৌজা ম্যাপ</strong><p>Mouza maps and verified land-source directory.</p></a>
+<a class="card" href="https://landbd-app.farukkhanone.workers.dev/geospatial-map"><span class="icon" aria-hidden="true">🌐</span><strong>GIS ম্যাপ</strong><p>Geospatial explorer and available map layers.</p></a>
+<a class="card" href="https://landbd-app.farukkhanone.workers.dev/rajuk-test"><span class="icon" aria-hidden="true">📍</span><strong>RAJUK Parcel Explorer</strong><p>Available parcel map data and survey views.</p></a>
+<a class="card" href="https://landbd-app.farukkhanone.workers.dev/dlrms-khatian"><span class="icon" aria-hidden="true">📄</span><strong>খতিয়ান অনুসন্ধান</strong><p>Land records and khatian-related services.</p></a>
+<a class="card" href="https://landbd-app.farukkhanone.workers.dev/login"><span class="icon" aria-hidden="true">🔐</span><strong>অ্যাকাউন্ট</strong><p>Sign in through the full LandBD application.</p></a>
+<a class="card" href="https://github.com/omarreact/shohoz-jomir-hishab"><span class="icon" aria-hidden="true">⚙️</span><strong>Source repository</strong><p>GitHub source, issues, and build history.</p></a>
+</div></section>
+</main>
+<footer><div class="shell"><span>© 2026 LandBD. GIS previews are not certified land records.</span><span>Static portal on GitHub Pages · Full app on <a href="https://landbd-app.farukkhanone.workers.dev/">Cloudflare Workers</a></span></div></footer>
+</body>
+</html>

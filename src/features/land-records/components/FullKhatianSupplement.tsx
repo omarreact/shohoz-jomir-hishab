@@ -24,6 +24,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 function sourceLabel(source: FullKhatian["evidence"][number]["source"]): string {
   switch (source) {
     case "DLRMS_PUBLIC": return "DLRMS Public";
+    case "DLRMS_MIRROR": return "Third-party mirror (not official)";
     case "DLRMS_TRACKING": return "DLRMS Verification";
     case "DLRMS_HAL_SABEK": return "DLRMS হাল–সাবেক";
     case "LISF_AUTHORIZED": return "LISF Authorized";

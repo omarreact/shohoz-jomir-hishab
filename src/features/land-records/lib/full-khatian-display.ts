@@ -28,43 +28,79 @@ export function buildFullKhatianDisplayModel(
   const authoritativeOwners = full.owners.filter(
     (row) => row.source !== "LISF_MOCK" && row.name.trim(),
   );
-  const ownersByName = new Map(authoritativeOwners.map((row) => [key(row.name), row]));
+  const ownersByName = new Map<string, typeof authoritativeOwners>();
+  for (const owner of authoritativeOwners) {
+    const normalized = key(owner.name);
+    ownersByName.set(normalized, [...(ownersByName.get(normalized) ?? []), owner]);
+  }
   const fromFull = authoritativeOwners.map((row) => ({
     name: row.name,
     share: row.shareRaw,
+    fatherOrHusband: row.fatherOrHusband,
   }));
 
-  // A full source list may be longer than a compact string. Never replace an
-  // existing longer list with a shorter deduplicated or provisional one.
-  const owners = fromFull.length > model.owners.length
+  // When a structured owner list contains exactly the same source names
+  // (including duplicate-name multiplicity), its own linked guardian/share
+  // fields can be displayed without guessing based on compact row order.
+  const compactNames = model.owners.map((row) => key(row.name)).sort();
+  const structuredNames = fromFull.map((row) => key(row.name)).sort();
+  const completeNameMatch = structuredNames.length === compactNames.length &&
+    structuredNames.every((name, index) => name === compactNames[index]);
+
+  // Never replace a longer compact list with a shorter structured subset.
+  const owners = fromFull.length > model.owners.length ||
+      (completeNameMatch && fromFull.some((row) => row.fatherOrHusband || row.share))
     ? fromFull
-    : model.owners.map((row) => ({
-        ...row,
-        share: row.share || ownersByName.get(key(row.name))?.shareRaw,
-      }));
+    : model.owners.map((row) => {
+        const candidates = ownersByName.get(key(row.name)) ?? [];
+        // The compact list and structured list may have different ordering.
+        // Without the same unique owner identity, never guess which guardian
+        // belongs to a duplicate name. Fully structured rows remain paired.
+        const verified = candidates.length === 1 ? candidates[0] : undefined;
+        return {
+          ...row,
+          share: row.share || verified?.shareRaw,
+          fatherOrHusband: verified?.fatherOrHusband,
+        };
+      });
 
   const sourceDags = full.dags.filter((row) => row.source !== "LISF_MOCK" && row.dagNo.trim());
-  const fullDags = new Map(sourceDags.map((row) => [key(row.dagNo), row]));
-  const converted = (dagNo: string, previous?: ParsedDagRow): ParsedDagRow => {
-    const row = fullDags.get(key(dagNo));
-    if (!row) return previous ?? { dagNo };
-    return {
-      dagNo: previous?.dagNo || row.dagNo,
-      landClass: previous?.landClass || row.landType || row.agriculturalType,
-      area: previous?.area || area(row.khatianAreaRaw),
-      shareArea: previous?.shareArea || area(row.khatianAreaRaw),
-      totalArea: previous?.totalArea || area(row.totalAreaRaw),
-      khatianShare: previous?.khatianShare,
-    };
-  };
-
-  const dags = model.dags.map((row) => converted(row.dagNo, row));
-  const seen = new Set(dags.map((dag) => key(dag.dagNo)));
+  const detailedDags = new Map<string, typeof sourceDags>();
   for (const row of sourceDags) {
-    if (!seen.has(key(row.dagNo))) {
-      dags.push(converted(row.dagNo));
-      seen.add(key(row.dagNo));
+    const number = key(row.dagNo);
+    detailedDags.set(number, [...(detailedDags.get(number) ?? []), row]);
+  }
+  const converted = (
+    row: (typeof sourceDags)[number],
+    previous?: ParsedDagRow,
+  ): ParsedDagRow => ({
+    dagNo: previous?.dagNo || row.dagNo,
+    landClass: row.landType || row.agriculturalType || previous?.landClass,
+    area: area(row.khatianAreaRaw) || previous?.area,
+    shareArea: area(row.khatianAreaRaw) || previous?.shareArea,
+    totalArea: area(row.totalAreaRaw) || previous?.totalArea,
+    khatianShare: previous?.khatianShare,
+  });
+  const dags: ParsedDagRow[] = [];
+  const seen = new Set<string>();
+  for (const row of model.dags) {
+    const number = key(row.dagNo);
+    if (seen.has(number)) continue;
+    seen.add(number);
+    const variants = detailedDags.get(number);
+    if (!variants?.length) {
+      dags.push(row);
+      continue;
     }
+    // Keep each explicitly sourced land-class/area variant as a separate row.
+    variants.forEach((variant, index) => {
+      dags.push(converted(variant, index === 0 ? row : undefined));
+    });
+  }
+  for (const [number, variants] of detailedDags) {
+    if (seen.has(number)) continue;
+    seen.add(number);
+    variants.forEach((variant) => dags.push(converted(variant)));
   }
 
   return {
@@ -72,7 +108,7 @@ export function buildFullKhatianDisplayModel(
     owners,
     dags,
     ownerCount: owners.length,
-    dagCount: dags.length,
+    dagCount: new Set(dags.map((row) => key(row.dagNo))).size,
     hasOwnerShares: owners.some((row) => Boolean(row.share)),
     hasDagAreas: dags.some((row) => Boolean(row.area || row.shareArea || row.totalArea)),
     hasLandClass: dags.some((row) => Boolean(row.landClass)),

@@ -1,10 +1,14 @@
 "use client";
 import { useEffect,useState } from "react";
+import { usePathname } from "next/navigation";
+import { isVisitorChatHiddenOnRoute } from "./visitorChatVisibility";
 type Message={from:"user"|"ai";text:string};
 export default function VisitorChatWidget(){
+ const pathname=usePathname();
+ const hiddenOnMap=isVisitorChatHiddenOnRoute(pathname);
  const [enabled,setEnabled]=useState(false),[open,setOpen]=useState(false),[query,setQuery]=useState(""),[busy,setBusy]=useState(false);
  const [messages,setMessages]=useState<Message[]>([]);
- useEffect(()=>{void fetch("/api/ai/chat",{cache:"no-store"}).then(r=>r.json()).then((x:{enabled?:boolean})=>setEnabled(x.enabled===true)).catch(()=>undefined);},[]);
+ useEffect(()=>{if(hiddenOnMap)return;void fetch("/api/ai/chat",{cache:"no-store"}).then(r=>r.json()).then((x:{enabled?:boolean})=>setEnabled(x.enabled===true)).catch(()=>undefined);},[hiddenOnMap]);
  async function send(){
   const message=query.trim();if(busy||!message)return;
   setQuery("");setBusy(true);setMessages(p=>[...p.slice(-12),{from:"user",text:message}]);
@@ -13,7 +17,7 @@ export default function VisitorChatWidget(){
   catch{setMessages(p=>[...p,{from:"ai",text:"সংযোগ ব্যর্থ — পরে চেষ্টা করুন।"}]);}
   finally{setBusy(false);}
  }
- if(!enabled)return null;
+ if(hiddenOnMap||!enabled)return null;
  return <div lang="bn" className="fixed bottom-4 right-4 z-[75] w-[min(380px,calc(100vw-2rem))]">
   {open&&<section className="mb-3 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-2xl">
    <header className="flex items-center justify-between bg-emerald-800 px-4 py-3 text-white"><strong>LandBD AI সহায়ক</strong><button aria-label="বন্ধ করুন" onClick={()=>setOpen(false)}>✕</button></header>

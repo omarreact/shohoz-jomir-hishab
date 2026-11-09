@@ -15,6 +15,8 @@ export interface ParsedOwnerRow {
   name: string;
   /** Individual share when present in structured public data. */
   share?: string;
+  /** Only attach when an authoritative source supplies this exact owner relationship. */
+  fatherOrHusband?: string;
 }
 
 export interface ParsedDagRow {
@@ -137,6 +139,13 @@ function dlrmsAcreLabel(value: string | undefined): string | undefined {
   return acre == null ? undefined : formatAcre(acre);
 }
 
+function dagKey(value: string): string {
+  return value.normalize("NFKC")
+    .replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮৯".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/^0+(?=\d)/, "").trim();
+}
+
 /** Structured dag rows when public record exposes per-dag detail objects. */
 export function buildDagRows(
   dagNumbers: string[],
@@ -150,7 +159,8 @@ export function buildDagRows(
     publicRecord.dagDetails ??
     publicRecord.plots;
 
-  const byDag = new Map<string, ParsedDagRow>();
+  // One dag can contain several separately sourced land-class/area rows.
+  const byDag = new Map<string, ParsedDagRow[]>();
 
   if (Array.isArray(structured)) {
     for (const item of structured) {
@@ -176,7 +186,8 @@ export function buildDagRows(
       ]);
       const totalAreaRaw = pickString(row, ["TOTAL_AREA", "DAG_TOTAL", "দাগের_মোট_পরিমাণ", "totalArea"]);
       const shareAreaRaw = pickString(row, ["SHARE_AREA", "অংশানুযায়ী_জমির_পরিমাণ"]);
-      byDag.set(dagNo, {
+      const entries = byDag.get(dagKey(dagNo)) ?? [];
+      entries.push({
         dagNo,
         landClass: pickString(row, ["LAND_CLASS", "CLASS", "জমির_শ্রেণী", "landClass", "TYPE"]),
         area: dlrmsAcreLabel(areaRaw),
@@ -184,14 +195,17 @@ export function buildDagRows(
         khatianShare: pickString(row, ["KHATIAN_SHARE", "SHARE", "অংশ", "hissa"]),
         shareArea: dlrmsAcreLabel(shareAreaRaw),
       });
+      byDag.set(dagKey(dagNo), entries);
     }
   }
 
-  return dagNumbers.map((dagNo) => {
-    const hit = byDag.get(dagNo);
-    if (hit) return hit;
-    return { dagNo };
-  });
+  const inCompact = new Set(dagNumbers.map(dagKey));
+  const output = dagNumbers.flatMap((dagNo) => byDag.get(dagKey(dagNo)) ?? [{ dagNo }]);
+  // A structured detail response may have legitimate rows omitted from DAGS.
+  for (const [key, rows] of byDag) {
+    if (!inCompact.has(key)) output.push(...rows);
+  }
+  return output;
 }
 
 /** Optional owner shares array from public record (same order as OWNERS when provided). */
@@ -263,7 +277,7 @@ export function buildKhatianDisplayModel(
     totalLand: totalLandAcre == null ? "" : formatAcre(totalLandAcre),
     isPartial: isPartialPublicRecord(khatian),
     ownerCount: ownerNames.length,
-    dagCount: dagNumbers.length,
+    dagCount: new Set(dags.map((row) => dagKey(row.dagNo))).size,
     publicRecord,
     reconstruction,
     hasOwnerShares: owners.some((o) => Boolean(o.share)),

@@ -264,6 +264,10 @@ describe("FullKhatian service", () => {
         OWNERS: "দং আস্কর আলী,খোদেজা খাতুন,হাজাতুন নেছা",
         GUARDIANS: "পিং ছোমেদ খাঁন,জং ওয়াকিল উদ্দিন ভুঞা",
         DAGS: "1948,1972,1987,2003,2009,2010,2116,3128,3918",
+        DAG_DETAILS: [
+          { DAG_NUMBER: "1948", LAND_CLASS: "নাল", KHATIAN_AREA: "0.20" },
+          { DAG_NUMBER: "1948", LAND_CLASS: "ভিটা", KHATIAN_AREA: "0.10" },
+        ],
         TOTAL_LAND: "2.0412",
       })),
     }));
@@ -280,7 +284,15 @@ describe("FullKhatian service", () => {
     expect(full.base.DAGS).toBe("1948, 1972, 1987, 2003, 2009, 2010, 2116, 3128, 3918");
     expect(full.base.TOTAL_LAND).toBe("2.0412");
     expect(full.owners).toHaveLength(3);
-    expect(full.dags).toHaveLength(9);
+    // Nine distinct dag numbers, but number 1948 has two separately sourced
+    // class/area records. Never collapse those legal rows by dag number.
+    expect(new Set(full.dags.map((dag) => dag.dagNo)).size).toBe(9);
+    expect(full.dags).toHaveLength(10);
+    expect(full.owners.find((owner) => owner.name === "খোদেজা খাতুন")?.source).toBe("DLRMS_MIRROR");
+    expect(full.dags.filter((dag) => dag.dagNo === "1948").every((dag) => dag.source === "DLRMS_MIRROR")).toBe(true);
+    expect(full.evidence).toContainEqual(expect.objectContaining({ source: "DLRMS_MIRROR", official: false }));
+    expect(full.dags.filter((dag) => dag.dagNo === "1948")
+      .map((dag) => dag.landType)).toEqual(["নাল", "ভিটা"]);
     expect((full.base.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
       UPSTREAM_TRUNCATION_REMAINS: boolean,
     }).UPSTREAM_TRUNCATION_REMAINS).toBe(false);

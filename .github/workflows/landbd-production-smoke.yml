@@ -1,0 +1,50 @@
+name: LandBD Production Smoke (Read Only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "vercel.json"
+      - ".github/workflows/landbd-production-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  homepage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify production homepage and public API without secrets
+        env:
+          LANDBD_ORIGIN: https://landbd.pincodeit.com
+        run: |
+          node --input-type=module <<'NODE'
+          const origin = process.env.LANDBD_ORIGIN;
+          const expectedRemoved = "পেইড সেবার বর্তমান মূল্য";
+          const homepage = await fetch(origin + "/", {
+            redirect: "follow",
+            cache: "no-store",
+            headers: { Accept: "text/html" },
+            signal: AbortSignal.timeout(15000)
+          });
+          const html = await homepage.text();
+          const isHtml = (homepage.headers.get("content-type") || "").includes("text/html");
+          const hasRemovedSection = html.includes(expectedRemoved);
+          console.log("homepage", { http: homepage.status, isHtml, priceBannerPresent: hasRemovedSection });
+          if (homepage.status !== 200 || !isHtml || hasRemovedSection) {
+            throw new Error("Production homepage failed the banner removal smoke check");
+          }
+          const settings = await fetch(origin + "/api/public/settings", {
+            redirect: "follow", cache: "no-store",
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(15000)
+          });
+          const payload = settings.ok ? await settings.json().catch(() => null) : null;
+          const valid = Boolean(payload && typeof payload.settings === "object");
+          console.log("public settings API", { http: settings.status, validJson: valid });
+          if (!settings.ok || !valid) throw new Error("Public settings endpoint unavailable");
+          console.log("PASS: anonymous production homepage and public API");
+          console.log("NOTE: Firebase Admin readiness, authenticated login and Firestore connectivity are NOT proven by this read-only public smoke.");
+          NODE

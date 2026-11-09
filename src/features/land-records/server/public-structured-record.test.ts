@@ -2,6 +2,7 @@ import type { KhatianDetails } from "../types";
 import {
   extractStructuredPublicRecord,
   extractVerifiedMirrorCompactRow,
+  mirrorRecordMatchesBase,
   fetchStrictPublicMirrorRecord,
   restoreOfficialDetailBase,
 } from "./public-structured-record";
@@ -15,6 +16,22 @@ describe("public structured khatian record helpers", () => {
 
   afterAll(() => {
     process.env = originalEnv;
+  });
+
+  it("rejects mirror rows with mismatched ID, khatian number or JL", () => {
+    const official = { ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911 };
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 999, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "350", JL_NUMBER_ID: 382911,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382912,
+    })).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
+    })).toBe(true);
   });
 
   it("extracts structured owner and dag details without inventing relationships", () => {
@@ -57,6 +74,24 @@ describe("public structured khatian record helpers", () => {
         source: "DLRMS_PUBLIC",
       }),
     ]);
+  });
+
+  it("retains verified same-name owners with different guardians or shares and multi-class dag rows", () => {
+    const record = extractStructuredPublicRecord({
+      OWNER_DETAILS: [
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "আলম উদ্দিন", SHARE: "১/২" },
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "মহিউদ্দিন", SHARE: "১/৪" },
+        { NAME: "সিরাজদ্দিন", FATHER_NAME: "আলম উদ্দিন", SHARE: "১/২" },
+      ],
+      DAG_DETAILS: [
+        { DAG_NO: "১৯৭৪", LAND_CLASS: "নাল", KHATIAN_AREA: "0.20" },
+        { DAG_NO: "১৯৭৪", LAND_CLASS: "ভিটা", KHATIAN_AREA: "0.10" },
+      ],
+    });
+    expect(record.owners).toHaveLength(2);
+    expect(record.owners.map((row) => row.fatherOrHusband)).toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
+    expect(record.dags).toHaveLength(2);
+    expect(record.dags.map((row) => row.landType)).toEqual(["নাল", "ভিটা"]);
   });
 
   it("restores official detail compact fields before later reconstruction", () => {

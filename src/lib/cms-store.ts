@@ -32,8 +32,9 @@ export function isCmsSlug(value:unknown):value is CmsSlug{
 export function defaultCmsPage(slug:CmsSlug):CmsPage{return {slug,...CONTENT[slug],revision:0,updatedAt:null};}
 export async function getCmsPage(slug:CmsSlug):Promise<CmsPage>{
  const fallback=defaultCmsPage(slug);
- // firebase-admin/Firestore protobuf code generation is not supported by workerd.
- // Keep Cloudflare public rendering read-only and fail safely to versioned content.
+ // Cloudflare Workers must never evaluate Firebase Admin's Firestore
+ // runtime: it requires dynamic code generation disallowed in Workers.
+ // Keep public CMS defaults available on production and preview workers.
  if(isCloudflareWorkersRuntime())return fallback;
  const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady())return fallback;
