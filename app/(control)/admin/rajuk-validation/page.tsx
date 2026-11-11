@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import Link from "next/link";
 import {
   AlertTriangle, ArrowUpRight, CheckCircle2, ClipboardCheck, Database, Download,
   FileJson2, FileText, GitBranch, Layers3, LockKeyhole, MapPinned, Search,
@@ -388,9 +389,9 @@ export default function RajukValidationPage() {
             <p className={"mt-3 " + MUTED}>Draft region IDs, map-sheet IDs and geometry remain null. This schedule does not prove current legal ownership.</p>
             <div className="mt-4 grid gap-2">
               <div className="flex flex-wrap gap-2 text-xs">
-                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/rajuk-test" target="_blank" rel="noreferrer">RAJUK plot QA</a>
-                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/geospatial-map" target="_blank" rel="noreferrer">GIS map</a>
-                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/dlrms-khatian" target="_blank" rel="noreferrer">DLRMS khatian</a>
+                <Link className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/rajuk-test" target="_blank" rel="noreferrer">RAJUK plot QA</Link>
+                <Link className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/geospatial-map" target="_blank" rel="noreferrer">GIS map</Link>
+                <Link className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/dlrms-khatian" target="_blank" rel="noreferrer">DLRMS khatian</Link>
               </div>
               <button type="button" className={BUTTON} onClick={() => setTab("issues")}><AlertTriangle size={16}/> Review source exceptions</button>
               <button type="button" className={BUTTON} onClick={() => setTab("import")}><ShieldCheck size={16}/> Inspect import checks</button>
