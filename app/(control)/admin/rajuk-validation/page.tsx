@@ -387,6 +387,11 @@ export default function RajukValidationPage() {
             <div className="mt-3">{statusPill(false, "BLOCKED — no imports permitted")}</div>
             <p className={"mt-3 " + MUTED}>Draft region IDs, map-sheet IDs and geometry remain null. This schedule does not prove current legal ownership.</p>
             <div className="mt-4 grid gap-2">
+              <div className="flex flex-wrap gap-2 text-xs">
+                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/rajuk-test" target="_blank" rel="noreferrer">RAJUK plot QA</a>
+                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/geospatial-map" target="_blank" rel="noreferrer">GIS map</a>
+                <a className="font-semibold text-emerald-700 underline dark:text-emerald-300" href="/dlrms-khatian" target="_blank" rel="noreferrer">DLRMS khatian</a>
+              </div>
               <button type="button" className={BUTTON} onClick={() => setTab("issues")}><AlertTriangle size={16}/> Review source exceptions</button>
               <button type="button" className={BUTTON} onClick={() => setTab("import")}><ShieldCheck size={16}/> Inspect import checks</button>
             </div>
