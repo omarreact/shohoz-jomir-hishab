@@ -385,7 +385,7 @@ function normalizeKhatian(row: JsonRecord, fallback: { jlNumberId?: number; mouz
     GUARDIANS: optionalString(row, "GUARDIANS", "guardians"),
     JL_NUMBER_ID: optionalNumber(row, "JL_NUMBER_ID", "jlNumberId") ?? fallback.jlNumberId ?? 0,
     MOUZA_ID: optionalNumber(row, "MOUZA_ID", "mouzaId") ?? fallback.mouzaId ?? 0,
-    TOTAL_LAND: optionalString(row, "TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount"),
+    TOTAL_LAND: optionalString(row, "TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount", "LAND_VALUE", "landValue", "KHATIAN_AREA", "khatianArea", "AMOUNT", "amount", "TOTAL_AREA", "totalArea"),
   };
 }
 
@@ -499,7 +499,7 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
       MOUZA_NAME: optionalString(row, "MOUZA_NAME"),
       SURVEY_ID: optionalNumber(row, "SURVEY_ID"),
       SURVEY_NAME: optionalString(row, "SURVEY_NAME"),
-      TOTAL_LAND: optionalString(row, "TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount"),
+      TOTAL_LAND: optionalString(row, "TOTAL_LAND", "totalLand", "LAND_AMOUNT", "landAmount", "LAND_VALUE", "landValue", "KHATIAN_AREA", "khatianArea", "AMOUNT", "amount", "TOTAL_AREA", "totalArea"),
       PUBLIC_RECORD: sanitizePublicRecord(row),
     };
 

@@ -36,6 +36,12 @@ interface BbsLocationCodes {
 
 const MAX_FILTERED_DAG_LOOKUPS = 24;
 const FILTERED_DAG_CONCURRENCY = 8;
+// The ZIP build has a recovery lookup against the unfiltered mouza index.
+// Keep it bounded to avoid expensive bulk scans on every truncated record.
+const PUBLIC_INDEX_PAGE_SIZE = 100;
+const MAX_PUBLIC_INDEX_PAGES = 12;
+const PUBLIC_INDEX_CONCURRENCY = 3;
+const PUBLIC_INDEX_TIMEOUT_MS = 8_000;
 
 function splitList(value: string | undefined): string[] {
   return (value ?? "")
@@ -204,6 +210,66 @@ async function safeSearch(
   }
 }
 
+/**
+ * DLRMS's KHATIAN_NO-filtered index sometimes contains only abbreviated
+ * owner/dag lists while an unfiltered mouza index page contains fuller data.
+ * Recover only the same official record ID, khatian number and mouza/JL.
+ * This is a bounded best-effort fallback, not a claim of completeness.
+ */
+async function findUnfilteredPublicKhatian(
+  base: KhatianDetails,
+  surveyKey: string,
+  warnings: string[],
+  signal?: AbortSignal,
+): Promise<KhatianPage["items"][number] | null> {
+  if (!base.JL_NUMBER_ID) return null;
+
+  const lookupSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(PUBLIC_INDEX_TIMEOUT_MS)])
+    : AbortSignal.timeout(PUBLIC_INDEX_TIMEOUT_MS);
+  const loadPage = (page: number) =>
+    safeSearch({
+      surveyKey,
+      jlNumberId: base.JL_NUMBER_ID,
+      page,
+      pageSize: PUBLIC_INDEX_PAGE_SIZE,
+    }, warnings, lookupSignal);
+  const findSameRecord = (page: KhatianPage | null) =>
+    page?.items.find((row) =>
+      row.ID === base.ID &&
+      row.KHATIAN_NO.trim() === base.KHATIAN_NO.trim() &&
+      row.JL_NUMBER_ID === base.JL_NUMBER_ID &&
+      (!base.MOUZA_ID || !row.MOUZA_ID || row.MOUZA_ID === base.MOUZA_ID),
+    ) ?? null;
+
+  const first = await loadPage(1);
+  if (!first) return null;
+  const firstMatch = findSameRecord(first);
+  if (firstMatch) return firstMatch;
+  if (!first.hasNextPage && !first.total) return null;
+
+  const reportedPages = first.total === undefined
+    ? undefined
+    : Math.max(1, Math.ceil(first.total / PUBLIC_INDEX_PAGE_SIZE));
+  const lastPage = Math.min(reportedPages ?? MAX_PUBLIC_INDEX_PAGES, MAX_PUBLIC_INDEX_PAGES);
+  for (let page = 2; page <= lastPage && !lookupSignal.aborted; page += PUBLIC_INDEX_CONCURRENCY) {
+    const pages = await Promise.all(
+      Array.from({ length: Math.min(PUBLIC_INDEX_CONCURRENCY, lastPage - page + 1) },
+        (_, offset) => loadPage(page + offset)),
+    );
+    for (const candidate of pages) {
+      const match = findSameRecord(candidate);
+      if (match) return match;
+    }
+    if (reportedPages === undefined && pages.every((candidate) => !candidate?.hasNextPage)) break;
+  }
+
+  if (reportedPages !== undefined && reportedPages > MAX_PUBLIC_INDEX_PAGES) {
+    warnings.push("BRS public index recovery reached its page limit; the record may still be incomplete.");
+  }
+  return null;
+}
+
 async function collectFilteredDagRows(
   base: KhatianDetails,
   surveyKey: string,
@@ -347,6 +413,10 @@ function reconstructionStillPartial(base: KhatianDetails): boolean {
   return (value as Record<string, unknown>).UPSTREAM_TRUNCATION_REMAINS === true;
 }
 
+function hasTruncatedListValue(row: KhatianPage["items"][number]): boolean {
+  return [row.OWNERS, row.DAGS, row.GUARDIANS].some((value) => /(?:,\s*)?(?:\.{3,}|…)+\s*$/u.test(value.trim()));
+}
+
 function cachedListExpansion(base: KhatianDetails): KhatianPage["items"][number] | null {
   const value = base.PUBLIC_RECORD?.LANDBD_LIST_EXPANSION;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -422,6 +492,12 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       ownerVerified: Boolean(input.owner && ownerRows.length),
       dagVerified: Boolean(input.dagNumber && dagRows.length),
     });
+    // The uploaded ZIP recovered fuller BRS records from the unfiltered mouza
+    // index. Only attempt this when the filtered official record is partial.
+    if (reconstructionStillPartial(rebuilt) || exactRows.some(hasTruncatedListValue)) {
+      const unfiltered = await findUnfilteredPublicKhatian(rebuilt, input.surveyKey, warnings, signal);
+      if (unfiltered) rebuilt = reconstructKhatian(rebuilt, [unfiltered]);
+    }
   }
 
   // Per-dag reconstruction and optional verification are independent after the

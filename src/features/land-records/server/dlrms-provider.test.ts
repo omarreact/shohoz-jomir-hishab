@@ -76,4 +76,37 @@ describe("DLRMS public land-record provider", () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(String(fetchMock.mock.calls[2][0])).toContain("OWNER=%E0%A6%A8%E0%A6%AE%E0%A7%81%E0%A6%A8%E0%A6%BE");
   });
+
+  it("preserves alternate BRS land-area keys in both search and detail responses", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/index-khatian/BRS/7940305")) {
+        return Response.json({ data: {
+          ID: 7940305, KHATIAN_NO: "349", OWNERS: "মালিক নমুনা",
+          DAGS: "1974", GUARDIANS: "", JL_NUMBER_ID: 382911,
+          MOUZA_ID: 71947, IS_LOCKED: 0, DIVISION_NAME: "ঢাকা",
+          DISTRICT_NAME: "ঢাকা", UPAZILA_NAME: "সাভার",
+          JL_NUMBER: "5", MOUZA_NAME: "পাতিরা", SURVEY_NAME: "BRS",
+          KHATIAN_AREA: "0.338",
+        } });
+      }
+      if (url.includes("/index-khatian/BRS?")) {
+        return Response.json({ data: { items: [{
+          ID: 7940305, KHATIAN_NO: "349", OWNERS: "মালিক নমুনা",
+          DAGS: "1974", GUARDIANS: "", JL_NUMBER_ID: 382911,
+          MOUZA_ID: 71947, LAND_VALUE: "0.338",
+        }], meta: { totalItems: 1, totalPages: 1 } } });
+      }
+      return originalFetch(input, init);
+    }) as typeof fetch;
+
+    const { dlrmsLandRecordProvider: provider } = await import("./dlrms-provider");
+    const list = await provider.listKhatians({
+      surveyKey: "BRS", jlNumberId: 382911, khatianNo: "349", page: 1, pageSize: 20,
+    });
+    const detail = await provider.getKhatian("BRS", 7940305);
+    expect(list.items[0].TOTAL_LAND).toBe("0.338");
+    expect(detail.TOTAL_LAND).toBe("0.338");
+  });
 });
