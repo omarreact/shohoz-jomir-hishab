@@ -314,7 +314,15 @@ function preferFullerField(primary: string, secondary: string): string {
   return b.length > a.length ? b : a;
 }
 
-function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAGS: string; GUARDIANS: string; TOTAL_LAND?: string }>(
+function mergeKhatianRowPreferFuller<T extends {
+  ID: number;
+  OWNERS: string;
+  DAGS: string;
+  GUARDIANS: string;
+  JL_NUMBER_ID: number;
+  MOUZA_ID: number;
+  TOTAL_LAND?: string;
+}>(
   primary: T,
   secondary: T | undefined,
 ): T {
@@ -324,31 +332,51 @@ function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAG
     OWNERS: preferFullerField(primary.OWNERS, secondary.OWNERS),
     DAGS: preferFullerField(primary.DAGS, secondary.DAGS),
     GUARDIANS: preferFullerField(primary.GUARDIANS, secondary.GUARDIANS),
+    JL_NUMBER_ID: primary.JL_NUMBER_ID || secondary.JL_NUMBER_ID,
+    MOUZA_ID: primary.MOUZA_ID || secondary.MOUZA_ID,
     TOTAL_LAND: preferFullerField(primary.TOTAL_LAND ?? "", secondary.TOTAL_LAND ?? "") || primary.TOTAL_LAND,
   };
 }
 
-async function fetchEnrichedKhatianList(
+type EnrichedKhatianPage = {
+  rows: JsonRecord[];
+  totalPages?: number;
+};
+
+function normalizeKhatianNumber(value: string): string {
+  const banglaDigits = "০১২৩৪৫৬৭৮৯";
+  return value.trim().replace(/[০-৯]/g, (digit) => String(banglaDigits.indexOf(digit)));
+}
+
+function compareKhatianNumbers(left: string, right: string): number {
+  const a = normalizeKhatianNumber(left);
+  const b = normalizeKhatianNumber(right);
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+    const aNumber = BigInt(a);
+    const bNumber = BigInt(b);
+    return aNumber < bNumber ? -1 : aNumber > bNumber ? 1 : 0;
+  }
+  return a.localeCompare(b, "bn-BD", { numeric: true, sensitivity: "base" });
+}
+
+async function fetchEnrichedKhatianPage(
+  base: string,
   input: {
     surveyKey: string;
     jlNumberId: number;
-    page: number;
-    pageSize: number;
     khatianNo?: string;
     owner?: string;
     dagNumber?: string;
   },
+  page: number,
+  pageSize: number,
   signal?: AbortSignal,
-): Promise<JsonRecord[] | null> {
-  if (!enrichEnabled()) return null;
-  const base = enrichBaseUrl();
-  if (!base) return null;
-
+): Promise<EnrichedKhatianPage | null> {
   const url = new URL(`${base}/index-khatian/${encodeURIComponent(input.surveyKey)}`);
   url.searchParams.set("SURVEY", input.surveyKey);
   url.searchParams.set("JL_NUMBER_ID", String(input.jlNumberId));
-  url.searchParams.set("PAGE_NO", String(input.page));
-  url.searchParams.set("PAGE_SIZE", String(input.pageSize));
+  url.searchParams.set("PAGE_NO", String(page));
+  url.searchParams.set("PAGE_SIZE", String(pageSize));
   if (input.khatianNo) url.searchParams.set("KHATIAN_NO", input.khatianNo);
   if (input.owner) url.searchParams.set("OWNER", input.owner);
   if (input.dagNumber) url.searchParams.set("DAG_NUMBER", input.dagNumber);
@@ -367,13 +395,81 @@ async function fetchEnrichedKhatianList(
     if (!response.ok) return null;
     const payload = await response.json();
     const container = dataRecord(payload);
-    return records(container);
+    const meta = container.meta && typeof container.meta === "object" ? container.meta as JsonRecord : {};
+    return {
+      rows: records(container),
+      totalPages: optionalNumber(meta, "totalPages", "TOTAL_PAGES", "lastPage")
+        ?? optionalNumber(container, "totalPages", "TOTAL_PAGES", "lastPage"),
+    };
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", onAbort);
   }
+}
+
+async function fetchEnrichedKhatianList(
+  input: {
+    surveyKey: string;
+    jlNumberId: number;
+    page: number;
+    pageSize: number;
+    khatianNo?: string;
+    owner?: string;
+    dagNumber?: string;
+  },
+  signal?: AbortSignal,
+): Promise<JsonRecord[] | null> {
+  if (!enrichEnabled()) return null;
+  const base = enrichBaseUrl();
+  if (!base) return null;
+
+  const exactKhatianNo = input.khatianNo?.trim();
+  const pageSize = exactKhatianNo ? Math.max(input.pageSize, 100) : input.pageSize;
+  const initialPage = exactKhatianNo ? 1 : input.page;
+  const initial = await fetchEnrichedKhatianPage(base, input, initialPage, pageSize, signal);
+  if (!initial || !exactKhatianNo) return initial?.rows ?? null;
+
+  const exactMatch = (row: JsonRecord) =>
+    optionalString(row, "KHATIAN_NO", "khatianNo").trim() === exactKhatianNo;
+  if (initial.rows.some(exactMatch)) return initial.rows;
+
+  // Some public mirrors ignore KHATIAN_NO and return an ordered page instead.
+  // Locate the exact row with bounded binary pagination, then retain the same
+  // ID/JL validation performed by the merge step below.
+  const reportedTotalPages = Math.floor(initial.totalPages ?? 1);
+  const totalPages = Math.min(Math.max(reportedTotalPages, 1), 5_000);
+  if (totalPages <= 1) return initial.rows;
+
+  let low = initialPage === 1 ? 2 : 1;
+  let high = totalPages;
+  while (low <= high) {
+    const page = Math.floor((low + high) / 2);
+    const candidate = await fetchEnrichedKhatianPage(base, input, page, pageSize, signal);
+    if (!candidate?.rows.length) return initial.rows;
+    if (candidate.rows.some(exactMatch)) return candidate.rows;
+
+    const pageNumbers = candidate.rows
+      .map((row) => optionalString(row, "KHATIAN_NO", "khatianNo").trim())
+      .filter(Boolean);
+    if (!pageNumbers.length) return initial.rows;
+    const first = pageNumbers[0];
+    const last = pageNumbers[pageNumbers.length - 1];
+    if (compareKhatianNumbers(first, last) > 0) return initial.rows;
+
+    if (compareKhatianNumbers(exactKhatianNo, first) < 0) {
+      high = page - 1;
+    } else if (compareKhatianNumbers(exactKhatianNo, last) > 0) {
+      low = page + 1;
+    } else {
+      // The target sorts inside this page but is absent, so it does not exist
+      // in the mirror. Keep the official response without guessing.
+      return initial.rows;
+    }
+  }
+
+  return initial.rows;
 }
 
 function normalizeKhatian(row: JsonRecord, fallback: { jlNumberId?: number; mouzaId?: number } = {}) {
@@ -471,7 +567,13 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
             "khatians",
           );
           const byId = new Map(enrichedItems.map((row) => [row.ID, row]));
-          items = items.map((row) => mergeKhatianRowPreferFuller(row, byId.get(row.ID)));
+          items = items.map((row) => {
+            const enriched = byId.get(row.ID);
+            const sameRecord = enriched &&
+              enriched.KHATIAN_NO.trim() === row.KHATIAN_NO.trim() &&
+              (!enriched.JL_NUMBER_ID || enriched.JL_NUMBER_ID === row.JL_NUMBER_ID);
+            return mergeKhatianRowPreferFuller(row, sameRecord ? enriched : undefined);
+          });
         } catch {
           // keep official items
         }
