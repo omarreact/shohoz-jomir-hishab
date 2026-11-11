@@ -78,6 +78,8 @@ export type DatasetProfile = {
   records: number;
   duplicateRecordIds: number;
   missingSourcePages: number;
+  badScheduleReferences: number;
+  hierarchyMismatches: number;
   orphanIndexPlotIds: number;
   indexEdges: number;
   unresolved: number;
@@ -132,6 +134,8 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
   let roads = 0;
   let duplicateRecordIds = 0;
   let missingSourcePages = 0;
+  let badScheduleReferences = 0;
+  let hierarchyMismatches = 0;
   let plots = 0;
 
   function add(record: ScheduleRecord, plotId: string | null, sector: string | null,
@@ -140,6 +144,8 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
     recordIds.add(record.record_id);
     if (!Number.isInteger(record.source?.pdf_page ?? NaN) || (record.source?.pdf_page ?? 0) < 1 ||
         (record.source?.pdf_page ?? 0) > (data.metadata.pdf_page_count ?? Infinity)) missingSourcePages++;
+    if (!Number.isInteger(record.source?.schedule_page ?? NaN) || (record.source?.schedule_page ?? 0) < 1 ||
+        !Number.isInteger(record.source?.table_row ?? NaN) || (record.source?.table_row ?? 0) < 1) badScheduleReferences++;
     rows.push({ record, recordId: record.record_id, plotId, sector, road, plotNumber, unresolved });
   }
 
@@ -148,6 +154,8 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
       roads++;
       for (const [key, plot] of Object.entries(road.plots)) {
         plots++;
+        if (key !== plot.plot_id || (plot.sector != null && plot.sector !== sectorId) ||
+            (plot.road != null && plot.road !== roadId)) hierarchyMismatches++;
         plotIds.add(plot.plot_id || key);
         for (const record of plot.records) add(record, plot.plot_id || key, sectorId, roadId, plot.plot_number ?? null, false);
       }
@@ -179,6 +187,8 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
   const checks = [
     { name: "Unique source record IDs", pass: duplicateRecordIds === 0, detail: String(duplicateRecordIds) + " duplicate IDs" },
     { name: "Source page provenance", pass: missingSourcePages === 0, detail: String(missingSourcePages) + " invalid/missing page references" },
+    { name: "Printed schedule/table row references", pass: badScheduleReferences === 0, detail: String(badScheduleReferences) + " missing/invalid references" },
+    { name: "Sector/road/plot hierarchy", pass: hierarchyMismatches === 0, detail: String(hierarchyMismatches) + " mismatched identifiers" },
     { name: "Relationship index references", pass: orphanIndexPlotIds === 0, detail: String(orphanIndexPlotIds) + " unmatched plot references" },
     { name: "Record count matches metadata", pass: data.metadata.source_record_count === records,
       detail: String(records) + " actual / " + String(data.metadata.source_record_count ?? "unknown") + " declared" },
@@ -188,7 +198,7 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
       detail: String(data.unresolved_records.length) + " source rows need plot ID verification" },
   ];
   return { rows, plotIds, sectors: Object.keys(data.sectors).length, roads, plots, records,
-    duplicateRecordIds, missingSourcePages, orphanIndexPlotIds, indexEdges,
+    duplicateRecordIds, missingSourcePages, badScheduleReferences, hierarchyMismatches, orphanIndexPlotIds, indexEdges,
     unresolved: data.unresolved_records.length, checks };
 }
 
