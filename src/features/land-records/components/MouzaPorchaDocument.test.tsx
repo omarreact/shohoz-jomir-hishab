@@ -26,7 +26,7 @@ describe("Mouza Porcha archive A4 result", () => {
     expect(html.indexOf('data-report-page="cover"')).toBeLessThan(html.indexOf('data-report-page="content"'));
     expect(html).toContain("Report ID");
     expect(html).toContain("মালিক এক");
-    expect(html).toContain("১৯৪৪");
+    expect(html).toContain("1944");
     expect(html).toContain("সরকারি প্রত্যয়িত পর্চা নয়");
     expect((html.match(/class="report-page /g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
