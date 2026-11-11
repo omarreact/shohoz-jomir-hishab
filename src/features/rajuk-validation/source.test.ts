@@ -76,8 +76,8 @@ describe("RAJUK local conversion adapter", () => {
 
   it("rejects malformed indexes instead of silently generating relationships", () => {
     const malformed = fixture();
-    (malformed.indexes.mouza_to_plot_ids as unknown) = { Bholanathpur: "1-102-32" };
-    expect(() => parseSchedule(malformed)).toThrow("relationship indexes");
+    const invalid = { ...malformed, indexes: { ...malformed.indexes, mouza_to_plot_ids: { Bholanathpur: "1-102-32" } } };
+    expect(() => parseSchedule(invalid)).toThrow("relationship indexes");
   });
 
   it("flags duplicate identifiers, broken source pages and orphan index links", () => {
