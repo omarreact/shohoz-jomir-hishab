@@ -4,645 +4,333 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BookOpen,
-  Calculator,
-  ChevronDown,
-  FileSearch,
-  FileText,
-  Home,
-  LogIn,
-  LogOut,
-  Map,
-  Menu,
-  Ruler,
-  Search,
-  ShieldCheck,
-  User,
-  Users,
-  X,
-  type LucideIcon,
+  BookOpen, Calculator, ChevronDown, FileSearch, FileText, Home, LogIn, LogOut,
+  Map, Menu, Ruler, Search, ShieldCheck, UserRound, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isAdminRole, isStaffRole } from "@/src/modules/auth/roles";
 import { NAV_SECTIONS, isFeatureRouteActive } from "@/src/shared/config/navigation";
 import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
-import {
-  FEATURE_LABELS,
-  FEATURE_ROUTES,
-  type FeatureRouteKey,
-} from "@/src/shared/config/feature-routes";
+import { FEATURE_LABELS, FEATURE_ROUTES, type FeatureRouteKey } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
-type NavItem = {
-  key: FeatureRouteKey | "cms";
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  adminOnly?: boolean;
+type NavLink = { href: string; label: string; icon: LucideIcon; adminOnly?: boolean };
+type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavLink[] };
+
+const ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
+  home: Home, records: FileSearch, dlrmsKhatian: Search, settlementKhatian: FileText,
+  mouzaPorchaReport: FileText, landMeasurement: Ruler, inheritance: Users,
+  landMap: Map, mouzaDownload: Map, mapQa: Map, documents: FileText,
+  warish: Users, warishSanad: FileText, history: BookOpen, blog: BookOpen,
+  faq: BookOpen, contact: Users, privacy: ShieldCheck, terms: FileText,
 };
 
-type NavGroup = {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  items: NavItem[];
+const GROUP_ICONS: Record<string, LucideIcon> = {
+  records: FileSearch, calculations: Calculator, maps: Map, documents: FileText, guides: BookOpen,
 };
 
-const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
-  home: Home,
-  records: Calculator,
-  dlrmsKhatian: Search,
-  settlementKhatian: FileText,
-  mouzaPorchaReport: FileText,
-  landMeasurement: Ruler,
-  inheritance: Users,
-  landMap: Map,
-  mouzaDownload: Map,
-  mapQa: Map,
-  documents: FileText,
-  warish: Users,
-  warishSanad: FileText,
-  history: BookOpen,
-  blog: BookOpen,
-  faq: BookOpen,
-  contact: Users,
-  privacy: ShieldCheck,
-  terms: FileText,
-  login: LogIn,
-  admin: ShieldCheck,
-};
-
-function navItem(key: FeatureRouteKey, options?: { adminOnly?: boolean }): NavItem {
-  return {
-    key,
-    href: FEATURE_ROUTES[key],
-    label: FEATURE_LABELS[key].bn,
-    icon: NAV_ICONS[key] ?? FileText,
-    adminOnly: options?.adminOnly,
-  };
-}
-
-const SECTION_ICONS: Record<string, LucideIcon> = {
-  records: FileSearch,
-  calculations: Calculator,
-  maps: Map,
-  documents: FileText,
-  guides: BookOpen,
-};
-
-const NAV_GROUPS: NavGroup[] = NAV_SECTIONS.map((section) => ({
-  id: section.id,
-  label: section.label,
-  icon: SECTION_ICONS[section.id] ?? FileText,
-  items: section.keys.map(key => navItem(key, { adminOnly: key === "mapQa" })),
+const STATIC_GROUPS: NavGroup[] = NAV_SECTIONS.map((section) => ({
+  id: section.id, label: section.label, icon: GROUP_ICONS[section.id] ?? FileText,
+  items: section.keys.map((key) => ({
+    href: FEATURE_ROUTES[key], label: FEATURE_LABELS[key].bn,
+    icon: ICONS[key] ?? FileText, adminOnly: key === "mapQa",
+  })),
 }));
 
-function activePath(pathname: string, href: string) {
-  return isFeatureRouteActive(pathname, href);
-}
+const surface =
+  "border border-slate-200 bg-white/95 shadow-[0_12px_36px_rgba(16,45,34,.1)] backdrop-blur-xl";
+const action =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold " +
+  "text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600";
 
-function groupIsActive(pathname: string, group: NavGroup) {
-  return group.items.some((item) => activePath(pathname, item.href));
+function active(path: string, href: string) {
+  return isFeatureRouteActive(path, href);
 }
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const isMapRoute =
-    pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
+  const pathname = usePathname() || "/";
   const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
-  const canSeeMapQa = isLoggedIn && isAdminRole(user?.role);
-  const canAccessAdmin = isLoggedIn && isStaffRole(user?.role);
+  const isAdmin = isLoggedIn && isAdminRole(user?.role);
+  const canSeeAdmin = isLoggedIn && isStaffRole(user?.role);
 
-  const [cmsGroups,setCmsGroups]=useState<NavGroup[]>([]);
-  useEffect(()=>{
-    let alive=true;
-    void fetch("/api/public/navigation",{cache:"no-store"}).then(r=>r.json()).then((data:{sections?:Array<{title:string;links:Array<{href:string;label:string}>}>})=>{
-      if(!alive)return;
-      setCmsGroups((data.sections??[]).map((section,i)=>({
-        id:"cms-"+i,label:section.title,icon:FileText,
-        items:section.links.map(link=>({key:"cms" as const,href:link.href,label:link.label,icon:FileText}))
-      })));
-    }).catch(()=>undefined);
-    return()=>{alive=false;};
-  },[]);
-  const visibleGroups = useMemo(
-    () =>
-      [...NAV_GROUPS,...cmsGroups].map((group) => ({
-        ...group,
-        items: group.items.filter((item) => !item.adminOnly || canSeeMapQa),
-      })).filter((group) => group.items.length > 0),
-    [canSeeMapQa,cmsGroups],
-  );
-
-  const searchableNav = useMemo<NavItem[]>(
-    () => [navItem("home"), ...visibleGroups.flatMap((group) => group.items)],
-    [visibleGroups],
-  );
-
-  const activeGroupId = useMemo(
-    () => visibleGroups.find((group) => groupIsActive(pathname, group))?.id ?? null,
-    [pathname, visibleGroups],
-  );
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarGroup, setSidebarGroup] = useState<string | null>(null);
-  const [desktopOpenGroup, setDesktopOpenGroup] = useState<string | null>(null);
+  const [cmsGroups, setCmsGroups] = useState<NavGroup[]>([]);
+  const [openDesktop, setOpenDesktop] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const desktopNavRef = useRef<HTMLDivElement | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setSidebarOpen(false);
-    setDesktopOpenGroup(null);
+    let mounted = true;
+    void fetch("/api/public/navigation", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { sections: [] })
+      .then((payload: { sections?: Array<{ title: string; links: Array<{ href: string; label: string }> }> }) => {
+        if (!mounted) return;
+        setCmsGroups((payload.sections ?? []).map((section, index) => ({
+          id: "cms-" + index,
+          label: section.title,
+          icon: FileText,
+          items: (section.links ?? [])
+            .filter((link) => link.href.startsWith("/") && !link.href.startsWith("//"))
+            .map((link) => ({ href: link.href, label: link.label, icon: FileText })),
+        })).filter((group) => group.items.length > 0));
+      }).catch(() => undefined);
+    return () => { mounted = false; };
+  }, []);
+
+  const groups = useMemo(
+    () => [...STATIC_GROUPS, ...cmsGroups]
+      .map((group) => ({ ...group, items: group.items.filter((item) => !item.adminOnly || isAdmin) }))
+      .filter((group) => group.items.length > 0),
+    [cmsGroups, isAdmin],
+  );
+
+  const searchLinks = useMemo(() => [
+    { href: "/", label: "হোম", icon: Home },
+    ...groups.flatMap((group) => group.items),
+    ...(canSeeAdmin ? [{ href: FEATURE_ROUTES.admin, label: "অ্যাডমিন ড্যাশবোর্ড", icon: ShieldCheck }] : []),
+  ], [groups, canSeeAdmin]);
+  const matches = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase("bn-BD");
+    return searchLinks.filter((item) => !q ||
+      (item.label + " " + item.href).toLocaleLowerCase("bn-BD").includes(q));
+  }, [searchQuery, searchLinks]);
+
+  useEffect(() => {
+    setOpenDesktop(null);
+    setMobileOpen(false);
+    setMobileGroup(null);
     setSearchOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSidebarOpen(false);
         setSearchOpen(true);
+        setMobileOpen(false);
+        setOpenDesktop(null);
       }
       if (event.key === "Escape") {
         setSearchOpen(false);
-        setSidebarOpen(false);
-        setDesktopOpenGroup(null);
+        setMobileOpen(false);
+        setOpenDesktop(null);
       }
     };
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (
-        desktopOpenGroup &&
-        desktopNavRef.current &&
-        !desktopNavRef.current.contains(event.target as Node)
-      ) {
-        setDesktopOpenGroup(null);
-      }
+    const onOutside = (event: PointerEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) setOpenDesktop(null);
     };
-
-    window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onOutside);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onOutside);
     };
-  }, [desktopOpenGroup]);
+  }, []);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return searchableNav.filter(
-      (item) =>
-        !q ||
-        item.label.toLowerCase().includes(q) ||
-        item.href.toLowerCase().includes(q),
-    );
-  }, [query, searchableNav]);
+  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
 
-  const handleLogout = async () => {
+  async function signOut() {
     await logout();
     window.location.assign("/");
-  };
+  }
 
-  const openSidebar = () => {
-    setSidebarGroup(activeGroupId ?? "records");
-    setSidebarOpen(true);
+  function closeMobileMenu() { setMobileOpen(false); setMobileGroup(null); }
+  const menuLink = (item: NavLink, compact = false) => {
+    const Icon = item.icon;
+    const isCurrent = active(pathname, item.href);
+    return (
+      <Link
+        key={item.href + (compact ? "-mobile" : "-desktop")}
+        href={item.href}
+        aria-current={isCurrent ? "page" : undefined}
+        onClick={() => { setOpenDesktop(null); closeMobileMenu(); }}
+        className={[
+          "flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors",
+          isCurrent ? "bg-emerald-50 text-emerald-800" :
+            "text-slate-700 hover:bg-slate-50 hover:text-emerald-800",
+        ].join(" ")}
+      >
+        <Icon size={17} className="shrink-0" />
+        <span className="min-w-0 flex-1">{item.label}</span>
+        {isCurrent && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-700" />}
+      </Link>
+    );
   };
-
-  const openSearchFromSidebar = () => {
-    setSidebarOpen(false);
-    setSearchOpen(true);
-  };
-
-  const shell =
-    "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
 
   return (
     <>
-      <nav
-        className={`${isMapRoute ? "absolute left-0 right-0 top-0" : "sticky top-0"} z-[1100] px-3 pt-3 sm:px-4`}
-        aria-label="প্রধান নেভিগেশন"
-      >
-        <div
-          className={`mx-auto flex h-14 max-w-[1440px] items-center gap-3 rounded-[14px] px-3 sm:px-4 ${shell}`}
-        >
-          <Link
-            href={FEATURE_ROUTES.home}
-            className="flex min-w-0 shrink-0 items-center gap-2 no-underline"
-            onClick={() => setSidebarOpen(false)}
-            aria-label={`${SITE_CONFIG.name} — হোম`}
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
-              <Calculator size={18} />
+      <header className="sticky top-0 z-[1100] w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-xl print:hidden">
+        <div className="mx-auto flex h-[68px] w-full max-w-[1500px] items-center gap-3 px-3 sm:px-6">
+          <Link href="/" aria-label={SITE_CONFIG.name + " — হোম"}
+            className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-800 text-white shadow-sm">
+              <Calculator size={21} />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold tracking-tight sm:text-base">
+              <strong className="block truncate text-[18px] font-extrabold tracking-tight text-slate-950">
                 {SITE_CONFIG.name}
-              </span>
-              <span className="hidden text-[10px] font-medium leading-none text-[var(--muted-foreground)] sm:block">
+              </strong>
+              <span className="block truncate text-[10px] font-medium leading-4 text-slate-500">
                 {SITE_CONFIG.shortName}
               </span>
             </span>
           </Link>
 
-          <div
-            ref={desktopNavRef}
-            className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex"
-          >
-            {visibleGroups.map((group) => {
+          <div ref={navRef} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex">
+            <Link href="/" aria-current={pathname === "/" ? "page" : undefined}
+              className={action + (pathname === "/" ? " bg-emerald-50 text-emerald-800" : "")}>
+              <Home size={16} /> হোম
+            </Link>
+            {groups.map((group) => {
               const GroupIcon = group.icon;
-              const active = groupIsActive(pathname, group);
-              const open = desktopOpenGroup === group.id;
-
+              const activeGroup = group.items.some((item) => active(pathname, item.href));
+              const isOpen = openDesktop === group.id;
               return (
-                <div
-                  key={group.id}
-                  className="relative"
-                  onMouseEnter={() => setDesktopOpenGroup(group.id)}
-                  onMouseLeave={() => setDesktopOpenGroup(null)}
-                >
-                  <button
-                    type="button"
-                    aria-haspopup="menu"
-                    aria-expanded={open}
-                    onClick={() => setDesktopOpenGroup(open ? null : group.id)}
-                    className={`flex items-center gap-1.5 rounded-[12px] px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] 2xl:px-3 2xl:text-sm ${
-                      active
-                        ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
-                        : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <GroupIcon size={15} className="shrink-0" />
-                    <span className="whitespace-nowrap">{group.label}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-                    />
+                <div key={group.id} className="relative"
+                  onMouseEnter={() => setOpenDesktop(group.id)}
+                  onMouseLeave={() => setOpenDesktop(null)}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenDesktop(null);
+                  }}>
+                  <button type="button" aria-expanded={isOpen} aria-haspopup="true"
+                    onClick={() => setOpenDesktop(isOpen ? null : group.id)}
+                    className={action + (activeGroup ? " bg-emerald-50 text-emerald-800" : "")}>
+                    <GroupIcon size={16} />
+                    {group.label}
+                    <ChevronDown size={14} className={"transition-transform " + (isOpen ? "rotate-180" : "")} />
                   </button>
-
-                  <div
-                    className={`absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 pt-2 transition-all duration-150 ${
-                      open
-                        ? "visible translate-y-0 opacity-100"
-                        : "invisible -translate-y-1 opacity-0 pointer-events-none"
-                    }`}
-                  >
-                    <div
-                      className={`rounded-[14px] p-1.5 shadow-xl shadow-black/10 ${shell}`}
-                      role="menu"
-                      aria-label={group.label}
-                    >
-                      <div className="px-3 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
-                        {group.label}
+                  {isOpen && (
+                    <div className="absolute left-1/2 top-full z-[1200] w-[270px] -translate-x-1/2 pt-2">
+                      <div className={surface + " rounded-2xl p-2"}>
+                        <p className="px-3 pb-1 pt-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                          {group.label}
+                        </p>
+                        {group.items.map((item) => menuLink(item))}
                       </div>
-                      {group.items.map((item) => {
-                        const ItemIcon = item.icon;
-                        const itemActive = activePath(pathname, item.href);
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            role="menuitem"
-                            onClick={() => setDesktopOpenGroup(null)}
-                            className={`flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
-                              itemActive
-                                ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
-                                : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                                itemActive
-                                  ? "bg-[var(--brand-gold)] text-[var(--primary-foreground)]"
-                                  : "bg-[var(--secondary)] text-[var(--foreground)]"
-                              }`}
-                            >
-                              <ItemIcon size={15} />
-                            </span>
-                            <span className="min-w-0 flex-1">{item.label}</span>
-                            {itemActive ? (
-                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-gold-strong)]" />
-                            ) : null}
-                          </Link>
-                        );
-                      })}
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {canAccessAdmin ? (
-              <Link
-                href={FEATURE_ROUTES.admin}
-                className="hidden min-h-10 items-center gap-2 rounded-xl bg-[var(--brand-gold)] px-3 text-xs font-bold text-[var(--primary-foreground)] no-underline hover:opacity-90 sm:inline-flex"
-                aria-label="LandBD Admin Dashboard খুলুন"
-              >
-                <ShieldCheck size={16} /> ড্যাশবোর্ড
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <button type="button" onClick={() => { setSearchOpen(true); closeMobileMenu(); }}
+              className={action + " border border-slate-200"} aria-label="সাইট সার্চ করুন"
+              title="সার্চ · Ctrl+K">
+              <Search size={18} /><span className="hidden xl:inline">সার্চ</span>
+            </button>
+            {canSeeAdmin ? (
+              <Link href={FEATURE_ROUTES.admin} className={action + " hidden border border-slate-200 sm:inline-flex"}>
+                <ShieldCheck size={16} /><span className="hidden xl:inline">ড্যাশবোর্ড</span>
               </Link>
             ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setSidebarOpen(false);
-                setSearchOpen(true);
-              }}
-              className="hidden min-h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-3 text-xs font-bold text-[var(--muted-foreground)] shadow-[var(--shadow-xs)] transition hover:border-[color-mix(in_srgb,var(--primary)_24%,var(--border-color))] hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] sm:flex"
-              aria-label="LandBD কমান্ড সার্চ খুলুন"
-            >
-              <Search size={16} />
-              <span className="hidden lg:inline">সার্চ</span>
-              <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--canvas)] px-1.5 py-0.5 text-[9px] font-extrabold text-[var(--muted-foreground)]">
-                Ctrl K
-              </kbd>
-            </button>
-            <button
-              type="button"
-              aria-label="সাইডবার মেনু খুলুন"
-              aria-expanded={sidebarOpen}
-              onClick={openSidebar}
-              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--brand-gold-faint)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)]"
-            >
-              <Menu size={20} />
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {searchOpen && (
-        <div
-          className="fixed inset-0 z-[1300] flex items-start justify-center bg-black/40 p-4 pt-24 backdrop-blur-sm"
-          onMouseDown={() => setSearchOpen(false)}
-        >
-          <div
-            className={`w-full max-w-xl overflow-hidden rounded-[14px] ${shell}`}
-            onMouseDown={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="সাইট সার্চ"
-          >
-            <div className="flex items-center gap-3 border-b border-[var(--border-color)] px-4">
-              <Search size={18} />
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="টুল, মানচিত্র, ব্লগ বা পেজ খুঁজুন..."
-                className="h-14 flex-1 bg-transparent text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
-              />
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                aria-label="সার্চ বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-[12px] hover:bg-[var(--secondary)]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="max-h-80 overflow-y-auto p-2">
-              {results.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setSearchOpen(false)}
-                  className={`flex items-center gap-3 rounded-[12px] px-3 py-3 text-sm font-semibold no-underline transition-colors ${
-                    activePath(pathname, href)
-                      ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
-                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                  }`}
-                >
-                  <Icon size={17} /> {label}
-                </Link>
-              ))}
-              {!results.length && (
-                <p className="px-3 py-6 text-center text-sm text-[var(--muted-foreground)]">
-                  কোনো ফলাফল পাওয়া যায়নি
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-[1250]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="সাইডবার মেনু"
-        >
-          <button
-            type="button"
-            aria-label="সাইডবার বন্ধ করুন"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-
-          <aside
-            className={`absolute right-0 top-0 flex h-full w-[370px] max-w-[94vw] flex-col border-l p-4 shadow-2xl ${shell}`}
-          >
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <Link
-                href={FEATURE_ROUTES.home}
-                className="flex min-w-0 items-center gap-2 no-underline"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
-                  <Calculator size={19} />
-                </span>
-                <span className="min-w-0">
-                  <strong className="block truncate text-sm">{SITE_CONFIG.name}</strong>
-                  <span className="block text-[10px] text-[var(--muted-foreground)]">
-                    {SITE_CONFIG.shortName}
-                  </span>
-                </span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="সাইডবার বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)]"
-              >
-                <X size={19} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-4">
-              <section aria-label="দ্রুত নিয়ন্ত্রণ">
-                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  দ্রুত নিয়ন্ত্রণ
-                </p>
-
-                <button
-                  type="button"
-                  onClick={openSearchFromSidebar}
-                  className="mt-2 flex w-full items-center gap-3 rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:bg-[var(--brand-gold-faint)] hover:text-[var(--foreground)]"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card-bg)]">
-                    <Search size={17} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">সার্চ</span>
-                    <span className="block text-[11px] text-[var(--muted-foreground)]">
-                      পেজ, টুল, মানচিত্র বা ব্লগ খুঁজুন
-                    </span>
-                  </span>
-                  <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px] text-[var(--muted-foreground)]">
-                    Ctrl K
-                  </kbd>
-                </button>
-              </section>
-
-              <section className="mt-4" aria-label="অ্যাকাউন্ট">
-                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  অ্যাকাউন্ট
-                </p>
-
-                {authLoading ? (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-4 text-sm text-[var(--muted-foreground)]">
-                    লগইন তথ্য যাচাই হচ্ছে…
-                  </div>
-                ) : isLoggedIn ? (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
-                        <User size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-[var(--foreground)]">
-                          {user?.name || user?.email || "স্টাফ অ্যাকাউন্ট"}
-                        </p>
-                        {user?.email ? (
-                          <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
-                            {user.email}
-                          </p>
-                        ) : null}
-                        {user?.role ? (
-                          <span className="mt-2 inline-flex rounded-full bg-[var(--secondary)] px-2.5 py-1 text-[10px] font-bold text-[var(--muted-foreground)]">
-                            {user.role}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <Link href="/my-purchases" onClick={() => setSidebarOpen(false)} className="flex items-center justify-center gap-2 rounded-[12px] border border-[var(--border-color)] px-3 py-2.5 text-sm font-bold no-underline">আমার কেনাকাটা</Link>
-                      {canAccessAdmin ? (
-                      <Link
-                        href={FEATURE_ROUTES.admin}
-                        onClick={() => setSidebarOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
-                      >
-                        <ShieldCheck size={15} /> ড্যাশবোর্ড
-                      </Link>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 rounded-[12px] border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
-                      >
-                        <LogOut size={15} /> লগআউট
+            {!authLoading && (
+              isLoggedIn ? (
+                <div className="group relative hidden lg:block">
+                  <Link href="/my-purchases" className={action + " border border-slate-200"} aria-label="অ্যাকাউন্ট">
+                    <UserRound size={18} /> অ্যাকাউন্ট
+                  </Link>
+                  <div className="invisible absolute right-0 top-full z-[1200] w-56 pt-2 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                    <div className={surface + " rounded-2xl p-2"}>
+                      <Link href="/my-purchases" className={action + " w-full justify-start"}>আমার অ্যাকাউন্ট</Link>
+                      <button type="button" className={action + " w-full justify-start"} onClick={() => void signOut()}>
+                        <LogOut size={16} /> লগআউট
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--secondary)]">
-                        <LogIn size={18} />
-                      </span>
-                      <div>
-                        <p className="text-sm font-bold">স্টাফ লগইন</p>
-                        <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">
-                          অনুমোদিত স্টাফ বা অ্যাডমিন অ্যাকাউন্ট দিয়ে প্রবেশ করুন।
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href={buildLoginHref(pathname || "/")}
-                      onClick={() => setSidebarOpen(false)}
-                      className="mt-3 flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
-                    >
-                      <LogIn size={16} /> {FEATURE_LABELS.login.bn}
-                    </Link>
-                  </div>
-                )}
-              </section>
-
-              <section
-                className="mt-5 border-t border-[var(--border-color)] pt-4"
-                aria-label="সাইট মেনু"
-              >
-                <p className="px-1 pb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  সাইট মেনু
-                </p>
-
-                <div className="space-y-1">
-                  {visibleGroups.map((group) => {
-                    const GroupIcon = group.icon;
-                    const groupActive = groupIsActive(pathname, group);
-                    const expanded = sidebarGroup === group.id;
-
-                    return (
-                      <div key={group.id} className="rounded-[12px]">
-                        <button
-                          type="button"
-                          aria-expanded={expanded}
-                          onClick={() => setSidebarGroup(expanded ? null : group.id)}
-                          className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-3 text-left text-sm font-bold transition-colors ${
-                            groupActive
-                              ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
-                              : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                          }`}
-                        >
-                          <span
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                              groupActive
-                                ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
-                                : "bg-[var(--secondary)] text-[var(--foreground)]"
-                            }`}
-                          >
-                            <GroupIcon size={16} />
-                          </span>
-                          <span className="min-w-0 flex-1">{group.label}</span>
-                          <ChevronDown
-                            size={16}
-                            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                          />
-                        </button>
-
-                        {expanded ? (
-                          <div className="ml-7 mt-1 space-y-1 border-l border-[var(--border-color)] pl-3">
-                            {group.items.map((item) => {
-                              const ItemIcon = item.icon;
-                              const itemActive = activePath(pathname, item.href);
-                              return (
-                                <Link
-                                  key={item.href}
-                                  href={item.href}
-                                  onClick={() => setSidebarOpen(false)}
-                                  className={`flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
-                                    itemActive
-                                      ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
-                                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                                  }`}
-                                >
-                                  <ItemIcon size={16} className="shrink-0" />
-                                  {item.label}
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
                 </div>
-              </section>
+              ) : (
+                <Link href={buildLoginHref(pathname)} className={action + " hidden border border-emerald-200 text-emerald-800 lg:inline-flex"}>
+                  <LogIn size={16} /> লগইন
+                </Link>
+              )
+            )}
+            <button type="button"
+              aria-expanded={mobileOpen} aria-controls="landbd-mobile-header-menu"
+              aria-label={mobileOpen ? "মেনু বন্ধ করুন" : "হেডার মেনু খুলুন"}
+              onClick={() => { setMobileOpen((value) => !value); setOpenDesktop(null); }}
+              className={action + " border border-slate-200 lg:hidden"}>
+              {mobileOpen ? <X size={21} /> : <Menu size={21} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Full-width header dropdown, not an off-canvas drawer/sidebar. */}
+        {mobileOpen && (
+          <div id="landbd-mobile-header-menu"
+            className="max-h-[calc(100dvh-68px)] overflow-y-auto border-t border-slate-100 bg-white px-3 pb-4 shadow-xl sm:px-6 lg:hidden">
+            <nav className="mx-auto max-w-screen-sm space-y-1 pt-3" aria-label="মোবাইল হেডার নেভিগেশন">
+              {menuLink({ href: "/", label: "হোম", icon: Home }, true)}
+              {groups.map((group) => {
+                const Icon = group.icon;
+                const expanded = mobileGroup === group.id;
+                const current = group.items.some((item) => active(pathname, item.href));
+                return (
+                  <div key={group.id} className="rounded-xl">
+                    <button type="button" aria-expanded={expanded}
+                      onClick={() => setMobileGroup(expanded ? null : group.id)}
+                      className={"flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold " +
+                        (current ? "bg-emerald-50 text-emerald-800" : "text-slate-800 hover:bg-slate-50")}>
+                      <Icon size={18} /><span className="flex-1">{group.label}</span>
+                      <ChevronDown size={16} className={expanded ? "rotate-180" : ""} />
+                    </button>
+                    {expanded && (
+                      <div className="ml-4 space-y-0.5 border-l-2 border-emerald-100 pl-2">
+                        {group.items.map((item) => menuLink(item, true))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3">
+                {isLoggedIn ? (
+                  <>
+                    <Link className={action + " w-full justify-start"} href="/my-purchases" onClick={closeMobileMenu}>
+                      <UserRound size={17} /> আমার অ্যাকাউন্ট
+                    </Link>
+                    {canSeeAdmin && <Link className={action + " w-full justify-start"} href={FEATURE_ROUTES.admin} onClick={closeMobileMenu}>
+                      <ShieldCheck size={17} /> ড্যাশবোর্ড
+                    </Link>}
+                    <button type="button" onClick={() => void signOut()} className={action + " w-full justify-start"}>
+                      <LogOut size={17} /> লগআউট
+                    </button>
+                  </>
+                ) : !authLoading ? (
+                  <Link className={action + " w-full justify-start border border-emerald-100 text-emerald-800"}
+                    href={buildLoginHref(pathname)} onClick={closeMobileMenu}>
+                    <LogIn size={17} /> লগইন
+                  </Link>
+                ) : null}
+              </div>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {searchOpen && (
+        <div className="fixed inset-0 z-[1300] flex items-start justify-center bg-slate-950/50 px-3 pt-[10dvh] backdrop-blur-sm print:hidden"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setSearchOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-label="সাইট সার্চ"
+            className={surface + " w-full max-w-xl overflow-hidden rounded-2xl"}>
+            <div className="flex items-center gap-3 border-b border-slate-200 px-4">
+              <Search size={20} className="text-emerald-700" />
+              <input ref={searchRef} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-14 min-w-0 flex-1 bg-transparent text-sm text-slate-950 outline-none"
+                placeholder="খতিয়ান, ম্যাপ, রিপোর্ট বা সেবা খুঁজুন…" />
+              <button type="button" className={action} onClick={() => setSearchOpen(false)} aria-label="সার্চ বন্ধ">
+                <X size={19}/>
+              </button>
             </div>
-          </aside>
+            <div className="max-h-[60dvh] space-y-1 overflow-y-auto p-2">
+              {matches.map((item) => menuLink(item))}
+              {!matches.length && <p className="p-6 text-center text-sm text-slate-500">কোনো পেজ পাওয়া যায়নি।</p>}
+            </div>
+          </section>
         </div>
       )}
     </>
