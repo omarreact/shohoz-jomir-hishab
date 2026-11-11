@@ -314,7 +314,15 @@ function preferFullerField(primary: string, secondary: string): string {
   return b.length > a.length ? b : a;
 }
 
-function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAGS: string; GUARDIANS: string; TOTAL_LAND?: string }>(
+function mergeKhatianRowPreferFuller<T extends {
+  ID: number;
+  OWNERS: string;
+  DAGS: string;
+  GUARDIANS: string;
+  JL_NUMBER_ID: number;
+  MOUZA_ID: number;
+  TOTAL_LAND?: string;
+}>(
   primary: T,
   secondary: T | undefined,
 ): T {
@@ -324,6 +332,8 @@ function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAG
     OWNERS: preferFullerField(primary.OWNERS, secondary.OWNERS),
     DAGS: preferFullerField(primary.DAGS, secondary.DAGS),
     GUARDIANS: preferFullerField(primary.GUARDIANS, secondary.GUARDIANS),
+    JL_NUMBER_ID: primary.JL_NUMBER_ID || secondary.JL_NUMBER_ID,
+    MOUZA_ID: primary.MOUZA_ID || secondary.MOUZA_ID,
     TOTAL_LAND: preferFullerField(primary.TOTAL_LAND ?? "", secondary.TOTAL_LAND ?? "") || primary.TOTAL_LAND,
   };
 }
