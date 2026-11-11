@@ -139,8 +139,8 @@ export default function AuthoritativeKhatianDetailsView({
               <tr>
                 <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত মালিক{ownerPartial ? " (আংশিক)" : ""}</th>
                 <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}{ownerPartial ? " (আংশিক)" : ""}</td>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত দাগ / মোট জমি</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""} / {totalLand}</td>
+                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত দাগ</th>
+                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""}</td>
               </tr>
 
               {model.isPartial ? (
@@ -225,6 +225,15 @@ export default function AuthoritativeKhatianDetailsView({
                   </td>
                 </tr>
               )}
+
+              <tr data-pdf-surface="soft" style={{ backgroundColor: tableSoft }}>
+                <th colSpan={3} className="border px-3 py-2 text-right font-extrabold" style={{ borderColor: tableBorder }}>
+                  মোট জমি
+                </th>
+                <td colSpan={3} className="border px-3 py-2 text-center font-bold" style={{ borderColor: tableBorder }}>
+                  {totalLand}
+                </td>
+              </tr>
 
               <tr>
                 <td colSpan={6} className="border px-3 py-2 text-[11px] font-semibold leading-5" data-pdf-surface="soft" style={{ backgroundColor: "#f4f8f5", borderColor: tableBorder, color: muted }}>
