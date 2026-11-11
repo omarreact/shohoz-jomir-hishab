@@ -5,6 +5,7 @@ import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
+import type { ParsedDagRow } from "../lib/khatian-display";
 
 /**
  * Archive-style DLRMS paper view based on the user's local LandBD.zip result:
@@ -68,7 +69,7 @@ export default function ArchiveKhatianResult({
   ];
   const recordColumns = columns.filter((column) => column.kind === "record");
   const dagColumns = columns.filter((column) => column.kind === "dag");
-  const displayDags = dags.length ? dags : [{ dagNo: "—" }];
+  const displayDags: ParsedDagRow[] = dags.length ? dags : [{ dagNo: "—" }];
   const pdfPageWidth = pageOrientation === "landscape" ? "1024px" : "740px";
 
   function listCell(type: string) {
@@ -96,12 +97,12 @@ export default function ArchiveKhatianResult({
     return "—";
   }
 
-  function dagCell(type: string, dag: (typeof displayDags)[number]) {
+  function dagCell(type: string, dag: ParsedDagRow) {
     if (type === "dagNo") return bn(dag.dagNo);
-    if (type === "landClass") return "landClass" in dag ? dag.landClass || "—" : "—";
-    if (type === "totalArea") return "totalArea" in dag ? bn(dag.totalArea) : "—";
-    if (type === "khatianArea") return "shareArea" in dag ? bn(dag.shareArea || dag.area) : "—";
-    if (type === "khatianShare") return "khatianShare" in dag ? bn(dag.khatianShare) : "—";
+    if (type === "landClass") return dag.landClass || "—";
+    if (type === "totalArea") return bn(dag.totalArea);
+    if (type === "khatianArea") return bn(dag.shareArea || dag.area);
+    if (type === "khatianShare") return bn(dag.khatianShare);
     return "—";
   }
 
