@@ -131,6 +131,8 @@ export default function RajukValidationPage() {
       setIssues(SOURCE_ISSUES);
       setCriteria([]);
       setQa([]);
+      setQaFileName(null);
+      setPdfHashVerified(null);
       setData(verified);
       setDataFileName(file.name);
       setSelectedRecordId(null);
