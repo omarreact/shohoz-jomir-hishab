@@ -86,6 +86,35 @@ describe("authoritative Khatian document uses full data rather than a truncated 
       .toEqual(["আলম উদ্দিন", "মহিউদ্দিন"]);
   });
 
+  it("does not assign one verified guardian to two unrelated same-name compact entries", () => {
+    const model = buildFullKhatianDisplayModel({
+      ...preview, OWNERS: "সিরাজদ্দিন,সিরাজদ্দিন", DAGS: "1948",
+    }, {
+      owners: [{ name: "সিরাজদ্দিন", fatherOrHusband: "আলম উদ্দিন", shareRaw: "১/২", source: "DLRMS_PUBLIC" }],
+      dags: [],
+    } as unknown as FullKhatian, "BRS");
+    expect(model.owners).toHaveLength(2);
+    expect(model.owners.map((owner) => owner.fatherOrHusband)).toEqual([undefined, undefined]);
+    expect(model.owners.map((owner) => owner.share)).toEqual([undefined, undefined]);
+  });
+
+  it("never drops compact-only owners when additional structured rows are returned", () => {
+    const model = buildFullKhatianDisplayModel({
+      ...preview, OWNERS: "মালিক ক,মালিক খ", DAGS: "1948",
+    }, {
+      owners: [
+        { name: "মালিক ক", source: "DLRMS_PUBLIC" },
+        { name: "মালিক গ", fatherOrHusband: "পিতা গ", source: "DLRMS_PUBLIC" },
+        { name: "মালিক ঘ", source: "DLRMS_PUBLIC" },
+      ],
+      dags: [],
+    } as unknown as FullKhatian, "BRS");
+    expect(model.owners.map((owner) => owner.name))
+      .toEqual(["মালিক ক", "মালিক গ", "মালিক ঘ", "মালিক খ"]);
+    expect(model.owners[1].fatherOrHusband).toBe("পিতা গ");
+    expect(model.owners[3].fatherOrHusband).toBeUndefined();
+  });
+
   it("keeps separate sourced land-class rows under one dag without double-counting the plot", () => {
     const model = buildFullKhatianDisplayModel({
       ...preview, DAGS: "1974", OWNERS: "মালিক ১",

@@ -1,4 +1,4 @@
-import { reconstructKhatian } from "./khatian-reconstruction";
+import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import type { KhatianDetails, KhatianIndex } from "../types";
 
 const base: KhatianDetails = {
@@ -21,6 +21,68 @@ const base: KhatianDetails = {
   SURVEY_NAME: "সি এস",
   PUBLIC_RECORD: { ID: 786385, KHATIAN_NO: "1" },
 };
+
+describe("official tracking owner-row multiplicity", () => {
+  it("does not turn a two-owner truncated list into a one-owner complete result", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, সিরাজদ্দিন, …", "সিরাজদ্দিন"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, …");
+  });
+
+  it("preserves repeated names and safely adds independently reported rows", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, সিরাজদ্দিন", "সিরাজদ্দিন, অন্য মালিক"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক");
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন", "সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক"))
+      .toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক");
+  });
+
+  it("keeps the partial marker when added tracking data cannot cover all visible owners", () => {
+    expect(mergeTrackingOwnerRows("সিরাজদ্দিন, রহিম, …", "সিরাজদ্দিন, করিম"))
+      .toBe("সিরাজদ্দিন, রহিম, করিম, …");
+  });
+});
+
+describe("partial public owner rows with repeated names", () => {
+  const namesakeBase = {
+    ...base,
+    OWNERS: "সিরাজদ্দিন, সিরাজদ্দিন, …",
+  };
+
+  it("does not mark genuinely absent owner and guardian lists as truncated", () => {
+    const rebuilt = reconstructKhatian({
+      ...base, OWNERS: "", GUARDIANS: "",
+    }, []);
+    const quality = (rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      FIELD_QUALITY: { OWNERS: { PARTIAL: boolean }, GUARDIANS: { PARTIAL: boolean } },
+    }).FIELD_QUALITY;
+    expect(quality.OWNERS.PARTIAL).toBe(false);
+    expect(quality.GUARDIANS.PARTIAL).toBe(false);
+  });
+
+  it("keeps two identical published owners when an exact search returns one", () => {
+    const rebuilt = reconstructKhatian(namesakeBase, [{
+      ID: base.ID, KHATIAN_NO: base.KHATIAN_NO,
+      JL_NUMBER_ID: base.JL_NUMBER_ID, MOUZA_ID: base.MOUZA_ID,
+      OWNERS: "সিরাজদ্দিন", DAGS: "", GUARDIANS: "",
+    }]);
+    expect(rebuilt.OWNERS).toBe("সিরাজদ্দিন, সিরাজদ্দিন, …");
+    expect((rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      UPSTREAM_TRUNCATION_REMAINS: boolean,
+    }).UPSTREAM_TRUNCATION_REMAINS).toBe(true);
+  });
+
+  it("does not call a longer name list complete if it has too few namesakes", () => {
+    const rebuilt = reconstructKhatian(namesakeBase, [{
+      ID: base.ID, KHATIAN_NO: base.KHATIAN_NO,
+      JL_NUMBER_ID: base.JL_NUMBER_ID, MOUZA_ID: base.MOUZA_ID,
+      OWNERS: "সিরাজদ্দিন, অন্য মালিক, তৃতীয় মালিক",
+      DAGS: "", GUARDIANS: "",
+    }]);
+    expect(rebuilt.OWNERS).toBe("সিরাজদ্দিন, সিরাজদ্দিন, অন্য মালিক, তৃতীয় মালিক, …");
+    expect((rebuilt.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION as {
+      UPSTREAM_TRUNCATION_REMAINS: boolean,
+    }).UPSTREAM_TRUNCATION_REMAINS).toBe(true);
+  });
+});
 
 describe("khatian reconstruction", () => {
   it("merges all returned variants for the same khatian and preserves verified hidden search evidence", () => {
