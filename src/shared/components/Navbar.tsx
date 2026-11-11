@@ -74,7 +74,7 @@ export default function Navbar() {
           label: section.title,
           icon: FileText,
           items: (section.links ?? [])
-            .filter((link) => link.href.startsWith("/") && !link.href.startsWith("//"))
+            .filter((link) => typeof link.href === "string" && link.href.startsWith("/") && !link.href.startsWith("//"))
             .map((link) => ({ href: link.href, label: link.label, icon: FileText })),
         })).filter((group) => group.items.length > 0));
       }).catch(() => undefined);
@@ -152,7 +152,7 @@ export default function Navbar() {
         key={item.href + (compact ? "-mobile" : "-desktop")}
         href={item.href}
         aria-current={isCurrent ? "page" : undefined}
-        onClick={() => { setOpenDesktop(null); closeMobileMenu(); }}
+        onClick={() => { setOpenDesktop(null); closeMobileMenu(); setSearchOpen(false); }}
         className={[
           "flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold no-underline transition-colors",
           isCurrent ? "bg-emerald-50 text-emerald-800" :
@@ -185,7 +185,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div ref={navRef} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex">
+          <div ref={navRef} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex">
             <Link href="/" aria-current={pathname === "/" ? "page" : undefined}
               className={action + (pathname === "/" ? " bg-emerald-50 text-emerald-800" : "")}>
               <Home size={16} /> হোম
@@ -236,7 +236,7 @@ export default function Navbar() {
             ) : null}
             {!authLoading && (
               isLoggedIn ? (
-                <div className="group relative hidden lg:block">
+                <div className="group relative hidden xl:block">
                   <Link href="/my-purchases" className={action + " border border-slate-200"} aria-label="অ্যাকাউন্ট">
                     <UserRound size={18} /> অ্যাকাউন্ট
                   </Link>
@@ -250,7 +250,7 @@ export default function Navbar() {
                   </div>
                 </div>
               ) : (
-                <Link href={buildLoginHref(pathname)} className={action + " hidden border border-emerald-200 text-emerald-800 lg:inline-flex"}>
+                <Link href={buildLoginHref(pathname)} className={action + " hidden border border-emerald-200 text-emerald-800 xl:inline-flex"}>
                   <LogIn size={16} /> লগইন
                 </Link>
               )
@@ -259,7 +259,7 @@ export default function Navbar() {
               aria-expanded={mobileOpen} aria-controls="landbd-mobile-header-menu"
               aria-label={mobileOpen ? "মেনু বন্ধ করুন" : "হেডার মেনু খুলুন"}
               onClick={() => { setMobileOpen((value) => !value); setOpenDesktop(null); }}
-              className={action + " border border-slate-200 lg:hidden"}>
+              className={action + " border border-slate-200 xl:hidden"}>
               {mobileOpen ? <X size={21} /> : <Menu size={21} />}
             </button>
           </div>
@@ -268,7 +268,7 @@ export default function Navbar() {
         {/* Full-width header dropdown, not an off-canvas drawer/sidebar. */}
         {mobileOpen && (
           <div id="landbd-mobile-header-menu"
-            className="max-h-[calc(100dvh-68px)] overflow-y-auto border-t border-slate-100 bg-white px-3 pb-4 shadow-xl sm:px-6 lg:hidden">
+            className="max-h-[calc(100dvh-68px)] overflow-y-auto border-t border-slate-100 bg-white px-3 pb-4 shadow-xl sm:px-6 xl:hidden">
             <nav className="mx-auto max-w-screen-sm space-y-1 pt-3" aria-label="মোবাইল হেডার নেভিগেশন">
               {menuLink({ href: "/", label: "হোম", icon: Home }, true)}
               {groups.map((group) => {
