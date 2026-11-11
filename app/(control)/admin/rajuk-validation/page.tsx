@@ -71,6 +71,9 @@ export default function RajukValidationPage() {
   const [dataFileName, setDataFileName] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfHashVerified, setPdfHashVerified] = useState<boolean | null>(null);
+  const [qaFileName, setQaFileName] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [pageNumber, setPageNumber] = useState(401);
   const [search, setSearch] = useState("");
@@ -149,8 +152,51 @@ export default function RajukValidationPage() {
       setFileError("Please select the source PDF."); return;
     }
     setPdfUrl(URL.createObjectURL(file));
+    setPdfFile(file);
+    setPdfHashVerified(null);
     setPdfFileName(file.name);
     setFileError(null);
+  }
+
+  async function verifyPdfFingerprint() {
+    if (!pdfFile) return;
+    setFileError(null);
+    try {
+      const digest = await crypto.subtle.digest("SHA-256", await pdfFile.arrayBuffer());
+      const hash = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+      const expected = data?.metadata.pdf_sha256 ??
+        "974d7a0883b6fbf7a2567bac6f582576c0cc6667dbf6234748bfe4a0dc4239aa";
+      setPdfHashVerified(hash === expected.toLowerCase());
+      if (hash !== expected.toLowerCase()) setFileError("PDF SHA-256 does not match the conversion source fingerprint.");
+    } catch {
+      setPdfHashVerified(false);
+      setFileError("Browser PDF fingerprint verification failed.");
+    }
+  }
+
+  async function loadQaReport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== "object" || !("issues" in parsed) || !Array.isArray(parsed.issues)) {
+        throw new Error("Expected a RAJUK conversion QA report with issues array.");
+      }
+      const report = parsed as { issues: Array<Record<string, unknown>> };
+      const sourceItems: ReviewIssue[] = report.issues.map((entry, index) => ({
+        id: "QA-" + String(index + 1).padStart(3, "0"),
+        title: String(entry.issue ?? "Unknown source issue"),
+        severity: entry.issue === "dag_mouza_count_mismatch" || entry.issue === "unresolved_plot_identifier" ? "high" : "medium",
+        status: entry.resolved === true ? "resolved" : "open",
+        detail: "PDF " + String(entry.pdf_page ?? "?") + " · " + JSON.stringify(entry),
+      }));
+      setIssues([...SOURCE_ISSUES, ...sourceItems]);
+      setQaFileName(file.name);
+      setFileError(null);
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "Failed to read QA report.");
+    }
   }
 
   function importReview(event: ChangeEvent<HTMLInputElement>) {
@@ -162,7 +208,8 @@ export default function RajukValidationPage() {
       if (!parsed || typeof parsed !== "object" || !("format" in parsed) ||
           parsed.format !== "landbd-rajuk-review-v1") throw new Error("Unsupported review file.");
       const incoming = parsed as ExportedReview;
-      if (data && incoming.datasetHash !== (data.metadata.pdf_sha256 ?? null)) {
+      if (!data) throw new Error("Load the corresponding RAJUK source JSON before importing saved reviews.");
+      if (incoming.datasetHash !== (data.metadata.pdf_sha256 ?? null)) {
         throw new Error("The review belongs to a different source PDF fingerprint.");
       }
       if (!Array.isArray(incoming.reviews) || !Array.isArray(incoming.issues) ||
@@ -174,7 +221,7 @@ export default function RajukValidationPage() {
         entry && typeof entry.key === "string" && supported.includes(entry.status) &&
         typeof entry.note === "string" && typeof entry.updatedAt === "string");
       setReviews(Object.fromEntries(cleanReviews.map((entry) => [entry.key, entry])));
-      setIssues(SOURCE_ISSUES.map((issue) => {
+      setIssues((current) => current.map((issue) => {
         const review = incoming.issues.find((candidate) => candidate.id === issue.id);
         return review && ["open", "investigating", "resolved"].includes(review.status)
           ? { ...issue, status: review.status } : issue;
@@ -240,6 +287,7 @@ export default function RajukValidationPage() {
 
   const readinessChecks = [
     ...(profile?.checks ?? []),
+    { name: "Original PDF fingerprint", pass: pdfHashVerified === true, detail: pdfHashVerified === true ? "SHA-256 matches source" : "Load PDF and verify SHA-256" },
     { name: "Region and map sheet mapping", pass: false, detail: "No authoritative mapping supplied" },
     { name: "Cadastral geometry", pass: false, detail: "No GIS parcel geometry in this schedule" },
     { name: "LandBD importer contract", pass: false, detail: "Schema, authorization, idempotency and rollback unverified" },
@@ -280,6 +328,16 @@ export default function RajukValidationPage() {
           <span className={MUTED}>{pdfFileName ?? "Optional: rajuk1.pdf, opened only in your browser"}</span>
           <input type="file" accept=".pdf,application/pdf" onChange={loadPdf} className="max-w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-white" />
         </label>
+        <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
+          <button type="button" disabled={!pdfFile} onClick={() => void verifyPdfFingerprint()} className={BUTTON + " disabled:opacity-50"}>
+            <ShieldCheck size={16}/> Verify PDF SHA-256
+          </button>
+          {pdfHashVerified !== null && statusPill(pdfHashVerified, pdfHashVerified ? "PDF fingerprint verified" : "PDF fingerprint mismatch")}
+          <label className={BUTTON + " cursor-pointer"}><FileJson2 size={16}/> Import original QA report
+            <input className="sr-only" type="file" accept=".json,application/json" onChange={loadQaReport}/>
+          </label>
+          {qaFileName && <span className="text-xs text-slate-500">{qaFileName} · {issues.length - SOURCE_ISSUES.length} source findings</span>}
+        </div>
         {fileError && <div role="alert" className="flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-800 lg:col-span-2 dark:bg-rose-950/30 dark:text-rose-200"><XCircle size={18}/>{fileError}</div>}
         <p className="text-xs text-slate-500 lg:col-span-2">Your files stay in this browser tab. Reviews and checklists are in memory only—export a review file before closing or refreshing. Avoid using shared computers for personal land records.</p>
       </div>
