@@ -1155,3 +1155,148 @@
     break-inside: avoid !important;
   }
 }
+
+
+/* Archive PDF-result design from the supplied local LandBD.zip:
+   a distinct summary cover, then compact source table pages. */
+#mouza-porcha-report .report-page-stack {
+  gap: 20px;
+  padding: 8px 6px 28px;
+}
+#mouza-porcha-report .report-page {
+  border-radius: 4px;
+  box-shadow: 0 16px 36px rgba(19, 42, 29, .11);
+}
+#mouza-porcha-report .report-page-cover {
+  background: #fff;
+}
+#mouza-porcha-report .report-archive-cover-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 7mm;
+  padding: 5mm 0 6mm;
+  border-bottom: .35mm solid #90b4a0;
+}
+#mouza-porcha-report .report-archive-cover-brand {
+  min-width: 0;
+  color: #253b2c;
+  font-size: 9pt;
+  line-height: 1.55;
+}
+#mouza-porcha-report .report-archive-cover-brand .report-official-logo {
+  display: block;
+  width: 36mm;
+  max-width: 100%;
+  height: auto;
+  max-height: 20mm;
+  margin: 0 0 2mm;
+  object-fit: contain;
+  object-position: left center;
+}
+#mouza-porcha-report .report-archive-cover-title {
+  min-width: 0;
+  padding-top: 3mm;
+  text-align: center;
+}
+#mouza-porcha-report .report-archive-eyebrow {
+  display: block;
+  font: 700 8pt/1.4 Inter, Arial, sans-serif;
+  letter-spacing: .12em;
+  color: #557361;
+}
+#mouza-porcha-report .report-archive-cover-title h1 {
+  margin: 2mm 0 1mm;
+  font-size: 23pt;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #154b30;
+}
+#mouza-porcha-report .report-archive-cover-title p {
+  margin: 0;
+  font-size: 11pt;
+  font-weight: 600;
+  color: #344e3e;
+}
+#mouza-porcha-report .report-archive-cover-verification {
+  display: flex;
+  align-items: start;
+  justify-content: flex-end;
+  gap: 2.5mm;
+  min-width: 0;
+  line-height: 1.45;
+}
+#mouza-porcha-report .report-archive-cover-verification .report-qr-box {
+  flex: 0 0 25mm;
+  max-width: 25mm;
+  text-align: center;
+}
+#mouza-porcha-report .report-archive-cover-verification .report-qr-box img {
+  width: 25mm;
+  height: 25mm;
+  object-fit: contain;
+}
+#mouza-porcha-report .report-archive-cover-verification .report-qr-box span {
+  display: block;
+  font-size: 7pt;
+}
+#mouza-porcha-report .report-archive-cover-verification .report-latin-id {
+  overflow-wrap: anywhere;
+  font-size: 7pt;
+}
+#mouza-porcha-report .report-archive-location {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 2mm;
+  margin: 7mm 0 5mm;
+}
+#mouza-porcha-report .report-archive-location > div {
+  min-width: 0;
+  padding: 4mm 2.5mm;
+  border: .25mm solid #c7dacd;
+  background: #f5f9f6;
+  text-align: center;
+}
+#mouza-porcha-report .report-archive-location span {
+  display: block;
+  color: #557361;
+  font-size: 8pt;
+}
+#mouza-porcha-report .report-archive-location strong {
+  display: block;
+  margin-top: 1.5mm;
+  overflow-wrap: anywhere;
+  color: #123d27;
+  font-size: 10.5pt;
+}
+#mouza-porcha-report .report-page-cover .report-summary-table {
+  margin: 0 0 5mm;
+  width: 100%;
+  table-layout: fixed;
+}
+#mouza-porcha-report .report-page-cover .report-summary-table th,
+#mouza-porcha-report .report-page-cover .report-summary-table td {
+  overflow-wrap: anywhere;
+}
+#mouza-porcha-report .report-page-cover .report-collection-note {
+  margin: 3mm 0;
+  font-size: 8.4pt;
+  line-height: 1.5;
+}
+#mouza-porcha-report .report-page-content .report-table-wrapper {
+  margin-top: 4mm;
+}
+@media print {
+  #mouza-porcha-report .report-page.report-page-cover {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+  #mouza-porcha-report .report-page-stack {
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+  #mouza-porcha-report .report-page {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
