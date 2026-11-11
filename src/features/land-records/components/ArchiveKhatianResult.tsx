@@ -190,7 +190,7 @@ export default function ArchiveKhatianResult({
             </table>
           </div>
 
-          {separateGuardians.length > 0 && !verifiedGuardian && (
+          {separateGuardians.length > 0 && (
             <div className="mt-4 border border-[#2f4035] p-3 text-xs leading-6">
               <h3 className={BOLD}>উৎসে প্রকাশিত অভিভাবক তালিকা</h3>
               <p>{separateGuardians.join(" · ")}</p>
