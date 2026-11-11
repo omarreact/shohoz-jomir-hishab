@@ -138,7 +138,7 @@ export function profileSchedule(data: ScheduleData): DatasetProfile {
       road: string | null, plotNumber: string | null, unresolved: boolean) {
     if (recordIds.has(record.record_id)) duplicateRecordIds++;
     recordIds.add(record.record_id);
-    if (!Number.isInteger(record.source?.pdf_page) || (record.source?.pdf_page ?? 0) < 1 ||
+    if (!Number.isInteger(record.source?.pdf_page ?? NaN) || (record.source?.pdf_page ?? 0) < 1 ||
         (record.source?.pdf_page ?? 0) > (data.metadata.pdf_page_count ?? Infinity)) missingSourcePages++;
     rows.push({ record, recordId: record.record_id, plotId, sector, road, plotNumber, unresolved });
   }
