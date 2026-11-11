@@ -42,6 +42,8 @@ describe("LandBD routing inventory", () => {
     expect(new Set(paths).size).toBe(paths.length);
     expect(getAdminMinimumRole("/admin/blog/edit/123")).toBe("staff");
     expect(getAdminMinimumRole("/admin/data-monitor/result")).toBe("admin");
+    expect(getAdminMinimumRole("/admin/rajuk-validation")).toBe("admin");
+    expect(getAdminNavigationRoles("/admin/rajuk-validation")).not.toContain("Editor");
     expect(getAdminMinimumRole("/admin/page-access")).toBe("super_admin");
     expect(getAdminNavigationRoles("/admin/page-access")).toEqual(["Super Admin"]);
     expect(getAdminNavigationRoles("/admin/users")).toEqual(["Super Admin", "Admin"]);
