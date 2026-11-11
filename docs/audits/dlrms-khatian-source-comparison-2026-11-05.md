@@ -1,4 +1,16 @@
 # LandBD — DLRMS khatian source-comparison audit
+
+## 2026-11-05 authenticated HAR follow-up
+
+An additional, user-provided **citizen-session HAR** was analyzed after the earlier homepage-only audit. This is a different evidence set from the 93-request homepage urlscan noted below. The raw HAR remains private and is **not** committed because it includes citizen data and authentication credentials.
+
+- This capture records public-index BRS lookup, official checkout/payment, invoice and authenticated print-khatian for one record. The authenticated print payload has `data.khatian.OWNERS[]`, `DAGS[]`, nested `MOUZA`, and `MOUZA_JL_NUMBER`; it **does not include** `khatianPages[]`.
+- Public index `ID` and authenticated print `khatian.ID` are separate values. Identity matching must rely on survey, khatian number, JL/mouza and authorized application context; never join on a shared numeric index ID.
+- An additive print normalizer now supports both structured rows and prior `khatianPages[]` responses. It excludes NID, mobile, birth registration and other citizen identifiers from normalized output, while retaining the row-linked name, father, guardian/address and dag/area fields for the authorized user.
+- Its exact-decimal area total is a sum of captured raw dag areas, **not** a declaration of certified acreage or independently proven area units.
+- The new redacted test fixture uses fictional names/IDs; mock test passing does not establish current live entitlement, government API approval or production deployment status.
+- No user credentials, auth headers, payment transaction IDs or raw HAR responses are stored in this repository. Live authenticated API calls require the citizen's current government login and permitted access. Payment requests must never be replayed from a HAR.
+
 Checked 2026-11-05. Status: **QA-only**, not a certified government record.
 
 ## Evidence categories

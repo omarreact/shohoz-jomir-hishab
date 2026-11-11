@@ -320,6 +320,66 @@ export async function fetchDlrmsCitizenInvoice(
   });
 }
 
+
+/** Exact decimal addition of source area fields; no binary floating-point rounding. */
+function sumKhatianDagAreas(raw: string[]): string | undefined {
+  if (!raw.length || raw.some((value) => !/^[0-9]+(?:[.][0-9]+)?$/.test(value))) return undefined;
+  const precision = Math.max(...raw.map((value) => (value.split(".")[1] ?? "").length));
+  const scale = 10n ** BigInt(precision);
+  const total = raw.reduce((sum, value) => {
+    const [whole, fraction = ""] = value.split(".");
+    return sum + BigInt(whole + fraction.padEnd(precision, "0"));
+  }, 0n);
+  if (!precision) return total.toString();
+  return `${total / scale}.${(total % scale).toString().padStart(precision, "0")}`
+    .replace(/0+$/, "").replace(/[.]$/, "");
+}
+
+function normalizeStructuredOwners(khatian: JsonRecord) {
+  if (!Array.isArray(khatian.OWNERS)) return [];
+  return khatian.OWNERS.flatMap((raw: unknown) => {
+    const row = asRecord(raw);
+    const id = numberValue(row, "ID");
+    if (!id || !Number.isSafeInteger(id) || id <= 0) {
+      throw new DlrmsCitizenError("DLRMS print response-এ মালিকের তথ্যের পরিচয় অসম্পূর্ণ।", 422);
+    }
+    return [{
+      id,
+      name: cleanDlrmsCitizenText(row.OWNER_NAME),
+      fatherName: cleanDlrmsCitizenText(row.FATHER_NAME) || undefined,
+      guardianAndAddress: cleanDlrmsCitizenText(row.OWNER_GUARDIAN_AND_ADDRESS) || undefined,
+      address: cleanDlrmsCitizenText(row.OWNER_ADDRESS) || undefined,
+      ownerNo: numberValue(row, "OWNER_NO"),
+      ownerGroup: numberValue(row, "OWNER_GROUP"),
+      ownerAreaRaw: row.OWNER_AREA == null ? undefined : String(row.OWNER_AREA),
+    }];
+  });
+}
+
+function normalizeStructuredDags(khatian: JsonRecord) {
+  if (!Array.isArray(khatian.DAGS)) return [];
+  // Keep one row per source ID; repeated dag numbers may have different land classes.
+  return khatian.DAGS.flatMap((raw: unknown) => {
+    const row = asRecord(raw);
+    const id = numberValue(row, "ID");
+    if (!id || !Number.isSafeInteger(id) || id <= 0) {
+      throw new DlrmsCitizenError("DLRMS print response-এ দাগ তথ্যের পরিচয় অসম্পূর্ণ।", 422);
+    }
+    const rawArea = (key: string) => row[key] == null ? undefined : String(row[key]);
+    return [{
+      id,
+      dagNumber: cleanDlrmsCitizenText(row.DAG_NUMBER),
+      landType: cleanDlrmsCitizenText(row.LAND_TYPE),
+      totalDagAreaRaw: rawArea("TOTAL_DAG_AREA"),
+      khatianDagAreaRaw: rawArea("KHATIAN_DAG_AREA"),
+      khatianDagPortionRaw: rawArea("KHATIAN_DAG_PORTION_WITH_PRECISION") ?? rawArea("KHATIAN_DAG_PORTION"),
+      landTypeId: numberValue(row, "LAND_TYPE_ID"),
+      remarks: cleanDlrmsCitizenText(row.REMARKS) || undefined,
+    }];
+  });
+}
+
+
 export async function fetchDlrmsCitizenPrintKhatian(
   token: string,
   applicationId: number,
@@ -336,6 +396,8 @@ export async function fetchDlrmsCitizenPrintKhatian(
   );
   const khatian = asRecord(data.khatian);
   const application = asRecord(data.application);
+  const mouza = asRecord(khatian.MOUZA);
+  const jl = asRecord(khatian.MOUZA_JL_NUMBER);
   const pagesRaw = Array.isArray(data.khatianPages) ? data.khatianPages : [];
 
   const pages = pagesRaw
@@ -356,29 +418,63 @@ export async function fetchDlrmsCitizenPrintKhatian(
     })
     .filter((page): page is NonNullable<typeof page> => Boolean(page));
 
+  const owners = normalizeStructuredOwners(khatian);
+  const dags = normalizeStructuredDags(khatian);
+  // Empty structured arrays may accompany usable legacy page responses.
+  const hasStructuredRows = owners.length > 0 || dags.length > 0;
+  const recordVariant = hasStructuredRows
+    ? "structured-rows"
+    : pages.length ? "legacy-pages" : "unknown";
+  if (recordVariant === "unknown") {
+    throw new DlrmsCitizenError("DLRMS print response-এ কোনো ব্যবহারযোগ্য খতিয়ান তথ্য নেই।", 422);
+  }
+
+  const khatianNo = cleanDlrmsCitizenText(khatian.KHATIAN_NO);
+  const khatianId = numberValue(khatian, "ID") ?? 0;
+  if (!khatianNo || !khatianId) {
+    throw new DlrmsCitizenError("DLRMS print response-এ খতিয়ান পরিচয় অসম্পূর্ণ।", 422);
+  }
+
+  const areas = dags.map((dag) => dag.khatianDagAreaRaw).filter((area): area is string => Boolean(area));
+  const totalKhatianDagAreaRaw = areas.length === dags.length ? sumKhatianDagAreas(areas) : undefined;
+  const pageSummary = collectSummary(pages);
+
   return DlrmsCitizenPrintSchema.parse({
     source: "DLRMS_CITIZEN",
     applicationId,
     fetchedAt: new Date().toISOString(),
+    recordVariant,
+    owners,
+    dags,
+    totalKhatianDagAreaRaw,
     khatian: {
-      id: numberValue(khatian, "ID") ?? 0,
+      id: khatianId,
       identity: cleanDlrmsCitizenText(khatian.KHATIAN_IDENTITY) || undefined,
-      khatianNo: cleanDlrmsCitizenText(khatian.KHATIAN_NO),
+      khatianNo,
       uuid: cleanDlrmsCitizenText(khatian.KHATIAN_UUID) || undefined,
-      mouzaId: numberValue(khatian, "MOUZA_ID"),
-      jlNumberId: numberValue(khatian, "JL_NUMBER_ID"),
+      mouzaId: numberValue(khatian, "MOUZA_ID") ?? numberValue(mouza, "ID"),
+      jlNumberId: numberValue(khatian, "JL_NUMBER_ID") ?? numberValue(jl, "ID"),
       officeId: numberValue(khatian, "OFFICE_ID"),
       surveyId: numberValue(khatian, "SURVEY_ID"),
       rsNo: cleanDlrmsCitizenText(khatian.RS_NO) || undefined,
-      mouzaName: cleanDlrmsCitizenText(khatian.MOUZA_NAME) || undefined,
-      districtName: cleanDlrmsCitizenText(khatian.MOUZA_DISTRICT_NAME) || undefined,
-      upazilaName: cleanDlrmsCitizenText(khatian.MOUZA_UPAZILA_NAME) || undefined,
-      jlNumber: cleanDlrmsCitizenText(khatian.MOUZA_JL_NUMBER) || undefined,
+      mouzaName: cleanDlrmsCitizenText(mouza.NAME) || cleanDlrmsCitizenText(khatian.MOUZA_NAME) || undefined,
+      districtName: cleanDlrmsCitizenText(mouza.DISTRICT_NAME) || cleanDlrmsCitizenText(khatian.MOUZA_DISTRICT_NAME) || undefined,
+      upazilaName: cleanDlrmsCitizenText(mouza.UPAZILA_NAME) || cleanDlrmsCitizenText(khatian.MOUZA_UPAZILA_NAME) || undefined,
+      jlNumber: cleanDlrmsCitizenText(jl.JL_NUMBER)
+        || (typeof khatian.MOUZA_JL_NUMBER === "string" ? cleanDlrmsCitizenText(khatian.MOUZA_JL_NUMBER) : undefined),
       volumeNo: cleanDlrmsCitizenText(khatian.VOLUME_NO) || undefined,
     },
     districtName: cleanDlrmsCitizenText(application.DISTRICT_NAME) || undefined,
     totalPages: numberValue(data, "totalPage") ?? pages.length,
     pages,
-    summary: collectSummary(pages),
+    summary: {
+      occupantText: uniqueText([...pageSummary.occupantText, ...owners.map((owner) => owner.name)]),
+      shareText: pageSummary.shareText,
+      dagText: uniqueText([...pageSummary.dagText, ...dags.map((dag) => dag.dagNumber)]),
+      landTypeText: uniqueText([...pageSummary.landTypeText, ...dags.map((dag) => dag.landType)]),
+      areaText: uniqueText([...pageSummary.areaText, ...areas]),
+      rentText: pageSummary.rentText,
+      remarks: pageSummary.remarks,
+    },
   });
 }
