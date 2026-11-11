@@ -1,0 +1,90 @@
+/* Clean, focused visual system for public LandBD pages only.
+   GIS, editor, authentication and admin shells remain independent. */
+.landbd-clean-shell {
+  width: 100%;
+  color: #162b20;
+  background: linear-gradient(180deg, #fbfdfb 0%, #f5f8f6 22rem, #f8faf9 100%);
+}
+.landbd-clean-shell > main {
+  width: 100%;
+  min-width: 0;
+}
+.landbd-clean-shell :where(.landbd-page-inner, .landbd-section) {
+  min-width: 0;
+}
+.landbd-clean-shell :where(.landbd-card, .app-surface, .landbd-surface) {
+  border-color: #e1e9e3;
+  box-shadow: 0 3px 18px rgba(10, 42, 25, .035);
+}
+.landbd-clean-shell :where(input, select, textarea):focus-visible {
+  outline: 2px solid #168258;
+  outline-offset: 2px;
+}
+.landbd-clean-shell :where(a, button):focus-visible {
+  outline: 2px solid #168258;
+  outline-offset: 3px;
+}
+.landbd-clean-shell .landbd-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid #e2ebe4;
+  border-radius: 14px;
+  background: #fff;
+}
+.landbd-clean-shell .landbd-table-wrap th {
+  background: #f2f8f4;
+  color: #29513b;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.landbd-clean-shell .landbd-table-wrap tbody tr:hover {
+  background: #f9fcfa;
+}
+.landbd-clean-shell .report-controls,
+.landbd-clean-shell #khatian-details-panel {
+  min-width: 0;
+}
+.landbd-clean-shell .report-actions {
+  border-color: #dae7dd;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(12, 49, 30, .045);
+}
+.landbd-clean-shell .landbd-archive-khatian {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+.landbd-clean-shell .landbd-archive-khatian table {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .landbd-clean-shell .report-actions {
+    align-items: stretch;
+  }
+  .landbd-clean-shell .report-actions > div:last-child {
+    width: 100%;
+  }
+  .landbd-clean-shell .report-actions button {
+    flex: 1 1 9rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landbd-clean-shell *,
+  .landbd-clean-shell *::before,
+  .landbd-clean-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
+@media print {
+  .landbd-clean-shell {
+    background: #fff !important;
+    color: #000;
+  }
+  .landbd-clean-shell .landbd-table-wrap {
+    border: 0;
+    overflow: visible;
+  }
+}
