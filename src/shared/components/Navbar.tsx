@@ -82,7 +82,12 @@ export default function Navbar() {
   }, []);
 
   const groups = useMemo(
-    () => [...STATIC_GROUPS, ...cmsGroups]
+    () => [...STATIC_GROUPS, ...(cmsGroups.length ? [{
+      id: "cms-more", label: "আরও", icon: FileText,
+      items: cmsGroups.flatMap((group) => group.items.map((item) => ({
+        ...item, label: group.label + " · " + item.label,
+      }))),
+    }] : [])]
       .map((group) => ({ ...group, items: group.items.filter((item) => !item.adminOnly || isAdmin) }))
       .filter((group) => group.items.length > 0),
     [cmsGroups, isAdmin],
