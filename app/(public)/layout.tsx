@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import Navbar from "@/src/shared/components/Navbar";
 import Footer from "@/src/shared/components/Footer";
-import HistoryShortcut from "@/src/shared/components/HistoryShortcut";
 
 /**
  * One consistent public chrome on all viewports:
@@ -14,7 +13,6 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
     <div className="landbd-clean-shell flex min-h-[100dvh] min-w-0 flex-1 flex-col">
       <Navbar />
       <main id="landbd-mobile-content" className="min-w-0 flex-1">{children}</main>
-      <HistoryShortcut />
       <Footer />
     </div>
   );
