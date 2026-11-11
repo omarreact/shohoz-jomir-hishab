@@ -11,7 +11,7 @@ import {
 } from "../lib/khatian-pdf-export";
 import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import PdfPreviewDialog, { type PdfPreviewDocument } from "@/src/shared/components/PdfPreviewDialog";
-import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
+import ArchiveKhatianResult from "./ArchiveKhatianResult";
 import FullKhatianSupplement from "./FullKhatianSupplement";
 
 type Props = {
@@ -256,7 +256,7 @@ export default function KhatianDetailsView({
       <LandBdPrintRibbon className="dlrms-fixed-print-ribbon" />
 
       <div ref={resolvedCaptureRef} data-khatian-pdf-body="1" className="w-full bg-white">
-        <AuthoritativeKhatianDetailsView
+        <ArchiveKhatianResult
           khatian={khatian}
           fullKhatian={resolvedFullKhatian}
           surveyKey={surveyKey}
