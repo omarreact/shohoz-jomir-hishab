@@ -124,6 +124,10 @@ export default function RajukValidationPage() {
     try {
       const parsed: unknown = JSON.parse(await file.text());
       const verified = parseSchedule(parsed);
+      setReviews({});
+      setIssues(SOURCE_ISSUES);
+      setCriteria([]);
+      setQa([]);
       setData(verified);
       setDataFileName(file.name);
       setSelectedRecordId(null);
