@@ -18,14 +18,12 @@ export interface SiteAccessPolicy {
 const POLICY_TTL_MS = 5_000;
 
 /**
- * Public launch mode: enabled by default so LandBD's public-facing pages are
- * accessible without a member session. Set LANDBD_PUBLIC_ACCESS=false to return
- * full control of maintenance and page-level access to Firestore settings.
- * The reviewed defaults still protect identity/account and staff-only pages.
+ * Emergency/public-launch override. This must be explicitly enabled.
+ * Normal operation keeps Firestore maintenance/page policy authoritative.
  * API handler authorization and /admin role verification are never bypassed.
  */
 export function isPublicAccessOverrideEnabled(): boolean {
-  return process.env.LANDBD_PUBLIC_ACCESS !== "false";
+  return process.env.LANDBD_PUBLIC_ACCESS?.trim().toLowerCase() === "true";
 }
 
 /**
