@@ -723,7 +723,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       source: "DLRMS_PUBLIC",
       endpoint: `https://gateway.dlrms.land.gov.bd/core-api/api/public/index-khatian/${input.surveyKey}/{id}`,
       official: true,
-      access: "public",
+      access: "public-session",
       fetchedAt,
     },
   ];
@@ -746,7 +746,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       source: "DLRMS_TRACKING",
       endpoint: DLRMS_PUBLIC_EXTRA_ENDPOINTS.tracking,
       official: true,
-      access: "public",
+      access: "public-session",
       fetchedAt,
     });
   }
@@ -756,7 +756,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       source: "DLRMS_HAL_SABEK",
       endpoint: DLRMS_PUBLIC_EXTRA_ENDPOINTS.halSabek,
       official: true,
-      access: "public",
+      access: "public-session",
       fetchedAt,
     });
   }
