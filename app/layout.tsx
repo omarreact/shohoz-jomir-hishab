@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getSearchIndexingEnabled } from "@/src/modules/search/server/searchIndexingPolicy";
-import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
+import { Hind_Siliguri, Inter } from "next/font/google";
 
 import "./globals.css";
 import "./landbd-theme.css";
@@ -33,13 +33,6 @@ const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
-/** Stable Bangla fallback/export font, especially useful for printable records. */
-const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali", "latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-noto-bengali",
-  display: "swap",
-});
 
 const siteUrl = new URL("https://landbd.pincodeit.com");
 const socialImage = "/brand/og-default.svg";
@@ -125,7 +118,7 @@ export default function RootLayout({
       lang="bn"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable}`}
+      className={`${inter.variable} ${hindSiliguri.variable}`}
     >
       <body
         suppressHydrationWarning
