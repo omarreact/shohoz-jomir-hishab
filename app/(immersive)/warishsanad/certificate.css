@@ -9,6 +9,10 @@
   --v8-magenta: #b3237b;
 }
 
+.warish-route-font {
+  --font-tiro-bangla: var(--font-nikosh), "Nirmala UI", "Nikosh", serif;
+}
+
 .warish-route-font,
 .warish-route-font button,
 .warish-route-font input,
