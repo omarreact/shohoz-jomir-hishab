@@ -10,7 +10,7 @@ import {
   mouzaPdfStorageProvider,
   putMouzaPdf,
 } from "@/src/modules/storage/mouzaPdfStorage";
-import { authenticatedFullAccessEnabled, verifyServerAuth } from "@/src/modules/auth/serverAuth";
+import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import {
   allowRateLimit,
@@ -86,7 +86,7 @@ async function uploadPdfToStorage(
 async function resolveIsAdmin(request: NextRequest): Promise<boolean> {
   try {
     const user = await verifyServerAuth(request);
-    return authenticatedFullAccessEnabled() || isAdminRole(user.role);
+    return isAdminRole(user.role);
   } catch {
     return false;
   }
