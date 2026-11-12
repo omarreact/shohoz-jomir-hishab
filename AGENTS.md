@@ -86,21 +86,21 @@ Do not replace these systems unnecessarily.
 
 ---
 
-# 8. /DAP-MAP UI REQUIREMENT
-The `/dap-map` page is a major application feature. Make it visually polished, responsive, and easy to use.
+# 8. GIS MAP UI REQUIREMENT
+The canonical production GIS route is `/geospatial-map`. The legacy `/dap-map` URL is a compatibility alias that redirects to it. Keep the canonical GIS experience visually polished, responsive, and easy to use.
 Use the existing project's UI system first. If Bootstrap is genuinely useful for the DAP map interface, controls, responsive layout, cards, modals, tabs, or map controls, you may add/use Bootstrap. However, do not introduce Bootstrap unnecessarily, do not duplicate Tailwind and Bootstrap styles, avoid CSS conflicts, and use one consistent design language.
 
 ---
 
-# 9. DAP-MAP SHOULD SUPPORT
-The `/dap-map` page should provide a professional GIS interface including:
+# 9. GIS MAP SHOULD SUPPORT
+The `/geospatial-map` page should provide a professional GIS interface including:
 full-screen map, layer control, basemap selector, zoom controls, location control, search, plot/layer information, legend, layer visibility, loading indicators, API status, public/private layer indicators, feature information, popup/details panel, responsive sidebar/panel, mobile-friendly controls.
-Use Leaflet/React-Leaflet because that is already part of the project's architecture.
+Use the existing MapLibre implementation for the canonical GIS map. Leaflet/React-Leaflet remains valid for specialized record/QA views such as `/rajuk-test`; do not rewrite the canonical MapLibre workspace back to Leaflet.
 
 ---
 
 # 10. DAP-MAP PUBLIC FALLBACK
-This is mandatory. When the RAJUK private token is empty, missing, invalid, expired, rejected, or unavailable, the `/dap-map` page MUST continue loading all publicly available RAJUK data.
+This is mandatory. When the RAJUK private token is empty, missing, invalid, expired, rejected, or unavailable, the canonical `/geospatial-map` experience (including requests arriving through `/dap-map`) MUST continue loading all publicly available RAJUK data.
 Never allow private authentication failure to make `/dap-map` blank.
 
 ---
@@ -139,7 +139,7 @@ SERVER ADMIN ACCESS -> Firebase Admin SDK
 ADMIN AUTHORIZATION -> Firebase Custom Claims / secure Firestore role
 RAJUK AUTHENTICATION -> RAJUK token managed server-side
 RAJUK DATA -> RAJUK/ArcGIS APIs
-MAP -> Leaflet + React-Leaflet
+MAP -> MapLibre for canonical GIS; Leaflet/React-Leaflet only where existing specialized views require it
 UI -> Existing Tailwind/Radix system, Bootstrap ONLY if genuinely beneficial for /dap-map
 OPTIONAL CACHE -> Redis where already required
 
