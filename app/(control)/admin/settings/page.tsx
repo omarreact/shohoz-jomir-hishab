@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isSuperAdminRole } from "@/src/modules/auth/roles";
 import {
-  Settings as SettingsIcon,
   Save,
   Info,
   Link as LinkIcon,
