@@ -2,12 +2,14 @@
  * LandBD script-aware font routing.
  *
  * App UI:
- *   Latin/English -> Inter
- *   Bangla        -> Hind Siliguri (Noto Sans Bengali fallback)
+ *   Latin/English -> system UI sans stack
+ *   Bangla        -> local Nikosh with Nirmala UI fallback
  *
  * Legal/print reports:
- *   Latin/English -> Inter
- *   Bangla        -> Noto Sans Bengali for stable shaping in PDF/print engines
+ *   Bangla        -> local Nikosh / existing report-specific fallbacks
+ *
+ * This avoids build-time network requests to Google Fonts so Vercel,
+ * GitHub Actions and OpenNext/Cloudflare compile deterministically.
  */
 
 /* The Mouza Porcha report intentionally uses Kalpurush to mirror the
