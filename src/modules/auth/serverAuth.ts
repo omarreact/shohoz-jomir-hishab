@@ -25,10 +25,6 @@ let publicKeysCache: Record<string, string> | null = null;
 let publicKeysCacheTime = 0;
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
 
-export function authenticatedFullAccessEnabled(): boolean {
-  return process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
-}
-
 async function getAdminServices() {
   return import("@/src/modules/database/firebaseAdmin");
 }
