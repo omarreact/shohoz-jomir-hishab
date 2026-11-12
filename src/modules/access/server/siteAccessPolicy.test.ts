@@ -14,7 +14,7 @@ describe("site access policy", () => {
     }
   });
 
-  it("defaults to public launch access while preserving sensitive route minimums", async () => {
+  it("uses the public-launch override only when explicitly enabled", async () => {
     process.env.LANDBD_PUBLIC_ACCESS = "true";
 
     const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
@@ -29,6 +29,22 @@ describe("site access policy", () => {
     expect(result.pageAccess["/my-purchases"]).toBe("logged_in");
     expect(result.pageAccess["/rajuk-test"]).toBe("admin");
     expect(result.pageAccess["/ms-test"]).toBe("super_admin");
+  });
+
+  it("does not enable the public-launch override when the variable is absent", async () => {
+    delete process.env.LANDBD_PUBLIC_ACCESS;
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => false,
+      collections: { settings: { doc: jest.fn() } },
+      db: { getAll: jest.fn() },
+    }));
+
+    const { getSiteAccessPolicy, isPublicAccessOverrideEnabled } = await import("./siteAccessPolicy");
+    expect(isPublicAccessOverrideEnabled()).toBe(false);
+    const result = await getSiteAccessPolicy({ fresh: true });
+    expect(result.maintenanceMode).toBe(true);
+    expect(result.degraded).toBe(true);
+    expect(result.reason).toBe("firebase-admin-unavailable");
   });
 
   it("fails closed when Firebase Admin is unavailable and no trusted policy is cached", async () => {
