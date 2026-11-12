@@ -4,47 +4,80 @@ on:
   push:
     branches: [main]
     paths:
+      - "app/**"
+      - "src/**"
+      - "proxy.ts"
+      - "next.config.ts"
       - "vercel.json"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/landbd-production-smoke.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: landbd-production-smoke
+  cancel-in-progress: true
+
 jobs:
-  homepage:
+  production-health:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Verify production homepage and public API without secrets
+      - name: Wait for the exact main commit to become healthy on Vercel
         env:
           LANDBD_ORIGIN: https://landbd.pincodeit.com
+          EXPECTED_COMMIT: ${{ github.sha }}
         run: |
           node --input-type=module <<'NODE'
           const origin = process.env.LANDBD_ORIGIN;
-          const expectedRemoved = "পেইড সেবার বর্তমান মূল্য";
-          const homepage = await fetch(origin + "/", {
-            redirect: "follow",
-            cache: "no-store",
-            headers: { Accept: "text/html" },
-            signal: AbortSignal.timeout(15000)
-          });
-          const html = await homepage.text();
-          const isHtml = (homepage.headers.get("content-type") || "").includes("text/html");
-          const hasRemovedSection = html.includes(expectedRemoved);
-          console.log("homepage", { http: homepage.status, isHtml, priceBannerPresent: hasRemovedSection });
-          if (homepage.status !== 200 || !isHtml || hasRemovedSection) {
-            throw new Error("Production homepage failed the banner removal smoke check");
+          const expected = process.env.EXPECTED_COMMIT;
+          const attempts = 36;
+          const delayMs = 10_000;
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            try {
+              const response = await fetch(origin + "/api/health", {
+                cache: "no-store",
+                headers: { Accept: "application/json" },
+                signal: AbortSignal.timeout(12_000),
+              });
+              const payload = response.ok ? await response.json().catch(() => null) : null;
+              const valid = Boolean(
+                payload &&
+                payload.success === true &&
+                payload.service === "landbd" &&
+                payload.status === "ok" &&
+                payload.platform === "vercel" &&
+                payload.environment === "production" &&
+                typeof payload.commit === "string"
+              );
+
+              console.log("production health", {
+                attempt,
+                http: response.status,
+                valid,
+                servingCommit: valid ? payload.commit.slice(0, 12) : null,
+                expectedCommit: expected.slice(0, 12),
+              });
+
+              if (valid && payload.commit === expected) {
+                console.log("PASS: production is serving the exact GitHub main commit.");
+                process.exit(0);
+              }
+            } catch (error) {
+              console.log("production health", {
+                attempt,
+                networkError: error?.name || "unknown",
+              });
+            }
+
+            if (attempt < attempts) await sleep(delayMs);
           }
-          const settings = await fetch(origin + "/api/public/settings", {
-            redirect: "follow", cache: "no-store",
-            headers: { Accept: "application/json" },
-            signal: AbortSignal.timeout(15000)
-          });
-          const payload = settings.ok ? await settings.json().catch(() => null) : null;
-          const valid = Boolean(payload && typeof payload.settings === "object");
-          console.log("public settings API", { http: settings.status, validJson: valid });
-          if (!settings.ok || !valid) throw new Error("Public settings endpoint unavailable");
-          console.log("PASS: anonymous production homepage and public API");
-          console.log("NOTE: Firebase Admin readiness, authenticated login and Firestore connectivity are NOT proven by this read-only public smoke.");
+
+          throw new Error("Production did not become healthy on the expected main commit within the smoke window.");
           NODE
