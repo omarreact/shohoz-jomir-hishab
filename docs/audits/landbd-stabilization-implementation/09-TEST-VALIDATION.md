@@ -1,11 +1,11 @@
 # 09 — Test and Validation Evidence
 
-Validated code SHA: `9cb22d508f598ea0e8c3e0b5bd93a8b49271c688`
+Validated code SHA: `242b43977acc99be7c0fa4dfe45b0c9c1395fc83`
 
 ## GitHub Actions
 
 ### CI
-Run ID: 43133555671  
+Run ID: 43134518453  
 Conclusion: success.
 
 Focused land-record regression:
@@ -27,16 +27,17 @@ Production Webpack build:
 - pass
 
 ### Cloudflare Compatibility
-Run ID: 43133555816  
+Run ID: 43134519095  
 Conclusion: success.
 
 - Node 22 install: pass
 - Typecheck: pass
 - OpenNext build: pass
 - worker bundle generated
+- no build-time Google Font dependency remains
 
 ### DLRMS read-only smoke
-Run ID: 43133555766  
+Run ID: 43134518500  
 Conclusion: success.
 
 401/403 from anonymous government discovery endpoints is accepted as an access-policy response, while network/server/invalid-JSON behavior remains a failure.

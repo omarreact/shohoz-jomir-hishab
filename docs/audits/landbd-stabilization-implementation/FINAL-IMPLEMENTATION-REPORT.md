@@ -5,7 +5,7 @@ Repository: `omarreact/shohoz-jomir-hishab`
 Branch: `fix/landbd-full-stabilization-27-20261112`  
 PR: #164  
 Base: `de70cf0db299598db20f708bcd90cf1da8337bca`  
-Validated code SHA: `9cb22d508f598ea0e8c3e0b5bd93a8b49271c688`
+Validated code SHA: `242b43977acc99be7c0fa4dfe45b0c9c1395fc83`
 
 ## Overall status
 
@@ -41,25 +41,25 @@ The requested 27-section stabilization implementation is complete on PR #164. Al
 | 22 | Map UI isolation | DONE | Global AI widget suppressed on all GIS workspaces |
 | 23 | Map hooks/accessibility/quality | DONE | Cascade/effect/dependency/stale-state fixes; command combobox semantics |
 | 24 | PDF/A4/report fidelity | VERIFIED | Existing report tests pass; source semantics preserved |
-| 25 | Root font/layout/runtime quality | DONE | Cloudflare-breaking Noto loader removed; Bengali fallback preserved |
+| 25 | Root font/layout/runtime quality | DONE | All build-time Google font loaders removed; local Nikosh + system fallback contracts preserved |
 | 26 | CI/Cloudflare/deployment gates | DONE | CI + 574 tests + Webpack + OpenNext + DLRMS smoke all green |
-| 27 | Documentation/release evidence | DONE | Architecture docs refreshed; this evidence package added |
+| 27 | Documentation/release evidence | DONE | Architecture docs refreshed; evidence package added |
 
 ## Validation summary
 
-CI run 43133555671:
+CI run 43134518453:
 - lint: 0 errors / 118 warnings;
 - typecheck: pass;
 - land-record regression: 36/36 tests;
 - full Jest: 574/574 tests across 103/103 suites;
 - production Webpack build: pass.
 
-Cloudflare Compatibility run 43133555816:
+Cloudflare Compatibility run 43134519095:
 - typecheck: pass;
 - OpenNext build: pass;
-- prior next/font failure resolved.
+- build-time Google Font dependency removed; next/font network failure class resolved.
 
-DLRMS smoke run 43133555766:
+DLRMS smoke run 43134518500:
 - pass.
 
 Lint improved from the historical 136-warning baseline to 118 warnings without broad eslint suppression.

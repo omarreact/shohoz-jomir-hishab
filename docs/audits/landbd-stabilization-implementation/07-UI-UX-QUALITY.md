@@ -26,7 +26,7 @@ Remaining warnings are not hidden with blanket eslint disables. They are mostly 
 
 Root layout remains server-rendered and wraps client providers/effects intentionally. No speculative provider rewrite was performed.
 
-The primary Bengali/Latin font setup was simplified only where build evidence showed a Cloudflare failure.
+Typography now uses a local Nikosh Bengali asset plus system Latin fallbacks and preserves the legacy CSS font-variable contracts used by independent pages. This removes build-time network font fetches while avoiding unrelated layout/provider changes.
 
 ## Status
 

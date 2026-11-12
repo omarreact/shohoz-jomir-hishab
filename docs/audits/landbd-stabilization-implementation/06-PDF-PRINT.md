@@ -2,7 +2,7 @@
 
 ## Preserved behavior
 
-The stabilization work deliberately preserves existing DLRMS Khatian and Mouza Porcha report behavior rather than redesigning it.
+The stabilization work deliberately preserves existing DLRMS Khatian, Mouza Porcha, Warish and Warishsanad report behavior rather than redesigning it.
 
 Existing automated coverage verifies:
 - A4 page geometry and pagination;
@@ -25,7 +25,7 @@ The report path continues to follow the same source model as the screen:
 
 ## Fonts
 
-The root build no longer requires a second Noto Sans Bengali Google-font loader that was crashing the Cloudflare build. The report font variable is mapped to the existing Hind Siliguri Bengali font path while Kalpurush/Nirmala remain explicit report fallbacks where already configured.
+All root/route `next/font/google` dependencies were removed from the build path. The app now uses the repository's existing local Nikosh Bengali font asset plus system fallbacks, while Kalpurush/Nirmala remain explicit report fallbacks where already configured. This removes Cloudflare build-time dependency on Google Font network responses.
 
 ## Status
 
