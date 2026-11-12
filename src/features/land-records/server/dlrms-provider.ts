@@ -1,4 +1,4 @@
-import type { KhatianDetails, KhatianPage, LandRecordProvider } from "../types";
+import type { KhatianDetails, KhatianIndex, KhatianMirrorEnrichment, KhatianPage, LandRecordProvider } from "../types";
 
 const DLRMS_HOME_URL = "https://dlrms.land.gov.bd/";
 const DLRMS_ORIGIN = "https://dlrms.land.gov.bd";
@@ -310,17 +310,44 @@ function preferFullerField(primary: string, secondary: string): string {
   return b.length > a.length ? b : a;
 }
 
-function mergeKhatianRowPreferFuller<T extends { ID: number; OWNERS: string; DAGS: string; GUARDIANS: string; TOTAL_LAND?: string }>(
+function mergeKhatianRowPreferFuller<T extends KhatianIndex>(
   primary: T,
   secondary: T | undefined,
 ): T {
   if (!secondary || secondary.ID !== primary.ID) return primary;
-  return {
-    ...primary,
+
+  const merged = {
     OWNERS: preferFullerField(primary.OWNERS, secondary.OWNERS),
     DAGS: preferFullerField(primary.DAGS, secondary.DAGS),
     GUARDIANS: preferFullerField(primary.GUARDIANS, secondary.GUARDIANS),
     TOTAL_LAND: preferFullerField(primary.TOTAL_LAND ?? "", secondary.TOTAL_LAND ?? "") || primary.TOTAL_LAND,
+  };
+
+  const provenance: KhatianMirrorEnrichment = {
+    ...(primary.LANDBD_MIRROR_ENRICHMENT ?? {}),
+  };
+  const record = (
+    field: keyof KhatianMirrorEnrichment,
+    official: string,
+    enriched: string | undefined,
+  ) => {
+    const normalizedEnriched = enriched ?? "";
+    if (normalizedEnriched === official) return;
+    provenance[field] = {
+      official: primary.LANDBD_MIRROR_ENRICHMENT?.[field]?.official ?? official,
+      enriched: normalizedEnriched,
+    };
+  };
+
+  record("OWNERS", primary.OWNERS, merged.OWNERS);
+  record("DAGS", primary.DAGS, merged.DAGS);
+  record("GUARDIANS", primary.GUARDIANS, merged.GUARDIANS);
+  record("TOTAL_LAND", primary.TOTAL_LAND ?? "", merged.TOTAL_LAND ?? "");
+
+  return {
+    ...primary,
+    ...merged,
+    ...(Object.keys(provenance).length ? { LANDBD_MIRROR_ENRICHMENT: provenance } : {}),
   };
 }
 
