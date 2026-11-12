@@ -22,6 +22,12 @@ describe("LandBD paid service endpoint authorization",()=>{
   expect(source).toContain('enforceServiceAccess(');
   expect(source).toMatch(/if\s*\(denied\)\s*return denied/);
  });
+ test("admin-only mouza export capabilities cannot be elevated by a general auth flag",()=>{
+  const source=fs.readFileSync(path.join(process.cwd(),"app/api/mouza-map/download/route.ts"),"utf8");
+  expect(source).toContain("isAdminRole(user.role)");
+  expect(source).not.toContain("authenticatedFullAccessEnabled");
+  expect(source).toContain("Vector PDF export requires admin access.");
+ });
  test("refund success must not erase pooled credits blindly",()=>{
   const source=fs.readFileSync(path.join(process.cwd(),"app/api/admin/commerce/refunds/route.ts"),"utf8");
   expect(source).toContain('entitlement.data()?.lastTransactionId === input.orderId');
