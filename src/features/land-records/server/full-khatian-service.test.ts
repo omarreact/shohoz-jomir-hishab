@@ -108,6 +108,10 @@ describe("FullKhatian service", () => {
       "DLRMS_PUBLIC",
       "DLRMS_HAL_SABEK",
     ]);
+    expect(result.evidence.map((item) => item.access)).toEqual([
+      "public-session",
+      "public-session",
+    ]);
     expect(result.warnings).toEqual([]);
     expect(fetchPublicHalSabek).toHaveBeenCalledWith(expect.objectContaining({
       surveyKey: "BRS",
