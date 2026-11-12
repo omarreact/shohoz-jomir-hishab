@@ -49,6 +49,8 @@ let cachedPolicy:
     }
   | null = null;
 
+let lastKnownGoodPolicy: SiteAccessPolicy | null = null;
+
 function parseMaintenanceMode(value: unknown): boolean | null {
   if (value === true || value === "true") return true;
   if (value === false || value === "false") return false;
@@ -56,19 +58,15 @@ function parseMaintenanceMode(value: unknown): boolean | null {
 }
 
 /**
- * Preserve the last observed maintenance decision during a transient outage.
- * With no trustworthy previous value, keep public availability; privileged
- * routes remain independently protected by Firebase authentication. This
- * cannot guarantee the intended remote setting on a brand-new cold instance,
- * so the degraded condition must be monitored in production.
+ * Preserve the last successfully loaded policy during a transient outage.
+ * If this process has never observed a trustworthy policy, fail closed rather
+ * than silently opening a site whose maintenance state cannot be established.
  */
-function failOpen(reason: string): SiteAccessPolicy {
-  const previous = cachedPolicy?.value;
+function degradedPolicy(reason: string): SiteAccessPolicy {
+  const previous = lastKnownGoodPolicy;
 
   return {
-    // If Firestore is temporarily unavailable, preserve the last known
-    // maintenance decision. Never silently reopen a known locked site.
-    maintenanceMode: previous?.maintenanceMode ?? false,
+    maintenanceMode: previous?.maintenanceMode ?? true,
     pageAccess: previous?.pageAccess ?? getDefaultPageAccessRules(),
     pageAccessUpdatedAt: previous?.pageAccessUpdatedAt ?? null,
     degraded: true,
@@ -114,11 +112,13 @@ async function loadPolicyFromFirestore(): Promise<SiteAccessPolicy> {
     POLICY_TIMEOUT_MS,
   );
 
-  // Missing or invalid maintenance doc → treat as OFF (site stays online).
-  let maintenanceMode = false;
-  if (maintenanceDoc.exists) {
-    const parsed = parseMaintenanceMode(maintenanceDoc.data()?.value);
-    if (parsed !== null) maintenanceMode = parsed;
+  if (!maintenanceDoc.exists) {
+    throw new Error("maintenance-policy-missing");
+  }
+
+  const maintenanceMode = parseMaintenanceMode(maintenanceDoc.data()?.value);
+  if (maintenanceMode === null) {
+    throw new Error("maintenance-policy-invalid");
   }
 
   const pageAccess = pageAccessDoc.exists
@@ -161,6 +161,7 @@ export async function getSiteAccessPolicy(
   try {
     const policy = await loadPolicyFromFirestore();
 
+    lastKnownGoodPolicy = policy;
     cachedPolicy = {
       value: policy,
       expiresAt: now + POLICY_TTL_MS,
@@ -173,17 +174,18 @@ export async function getSiteAccessPolicy(
 
     console.error("[SiteAccessPolicy]", reason);
 
-    const openPolicy = failOpen(reason);
+    const fallbackPolicy = degradedPolicy(reason);
 
     cachedPolicy = {
-      value: openPolicy,
+      value: fallbackPolicy,
       expiresAt: now + POLICY_TTL_MS,
     };
 
-    return openPolicy;
+    return fallbackPolicy;
   }
 }
 
 export function invalidateSiteAccessPolicyCache(): void {
   cachedPolicy = null;
+  lastKnownGoodPolicy = null;
 }
