@@ -10,6 +10,11 @@
   --footer-height: 9.7mm;
 }
 
+.warish-static-root {
+  --font-warish-bangla: var(--font-nikosh), "Nirmala UI", "Nikosh", serif;
+  --font-warish-inter: "Segoe UI", Arial, sans-serif;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
