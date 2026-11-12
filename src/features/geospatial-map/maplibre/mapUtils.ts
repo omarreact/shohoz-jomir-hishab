@@ -160,8 +160,7 @@ export async function fetchWithTimeout(input: RequestInfo | URL, init: RequestIn
   const abortFromExternal = () => controller.abort();
   parentSignal?.addEventListener("abort", abortFromExternal, { once: true });
   try {
-    const { signal: _ignoredSignal, ...requestInit } = init;
-    return await fetch(input, { ...requestInit, signal: controller.signal });
+    return await fetch(input, { ...init, signal: controller.signal });
   } finally {
     window.clearTimeout(timeoutId);
     parentSignal?.removeEventListener("abort", abortFromExternal);
