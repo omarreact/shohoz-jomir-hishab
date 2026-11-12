@@ -96,7 +96,6 @@ type Props = {
   selectResult: (feature: RajukPlotFeature) => void;
   toast: string;
   isAdvanced: boolean;
-  publicResultsOpen: boolean;
   routingCalculator: "khatiyan" | "faraez" | null;
   validateAndRoute: (calculator: "khatiyan" | "faraez", feature: RajukPlotFeature) => void;
   activeDetails: Array<{ label: string; value: string }>;
@@ -110,15 +109,6 @@ const MEASURE_POINT_LAYER_ID = "landbd-user-measurement-points";
 const EMPTY_MEASUREMENT: FeatureCollection<Geometry> = {
   type: "FeatureCollection",
   features: [],
-};
-
-const LAYER_LABELS: Record<LayerKey, { label: string; description: string }> = {
-  dap: { label: "ডিএপি প্রস্তাবিত ভূমি ব্যবহার", description: "পরিকল্পিত ভূমি-ব্যবহার অঞ্চল" },
-  rs: { label: "আরএস মৌজা টাইলস", description: "বর্তমান আরএস মৌজা মানচিত্র স্তর" },
-  ms: { label: "এমএস মৌজা টাইলস", description: "বর্তমান এমএস মৌজা মানচিত্র স্তর" },
-  flood: { label: "বন্যা ঝুঁকি স্তর", description: "বন্যা সংবেদনশীলতা ওভারলে" },
-  boundary: { label: "পরিকল্পনা সীমানা", description: "ওভারলে সীমানা স্তর" },
-  transport: { label: "পরিবহন নেটওয়ার্ক", description: "সড়ক ও পরিবহন নেটওয়ার্ক স্তর" },
 };
 
 const MEASURE_TOOLS: Array<{
