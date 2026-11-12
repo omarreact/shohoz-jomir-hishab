@@ -1,5 +1,5 @@
 import { FullKhatianSchema, type FullKhatian, type FullKhatianDag, type FullKhatianOwner, type KhatianTracking, type SourceEvidence } from "../full-khatian";
-import type { KhatianDetails, KhatianPage } from "../types";
+import type { KhatianDetails, KhatianIndex, KhatianPage } from "../types";
 import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
@@ -231,13 +231,29 @@ function mergeStructuredDags(publicRows: FullKhatianDag[], enriched: FullKhatian
   return result;
 }
 
+function restoreOfficialListRow(row: KhatianIndex): KhatianIndex {
+  const provenance = row.LANDBD_MIRROR_ENRICHMENT;
+  if (!provenance) return row;
+  return {
+    ...row,
+    OWNERS: provenance.OWNERS?.official ?? row.OWNERS,
+    DAGS: provenance.DAGS?.official ?? row.DAGS,
+    GUARDIANS: provenance.GUARDIANS?.official ?? row.GUARDIANS,
+    TOTAL_LAND: provenance.TOTAL_LAND?.official ?? row.TOTAL_LAND,
+  };
+}
+
 async function safeSearch(
   input: Parameters<typeof providers.landRecords.listKhatians>[0],
   warnings: string[],
   signal?: AbortSignal,
 ): Promise<KhatianPage | null> {
   try {
-    return await providers.landRecords.listKhatians(input, signal);
+    const page = await providers.landRecords.listKhatians(input, signal);
+    return {
+      ...page,
+      items: page.items.map(restoreOfficialListRow),
+    };
   } catch (error) {
     warnings.push(`DLRMS reconstruction lookup failed: ${error instanceof Error ? error.message : "unknown error"}`);
     return null;
@@ -462,7 +478,7 @@ function cachedListExpansion(base: KhatianDetails): KhatianPage["items"][number]
   ) {
     return null;
   }
-  return row;
+  return restoreOfficialListRow(row);
 }
 
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
