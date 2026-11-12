@@ -1,5 +1,7 @@
 # Phase 0 — Repository Audit & Safety Baseline
 
+> Historical baseline: this document describes the August 2026 Phase-0 state. For current runtime, routing and CI facts, use `ARCHITECTURE.md` and `docs/architecture/PROJECT-STATUS.md`. In current production, `/geospatial-map` is the canonical MapLibre GIS route and `/dap-map` is a compatibility redirect.
+
 Date: 2026-08-20  
 Baseline commit: `2a11b593338c17ae12d90ff70fc614c31cdccc85` (and subsequent main)
 
