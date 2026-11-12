@@ -267,13 +267,12 @@ function records(payload: unknown): JsonRecord[] {
 
 function mirrorEnabled(): boolean {
   const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
-  if (process.env.NODE_ENV === "test" && raw === undefined) return false;
-  return raw !== "0" && raw !== "false" && raw !== "off";
+  return raw === "1" || raw === "true" || raw === "on";
 }
 
-export function publicMirrorBaseUrl(): string {
+export function publicMirrorBaseUrl(): string | null {
   const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
-  return (configured || "https://eporcha.tech/api/dlrms").replace(/\/$/, "");
+  return configured ? configured.replace(/\/$/, "") : null;
 }
 
 export async function fetchStrictPublicMirrorRecord(
@@ -288,8 +287,10 @@ export async function fetchStrictPublicMirrorRecord(
   signal?: AbortSignal,
 ): Promise<JsonRecord | null> {
   if (!mirrorEnabled()) return null;
+  const baseUrl = publicMirrorBaseUrl();
+  if (!baseUrl) return null;
 
-  const url = new URL(`${publicMirrorBaseUrl()}/index-khatian/${encodeURIComponent(input.surveyKey)}`);
+  const url = new URL(`${baseUrl}/index-khatian/${encodeURIComponent(input.surveyKey)}`);
   url.searchParams.set("SURVEY", input.surveyKey);
   url.searchParams.set("JL_NUMBER_ID", String(input.jlNumberId));
   url.searchParams.set("KHATIAN_NO", input.khatianNo);

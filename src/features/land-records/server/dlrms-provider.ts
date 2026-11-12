@@ -16,21 +16,17 @@ const TRAILING_ELLIPSIS = /(?:,\s*)?(?:\.{3,}|…)+\s*$/u;
  * with "...". A same-shape public mirror (e.g. eporcha.tech/api/dlrms) may
  * return complete list fields (source api+database).
  *
- * Enabled by default so full public lists appear in UI/PDF (official rows stay
- * the baseline; enricher failures are ignored). Set DLRMS_ENRICH_ENABLED=0 to
- * force official-only truncated fields. Override base with DLRMS_ENRICH_BASE_URL.
+ * Disabled by default. A third-party/mirror source is queried only when the
+ * operator explicitly enables it and configures an approved base URL.
  */
 function enrichEnabled(): boolean {
-  const raw = process.env.DLRMS_ENRICH_ENABLED?.trim();
-  if (raw === "0" || raw === "false" || raw === "off") return false;
-  // Default ON: official gateway truncates; mirror restores complete public lists.
-  return true;
+  const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "on";
 }
 
 function enrichBaseUrl(): string {
   const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
-  if (configured) return configured.replace(/\/$/, "");
-  return "https://eporcha.tech/api/dlrms";
+  return configured ? configured.replace(/\/$/, "") : "";
 }
 
 type Stage = "auth" | "divisions" | "districts" | "upazilas" | "surveys" | "mouzas" | "khatians" | "khatian-details";

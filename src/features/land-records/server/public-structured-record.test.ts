@@ -11,11 +11,32 @@ describe("public structured khatian record helpers", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    process.env = { ...originalEnv, DLRMS_ENRICH_ENABLED: "1" };
+    process.env = {
+      ...originalEnv,
+      DLRMS_ENRICH_ENABLED: "1",
+      DLRMS_ENRICH_BASE_URL: "https://eporcha.tech/api/dlrms",
+    };
   });
 
   afterAll(() => {
     process.env = originalEnv;
+  });
+
+  it("does not contact a mirror unless enrichment and its base URL are explicitly configured", async () => {
+    delete process.env.DLRMS_ENRICH_ENABLED;
+    delete process.env.DLRMS_ENRICH_BASE_URL;
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as typeof fetch;
+
+    const record = await fetchStrictPublicMirrorRecord({
+      surveyKey: "BRS",
+      jlNumberId: 55,
+      khatianNo: "41",
+      id: 123,
+    });
+
+    expect(record).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("rejects mirror rows with mismatched ID, khatian number or JL", () => {

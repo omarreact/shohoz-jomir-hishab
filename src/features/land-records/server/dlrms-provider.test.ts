@@ -6,7 +6,7 @@ describe("DLRMS public land-record provider", () => {
     jest.resetModules();
     process.env = { ...originalEnv };
     delete process.env.DLRMS_ACCESS_TOKEN;
-    // Keep tests on official gateway only — enrich is on by default in production.
+    // Keep tests on the official gateway only; mirror enrichment is opt-in.
     process.env.DLRMS_ENRICH_ENABLED = "0";
     fetchMock = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
