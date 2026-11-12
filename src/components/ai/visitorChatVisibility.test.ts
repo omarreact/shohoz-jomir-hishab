@@ -1,13 +1,24 @@
 import { isVisitorChatHiddenOnRoute } from "./visitorChatVisibility";
 
 describe("visitor AI chat visibility", () => {
-  it.each(["/geospatial-map", "/geospatial-map/", "/geospatial-map/debug"])(
+  it.each([
+    "/geospatial-map",
+    "/geospatial-map/debug",
+    "/mouza-map",
+    "/mouza-map/export",
+    "/rajuk-test",
+    "/dap-map",
+  ])(
     "does not overlay the map workspace at %s",
     (path) => expect(isVisitorChatHiddenOnRoute(path)).toBe(true),
   );
 
-  it.each(["/", "/mouza-map", "/rajuk-test", "/geospatial-map-other", "/admin/ai-assistant", null])(
-    "preserves the assistant on non-geospatial routes %s",
+  it.each(["/", "/dlrms-khatian", "/faraez", "/blog"])(
+    "remains available outside map workspaces at %s",
     (path) => expect(isVisitorChatHiddenOnRoute(path)).toBe(false),
   );
+
+  it("handles a missing pathname safely", () => {
+    expect(isVisitorChatHiddenOnRoute(null)).toBe(false);
+  });
 });
