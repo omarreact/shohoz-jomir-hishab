@@ -31,7 +31,7 @@ describe("site access policy", () => {
     expect(result.pageAccess["/ms-test"]).toBe("super_admin");
   });
 
-  it("fails open (site stays online) when Firebase Admin is unavailable", async () => {
+  it("fails closed when Firebase Admin is unavailable and no trusted policy is cached", async () => {
     jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
       isFirebaseAdminReady: () => false,
       collections: {
@@ -47,12 +47,12 @@ describe("site access policy", () => {
     const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
     const result = await getSiteAccessPolicy({ fresh: true });
 
-    expect(result.maintenanceMode).toBe(false);
+    expect(result.maintenanceMode).toBe(true);
     expect(result.degraded).toBe(true);
     expect(result.reason).toBe("firebase-admin-unavailable");
   });
 
-  it("treats missing maintenance document as OFF (site stays online)", async () => {
+  it("fails closed when the maintenance document is missing", async () => {
     const maintenanceRef = { id: "maintenanceMode" };
     const pageAccessRef = { id: "pageAccess" };
 
@@ -81,8 +81,29 @@ describe("site access policy", () => {
     const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
     const result = await getSiteAccessPolicy({ fresh: true });
 
-    expect(result.maintenanceMode).toBe(false);
-    expect(result.degraded).toBe(false);
+    expect(result.maintenanceMode).toBe(true);
+    expect(result.degraded).toBe(true);
+    expect(result.reason).toBe("maintenance-policy-missing");
+  });
+
+  it("fails closed when the maintenance value is invalid", async () => {
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      collections: { settings: { doc: jest.fn((id: string) => ({ id })) } },
+      db: {
+        getAll: jest.fn(async () => [
+          { exists: true, data: () => ({ value: "unexpected" }) },
+          { exists: false, data: () => undefined },
+        ]),
+      },
+    }));
+
+    const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
+    const result = await getSiteAccessPolicy({ fresh: true });
+
+    expect(result.maintenanceMode).toBe(true);
+    expect(result.degraded).toBe(true);
+    expect(result.reason).toBe("maintenance-policy-invalid");
   });
 
   it("honors an enabled maintenance flag from Firestore", async () => {
@@ -123,6 +144,31 @@ describe("site access policy", () => {
     fail = true;
     const during = await getSiteAccessPolicy({ fresh: true });
     expect(during.maintenanceMode).toBe(true);
+    expect(during.degraded).toBe(true);
+    expect(during.reason).toBe("Firestore unavailable");
+  });
+
+  it("preserves a known open policy during a transient Firestore outage", async () => {
+    let fail = false;
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      collections: { settings: { doc: jest.fn((id: string) => ({ id })) } },
+      db: { getAll: jest.fn(async () => {
+        if (fail) throw new Error("Firestore unavailable");
+        return [
+          { exists: true, data: () => ({ value: "false" }) },
+          { exists: true, data: () => ({ rules: { "/": "public" } }) },
+        ];
+      }) },
+    }));
+    const { getSiteAccessPolicy } = await import("./siteAccessPolicy");
+    const before = await getSiteAccessPolicy({ fresh: true });
+    expect(before.maintenanceMode).toBe(false);
+    expect(before.degraded).toBe(false);
+
+    fail = true;
+    const during = await getSiteAccessPolicy({ fresh: true });
+    expect(during.maintenanceMode).toBe(false);
     expect(during.degraded).toBe(true);
     expect(during.reason).toBe("Firestore unavailable");
   });
