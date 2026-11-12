@@ -84,7 +84,6 @@ export default function MapLibreMap() {
   const [mapReady, setMapReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [vectorStatus, setVectorStatus] = useState("");
-  const [publicResultsOpen, setPublicResultsOpen] = useState(true);
   const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);
 
   identifyModeRef.current = identifyMode;
@@ -516,7 +515,6 @@ export default function MapLibreMap() {
       selectResult={selectResult}
       toast={toast}
       isAdvanced={isAdvanced}
-      publicResultsOpen={publicResultsOpen}
       routingCalculator={routingCalculator}
       validateAndRoute={validateAndRoute}
       activeDetails={activeDetails}
