@@ -40,6 +40,29 @@ describe("privileged authentication", () => {
     await expect(verifyAdminAuth(req)).rejects.toThrow("Firebase Admin unavailable");
     expect(verifyIdToken).toHaveBeenCalledWith("test-id-token", true);
   });
+  it("does not let LANDBD_AUTHENTICATED_FULL_ACCESS elevate a basic user to Admin", async () => {
+    process.env.LANDBD_AUTHENTICATED_FULL_ACCESS = "true";
+    const verifyIdToken = jest.fn(async () => ({
+      uid: "basic-user",
+      email: "user@example.com",
+      role: "User",
+    }));
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      auth: { verifyIdToken },
+      collections: { users: { doc: jest.fn(() => ({
+        get: jest.fn(async () => ({ exists: false })),
+      })) } },
+    }));
+
+    const { verifyAdminAuth } = await import("./serverAuth");
+    const req = new NextRequest("https://landbd.example/api/mouza-map/download", {
+      headers: { authorization: "Bearer member-token" },
+    });
+    await expect(verifyAdminAuth(req)).rejects.toThrow("Forbidden: Admin access required");
+    delete process.env.LANDBD_AUTHENTICATED_FULL_ACCESS;
+  });
+
   it("recognizes the owner UID after Firebase verifies a password token", async () => {
     const uid = "408LTqriBAPIMIe37pXPVehfPIe2";
     const verifyIdToken = jest.fn(async () => ({
