@@ -77,6 +77,80 @@ describe("DLRMS public land-record provider", () => {
     expect(String(fetchMock.mock.calls[2][0])).toContain("OWNER=%E0%A6%A8%E0%A6%AE%E0%A7%81%E0%A6%A8%E0%A6%BE");
   });
 
+  it("preserves field-level provenance when opt-in mirror enrichment expands a list row", async () => {
+    process.env.DLRMS_ENRICH_ENABLED = "1";
+    process.env.DLRMS_ENRICH_BASE_URL = "https://mirror.example/api/dlrms";
+
+    global.fetch = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "https://dlrms.land.gov.bd/") {
+        return new Response("<!doctype html>", {
+          status: 200,
+          headers: {
+            "set-cookie": "dlrms_app_token=public-token; expires=Wed, 01 Jan 2031 00:00:00 GMT; path=/",
+          },
+        });
+      }
+      if (url.startsWith("https://mirror.example/api/dlrms/index-khatian/BRS?")) {
+        expect(new Headers(init?.headers).get("Authorization")).toBeNull();
+        return Response.json({
+          data: {
+            items: [{
+              ID: 7940305,
+              KHATIAN_NO: "349",
+              OWNERS: "প্রথম মালিক, দ্বিতীয় মালিক",
+              DAGS: "1974, 1977",
+              GUARDIANS: "পিতা এক, পিতা দুই",
+              JL_NUMBER_ID: 382911,
+              MOUZA_ID: 71947,
+              TOTAL_LAND: "0.338",
+            }],
+          },
+        });
+      }
+      if (url.includes("/index-khatian/BRS?")) {
+        expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer public-token");
+        return Response.json({
+          data: {
+            items: [{
+              ID: 7940305,
+              KHATIAN_NO: "349",
+              OWNERS: "প্রথম মালিক,...",
+              DAGS: "1974,...",
+              GUARDIANS: "পিতা এক,...",
+              JL_NUMBER_ID: 382911,
+              MOUZA_ID: 71947,
+              TOTAL_LAND: "0.338",
+            }],
+            meta: { totalItems: 1, totalPages: 1 },
+          },
+        });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    }) as typeof fetch;
+
+    const { dlrmsLandRecordProvider: provider } = await import("./dlrms-provider");
+    const page = await provider.listKhatians({
+      surveyKey: "BRS",
+      jlNumberId: 382911,
+      khatianNo: "349",
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(page.items[0]).toMatchObject({
+      OWNERS: "প্রথম মালিক, দ্বিতীয় মালিক",
+      DAGS: "1974, 1977",
+      GUARDIANS: "পিতা এক, পিতা দুই",
+      LANDBD_MIRROR_ENRICHMENT: {
+        OWNERS: { official: "প্রথম মালিক,...", enriched: "প্রথম মালিক, দ্বিতীয় মালিক" },
+        DAGS: { official: "1974,...", enriched: "1974, 1977" },
+        GUARDIANS: { official: "পিতা এক,...", enriched: "পিতা এক, পিতা দুই" },
+      },
+    });
+    expect(page.items[0].LANDBD_MIRROR_ENRICHMENT?.TOTAL_LAND).toBeUndefined();
+  });
+
   it("preserves alternate BRS land-area keys in both search and detail responses", async () => {
     const originalFetch = global.fetch;
     global.fetch = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
