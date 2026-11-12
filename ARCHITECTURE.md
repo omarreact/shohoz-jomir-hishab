@@ -2,7 +2,7 @@
 
 **Branch:** `main`  
 **Stack:** Next.js App Router · TypeScript · Firebase Auth/Firestore · MapLibre · ArcGIS/RAJUK proxies  
-**Last updated:** 2026-08-31
+**Last updated:** 2026-11-12
 
 This document is the authoritative map of production domains, dependency rules, and invariants.  
 It extends the existing Phase 0/1 notes under `docs/architecture/`.
@@ -32,7 +32,7 @@ It extends the existing Phase 0/1 notes under `docs/architecture/`.
 
 | Domain | UI routes | Domain logic | External services |
 |--------|-----------|--------------|-------------------|
-| **Maps / GIS** | `/geospatial-map`, `/mouza-map`, `/dap-map`, `/rajuk-test` | `src/features/geospatial-map`, `src/features/maps`, `src/lib/gis` | `src/services/rajuk/*`, `/api/rajuk/*`, `/api/mouza-map/*` |
+| **Maps / GIS** | `/geospatial-map` (canonical), `/mouza-map`, `/dap-map` (redirect alias), `/rajuk-test` | `src/features/geospatial-map`, `src/features/maps`, `src/lib/gis` | `src/services/rajuk/*`, `/api/rajuk/*`, `/api/mouza-map/*` |
 | **Khatiyan** | `/khatiyan`, `/khatian` | `src/modules/khatiyan/*` | GIS bridge only |
 | **Faraez** | `/faraez` | `src/modules/faraez/*` | GIS bridge only |
 | **Land measurement** | `/land-measurement` | `src/modules/land/*` | none |
@@ -159,7 +159,8 @@ Cross-domain rule: a change under `src/features/geospatial-map` or `src/services
 |-------|--------|--------|
 | `/`, `/blog/*`, `/faq`, `/contact`, `/privacy`, `/terms` | Public | Platform / Blog |
 | `/khatiyan`, `/faraez`, `/land-measurement`, `/porcha` | Public tools | Domain calculators |
-| `/geospatial-map`, `/mouza-map`, `/dap-map` | Public maps | Maps |
+| `/geospatial-map`, `/mouza-map` | Public maps (subject to service/page policy) | Maps |
+| `/dap-map` | Permanent compatibility redirect to `/geospatial-map` | Maps |
 | `/login` | Public | Auth |
 | `/admin/*` | Staff (server-enforced) | Admin |
 | `/api/rajuk/*`, `/api/mouza-map/*` | Public proxy (rate-limited / token server-side) | Maps infra |
