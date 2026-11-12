@@ -33,19 +33,15 @@
   --radius-md: .7rem;
   --radius-sm: .55rem;
 
-  /* Script-aware typography:
-     - Inter owns Latin/English glyphs.
-     - Hind Siliguri owns primary Bangla UI glyphs.
-     - Noto Sans Bengali is the stable Bangla fallback and print/export face.
-     Browsers choose the next family per glyph when the first family has no
-     character for that script, so mixed Bangla + English stays natural. */
-  --font-english: var(--font-inter), "Segoe UI", Arial, sans-serif;
-  /* Keep the legacy report variable stable without another build-time Google-font fetch.
-     Hind Siliguri provides Bengali shaping; Kalpurush/Nirmala remain explicit report fallbacks. */
-  --font-noto-bengali: var(--font-hind-siliguri);
-  --font-bangla: var(--font-hind-siliguri), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", Arial, sans-serif;
-  --font-ui: var(--font-inter), var(--font-hind-siliguri), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", Arial, sans-serif;
-  --font-report: var(--font-inter), var(--font-noto-bengali), "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  /* Script-aware typography without build-time network font downloads.
+     Preserve the legacy font-variable contracts used across independent pages. */
+  --font-inter: "Segoe UI", Arial, sans-serif;
+  --font-hind-siliguri: var(--font-nikosh), "Nirmala UI", "Segoe UI", sans-serif;
+  --font-noto-bengali: var(--font-nikosh), "Nirmala UI", serif;
+  --font-english: var(--font-inter);
+  --font-bangla: var(--font-nikosh), "Nirmala UI", "Segoe UI", sans-serif;
+  --font-ui: var(--font-inter), var(--font-nikosh), "Nirmala UI", sans-serif;
+  --font-report: var(--font-nikosh), "Nirmala UI", serif;
   --font-sans: var(--font-ui);
 }
 
