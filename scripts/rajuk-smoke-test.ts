@@ -7,6 +7,7 @@ const REFERER = "https://masterplan.rajuk.gov.bd/";
 const ORIGIN = "https://masterplan.rajuk.gov.bd";
 const LAYER_MAUZA = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/1`;
 const LAYER_RS_PLOT = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/0`;
+const LAYER_MS_PLOT = `${SERVER}/rest/services/rajuk_db/Rajuk_dap_db/FeatureServer/5`;
 
 async function json(url: string, init?: RequestInit) {
   const response = await fetch(url, {
@@ -121,6 +122,55 @@ async function assertLayerQuery(layerUrl: string, token: string, label: string) 
   console.log(`[RAJUK] ${label}: ${result.data.features.length} feature(s).`);
 }
 
+async function assertPlotLayer(layerUrl: string, token: string, label: string, plotFields: string[]) {
+  const metadataUrl = new URL(layerUrl);
+  metadataUrl.searchParams.set("f", "json");
+  metadataUrl.searchParams.set("token", token);
+  const metadata = await json(metadataUrl.toString());
+  console.log(`[RAJUK] ${label} metadata HTTP ${metadata.response.status}`);
+  assert(metadata.response.ok, `${label} metadata HTTP ${metadata.response.status}`);
+  assert(!metadata.data?.error, `${label} metadata error: ${JSON.stringify(metadata.data?.error)}`);
+
+  const objectIdField = String(metadata.data?.objectIdField || "OBJECTID");
+  const query = new URL(`${layerUrl}/query`);
+  query.searchParams.set("f", "json");
+  query.searchParams.set("where", "1=1");
+  query.searchParams.set("outFields", "*");
+  query.searchParams.set("returnGeometry", "true");
+  query.searchParams.set("outSR", "4326");
+  query.searchParams.set("resultRecordCount", "1");
+  query.searchParams.set("token", token);
+
+  const result = await json(query.toString());
+  console.log(`[RAJUK] ${label} sample HTTP ${result.response.status}`);
+  assert(result.response.ok, `${label} query HTTP ${result.response.status}`);
+  assert(!result.data?.error, `${label} rejected: ${JSON.stringify(result.data?.error ?? result.data)}`);
+  assert(Array.isArray(result.data?.features) && result.data.features.length > 0, `${label} returned no sample features`);
+
+  const sample = result.data.features[0];
+  assert(sample?.attributes && typeof sample.attributes === "object", `${label} sample has no attributes`);
+  assert(sample?.geometry && typeof sample.geometry === "object", `${label} sample has no geometry`);
+  const plotValue = plotFields.map((field) => sample.attributes[field]).find((value) => value !== undefined && value !== null && String(value).trim());
+  assert(plotValue !== undefined, `${label} sample is missing expected plot fields: ${plotFields.join(", ")}`);
+
+  const objectId = sample.attributes[objectIdField];
+  assert(objectId !== undefined && objectId !== null, `${label} sample is missing ${objectIdField}`);
+  const exact = new URL(`${layerUrl}/query`);
+  exact.searchParams.set("f", "json");
+  exact.searchParams.set("where", `${objectIdField}=${Number(objectId)}`);
+  exact.searchParams.set("outFields", "*");
+  exact.searchParams.set("returnGeometry", "true");
+  exact.searchParams.set("outSR", "4326");
+  exact.searchParams.set("resultRecordCount", "2");
+  exact.searchParams.set("token", token);
+  const exactResult = await json(exact.toString());
+  assert(exactResult.response.ok, `${label} exact re-query HTTP ${exactResult.response.status}`);
+  assert(!exactResult.data?.error, `${label} exact re-query rejected: ${JSON.stringify(exactResult.data?.error ?? exactResult.data)}`);
+  assert(Array.isArray(exactResult.data?.features) && exactResult.data.features.length === 1, `${label} exact re-query did not resolve one feature`);
+  assert(exactResult.data.features[0]?.geometry, `${label} exact re-query lost geometry`);
+  console.log(`[RAJUK] ${label}: live plot + geometry + exact feature re-query verified.`);
+}
+
 async function main() {
   const auth = await getServerToken();
   console.log(`[RAJUK] Authentication source: ${auth.source}`);
@@ -129,9 +179,12 @@ async function main() {
   await assertLayerQuery(LAYER_MAUZA, auth.token, "FeatureServer/1");
 
   console.log("[RAJUK] Verifying RS plot layer (FeatureServer/0)...");
-  await assertLayerQuery(LAYER_RS_PLOT, auth.token, "FeatureServer/0");
+  await assertPlotLayer(LAYER_RS_PLOT, auth.token, "RS FeatureServer/0", ["rs_plot_no", "plot_no"]);
 
-  console.log("[RAJUK] SUCCESS: mauza + RS plot layers reachable with production-compatible auth.");
+  console.log("[RAJUK] Verifying MS plot layer (FeatureServer/5)...");
+  await assertPlotLayer(LAYER_MS_PLOT, auth.token, "MS FeatureServer/5", ["ms_plot_no", "plot_no"]);
+
+  console.log("[RAJUK] SUCCESS: mauza + RS + MS live plot geometry are reachable with production-compatible auth.");
 }
 
 main().catch((error) => {
