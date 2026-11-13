@@ -45,15 +45,6 @@ function buildFileName(khatian: KhatianDetails, surveyKey?: string): string {
   return parts.join("-") || "LandBD-Khatian";
 }
 
-function list(value: string | undefined | null): string[] {
-  if (!value?.trim()) return [];
-  return value
-    .replace(/(?:\.\.\.|…)\s*$/u, "")
-    .split(/[,،]/u)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export default function KhatianDetailsView({
   khatian,
   fullKhatian,
