@@ -128,6 +128,7 @@ export default function MouzaPorchaReportBuilder() {
   const autoDownloadRef = useRef(false);
   const handlePdfRef = useRef<(action: "preview" | "download") => Promise<void>>(async () => {});
 
+  const selectedDivision = divisions.find((item) => item.BBS_CODE === division);
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
   const selectedSurvey = surveys.find((item) => String(item.SURVEY_ID) === surveyId);
@@ -762,6 +763,7 @@ export default function MouzaPorchaReportBuilder() {
               halSabek={halSabek}
               includeHalSabek={includeHalSabek}
               expectedRecords={expectedRecords}
+              divisionName={selectedDivision?.NAME ?? ""}
               districtName={selectedDistrict?.NAME ?? ""}
               upazilaName={selectedUpazila?.NAME ?? ""}
               surveyName={selectedSurvey?.LOCAL_NAME ?? ""}
