@@ -1,4 +1,5 @@
 import type { KhatianDetails, KhatianIndex, KhatianMirrorEnrichment, KhatianPage, LandRecordProvider } from "../types";
+import { mirrorRecordMatchesBase } from "./public-structured-record";
 
 const DLRMS_HOME_URL = "https://dlrms.land.gov.bd/";
 const DLRMS_ORIGIN = "https://dlrms.land.gov.bd";
@@ -488,13 +489,26 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
       const enrichedRows = await fetchEnrichedKhatianList(input, signal);
       if (enrichedRows?.length) {
         try {
-          const enrichedItems = normalizeRows(
-            enrichedRows,
-            (row) => normalizeKhatian(row, { jlNumberId: input.jlNumberId }),
-            "khatians",
-          );
-          const byId = new Map(enrichedItems.map((row) => [row.ID, row]));
-          items = items.map((row) => mergeKhatianRowPreferFuller(row, byId.get(row.ID)));
+          const rawById = new Map<number, JsonRecord[]>();
+          for (const candidate of enrichedRows) {
+            const candidateId = optionalNumber(candidate, "ID", "id");
+            if (!candidateId) continue;
+            const bucket = rawById.get(candidateId) ?? [];
+            bucket.push(candidate);
+            rawById.set(candidateId, bucket);
+          }
+
+          items = items.map((official) => {
+            const candidate = rawById.get(official.ID)?.find((row) =>
+              mirrorRecordMatchesBase(official, row, input.surveyKey),
+            );
+            if (!candidate) return official;
+            const enriched = normalizeKhatian(candidate, {
+              jlNumberId: input.jlNumberId,
+              mouzaId: official.MOUZA_ID,
+            });
+            return mergeKhatianRowPreferFuller(official, enriched);
+          });
         } catch {
           // keep official items
         }
