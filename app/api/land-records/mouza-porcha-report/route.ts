@@ -37,10 +37,10 @@ export async function GET(request: Request) {
       pageSize: size,
     });
 
-    // The live public DLRMS mouza index is authoritative for identity/counts,
-    // but some Patira BRS owner/guardian/dag columns are compact. Reuse the
-    // registered LandBD reference dataset only when it strictly extends the
-    // official visible values without contradicting them.
+    // The live public DLRMS mouza index is authoritative for identity/counts.
+    // Any survey/mouza may use a registered LandBD reference dataset when the
+    // current public row is compact and the reference strictly extends the
+    // visible official values without contradicting them.
     const enriched = {
       ...data,
       items: data.items.map((item) =>
