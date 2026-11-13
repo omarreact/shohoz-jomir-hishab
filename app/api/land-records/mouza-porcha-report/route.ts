@@ -3,6 +3,7 @@ import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
+import { enrichPatiraBrsWithLandBdReference } from "@/src/features/land-records/server/landbd-reference-khatian";
 import { z } from "zod";
 
 const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
@@ -36,7 +37,18 @@ export async function GET(request: Request) {
       pageSize: size,
     });
 
-    return ok(KhatianPageSchema.parse(data));
+    // The live public DLRMS mouza index is authoritative for identity/counts,
+    // but some Patira BRS owner/guardian/dag columns are compact. Reuse the
+    // existing LandBD Patira reference row only when it strictly extends the
+    // official visible values without contradicting them.
+    const enriched = {
+      ...data,
+      items: data.items.map((item) =>
+        enrichPatiraBrsWithLandBdReference(item, surveyKey)?.record ?? item
+      ),
+    };
+
+    return ok(KhatianPageSchema.parse(enriched));
   } catch (error) {
     return providerError(error);
   }
