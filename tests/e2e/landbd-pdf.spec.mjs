@@ -19,8 +19,8 @@ function json(route, body, status = 200) {
 }
 
 async function mockLandRecordBook(page) {
-  await page.route("**/api/services/access?serviceId=mouza-porcha-report", (route) => json(route, {
-    serviceId: "mouza-porcha-report",
+  await page.route("**/api/services/access?serviceId=mouza-porcha", (route) => json(route, {
+    serviceId: "mouza-porcha",
     allowed: true,
     requiresLogin: false,
     enabled: true,
