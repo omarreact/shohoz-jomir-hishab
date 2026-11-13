@@ -114,7 +114,11 @@ function isMaintenanceEssentialPath(pathname: string): boolean {
 function securityResponseHeaders(requestId: string, pathname: string): Record<string, string> {
   // Browser PDF blobs inherit the viewer page's CSP. Keep reports same-origin
   // frameable for their local PDF viewer, without allowing external embedding.
-  const pdfViewerPage = pathname === "/dlrms-khatian" || pathname === "/mouza-porcha-report";
+  const pdfViewerPage =
+    pathname === "/dlrms-khatian" ||
+    pathname === "/namjari-khatian" ||
+    pathname === "/mouza-porcha-report" ||
+    pathname === "/mouza-dag-report";
   return {
     "x-request-id": requestId,
     "X-Content-Type-Options": "nosniff",
