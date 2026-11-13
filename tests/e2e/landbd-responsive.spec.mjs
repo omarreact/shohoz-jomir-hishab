@@ -1,7 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
-test.use({ baseURL, launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : undefined });
+test.use({
+  baseURL,
+  launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
+  } : undefined,
+});
 
 async function goto(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -38,8 +44,11 @@ test.describe("LandBD responsive navigation", () => {
     await opener.click();
     const dialog = page.getByRole("dialog", { name: "মোবাইল সাইডবার মেনু" });
     await expect(dialog).toBeVisible();
-    const section = dialog.locator('button[aria-expanded="false"]').first();
+    const section = dialog.locator('button[aria-controls="landbd-drawer-section-records"]');
     await expect(section).toBeVisible();
+    await expect(section).toHaveAttribute("aria-expanded", "true");
+    await section.click();
+    await expect(section).toHaveAttribute("aria-expanded", "false");
     await section.click();
     await expect(section).toHaveAttribute("aria-expanded", "true");
     await expect(dialog.locator("a[href]").first()).toBeVisible();
