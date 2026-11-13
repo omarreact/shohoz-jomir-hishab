@@ -55,15 +55,16 @@ export interface KhatianMirrorEnrichment {
 }
 
 export interface KhatianReferenceEnrichment {
-  source: "LANDBD_BUNDLED_PATIRA_REFERENCE";
-  dataset: string;
-  surveyKey: "BRS";
+  source: "LANDBD_BUNDLED_REFERENCE";
+  datasetId: string;
+  datasetPath: string;
+  surveyKey: string;
   jlNumberId: number;
   mouzaId: number;
   changedFields: Array<"OWNERS" | "GUARDIANS" | "DAGS" | "TOTAL_LAND">;
   /**
-   * Complete relative to the bundled LandBD reference row, not a claim that
-   * the current government public API publishes every field.
+   * Complete relative to the matched registered reference row only; this is
+   * never a claim that the current government public API published every field.
    */
   displayComplete: boolean;
 }
