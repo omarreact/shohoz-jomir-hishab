@@ -4,6 +4,7 @@ import path from "node:path";
 const nonConsumingRoutes=[
  "app/api/land-records/khatians/route.ts",
  "app/api/mouza-provider/browse/route.ts",
+ "app/api/mouza-map/catalogue/route.ts",
  "app/api/porcha/route.ts",
  "app/api/land-records/dag-map-area/route.ts",
  "app/api/land-records/dag-map-areas/route.ts",
