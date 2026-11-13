@@ -169,7 +169,7 @@ export default function MouzaPorchaDocument({
             </p>
           </div>
 
-          <footer className="report-book-footer">
+          <footer className="report-book-footer report-page-footer">
             <span>landbd.pincodeit.com · ভূমি রেকর্ড ও মৌজা ম্যাপ</span>
             <span>পৃষ্ঠা নং ১ / {toBanglaNumber(totalPages)}</span>
           </footer>
@@ -203,7 +203,7 @@ export default function MouzaPorchaDocument({
               />
             </div>
 
-            <footer className="report-book-footer">
+            <footer className="report-book-footer report-page-footer">
               <span>landbd.pincodeit.com · ভূমি রেকর্ড ও মৌজা ম্যাপ</span>
               <span>পৃষ্ঠা নং {toBanglaNumber(pageIndex + 2)} / {toBanglaNumber(totalPages)}</span>
             </footer>
