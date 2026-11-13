@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
-test.use({ baseURL });
+test.use({ baseURL, launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : undefined });
 
 async function goto(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });

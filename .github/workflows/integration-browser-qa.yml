@@ -36,10 +36,17 @@ jobs:
       - name: Install application dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install Chromium test runner without changing package files
+      - name: Install browser test runner without changing package files
+        shell: bash
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.56.1
-          npx playwright install --with-deps chromium
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "No system Chrome/Chromium executable is available on the runner." >&2
+            exit 1
+          fi
+          "$CHROME_BIN" --version
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
 
       - name: Production build
         shell: bash
