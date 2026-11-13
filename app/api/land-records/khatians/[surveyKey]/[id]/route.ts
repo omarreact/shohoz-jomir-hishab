@@ -1,6 +1,7 @@
 import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianDetailsSchema, idParam, khatianSearchText } from "@/src/features/land-records/schemas";
 import { reconstructKhatian } from "@/src/features/land-records/server/khatian-reconstruction";
+import { enrichKhatianDetailsWithReferenceDatasets } from "@/src/features/land-records/server/reference-khatian-resolver";
 import { providers } from "@/src/features/land-records/server/provider";
 import { ok, providerError } from "@/src/features/land-records/server/http";
 import type { KhatianPage } from "@/src/features/land-records/types";
@@ -91,8 +92,10 @@ export async function GET(request: Request, context: { params: Promise<{ surveyK
         dagVerified: Boolean(dagNumber && dagRows.length),
       },
     );
+    const referenceResolved =
+      enrichKhatianDetailsWithReferenceDatasets(rebuilt, surveyKey)?.record ?? rebuilt;
 
-    return ok(KhatianDetailsSchema.parse(rebuilt));
+    return ok(KhatianDetailsSchema.parse(referenceResolved));
   } catch (error) {
     return providerError(error);
   }
