@@ -116,7 +116,10 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     await expect(dialog).toBeVisible({ timeout: 45_000 });
     expect(Date.now() - previewStarted).toBeLessThan(45_000);
     await expect(dialog.locator('iframe[src^="blob:"]')).toHaveAttribute("src", /^blob:/);
-    const downloadLink = dialog.locator('a[download]');\n    await expect(downloadLink).toHaveCount(1);\n    await expect(downloadLink).toHaveAttribute("href", /^blob:/);\n    await expect(downloadLink).toHaveAttribute("download", /\\.pdf$/);
+    const downloadLink = dialog.locator('a[download]');
+    await expect(downloadLink).toHaveCount(1);
+    await expect(downloadLink).toHaveAttribute("href", /^blob:/);
+    await expect(downloadLink).toHaveAttribute("download", /\.pdf$/);
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   });
