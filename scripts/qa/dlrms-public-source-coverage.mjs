@@ -1,3 +1,4 @@
+import patiraReference from "../../src/modules/porcha/data/porcha.json" with { type: "json" };
 /**
  * Privacy-preserving, read-only official DLRMS public source QA.
  * Never log tokens, response bodies, owner/guardian names, or land amounts.
@@ -146,7 +147,8 @@ for(const target of TARGETS){
 
     if(target.survey==="BRS"&&target.khatianNo==="349"){
       let unfilteredCandidate=null;
-      for(let pageNo=1;pageNo<=12&&!unfilteredCandidate;pageNo++){
+      const officialKhatianNumbers=new Set();
+      for(let pageNo=1;pageNo<=12;pageNo++){
         const unfilteredUrl=new URL(API+"/index-khatian/"+target.survey);
         unfilteredUrl.searchParams.set("SURVEY",target.survey);
         unfilteredUrl.searchParams.set("JL_NUMBER_ID",String(jlNumberId));
@@ -154,8 +156,12 @@ for(const target of TARGETS){
         unfilteredUrl.searchParams.set("PAGE_SIZE","100");
         const unfiltered=await publicGet(unfilteredUrl,session.token);
         const unfilteredRows=unfiltered.data?records(unfiltered.data):[];
-        unfilteredCandidate=pickSample(unfilteredRows,target,jlNumberId)??null;
-        if(unfilteredCandidate){
+        for(const row of unfilteredRows){
+          const no=String(row.KHATIAN_NO??row.khatianNo??"").trim();
+          if(no)officialKhatianNumbers.add(no);
+        }
+        unfilteredCandidate??=pickSample(unfilteredRows,target,jlNumberId)??null;
+        if(unfilteredCandidate&&!outcome.unfilteredIdentityMatched){
           outcome.unfilteredPage=pageNo;
           outcome.unfilteredIdentityMatched=true;
           outcome.unfilteredFields=coverage(unfilteredCandidate);
@@ -163,6 +169,23 @@ for(const target of TARGETS){
         if(unfiltered.status!==200||unfilteredRows.length<100)break;
       }
       if(!unfilteredCandidate)outcome.unfilteredIdentityMatched=false;
+
+      const referenceNumbers=new Set(
+        patiraReference
+          .map((row)=>String(row.JOMIHUB??"").trim())
+          .filter(Boolean),
+      );
+      let overlap=0;
+      for(const no of referenceNumbers)if(officialKhatianNumbers.has(no))overlap++;
+      outcome.referenceScopeComparison={
+        officialKhatianCount:officialKhatianNumbers.size,
+        bundledReferenceCount:referenceNumbers.size,
+        overlapCount:overlap,
+        officialOnlyCount:officialKhatianNumbers.size-overlap,
+        referenceOnlyCount:referenceNumbers.size-overlap,
+        exactNumberSet:
+          officialKhatianNumbers.size===referenceNumbers.size&&overlap===referenceNumbers.size,
+      };
     }
     const detail=await publicGet(API+"/index-khatian/"+target.survey+"/"+id,session.token);
     outcome.detailStatus=detail.status;
