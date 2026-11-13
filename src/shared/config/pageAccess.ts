@@ -73,6 +73,13 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
+    id: "/namjari-khatian",
+    name: "নামজারি খতিয়ান",
+    description: "নামজারি খতিয়ানের মৌজাভিত্তিক ব্রাউজ, অনুসন্ধান ও বিস্তারিত রেকর্ড।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
     id: "/mouza-porcha-report",
     name: "মৌজা পর্চা রিপোর্ট",
     description: "মৌজাভিত্তিক খতিয়ান, মালিক, দাগ ও জমির তথ্যসহ রিপোর্ট তৈরি।",
