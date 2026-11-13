@@ -96,6 +96,15 @@ function findReference(khatianNo: string): RawReferenceRecord | null {
   return referenceRows().find((row) => normalizeNumberText(row.JOMIHUB) === wanted) ?? null;
 }
 
+function referenceEnabled(): boolean {
+  const configured = process.env.LANDBD_PATIRA_REFERENCE_ENABLED?.trim().toLowerCase();
+  if (configured === "false" || configured === "0" || configured === "off") return false;
+  // Avoid making unrelated unit fixtures depend on the bundled Patira dataset.
+  // Dedicated tests can explicitly enable it.
+  if (process.env.NODE_ENV === "test") return configured === "true" || configured === "1" || configured === "on";
+  return true;
+}
+
 export function isPatiraBrsReferenceScope(input: {
   surveyKey: string;
   jlNumberId: number;
@@ -110,6 +119,7 @@ export function enrichPatiraBrsWithLandBdReference(
   row: KhatianIndex,
   surveyKey: string,
 ): LandBdReferenceMatch | null {
+  if (!referenceEnabled()) return null;
   if (!isPatiraBrsReferenceScope({
     surveyKey,
     jlNumberId: row.JL_NUMBER_ID,
