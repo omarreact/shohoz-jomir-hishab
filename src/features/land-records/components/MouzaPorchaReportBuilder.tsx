@@ -571,8 +571,8 @@ export default function MouzaPorchaReportBuilder() {
                   onChange={(event) => setPdfVariant(event.target.value as MouzaKhatianBookVariant)}
                   options={[
                     { value: "book", label: "নতুন" },
-                    { value: "legacy", label: "পুরনো · রঙিন" },
-                    { value: "monochrome", label: "পুরনো · সাদা-কালো" },
+                    { value: "legacy", label: "রঙিন" },
+                    { value: "monochrome", label: "সাদা-কালো" },
                   ]}
                 />
                 <Select
