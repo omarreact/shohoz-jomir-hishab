@@ -31,6 +31,8 @@ export type NormalizedKhatianRecord = {
   sourceId: number;
   khatianNo: string;
   owners: NormalizedOwnerRow[];
+  /** Source guardian/relation rows, preserved even when they cannot be safely linked to one owner. */
+  guardians: string[];
   dags: NormalizedDagRow[];
   totalLandRaw: string;
   evidence: SourceEvidence[];
@@ -117,13 +119,20 @@ function sourceLooksPartial(value: unknown): boolean {
 function compactOwners(index: KhatianIndex): NormalizedOwnerRow[] {
   const owners = splitRecordList(index.OWNERS);
   const guardians = splitRecordList(index.GUARDIANS);
-  return owners.map((name, indexNo) => ({
-    occurrence: indexNo + 1,
-    name,
-    ...relationParts(guardians[indexNo] ?? (guardians.length === 1 ? guardians[0] : undefined)),
-    relationRaw: normalizeRecordText(guardians[indexNo] ?? (guardians.length === 1 ? guardians[0] : "")) || undefined,
-    source: "COMPACT_INDEX" as const,
-  }));
+  return owners.map((name, indexNo) => {
+    const relation = owners.length === guardians.length
+      ? guardians[indexNo]
+      : owners.length === 1
+        ? guardians[0]
+        : undefined;
+    return {
+      occurrence: indexNo + 1,
+      name,
+      ...relationParts(relation),
+      relationRaw: normalizeRecordText(relation) || undefined,
+      source: "COMPACT_INDEX" as const,
+    };
+  });
 }
 
 function compactDags(index: KhatianIndex): NormalizedDagRow[] {
@@ -242,6 +251,7 @@ function mergeDagEvidence(
 
 export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian): NormalizedKhatianRecord {
   const compactOwnerRows = compactOwners(index);
+  const compactGuardians = splitRecordList(index.GUARDIANS);
   const compactDagRows = compactDags(index);
   const structuredOwners = (full?.owners ?? [])
     .filter((owner) => owner.source !== "LISF_MOCK")
@@ -252,7 +262,6 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
   const owners = mergeOwnerEvidence(compactOwnerRows, structuredOwners);
   const dags = mergeDagEvidence(compactDagRows, structuredDags);
   const totalLandRaw = normalizeRecordText(full?.base?.TOTAL_LAND || index.TOTAL_LAND);
-  const compactGuardians = splitRecordList(index.GUARDIANS);
   const missingFields: NormalizedKhatianRecord["missingFields"] = [];
   if (!owners.length || sourceLooksPartial(index.OWNERS)) missingFields.push("owners");
   if (
@@ -274,6 +283,7 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
     sourceId: index.ID,
     khatianNo: normalizeRecordNumber(index.KHATIAN_NO),
     owners,
+    guardians: compactGuardians,
     dags,
     totalLandRaw,
     evidence: full?.evidence ?? [],
@@ -292,8 +302,9 @@ export function normalizedRecordMatches(record: NormalizedKhatianRecord, query: 
     record.khatianNo,
     record.totalLandRaw,
     ...record.owners.flatMap((owner) => [
-      owner.name, owner.father, owner.mother, owner.spouse, owner.guardian, owner.address,
+      owner.name, owner.father, owner.mother, owner.spouse, owner.guardian, owner.relationRaw, owner.address,
     ]),
+    ...record.guardians,
     ...record.dags.flatMap((dag) => [
       dag.dagNo, dag.landClass, dag.agriculturalType, dag.totalAreaRaw, dag.khatianAreaRaw,
     ]),
