@@ -448,7 +448,26 @@ export default function MapLibreMapViewV2({
 
         <div className="grid grid-cols-4 gap-1 border-y border-[var(--border-color)] bg-white px-2 py-2" role="tablist" aria-label="GIS ওয়ার্কস্পেস বিভাগ">
           {(["search", "layers", "basemap", "results"] as Tab[]).map((item) => (
-            <button key={item} type="button" role="tab" aria-selected={tab === item} onClick={() => setTab(item)}
+            <button
+              key={item}
+              id={`atlas-gis-tab-${item}`}
+              type="button"
+              role="tab"
+              aria-controls="atlas-gis-tab-panel"
+              aria-selected={tab === item}
+              tabIndex={tab === item ? 0 : -1}
+              onClick={() => setTab(item)}
+              onKeyDown={(event) => {
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                event.preventDefault();
+                const tabs: Tab[] = ["search", "layers", "basemap", "results"];
+                const index = tabs.indexOf(item);
+                const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+                  (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+                const next = tabs[nextIndex];
+                setTab(next);
+                requestAnimationFrame(() => document.getElementById(`atlas-gis-tab-${next}`)?.focus());
+              }}
               className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"].join(" ")}>
               {item === "search" ? "খুঁজুন" : item === "layers" ? "স্তর" : item === "basemap" ? "বেসম্যাপ" : "ফলাফল"}
               {item === "results" && results.length > 0 ? <span className="ml-1 text-[10px]">({bn(results.length,0)})</span> : null}
@@ -456,7 +475,7 @@ export default function MapLibreMapViewV2({
           ))}
         </div>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
+        <div id="atlas-gis-tab-panel" role="tabpanel" aria-labelledby={`atlas-gis-tab-${tab}`} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
           {tab === "search" ? (
             <>
               <RajukPlotFinder

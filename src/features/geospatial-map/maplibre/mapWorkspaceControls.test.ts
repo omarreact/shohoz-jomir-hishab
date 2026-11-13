@@ -19,6 +19,9 @@ describe("LandBD DAP-style map workspace UI consolidation", () => {
     expect(view).toContain('tab === "layers"');
     expect(view).toContain('tab === "basemap"');
     expect(view).toContain('role="tab"');
+    expect(view).toContain('role="tabpanel"');
+    expect(view).toContain('"ArrowLeft", "ArrowRight", "Home", "End"');
+    expect(view).toContain("tabIndex={tab === item ? 0 : -1}");
     expect(view).toContain("overflow-y-auto overscroll-contain");
     expect(view).not.toContain("RajukLayerSwitcher");
   });
