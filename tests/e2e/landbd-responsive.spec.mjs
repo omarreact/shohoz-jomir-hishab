@@ -1,9 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
 test.use({ baseURL });
 
-async function goto(page: Page, path: string) {
+async function goto(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(250);
 }
