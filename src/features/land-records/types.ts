@@ -128,6 +128,8 @@ export interface KhatianSearchInput {
   khatianNo?: string;
   owner?: string;
   dagNumber?: string;
+  /** One-box mouza search across khatian, dag, owner and guardian. */
+  query?: string;
 }
 
 export interface LandRecordProvider {
