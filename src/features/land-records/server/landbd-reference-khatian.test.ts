@@ -22,7 +22,7 @@ describe("LandBD Patira BRS bundled reference fallback", () => {
     KHATIAN_NO: "349",
     OWNERS: "দং মোহাম্মদ ইসলাম,...",
     GUARDIANS: "",
-    DAGS: "1974,...",
+    DAGS: "১৯৭৪,...",
     JL_NUMBER_ID: 382911,
     MOUZA_ID: 71947,
     TOTAL_LAND: "0.338",
