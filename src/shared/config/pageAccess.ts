@@ -80,6 +80,20 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
+    id: "/mouza-khatian-book",
+    name: "মৌজা ভিত্তিক খতিয়ান বই",
+    description: "মৌজাভিত্তিক খতিয়ান, মালিক, অভিভাবক, দাগ ও জমির পরিমাণসহ A4 বই।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
+    id: "/mouza-dag-report",
+    name: "মৌজা ভিত্তিক দাগ বই",
+    description: "মৌজার দাগ নম্বর অনুযায়ী সংশ্লিষ্ট খতিয়ান নম্বর group করা A4 বই।",
+    category: "খতিয়ান ও রেকর্ড",
+    defaultAccess: "public",
+  },
+  {
     id: "/mouza-porcha-report",
     name: "মৌজা পর্চা রিপোর্ট",
     description: "মৌজাভিত্তিক খতিয়ান, মালিক, দাগ ও জমির তথ্যসহ রিপোর্ট তৈরি।",
