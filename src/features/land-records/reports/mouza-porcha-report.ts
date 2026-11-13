@@ -1,5 +1,6 @@
 import type { HalSabekEntry } from "../full-khatian";
 import type { KhatianIndex } from "../types";
+import { normalizeKhatianRecord } from "../normalized-khatian";
 
 export type HalSabekReportEntry = {
   khatianNo: string;
@@ -16,6 +17,9 @@ export type MouzaReportRow = {
   guardians: string[];
   dags: string[];
   totalLandAcre: string;
+  completeness: "complete" | "partial" | "enriched";
+  missingFields: string[];
+  provenanceLabel: string;
   history: Array<{ previousDag: string; currentDag: string }>;
 };
 
@@ -90,15 +94,23 @@ export function buildMouzaReportRows(
   rows: KhatianIndex[],
   halSabek: HalSabekReportState,
 ): MouzaReportRow[] {
-  return rows.map((row) => ({
-    sourceId: row.ID,
-    khatianNo: normalizeReportText(row.KHATIAN_NO),
-    owners: splitReportList(row.OWNERS),
-    guardians: splitReportList(row.GUARDIANS),
-    dags: splitReportList(row.DAGS),
-    totalLandAcre: normalizeReportText(row.TOTAL_LAND),
-    history: cleanHistory(halSabek[row.KHATIAN_NO]?.mappings),
-  }));
+  return rows.map((row) => {
+    const normalized = normalizeKhatianRecord(row);
+    return {
+      sourceId: normalized.sourceId,
+      khatianNo: normalized.khatianNo,
+      owners: normalized.owners.map((owner) => owner.name),
+      guardians: normalized.owners
+        .map((owner) => owner.father || owner.mother || owner.spouse || owner.guardian || "")
+        .filter(Boolean),
+      dags: normalized.dags.map((dag) => dag.dagNo),
+      totalLandAcre: normalized.totalLandRaw,
+      completeness: normalized.completeness,
+      missingFields: normalized.missingFields,
+      provenanceLabel: normalized.provenanceLabel,
+      history: cleanHistory(halSabek[row.KHATIAN_NO]?.mappings),
+    };
+  });
 }
 
 /**
@@ -250,6 +262,9 @@ export function stableReportPayload(rows: MouzaReportRow[]): string {
       guardians: row.guardians,
       dags: row.dags,
       totalLandAcre: row.totalLandAcre,
+      completeness: row.completeness,
+      missingFields: row.missingFields,
+      provenanceLabel: row.provenanceLabel,
       history: row.history,
     })),
   );
