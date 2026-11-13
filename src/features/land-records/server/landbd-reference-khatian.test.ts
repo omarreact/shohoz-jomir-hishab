@@ -92,6 +92,7 @@ describe("LandBD Patira BRS bundled reference fallback", () => {
       MOUZA_NAME: "পাতিরা",
       SURVEY_ID: 7,
       SURVEY_NAME: "বি আর এস",
+      TOTAL_LAND: "0.338",
       PUBLIC_RECORD: {
         LANDBD_RECONSTRUCTION: { UPSTREAM_TRUNCATION_REMAINS: true },
       },
