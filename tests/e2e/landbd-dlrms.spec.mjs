@@ -142,13 +142,13 @@ test.describe("LandBD DLRMS browser data path", () => {
     await choose(page, "জেলা", "ঢাকা");
     await choose(page, "উপজেলা / থানা", "রূপগঞ্জ");
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
-    await choose(page, "মৌজা (JL নম্বর)", "110 · পাতিরা");
+    await choose(page, "মৌজা (JL নম্বর)", /^(?:110|১১০) · পাতিরা$/);
 
-    const row = page.locator("tbody tr").filter({ hasText: "349" });
+    const row = page.locator("tbody tr").filter({ hasText: /349|৩৪৯/ });
     await expect(row).toHaveCount(1);
     await expect(row).toContainText("পরীক্ষামূলক মালিক ১");
-    await expect(row).toContainText("1974");
-    await expect(row).toContainText("0.338");
+    await expect(row).toContainText(/1974|১৯৭৪/);
+    await expect(row).toContainText(/0\.338|০\.৩৩৮/);
 
     await row.getByRole("button", { name: "প্রিভিউ" }).click();
 
@@ -156,7 +156,7 @@ test.describe("LandBD DLRMS browser data path", () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("পরীক্ষামূলক মালিক ২").first()).toBeVisible();
     await expect(dialog.getByText("পরীক্ষামূলক অভিভাবক ২").first()).toBeVisible();
-    await expect(dialog.getByText("1977").first()).toBeVisible();
-    await expect(dialog.getByText("0.338").first()).toBeVisible();
+    await expect(dialog.getByText(/1977|১৯৭৭/).first()).toBeVisible();
+    await expect(dialog.getByText(/0\.338|০\.৩৩৮/).first()).toBeVisible();
   });
 });
