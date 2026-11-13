@@ -76,7 +76,11 @@ export async function POST(req: NextRequest) {
   try {
     // All verified Firebase members can establish a session. Admin routes and
     // privileged API handlers retain their own authoritative role checks.
-    const user = await verifyServerAuth(req, { checkRevoked: true, requireAdminBackend: true });
+    const isCloudflareWorker = process.env.LANDBD_PLATFORM === "cloudflare-workers";
+    const user = await verifyServerAuth(req, {
+      checkRevoked: !isCloudflareWorker,
+      requireAdminBackend: !isCloudflareWorker,
+    });
 
     const now = Math.floor(Date.now() / 1000);
     const exp = tokenExpiry(token) ?? now + MAX_COOKIE_AGE_SECONDS;
