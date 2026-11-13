@@ -1,7 +1,8 @@
 import type { MouzaReportRowSegment } from "../../reports/mouza-porcha-report";
 
-function MultiValueCell({ items }: { items: string[] }) {
+function MultiValueCell({ items, inline = false }: { items: string[]; inline?: boolean }) {
   if (!items.length) return <span className="report-empty">—</span>;
+  if (inline) return <span>{items.join(", ")}</span>;
   return (
     <span className="report-cell-list">
       {items.map((item, index) => (
@@ -28,6 +29,14 @@ function DagHistoryCell({ history }: { history: MouzaReportRowSegment["history"]
   );
 }
 
+function statusLabel(row: MouzaReportRowSegment): string {
+  return row.completeness === "complete"
+    ? "পূর্ণ"
+    : row.completeness === "enriched"
+      ? "সম্পূরক"
+      : "আংশিক";
+}
+
 export default function ReportTable({
   rows,
   showHistory,
@@ -35,7 +44,6 @@ export default function ReportTable({
   showGuardians,
   showDags,
   showLandArea,
-  startIndex,
 }: {
   rows: MouzaReportRowSegment[];
   showHistory: boolean;
@@ -43,18 +51,14 @@ export default function ReportTable({
   showGuardians: boolean;
   showDags: boolean;
   showLandArea: boolean;
-  startIndex: number;
 }) {
-  const numberLabels = ["১", "২", "৩", "৪", "৫", "৬", "৭", "৮"];
   const columns = [
-    { key: "serial", label: "ক্রম", weight: 6, visible: true },
-    { key: "khatian", label: "খতিয়ান নং", weight: 11, visible: true },
-    { key: "owners", label: "মালিকের নাম", weight: 24, visible: showOwners },
-    { key: "guardians", label: "অভিভাবক / সম্পর্ক", weight: 20, visible: showGuardians },
-    { key: "dags", label: "দাগ নং", weight: 14, visible: showDags },
-    { key: "history", label: "দাগ পরিবর্তন (সাবেক → হাল)", weight: 19, visible: showHistory },
-    { key: "landArea", label: "জমির পরিমাণ (একর)", weight: 10, visible: showLandArea },
-    { key: "status", label: "উৎস অবস্থা", weight: 12, visible: true },
+    { key: "khatian", label: "খতিয়ান নং", weight: 12, visible: true },
+    { key: "owners", label: "মালিক", weight: 26, visible: showOwners },
+    { key: "guardians", label: "পিতা/স্বামী/অভিভাবক", weight: 22, visible: showGuardians },
+    { key: "dags", label: "দাগ নং", weight: 28, visible: showDags },
+    { key: "history", label: "সাবেক → হাল", weight: 18, visible: showHistory },
+    { key: "landArea", label: "মোট জমি (একর)", weight: 12, visible: showLandArea },
   ].filter((column) => column.visible);
   const totalWeight = columns.reduce((sum, column) => sum + column.weight, 0);
 
@@ -62,29 +66,28 @@ export default function ReportTable({
     <table className={showHistory ? "report-table report-table-history" : "report-table"}>
       <colgroup>
         {columns.map((column) => (
-          <col
-            key={column.key}
-            style={{ width: `${((column.weight / totalWeight) * 100).toFixed(2)}%` }}
-          />
+          <col key={column.key} style={{ width: `${((column.weight / totalWeight) * 100).toFixed(2)}%` }} />
         ))}
       </colgroup>
       <thead>
-        <tr>
-          {columns.map((column) => <th key={column.key}>{column.label}</th>)}
-        </tr>
-        <tr className="report-column-numbers">
-          {columns.map((column, index) => <th key={column.key}>{numberLabels[index]}</th>)}
-        </tr>
+        <tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr>
       </thead>
       <tbody>
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <tr key={row.segmentKey} data-report-source-id={row.sourceId}>
             {columns.map((column) => {
-              if (column.key === "serial") {
-                return <td key={column.key} className="report-serial-number">{startIndex + index + 1}</td>;
-              }
               if (column.key === "khatian") {
-                return <td key={column.key} className="report-khatian-number">{row.khatianNo || "—"}</td>;
+                return (
+                  <td key={column.key} className="report-khatian-number">
+                    <strong>{row.khatianNo || "—"}</strong>
+                    <span
+                      className={`report-source-badge report-source-${row.completeness}`}
+                      title={row.missingFields.length ? `অসম্পূর্ণ: ${row.missingFields.join(", ")}` : row.provenanceLabel}
+                    >
+                      {statusLabel(row)}
+                    </span>
+                  </td>
+                );
               }
               if (column.key === "owners") {
                 return <td key={column.key}><MultiValueCell items={row.owners} /></td>;
@@ -93,22 +96,14 @@ export default function ReportTable({
                 return <td key={column.key}><MultiValueCell items={row.guardians} /></td>;
               }
               if (column.key === "dags") {
-                return <td key={column.key} className="report-dag-cell"><MultiValueCell items={row.dags} /></td>;
+                return <td key={column.key} className="report-dag-cell"><MultiValueCell items={row.dags} inline /></td>;
               }
               if (column.key === "history") {
                 return <td key={column.key} className="report-dag-cell"><DagHistoryCell history={row.history} /></td>;
               }
-              if (column.key === "landArea") {
-                return (
-                  <td key={column.key} className="report-land-area">
-                    {row.totalLandAcre ? row.totalLandAcre + " একর" : "—"}
-                  </td>
-                );
-              }
               return (
-                <td key={column.key} className="report-source-status">
-                  <strong>{row.completeness === "complete" ? "পূর্ণ" : row.completeness === "enriched" ? "সম্পূরক" : "আংশিক"}</strong>
-                  {row.missingFields.length ? <span className="report-cell-item">অসম্পূর্ণ: {row.missingFields.join(", ")}</span> : null}
+                <td key={column.key} className="report-land-area">
+                  {row.totalLandAcre ? row.totalLandAcre : "—"}
                 </td>
               );
             })}
@@ -118,4 +113,3 @@ export default function ReportTable({
     </table>
   );
 }
-
