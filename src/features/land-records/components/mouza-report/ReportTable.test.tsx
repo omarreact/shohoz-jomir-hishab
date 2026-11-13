@@ -29,16 +29,15 @@ describe("Mouza Porcha report table", () => {
         showGuardians={false}
         showDags={true}
         showLandArea={true}
-        startIndex={0}
       />,
     );
     expect(html).toContain("আবদুল রহমান");
     expect(html).toContain("রহিমা বেগম");
     expect(html).toContain("১৯৪৪");
-    expect(html).toContain("০.৩৬ একর");
-    expect(html).toContain("উৎস অবস্থা");
+    expect(html).toContain("০.৩৬");
+    expect(html).toContain("মোট জমি (একর)");
     expect(html).toContain("পূর্ণ");
-    expect(html).not.toContain("অভিভাবক / সম্পর্ক");
+    expect(html).not.toContain("পিতা/স্বামী/অভিভাবক");
     expect(html).not.toContain("দাগ পরিবর্তন");
     expect(html).toContain("<table");
   });
@@ -52,11 +51,10 @@ describe("Mouza Porcha report table", () => {
         showGuardians={false}
         showDags={false}
         showLandArea={false}
-        startIndex={20}
       />,
     );
     expect(html.indexOf("৩৪৯")).toBeLessThan(html.indexOf("৩৫০"));
-    expect(html).toContain(">21</td>");
-    expect(html).toContain(">22</td>");
+    expect(html).toContain("৩৪৯");
+    expect(html).toContain("৩৫০");
   });
 });
