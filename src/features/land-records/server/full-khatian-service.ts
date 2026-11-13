@@ -1,6 +1,6 @@
 import { FullKhatianSchema, type FullKhatian, type FullKhatianDag, type FullKhatianOwner, type KhatianTracking, type SourceEvidence } from "../full-khatian";
 import type { KhatianDetails, KhatianIndex, KhatianPage } from "../types";
-import { enrichPatiraBrsDetailsWithLandBdReference } from "./landbd-reference-khatian";
+import { enrichKhatianDetailsWithReferenceDatasets } from "./reference-khatian-resolver";
 import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
@@ -672,11 +672,11 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   }
   const preReferenceDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
 
-  const referenceMatch = enrichPatiraBrsDetailsWithLandBdReference(rebuilt, input.surveyKey);
+  const referenceMatch = enrichKhatianDetailsWithReferenceDatasets(rebuilt, input.surveyKey);
   if (referenceMatch) {
     rebuilt = referenceMatch.record;
     warnings.push(
-      "সরকারি DLRMS public row আংশিক/compact হওয়ায় Patira BRS-এর LandBD reference dataset থেকে অনুপস্থিত display field পূরণ করা হয়েছে। এটি বর্তমান সরকারি প্রত্যয়ন নয়; আইনি ব্যবহারের আগে সরকারি মূল নথির সঙ্গে যাচাই করুন।",
+      "সরকারি DLRMS public row আংশিক/compact হওয়ায় registered LandBD reference dataset থেকে অনুপস্থিত display field পূরণ করা হয়েছে। এটি বর্তমান সরকারি প্রত্যয়ন নয়; আইনি ব্যবহারের আগে সরকারি মূল নথির সঙ্গে যাচাই করুন।",
     );
   } else if (reconstructionStillPartial(rebuilt)) {
     warnings.push("DLRMS-এর upstream compact তালিকার কিছু অংশ এখনো truncated/আংশিক। LandBD কেবল উৎসে পাওয়া তথ্যই দেখাচ্ছে; অনুপস্থিত তথ্য অনুমান করে যোগ করা হয়নি।");
