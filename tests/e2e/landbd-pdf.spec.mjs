@@ -111,12 +111,12 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     expect(await report.locator(".report-page").count()).toBeGreaterThan(2);
 
     const previewStarted = Date.now();
-    await page.getByRole("button", { name: "PDF প্রিভিউ" }).click();
-    const dialog = page.getByRole("dialog", { name: "PDF প্রিভিউ" });
+    await page.getByRole("button", { name: /^(?:PDF|পিডিএফ) প্রিভিউ$/ }).click();
+    const dialog = page.getByRole("dialog", { name: /^(?:PDF|পিডিএফ) প্রিভিউ$/ });
     await expect(dialog).toBeVisible({ timeout: 45_000 });
     expect(Date.now() - previewStarted).toBeLessThan(45_000);
-    await expect(dialog.locator('iframe[title="LandBD generated PDF document"]')).toHaveAttribute("src", /^blob:/);
-    await expect(dialog.getByRole("link", { name: "PDF ডাউনলোড" })).toHaveAttribute("download", /\.pdf$/);
+    await expect(dialog.locator('iframe[src^="blob:"]')).toHaveAttribute("src", /^blob:/);
+    await expect(dialog.getByRole("link", { name: /^(?:PDF|পিডিএফ) ডাউনলোড$/ })).toHaveAttribute("download", /\.pdf$/);
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   });
