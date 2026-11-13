@@ -1,3 +1,4 @@
+import { SUPER_ADMIN_FIREBASE_UID } from "./soleAdmin";
 import { NextRequest } from "next/server";
 
 // Firebase Admin is mocked for this test; do not load ESM-only jose in Jest.
@@ -111,7 +112,7 @@ describe("privileged authentication", () => {
   });
 
   it("recognizes the owner UID after Firebase verifies a password token", async () => {
-    const uid = "408LTqriBAPIMIe37pXPVehfPIe2";
+    const uid = SUPER_ADMIN_FIREBASE_UID;
     const verifyIdToken = jest.fn(async () => ({
       uid, sub: uid, email: "owner@example.com",
       firebase: { sign_in_provider: "password" },
