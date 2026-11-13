@@ -1155,3 +1155,48 @@
     break-inside: avoid !important;
   }
 }
+
+
+        /* Khatian-book presentation variants derived from the source workflow:
+           new book, legacy color, and legacy monochrome. Data and pagination
+           remain identical; only print presentation changes. */
+        .report-variant-legacy .report-page {
+          --report-primary: #075f45;
+          --report-field: #0d8d5a;
+          --report-teal: #0b6f88;
+          --report-alert: #b92d43;
+          --report-gold: #d29b20;
+          border-color: #aacbbb;
+        }
+
+        .report-variant-legacy .report-table thead th {
+          background: #dcefe4 !important;
+          color: #0d3827 !important;
+          border-color: #9fc7b3 !important;
+        }
+
+        .report-variant-monochrome .report-page {
+          --report-primary: #111111;
+          --report-field: #333333;
+          --report-teal: #222222;
+          --report-alert: #111111;
+          --report-gold: #444444;
+          --report-ink: #111111;
+          --report-muted: #555555;
+          --report-border: #bdbdbd;
+          --report-canvas: #f5f5f5;
+          --report-mist: #eeeeee;
+          border-color: #a8a8a8;
+        }
+
+        .report-variant-monochrome .report-top-accent i,
+        .report-variant-monochrome .report-page-ribbon {
+          filter: grayscale(1) contrast(1.2);
+        }
+
+        .report-variant-monochrome .report-table thead th,
+        .report-variant-monochrome .report-summary-table td {
+          background: #eeeeee !important;
+          color: #111111 !important;
+          border-color: #bdbdbd !important;
+        }
