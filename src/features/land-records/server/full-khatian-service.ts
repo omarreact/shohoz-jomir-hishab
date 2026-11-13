@@ -841,7 +841,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   return FullKhatianSchema.parse({
     base: rebuilt,
-    owners,
+    owners: owners.map((owner, index) => ({ ...owner, occurrence: index + 1 })),
     dags,
     tracking,
     halSabek,
