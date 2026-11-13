@@ -25,8 +25,33 @@ describe("ePorcha-inspired LandBD product parity", () => {
     expect(builder).toContain("autoDownloadRef.current = true");
     expect(builder).not.toContain('label="PDF-এর ধরন"');
     expect(builder).not.toContain('label="প্রিন্ট পেজ"');
-    expect(table).toContain("উৎস অবস্থা");
+    expect(table).toContain("পিতা/স্বামী/অভিভাবক");
+    expect(table).toContain("মোট জমি (একর)");
+    expect(table).toContain("report-source-badge");
     expect(table).toContain('row.completeness === "complete"');
+  });
+
+  it("uses the dark five-column ePorcha-style browser for survey and book pages", () => {
+    const survey = source("src/features/land-records/components/SurveyKhatianSearch.tsx");
+    const book = source("src/features/land-records/components/MouzaPorchaReportBuilder.tsx");
+    const selector = source("src/features/land-records/components/LandRecordSelectionColumn.tsx");
+    for (const label of ["বিভাগ", "জেলা", "উপজেলা / থানা", "খতিয়ানের ধরন", "মৌজা (JL নম্বর)"]) {
+      expect(survey).toContain(label);
+      expect(book).toContain(label);
+    }
+    expect(selector).toContain("bg-[#101813]");
+    expect(survey).toContain("bg-[#0a110d]");
+    expect(book).toContain("bg-[#0a110d]");
+  });
+
+  it("matches the uploaded Mouza Khatian Book cover and compact record-table structure", () => {
+    const document = source("src/features/land-records/components/MouzaPorchaDocument.tsx");
+    const css = source("src/features/land-records/components/mouza-report/report-document.css");
+    expect(document).toContain("LAND RECORDS / MOUZA COLLECTION");
+    expect(document).toContain("মৌজা ভিত্তিক");
+    expect(document).toContain("report-cover-stats");
+    expect(document).toContain("report-book-header");
+    expect(css).toContain("ePorcha reference-book overrides");
   });
 
   it("integrates mutation-only QR/DCR verification on the dedicated Namjari page", () => {
