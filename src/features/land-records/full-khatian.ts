@@ -30,8 +30,15 @@ export const SourceEvidenceSchema = z.object({
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;
 
 export const FullKhatianOwnerSchema = z.object({
+  /** 1-based occurrence preserves repeated same-name owner rows. */
+  occurrence: z.number().int().positive().optional(),
   name: z.string(),
+  /** Legacy combined relation retained for backward compatibility. */
   fatherOrHusband: z.string().optional(),
+  father: z.string().optional(),
+  mother: z.string().optional(),
+  spouse: z.string().optional(),
+  guardian: z.string().optional(),
   address: z.string().optional(),
   /** Preserve the government representation exactly; never round legal shares. */
   shareRaw: z.string().optional(),
