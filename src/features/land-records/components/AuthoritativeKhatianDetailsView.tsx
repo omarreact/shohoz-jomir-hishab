@@ -4,6 +4,7 @@ import { useMemo, type RefObject } from "react";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
+import "./khatian-official.css";
 
 type Props = {
   khatian: KhatianDetails;
