@@ -100,9 +100,7 @@ export function buildMouzaReportRows(
       sourceId: normalized.sourceId,
       khatianNo: normalized.khatianNo,
       owners: normalized.owners.map((owner) => owner.name),
-      guardians: normalized.owners
-        .map((owner) => owner.relationRaw || owner.father || owner.mother || owner.spouse || owner.guardian || "")
-        .filter(Boolean),
+      guardians: normalized.guardians,
       dags: normalized.dags.map((dag) => dag.dagNo),
       totalLandAcre: normalized.totalLandRaw,
       completeness: normalized.completeness,
