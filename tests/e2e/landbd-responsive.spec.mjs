@@ -31,6 +31,14 @@ async function allowFreeGisAccess(page) {
   });
 }
 
+async function dismissLocationConsent(page) {
+  const consent = page.getByRole("dialog", { name: "লোকেশন অনুমতি" });
+  if (await consent.isVisible().catch(() => false)) {
+    await consent.getByRole("button", { name: "বন্ধ" }).click();
+    await expect(consent).toBeHidden();
+  }
+}
+
 test.describe("LandBD responsive navigation", () => {
   test("mobile uses only the drawer navigation", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -82,6 +90,7 @@ test.describe("LandBD GIS control geometry", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await allowFreeGisAccess(page);
     await goto(page, "/geospatial-map");
+    await dismissLocationConsent(page);
 
     const toggle = page.getByRole("button", { name: /খুঁজুন \/ স্তর|প্যানেল বন্ধ/ });
     await expect(toggle).toBeVisible();
@@ -105,6 +114,7 @@ test.describe("LandBD GIS control geometry", () => {
       await page.setViewportSize(viewport);
       await allowFreeGisAccess(page);
       await goto(page, "/geospatial-map");
+    await dismissLocationConsent(page);
 
       const panel = page.locator("#atlas-map-workspace-panel");
       const toolbar = page.getByLabel(/^(?:GIS|জিআইএস) মানচিত্র টুলবার$/);
@@ -118,7 +128,7 @@ test.describe("LandBD GIS control geometry", () => {
       if (!panelBox || !toolbarBox) throw new Error("GIS panel or toolbar has no layout box");
       expect(panelBox.x + panelBox.width).toBeLessThan(toolbarBox.x);
 
-      const tablist = page.getByRole("tablist", { name: "GIS ওয়ার্কস্পেস বিভাগ" });
+      const tablist = page.getByRole("tablist", { name: /^(?:GIS|জিআইএস) ওয়ার্কস্পেস বিভাগ$/ });
       await expect(tablist).toBeVisible();
       await expect(tablist.getByRole("tab")).toHaveCount(4);
     }
