@@ -9,6 +9,9 @@ const row: MouzaReportRowSegment = {
   guardians: [],
   dags: ["১৯৪৪", "১৯৪৫"],
   totalLandAcre: "০.৩৬",
+  completeness: "complete",
+  missingFields: [],
+  provenanceLabel: "DLRMS / সরকারি ভূমি রেকর্ড উৎস",
   history: [],
   segmentKey: "123",
   segmentIndex: 0,
@@ -33,6 +36,8 @@ describe("Mouza Porcha report table", () => {
     expect(html).toContain("রহিমা বেগম");
     expect(html).toContain("১৯৪৪");
     expect(html).toContain("০.৩৬ একর");
+    expect(html).toContain("উৎস অবস্থা");
+    expect(html).toContain("পূর্ণ");
     expect(html).not.toContain("অভিভাবক / সম্পর্ক");
     expect(html).not.toContain("দাগ পরিবর্তন");
     expect(html).toContain("<table");
