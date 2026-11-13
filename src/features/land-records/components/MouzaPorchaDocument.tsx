@@ -28,6 +28,7 @@ type Props = {
   halSabek: HalSabekReportState;
   includeHalSabek: boolean;
   expectedRecords: number | null;
+  divisionName: string;
   districtName: string;
   upazilaName: string;
   surveyName: string;
@@ -59,6 +60,7 @@ export default function MouzaPorchaDocument({
   halSabek,
   includeHalSabek,
   expectedRecords,
+  divisionName,
   districtName,
   upazilaName,
   surveyName,
@@ -138,7 +140,7 @@ export default function MouzaPorchaDocument({
             <h2>{mouzaName || "—"}</h2>
 
             <div className="report-cover-meta-grid">
-              <div><span>বিভাগ</span><strong>{rows[0]?.DIVISION_NAME || "—"}</strong></div>
+              <div><span>বিভাগ</span><strong>{divisionName || "—"}</strong></div>
               <div><span>জেলা</span><strong>{districtName || "—"}</strong></div>
               <div><span>উপজেলা / থানা</span><strong>{upazilaName || "—"}</strong></div>
               <div><span>মৌজা</span><strong>{mouzaName || "—"}</strong></div>
