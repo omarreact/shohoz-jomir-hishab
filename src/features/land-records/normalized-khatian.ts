@@ -142,12 +142,6 @@ function compactDags(index: KhatianIndex): NormalizedDagRow[] {
   }));
 }
 
-function ownerIdentity(row: NormalizedOwnerRow): string {
-  return [
-    row.name, row.father, row.mother, row.spouse, row.guardian, row.relationRaw, row.address, row.shareRaw,
-  ].map((value) => normalizeRecordText(value).toLocaleLowerCase("bn-BD")).join("|");
-}
-
 function dagIdentity(row: NormalizedDagRow): string {
   return [
     row.dagNo, row.landClass, row.agriculturalType, row.totalAreaRaw, row.khatianAreaRaw, row.remarks,
@@ -155,15 +149,13 @@ function dagIdentity(row: NormalizedDagRow): string {
 }
 
 function dedupeOwners(rows: NormalizedOwnerRow[]): NormalizedOwnerRow[] {
-  const seen = new Set<string>();
-  const output: NormalizedOwnerRow[] = [];
-  for (const row of rows) {
-    const key = ownerIdentity(row);
-    if (!row.name || seen.has(key)) continue;
-    seen.add(key);
-    output.push({ ...row, occurrence: output.length + 1 });
-  }
-  return output;
+  // Do not collapse identical names. In land records the second occurrence can
+  // be a distinct legal owner even when compact public fields omit the details
+  // that distinguish them. Upstream structured parsers may dedupe exact source
+  // duplicates where that is proven; this presentation model preserves rows.
+  return rows
+    .filter((row) => Boolean(normalizeRecordText(row.name)))
+    .map((row, index) => ({ ...row, occurrence: index + 1 }));
 }
 
 function dedupeDags(rows: NormalizedDagRow[]): NormalizedDagRow[] {
