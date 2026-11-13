@@ -64,7 +64,7 @@ describe("generic LandBD khatian reference resolver", () => {
     });
   });
 
-  it.each(["BRS", "RS", "SA", "CS", "BS", "DIARA", "PETY", "BDS"])(
+  it.each(["BRS", "RS", "SA", "CS", "BS", "DIARA", "PETY", "BDS", "MUTATION"])(
     "uses the same resolver for %s when a scoped dataset exists",
     (surveyKey) => {
       const row: KhatianIndex = {
