@@ -360,10 +360,11 @@ export async function proxy(request: NextRequest) {
     process.env.LANDBD_AUTHENTICATED_FULL_ACCESS === "true";
   let hasAuthenticatedFullAccess = false;
 
-  if (authenticatedFullAccess && userPayload) {
+  if (authenticatedFullAccess && rawToken) {
     try {
-      const member = await authoritativeUser();
-      // Full-access mode must not promote ordinary Firebase members to staff.
+      // Full-access is privileged and must use authoritative account-state and
+      // revocation checks. Signed staff claims alone are insufficient.
+      const member = await privilegedAdminUser();
       hasAuthenticatedFullAccess = isStaffRole(member.role);
     } catch {
       hasAuthenticatedFullAccess = false;
@@ -445,12 +446,14 @@ export async function proxy(request: NextRequest) {
     }
 
     if (required === "admin" || required === "super_admin") {
-      if (!userPayload) {
+      if (!rawToken) {
         return loginRedirect(request, securityHeaders);
       }
 
       try {
-        const user = await authoritativeUser();
+        // Admin-gated public pages require the same current-account and
+        // revoked-token verification as the control plane.
+        const user = await privilegedAdminUser();
         const permitted =
           required === "admin"
             ? isAdminRole(user.role)
@@ -459,7 +462,17 @@ export async function proxy(request: NextRequest) {
         if (!permitted) {
           return forbiddenRedirect(request, securityHeaders);
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof Error && error.message === "Firebase Admin unavailable") {
+          return new NextResponse("Privileged authentication is temporarily unavailable.", {
+            status: 503,
+            headers: {
+              ...securityHeaders,
+              "Cache-Control": "no-store",
+              "Content-Type": "text/plain; charset=utf-8",
+            },
+          });
+        }
         return loginRedirect(request, securityHeaders);
       }
     }
