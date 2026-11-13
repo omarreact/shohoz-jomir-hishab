@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import HeroBanner from "@/src/shared/ui/HeroBanner";
-import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
-import { Select } from "@/src/shared/ui/Select";
-import { Input } from "@/src/shared/ui/Input";
-import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, Eye, Info, Loader2, Search, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Eye, Loader2, Search, X } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { MUTATION_SURVEY_ID, SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
+import LandRecordSelectionColumn from "./LandRecordSelectionColumn";
 
-const empty = "-- নির্বাচন করুন --";
 export type SurveyKhatianSearchVariant = "survey" | "mutation";
 
 export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: SurveyKhatianSearchVariant }) {
@@ -42,10 +38,6 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
   const visibleSurveys = useMemo(
     () => surveys.filter((item) => isMutation ? item.SURVEY_ID === MUTATION_SURVEY_ID : item.SURVEY_ID !== MUTATION_SURVEY_ID),
     [surveys, isMutation],
-  );
-  const surveyOptions = useMemo(
-    () => visibleSurveys.map((item) => ({ value: item.SURVEY_ID, label: item.LOCAL_NAME })),
-    [visibleSurveys],
   );
 
   useEffect(() => { if (division) void loadDistricts(division); }, [division, loadDistricts]);
@@ -106,7 +98,6 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
     }
     setLocalError(null);
     setPage(targetPage);
-    setViewMode("search");
     void loadKhatians({
       surveyKey,
       jlNumberId: selectedMouza.ID,
@@ -146,129 +137,231 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
       districtBbsCode: selectedDistrict?.BBS_CODE,
       upazilaBbsCode: selectedUpazila?.BBS_CODE,
     });
-    requestAnimationFrame(() => document.getElementById("khatian-details-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const displayedError = localError || error;
   const locationReady = Boolean(division && district && upazila && surveyId && mouzaId);
 
   return (
-    <>
-      <HeroBanner
-        badge={isMutation ? "নামজারি রেকর্ড" : "ভূমি রেকর্ড"}
-        title={isMutation ? "নামজারি খতিয়ান ব্রাউজ" : "DLRMS খতিয়ান ব্রাউজ"}
-        description={isMutation
-          ? "মৌজা নির্বাচন করলেই নামজারি খতিয়ান তালিকা লোড হবে; একটি ঘর থেকেই খতিয়ান, দাগ, মালিক বা অভিভাবক খুঁজুন।"
-          : "বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করলেই পেজভিত্তিক পূর্ণ তালিকা; একটি ঘর থেকেই খতিয়ান, দাগ, মালিক বা অভিভাবক খুঁজুন।"}
-        pattern="grid"
-      />
-      <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8">
-        {viewMode === "search" ? (
-          <>
-            <div className="mb-5 rounded-[14px] border border-[color-mix(in_srgb,var(--primary)_18%,var(--border-color))] bg-[var(--brand-green-faint)] p-4">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="mt-0.5 shrink-0 text-[var(--primary)]" size={20} />
+    <div className="min-h-screen bg-[#0a110d] text-[#edf3ef]">
+      <section className="border-b border-[#1c2c24] bg-[#0c1510]">
+        <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-6 lg:px-8">
+          <span className="inline-flex rounded-full bg-[#123125] px-3 py-1 text-xs font-semibold text-[#2bc18a]">
+            {isMutation ? "নামজারি খতিয়ান" : "সার্ভে খতিয়ান সেবা"}
+          </span>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+            {isMutation ? "বিনামূল্যে নামজারি খতিয়ান অনুসন্ধান করুন" : "বিনামূল্যে অনলাইনে খতিয়ান অনুসন্ধান করুন"}
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-[#9eada4] md:text-base">
+            বিভাগ, জেলা, উপজেলা, {isMutation ? "নামজারি" : "সার্ভে"} ও মৌজা বেছে উপলভ্য খতিয়ান ব্রাউজ করুন।
+            একটি search box থেকেই খতিয়ান, দাগ, মালিক বা অভিভাবক খুঁজে পাওয়া যাবে।
+          </p>
+        </div>
+      </section>
+
+      <main className="mx-auto w-full max-w-6xl px-2 py-8 md:px-6 lg:px-8">
+        <section className="rounded-2xl border border-[#1d2d25] bg-[#111a15] p-3 shadow-[0_24px_80px_rgba(0,0,0,.18)] md:p-6">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-white md:text-2xl">অনলাইনে সার্ভে খতিয়ান অনুসন্ধান ও ডাউনলোড করুন</h2>
+            <p className="mt-2 text-sm leading-6 text-[#91a198]">
+              নিচের ধাপগুলো নির্বাচন করুন। মৌজা নির্বাচনের সঙ্গে সঙ্গে খতিয়ান তালিকা লোড হবে।
+            </p>
+          </div>
+
+          <div className="mb-5 rounded-xl border border-[#174333] bg-[#10271d] p-4 text-sm text-[#b8c8bf]">
+            <p className="font-semibold text-[#eaf3ed]">কিভাবে তথ্য ব্রাউজ করবেন?</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1 text-xs leading-5 md:text-sm">
+              <li>বিভাগ → জেলা → উপজেলা / থানা ক্রমানুসারে নির্বাচন করুন।</li>
+              <li>খতিয়ানের ধরন নির্বাচন করে মৌজা / JL নম্বর বাছাই করুন।</li>
+              <li>মৌজা নির্বাচন করলে তালিকা স্বয়ংক্রিয়ভাবে লোড হবে; search দিলে পুরো মৌজার ওপর filter হবে।</li>
+            </ol>
+          </div>
+
+          <div className="grid grid-cols-2 items-stretch gap-2 md:gap-3 lg:grid-cols-5">
+            <LandRecordSelectionColumn
+              label="বিভাগ"
+              placeholder="বিভাগের নাম লিখুন"
+              value={division}
+              onSelect={changeDivision}
+              options={divisions.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))}
+              loading={loading.divisions}
+            />
+            <LandRecordSelectionColumn
+              label="জেলা"
+              placeholder="জেলার নাম লিখুন"
+              value={district}
+              onSelect={changeDistrict}
+              options={districts.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))}
+              loading={loading.districts}
+              disabledMessage={!division ? "প্রথমে বিভাগ নির্বাচন করুন।" : undefined}
+            />
+            <LandRecordSelectionColumn
+              label="উপজেলা / থানা"
+              placeholder="উপজেলার নাম লিখুন"
+              value={upazila}
+              onSelect={changeUpazila}
+              options={upazilas.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))}
+              loading={loading.upazilas}
+              disabledMessage={!district ? "প্রথমে জেলা নির্বাচন করুন।" : undefined}
+            />
+            <LandRecordSelectionColumn
+              label="খতিয়ানের ধরন"
+              placeholder="খতিয়ানের ধরন লিখুন"
+              value={surveyId}
+              onSelect={changeSurvey}
+              options={visibleSurveys.map((item) => ({ value: String(item.SURVEY_ID), label: item.LOCAL_NAME }))}
+              loading={loading.surveys}
+              disabledMessage={!upazila ? "প্রথমে উপজেলা নির্বাচন করুন।" : undefined}
+            />
+            <LandRecordSelectionColumn
+              label="মৌজা (JL নম্বর)"
+              placeholder="মৌজা বা জে.এল. নং লিখুন"
+              value={mouzaId}
+              onSelect={(value) => { resetResults(); setMouzaId(value); }}
+              options={mouzas.map((item) => ({ value: String(item.ID), label: `${item.JL_NUMBER} · ${item.MOUZA_NAME}` }))}
+              loading={loading.mouzas}
+              disabledMessage={!surveyId ? "প্রথমে সার্ভে নির্বাচন করুন।" : undefined}
+              className="max-lg:col-span-2"
+            />
+          </div>
+
+          {khatians ? (
+            <section className="mt-5 rounded-xl border border-[#214033] bg-[#0e1712] p-3 md:p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="text-sm font-black">Mouza Browse Mode</p>
-                  <p className="mt-1 text-xs leading-6 text-[var(--muted-foreground)]">
-                    কোনো search term বাধ্যতামূলক নয়। মৌজা select করলেই প্রতি পেজে ২০টি করে রেকর্ড আসে। Search দিলে পুরো মৌজার khatian, dag, owner ও guardian field একসাথে filter হয়।
-                  </p>
+                  <h3 className="text-base font-semibold text-white">খতিয়ান তালিকা</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#88988f]">
+                    <span className="rounded-full bg-[#153326] px-2 py-1 text-[#2bc18a]">{selectedMouza?.MOUZA_NAME || "—"}</span>
+                    <span>JL {selectedMouza?.JL_NUMBER || "—"}</span>
+                    <span>·</span>
+                    <span>{selectedSurvey?.LOCAL_NAME || "—"}</span>
+                    {typeof khatians.total === "number" ? <><span>·</span><span>মোট ফলাফল: {khatians.total}</span></> : null}
+                  </div>
+                </div>
+
+                <div className="w-full md:max-w-md">
+                  <label className="mb-1 block text-xs font-medium text-[#91a198]">খতিয়ান, দাগ, মালিক বা অভিভাবক</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      onKeyDown={(event) => { if (event.key === "Enter") runSearch(1); }}
+                      placeholder="খতিয়ান / দাগ / মালিক / অভিভাবক"
+                      className="min-w-0 flex-1 rounded-lg border border-[#25382e] bg-[#0a110d] px-3 py-2 text-sm text-white outline-none placeholder:text-[#617168] focus:border-[#1fa775]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => runSearch(1)}
+                      disabled={loading.khatians || !mouzaId}
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-[#1fa775] px-3 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      {loading.khatians ? <Loader2 className="animate-spin" size={15} /> : <Search size={15} />}
+                      খুঁজুন
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>এলাকা নির্বাচন</CardTitle>
-                <CardDescription>বিভাগ, জেলা, উপজেলা, {isMutation ? "নামজারি ধরন" : "সার্ভে"} এবং মৌজা নির্বাচন করুন।</CardDescription>
-              </CardHeader>
-              <CardBody>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <Select label="বিভাগ" value={division} onChange={(e) => changeDivision(e.target.value)}
-                    options={[{ value: "", label: empty }, ...divisions.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]} loading={loading.divisions} />
-                  <Select label="জেলা" value={district} onChange={(e) => changeDistrict(e.target.value)}
-                    options={[{ value: "", label: empty }, ...districts.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]} loading={loading.districts} disabled={!division} />
-                  <Select label="উপজেলা" value={upazila} onChange={(e) => changeUpazila(e.target.value)}
-                    options={[{ value: "", label: empty }, ...upazilas.map((item) => ({ value: item.BBS_CODE, label: item.NAME }))]} loading={loading.upazilas} disabled={!district} />
-                  <Select label={isMutation ? "খতিয়ানের ধরন" : "সার্ভে"} value={surveyId} onChange={(e) => changeSurvey(e.target.value)}
-                    options={[{ value: "", label: empty }, ...surveyOptions]} loading={loading.surveys} disabled={!upazila || (isMutation && surveyOptions.length === 1)} />
-                  <Select label="মৌজা / JL" value={mouzaId} onChange={(e) => { resetResults(); setMouzaId(e.target.value); }}
-                    options={[{ value: "", label: empty }, ...mouzas.map((item) => ({ value: item.ID, label: `${item.MOUZA_NAME} — JL ${item.JL_NUMBER}` }))]}
-                    loading={loading.mouzas} disabled={!surveyId} />
+              {displayedError ? (
+                <div role="alert" className="mt-3 rounded-lg border border-red-900/60 bg-red-950/30 px-3 py-2 text-sm text-red-300">
+                  {displayedError}
                 </div>
+              ) : null}
 
-                <div className="mt-6 border-t border-[var(--border-color)] pt-6">
-                  <Input label="একসাথে খুঁজুন" value={query} onChange={(e) => setQuery(e.target.value)}
-                    placeholder="খতিয়ান / দাগ / মালিক / অভিভাবক" disabled={!mouzaId}
-                    onKeyDown={(e) => { if (e.key === "Enter") runSearch(1); }} />
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <button type="button" onClick={() => runSearch(1)} disabled={loading.khatians || !mouzaId}
-                      className="landbd-primary-button inline-flex min-h-11 items-center gap-2 px-5 py-2.5 text-sm font-black disabled:opacity-60">
-                      {loading.khatians ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
-                      {query.trim() ? "ফিল্টার করুন" : "পুরো মৌজা দেখুন"}
-                    </button>
-                    {query.trim() ? (
-                      <button type="button" onClick={() => { setQuery(""); setPage(1); if (selectedMouza && surveyKey) void loadKhatians({ surveyKey, jlNumberId: selectedMouza.ID, page: 1, pageSize: 20 }); }}
-                        className="landbd-secondary-button min-h-11 px-4 text-sm font-bold">ফিল্টার মুছুন</button>
-                    ) : null}
-                  </div>
-                </div>
-                {displayedError ? <div role="alert" className="mt-4 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{displayedError}</div> : null}
-              </CardBody>
-            </Card>
-
-            {khatians ? (
-              <section className="mt-6 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-black">{query.trim() ? "মৌজা ফিল্টার ফলাফল" : "মৌজার খতিয়ান তালিকা"}</h2>
-                  <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-                    {typeof khatians.total === "number" ? <span>{khatians.total}টি রেকর্ড ·</span> : null}
-                    <button type="button" onClick={() => goPage(page - 1)} disabled={page <= 1 || loading.khatians}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border disabled:opacity-40"><ChevronLeft size={16} /></button>
-                    <span>পেজ {page}</span>
-                    <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border disabled:opacity-40"><ChevronRight size={16} /></button>
-                  </div>
-                </div>
-                {khatians.items.length === 0 ? <div className="rounded-[14px] border border-dashed py-10 text-center text-sm text-[var(--muted-foreground)]">কোনো খতিয়ান পাওয়া যায়নি।</div> : (
-                  <div className="landbd-table-wrap">
-                    <table className="w-full min-w-[48rem] border-collapse text-sm">
-                      <thead><tr className="border-b bg-[var(--secondary)]/40 text-left text-xs text-[var(--muted-foreground)]">
-                        <th className="px-3 py-2.5">খতিয়ান নং</th><th className="px-3 py-2.5">মালিক</th><th className="px-3 py-2.5">অভিভাবক</th>
-                        <th className="px-3 py-2.5">দাগ</th><th className="px-3 py-2.5">মোট জমি</th><th className="px-3 py-2.5 text-right">অ্যাকশন</th>
-                      </tr></thead>
-                      <tbody>{khatians.items.map((item) => (
-                        <tr key={item.ID} className="border-b last:border-0">
-                          <td className="px-3 py-2.5 font-semibold">{item.KHATIAN_NO || "—"}</td>
-                          <td className="max-w-[14rem] break-words px-3 py-2.5">{item.OWNERS || "—"}</td>
-                          <td className="max-w-[14rem] break-words px-3 py-2.5">{item.GUARDIANS || "—"}</td>
-                          <td className="max-w-[10rem] break-words px-3 py-2.5">{item.DAGS || "—"}</td>
-                          <td className="px-3 py-2.5">{item.TOTAL_LAND || "—"}</td>
-                          <td className="px-3 py-2.5 text-right"><button type="button" onClick={() => showDetails(item)}
-                            className="inline-flex items-center gap-1.5 rounded-[10px] border px-2.5 py-1.5 text-xs font-bold text-[var(--primary)]"><Eye size={14} /> বিস্তারিত</button></td>
+              {khatians.items.length === 0 ? (
+                <div className="py-10 text-center text-sm text-[#76867d]">কোনো খতিয়ান পাওয়া যায়নি।</div>
+              ) : (
+                <div className="mt-4 overflow-x-auto rounded-lg border border-[#203129]">
+                  <table className="w-full min-w-[48rem] border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-[#0a110d] text-left text-xs text-[#8ea097]">
+                        <th className="px-3 py-3">খতিয়ান নম্বর</th>
+                        <th className="px-3 py-3">মালিক/দলিলধারী</th>
+                        <th className="px-3 py-3">দাগ নম্বর</th>
+                        <th className="px-3 py-3">মোট জমি (একর)</th>
+                        <th className="px-3 py-3 text-right">অ্যাকশন</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {khatians.items.map((item) => (
+                        <tr key={item.ID} className="border-t border-[#1e2d25] text-[#c2cec6] transition-colors hover:bg-[#132019]">
+                          <td className="px-3 py-3 font-semibold text-[#2bc18a]">{item.KHATIAN_NO || "—"}</td>
+                          <td className="max-w-[18rem] break-words px-3 py-3">{item.OWNERS || "—"}</td>
+                          <td className="max-w-[20rem] break-words px-3 py-3">{item.DAGS || "—"}</td>
+                          <td className="px-3 py-3">{item.TOTAL_LAND || "—"}</td>
+                          <td className="px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => showDetails(item)}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-[#315044] px-3 py-1.5 text-xs font-semibold text-[#c9d6cf] hover:border-[#1fa775] hover:text-[#2bc18a]"
+                            >
+                              <Eye size={13} /> প্রিভিউ
+                            </button>
+                          </td>
                         </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                )}
-                <div className="rounded-[12px] border px-4 py-3 text-xs leading-5 text-[var(--muted-foreground)]"><div className="flex items-start gap-2"><Info className="mt-0.5 shrink-0" size={15} />
-                  <span>Browse mode paginated। Unified search পুরো selected Mouza index সংগ্রহ করে khatian/dag/owner/guardian field-এর ওপর filter করে।</span></div></div>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <section id="khatian-details-panel" className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2 print:hidden">
-              <button type="button" onClick={() => { setViewMode("search"); setSelectedKhatian(null); }}
-                className="landbd-secondary-button inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold"><ArrowLeft size={16} /> ফিরে যান</button>
-              <a href={isMutation ? "/mouza-khatian-book?mode=mutation" : "/mouza-khatian-book"}
-                className="landbd-secondary-button inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-[var(--primary)]"><ExternalLink size={15} /> মৌজা খতিয়ান বই</a>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-end gap-2 text-xs text-[#84948b]">
+                <button type="button" onClick={() => goPage(page - 1)} disabled={page <= 1 || loading.khatians}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#273a30] disabled:opacity-30">
+                  <ChevronLeft size={15} />
+                </button>
+                <span>পৃষ্ঠা {page}</span>
+                <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#273a30] disabled:opacity-30">
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </section>
+          ) : (
+            <div className="mt-5 rounded-xl border border-dashed border-[#263a30] bg-[#0d1611] px-4 py-10 text-center text-sm text-[#718178]">
+              {locationReady ? "খতিয়ান তালিকা লোড হচ্ছে…" : "মৌজা নির্বাচন করলে খতিয়ান তালিকা এখানে দেখা যাবে।"}
             </div>
-            {selectedKhatian ? <KhatianDetailsView khatian={selectedKhatian} fullKhatian={selectedFullKhatian ?? undefined}
-              fullKhatianLoading={Boolean(loading.khatian)} fullKhatianFailed={!loading.khatian && Boolean(error)} surveyKey={surveyKey} /> : null}
+          )}
+
+          <section className="mt-5 rounded-xl border border-[#203129] bg-[#0b120e] p-4">
+            <h3 className="text-base font-semibold text-white">মৌজা ম্যাপ (PDF) প্রয়োজন?</h3>
+            <p className="mt-1 text-sm text-[#829188]">ম্যাপের উপজেলা, সার্ভে ও মৌজা নির্বাচন করে প্রিভিউ এবং PDF সংগ্রহ করুন।</p>
+            <a href="/mouza-map" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#1fa775] px-4 py-2 text-sm font-semibold text-white">
+              মৌজা ম্যাপ ডাউনলোড <ExternalLink size={14} />
+            </a>
           </section>
-        )}
+        </section>
       </main>
-    </>
+
+      {viewMode === "details" && selectedKhatian ? (
+        <div id="khatian-details-panel" className="fixed inset-0 z-[120] overflow-y-auto bg-[#020906]/85 p-3 backdrop-blur-sm md:p-6" role="dialog" aria-modal="true" aria-label="খতিয়ান বিস্তারিত">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-[#21342a] bg-[#111a15] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#21342a] px-4 py-3">
+              <div>
+                <p className="text-xs text-[#7f9086]">খতিয়ান নং</p>
+                <p className="text-2xl font-semibold text-white">{selectedKhatian.KHATIAN_NO}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setViewMode("search"); setSelectedKhatian(null); }}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#2a4035] text-[#92a299] hover:bg-[#17231d] hover:text-white"
+                aria-label="বন্ধ করুন"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-3 md:p-5">
+              <KhatianDetailsView
+                khatian={selectedKhatian}
+                fullKhatian={selectedFullKhatian ?? undefined}
+                fullKhatianLoading={Boolean(loading.khatian)}
+                fullKhatianFailed={!loading.khatian && Boolean(error)}
+                surveyKey={surveyKey}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
