@@ -1,6 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
+test.use({
+  baseURL,
+  acceptDownloads: true,
+  launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+  } : undefined,
+});
 
 function json(route, body, status = 200) {
   return route.fulfill({
