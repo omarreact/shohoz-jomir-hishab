@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Clock, Loader2, Send, MessageCircle } from "lucide-react";
 import { Button } from "@/src/shared/ui/button";
 import { Input } from "@/src/shared/ui/Input";
@@ -20,11 +20,7 @@ export default function BlogComments({ blogId }: { blogId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchComments();
-  }, [blogId]);
-
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const res = await fetch(`/api/comments?blogId=${encodeURIComponent(blogId)}`);
       if (!res.ok) throw new Error("Failed to fetch comments");
@@ -35,7 +31,11 @@ export default function BlogComments({ blogId }: { blogId: string }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [blogId]);
+
+  useEffect(() => {
+    void fetchComments();
+  }, [fetchComments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +52,7 @@ export default function BlogComments({ blogId }: { blogId: string }) {
       if (!res.ok) throw new Error("Failed to submit comment");
       const { comment } = await res.json();
 
-      setComments([comment, ...comments]);
+      setComments((current) => [comment, ...current]);
       setName("");
       setText("");
     } catch (error) {

@@ -10,8 +10,7 @@ import {
   mouzaPdfStorageProvider,
   putMouzaPdf,
 } from "@/src/modules/storage/mouzaPdfStorage";
-import { authenticatedFullAccessEnabled, verifyServerAuth } from "@/src/modules/auth/serverAuth";
-import { isAdminRole } from "@/src/modules/auth/roles";
+import { verifyAdminAuth } from "@/src/modules/auth/serverAuth";
 import {
   allowRateLimit,
   releaseDistributedLock,
@@ -85,9 +84,11 @@ async function uploadPdfToStorage(
 
 async function resolveIsAdmin(request: NextRequest): Promise<boolean> {
   try {
-    const user = await verifyServerAuth(request);
-    return authenticatedFullAccessEnabled() || isAdminRole(user.role);
+    await verifyAdminAuth(request);
+    return true;
   } catch {
+    // Privileged export capability fails closed when revocation/account-state
+    // checks or Firebase Admin are unavailable.
     return false;
   }
 }

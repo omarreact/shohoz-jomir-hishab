@@ -22,7 +22,7 @@ export const SourceEvidenceSchema = z.object({
   source: LandRecordSourceSchema,
   endpoint: z.string().optional(),
   official: z.boolean(),
-  access: z.enum(["public", "authorized-private", "mock"]),
+  access: z.enum(["public", "public-session", "authorized-private", "mock"]),
   fetchedAt: z.string(),
 });
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;

@@ -42,6 +42,18 @@ export interface Mouza {
   SURVEY_NAME_EN: string;
 }
 
+export interface KhatianMirrorFieldProvenance {
+  official: string;
+  enriched: string;
+}
+
+export interface KhatianMirrorEnrichment {
+  OWNERS?: KhatianMirrorFieldProvenance;
+  DAGS?: KhatianMirrorFieldProvenance;
+  GUARDIANS?: KhatianMirrorFieldProvenance;
+  TOTAL_LAND?: KhatianMirrorFieldProvenance;
+}
+
 export interface KhatianIndex {
   ID: number;
   KHATIAN_NO: string;
@@ -52,6 +64,12 @@ export interface KhatianIndex {
   MOUZA_ID: number;
   /** Present when DLRMS publishes the aggregate land amount in list results. */
   TOTAL_LAND?: string;
+  /**
+   * Field-level provenance for optional third-party list enrichment.
+   * Values remain visible for list UX, but downstream code can always recover
+   * the exact first-party compact value instead of misclassifying mirror data.
+   */
+  LANDBD_MIRROR_ENRICHMENT?: KhatianMirrorEnrichment;
 }
 
 export interface KhatianPage {

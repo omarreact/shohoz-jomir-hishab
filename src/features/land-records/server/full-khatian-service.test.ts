@@ -108,6 +108,10 @@ describe("FullKhatian service", () => {
       "DLRMS_PUBLIC",
       "DLRMS_HAL_SABEK",
     ]);
+    expect(result.evidence.map((item) => item.access)).toEqual([
+      "public-session",
+      "public-session",
+    ]);
     expect(result.warnings).toEqual([]);
     expect(fetchPublicHalSabek).toHaveBeenCalledWith(expect.objectContaining({
       surveyKey: "BRS",
@@ -221,6 +225,110 @@ describe("FullKhatian service", () => {
       ["সিরাজদ্দিন", "DLRMS_MIRROR"],
       ["অন্য মালিক", "DLRMS_MIRROR"],
     ]);
+  });
+
+  it("does not misclassify provider-level mirror list enrichment as official evidence", async () => {
+    const officialOwner = "প্রথম মালিক,...";
+    const enrichedOwner = "প্রথম মালিক, দ্বিতীয় মালিক";
+
+    jest.doMock("./provider", () => ({
+      providers: { landRecords: {
+        getKhatian: jest.fn(async () => ({
+          ...baseRecord,
+          OWNERS: enrichedOwner,
+          DAGS: "1, 2",
+          GUARDIANS: "",
+          PUBLIC_RECORD: {
+            ID: 8088264,
+            KHATIAN_NO: "12",
+            OWNERS: officialOwner,
+            DAGS: "1,...",
+            GUARDIANS: "",
+            LANDBD_LIST_EXPANSION: {
+              ID: 8088264,
+              KHATIAN_NO: "12",
+              OWNERS: enrichedOwner,
+              DAGS: "1, 2",
+              GUARDIANS: "",
+              JL_NUMBER_ID: 381831,
+              MOUZA_ID: 0,
+              TOTAL_LAND: "0.5088",
+              LANDBD_MIRROR_ENRICHMENT: {
+                OWNERS: { official: officialOwner, enriched: enrichedOwner },
+                DAGS: { official: "1,...", enriched: "1, 2" },
+              },
+            },
+          },
+        })),
+        listKhatians: jest.fn(async (input: { dagNumber?: string }) => ({
+          items: [{
+            ID: 8088264,
+            KHATIAN_NO: "12",
+            OWNERS: officialOwner,
+            DAGS: input.dagNumber ?? "1,...",
+            GUARDIANS: "",
+            JL_NUMBER_ID: 381831,
+            MOUZA_ID: 0,
+            TOTAL_LAND: "0.5088",
+          }],
+          page: 1,
+          pageSize: 100,
+          total: 1,
+          hasNextPage: false,
+        })),
+        listDivisions: jest.fn(),
+        listDistricts: jest.fn(),
+        listUpazilas: jest.fn(),
+      } },
+    }));
+    jest.doMock("./dlrms-public-extras", () => ({
+      DLRMS_PUBLIC_EXTRA_ENDPOINTS: { tracking: "tracking", halSabek: "hal-sabek" },
+      fetchPublicHalSabek: jest.fn(async () => []),
+      fetchPublicKhatianTracking: jest.fn(),
+    }));
+    jest.doMock("./lisf-provider", () => ({
+      getLisfProvider: () => ({ enrichKhatian: async () => ({
+        status: "disabled" as const,
+        owners: [],
+        dags: [],
+        referenceKhatians: [],
+        referenceDags: [],
+        deeds: [],
+      }) }),
+    }));
+    jest.doMock("./public-structured-record", () => ({
+      ...jest.requireActual("./public-structured-record"),
+      fetchStrictPublicMirrorRecord: jest.fn(async () => ({
+        ID: 8088264,
+        KHATIAN_NO: "12",
+        JL_NUMBER_ID: 381831,
+        OWNERS: enrichedOwner,
+        DAGS: "1,2",
+      })),
+    }));
+
+    const { getFullKhatian } = await import("./full-khatian-service");
+    const full = await getFullKhatian({
+      surveyKey: "BRS",
+      id: 8088264,
+      jlNumberId: 381831,
+      divisionBbsCode: "30",
+      districtBbsCode: "26",
+      upazilaBbsCode: "72",
+    });
+
+    expect(full.owners.map((row) => [row.name, row.source])).toEqual([
+      ["প্রথম মালিক", "DLRMS_PUBLIC"],
+      ["দ্বিতীয় মালিক", "DLRMS_MIRROR"],
+    ]);
+    expect(full.dags.map((row) => [row.dagNo, row.source])).toEqual([
+      ["1", "DLRMS_PUBLIC"],
+      ["2", "DLRMS_MIRROR"],
+    ]);
+    expect(full.evidence).toContainEqual(expect.objectContaining({
+      source: "DLRMS_MIRROR",
+      official: false,
+    }));
   });
 
   it("keeps two official structured namesakes classified as official, not mirror data", async () => {
@@ -533,4 +641,93 @@ describe("FullKhatian service", () => {
       expect.stringContaining("different khatian"),
     ]));
   });
+
+  it("never merges same-number tracking data from a different mouza", async () => {
+    const getKhatian = jest.fn(async () => ({
+      ...baseRecord,
+      OWNERS: "মূল মালিক",
+      DAGS: "1",
+      MOUZA_ID: 40031,
+    }));
+    const listKhatians = jest.fn(async () => ({
+      items: [{
+        ID: 8088264,
+        KHATIAN_NO: "12",
+        OWNERS: "মূল মালিক",
+        DAGS: "1",
+        GUARDIANS: "পিং কছিম উদ্দিন",
+        JL_NUMBER_ID: 381831,
+        MOUZA_ID: 40031,
+        TOTAL_LAND: "0.5088",
+      }],
+      page: 1,
+      pageSize: 100,
+      total: 1,
+      hasNextPage: false,
+    }));
+
+    jest.doMock("./provider", () => ({
+      providers: {
+        landRecords: {
+          getKhatian,
+          listKhatians,
+          listDivisions: jest.fn(),
+          listDistricts: jest.fn(),
+          listUpazilas: jest.fn(),
+        },
+      },
+    }));
+    jest.doMock("./dlrms-public-extras", () => ({
+      DLRMS_PUBLIC_EXTRA_ENDPOINTS: { tracking: "tracking", halSabek: "hal-sabek" },
+      fetchPublicHalSabek: jest.fn(async () => []),
+      fetchPublicKhatianTracking: jest.fn(),
+    }));
+    jest.doMock("./lisf-provider", () => ({
+      getLisfProvider: () => ({
+        enrichKhatian: async () => ({
+          status: "disabled" as const,
+          owners: [],
+          dags: [],
+          referenceKhatians: [],
+          referenceDags: [],
+          deeds: [],
+        }),
+      }),
+    }));
+    jest.doMock("./public-structured-record", () => ({
+      ...jest.requireActual("./public-structured-record"),
+      fetchStrictPublicMirrorRecord: jest.fn(async () => null),
+    }));
+
+    const { getFullKhatian } = await import("./full-khatian-service");
+    const result = await getFullKhatian({
+      surveyKey: "BRS",
+      id: 8088264,
+      jlNumberId: 381831,
+      mouzaId: 40031,
+      divisionBbsCode: "30",
+      districtBbsCode: "26",
+      upazilaBbsCode: "72",
+      tracking: {
+        displayCode: "same-number-other-mouza",
+        surveyId: 7,
+        khatianId: 99999999,
+        khatianNo: "12",
+        jlNumberId: 381831,
+        mouzaId: 99999,
+        owners: "ভুল মালিক",
+        dags: "999",
+        totalLandRaw: "99",
+        matchesBaseRecord: true,
+      },
+    });
+
+    expect(result.tracking?.matchesBaseRecord).toBe(false);
+    expect(result.base.OWNERS).toBe("মূল মালিক");
+    expect(result.base.DAGS).toBe("1");
+    expect(result.base.MOUZA_ID).toBe(40031);
+    expect(result.owners.map((item) => item.name)).not.toContain("ভুল মালিক");
+    expect(result.dags.map((item) => item.dagNo)).not.toContain("999");
+  });
+
 });

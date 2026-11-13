@@ -32,6 +32,15 @@ function sourceLabel(source: FullKhatian["evidence"][number]["source"]): string 
   }
 }
 
+function accessLabel(access: FullKhatian["evidence"][number]["access"]): string {
+  switch (access) {
+    case "public": return "পাবলিক";
+    case "public-session": return "পাবলিক অ্যাপ-সেশন";
+    case "authorized-private": return "অনুমোদিত";
+    case "mock": return "ডেভেলপমেন্ট";
+  }
+}
+
 function dlrmsAreaLabel(value: string | null | undefined): string {
   return formatAcre(acreFromDlrmsValue(value, "acre"));
 }
@@ -77,7 +86,7 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
       <Panel title="ডেটা উৎস ও পূর্ণতা">
         <p>
           {evidence.length
-            ? evidence.map((item) => `${sourceLabel(item.source)} · ${item.access === "public" ? "পাবলিক" : item.access === "authorized-private" ? "অনুমোদিত" : "ডেভেলপমেন্ট"}`).join(" | ")
+            ? evidence.map((item) => `${sourceLabel(item.source)} · ${accessLabel(item.access)}`).join(" | ")
             : "উৎস তথ্য পাওয়া যায়নি।"}
         </p>
         <p className="mt-2 text-[12px]">

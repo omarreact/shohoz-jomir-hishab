@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getSearchIndexingEnabled } from "@/src/modules/search/server/searchIndexingPolicy";
-import { Hind_Siliguri, Inter, Noto_Sans_Bengali } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 import "./landbd-theme.css";
@@ -17,27 +17,10 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/src/shared/providers/ThemeProvider";
 import { SITE_CONFIG } from "@/src/shared/config";
 
-/** English/Latin UI — used first so English labels, IDs and numbers render cleanly. */
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-/** Primary Bangla UI — clear at small sizes, common on BD web apps. */
-const hindSiliguri = Hind_Siliguri({
-  subsets: ["bengali", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-hind-siliguri",
-  display: "swap",
-});
-
-/** Stable Bangla fallback/export font, especially useful for printable records. */
-const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali", "latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-noto-bengali",
+/** Local Bengali face: removes build-time Google Font network dependency. */
+const nikosh = localFont({
+  src: "./public/fonts/Nikosh.ttf",
+  variable: "--font-nikosh",
   display: "swap",
 });
 
@@ -125,7 +108,7 @@ export default function RootLayout({
       lang="bn"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable}`}
+      className={nikosh.variable}
     >
       <body
         suppressHydrationWarning

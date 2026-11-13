@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
 
 export default function ForbiddenPage() {
+  const router = useRouter();
   const { user, isLoggedIn, loading, refresh } = useAuth();
   const [checking, setChecking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export default function ForbiddenPage() {
       return;
     }
     // Navigation is still gated server-side; refreshing never grants privileges.
-    window.location.assign("/admin");
+    router.push("/admin");
   };
 
   return (

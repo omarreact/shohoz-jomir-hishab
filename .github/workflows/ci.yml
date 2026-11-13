@@ -60,10 +60,9 @@ jobs:
           path: test-output.log
           retention-days: 3
 
-      # Next.js 16.1.6 Turbopack currently panics on this asset-heavy branding
-      # branch in GitHub Actions ("Dependency tracking is disabled...").
-      # Webpack is the supported deterministic production-build fallback here;
-      # Vercel remains free to use its normal Next.js production pipeline.
+      # Use Webpack as the deterministic CI production-build path for this
+      # Next.js 16 application. The project currently builds with Next 16.3.x;
+      # keep this comment version-neutral so it does not drift from package.json.
       - name: Production build
         if: ${{ always() && !cancelled() }}
         shell: bash

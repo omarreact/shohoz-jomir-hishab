@@ -72,7 +72,7 @@ describe("DLRMS public enrichment helpers", () => {
 
     const tracking = await fetchPublicKhatianTracking(
       "d416e64b-4015-4ad9-9d82-d0cb2f781eec",
-      { KHATIAN_NO: "37", SURVEY_ID: 1 },
+      { KHATIAN_NO: "37", SURVEY_ID: 1, JL_NUMBER_ID: 399879, MOUZA_ID: 71947 },
     );
 
     expect(tracking).toMatchObject({
@@ -99,6 +99,23 @@ describe("DLRMS public enrichment helpers", () => {
     );
 
     expect(tracking.matchesBaseRecord).toBe(false);
+  });
+
+  it("does not match tracking data from another JL or mouza", async () => {
+    const { fetchPublicKhatianTracking } = await import("./dlrms-public-extras");
+
+    const wrongJl = await fetchPublicKhatianTracking(
+      "d416e64b-4015-4ad9-9d82-d0cb2f781eec",
+      { KHATIAN_NO: "37", SURVEY_ID: 1, JL_NUMBER_ID: 1, MOUZA_ID: 71947 },
+    );
+    expect(wrongJl.matchesBaseRecord).toBe(false);
+
+    jest.resetModules();
+    const wrongMouza = await (await import("./dlrms-public-extras")).fetchPublicKhatianTracking(
+      "d416e64b-4015-4ad9-9d82-d0cb2f781eec",
+      { KHATIAN_NO: "37", SURVEY_ID: 1, JL_NUMBER_ID: 399879, MOUZA_ID: 1 },
+    );
+    expect(wrongMouza.matchesBaseRecord).toBe(false);
   });
 
   it("normalizes official public hal-sabek rows", async () => {

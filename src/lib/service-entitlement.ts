@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/src/modules/database/firebaseAdmin";
 import { NextRequest } from "next/server";
-import { verifyServerAuth } from "@/src/modules/auth/serverAuth";
+import { verifyAdminAuth, verifyServerAuth } from "@/src/modules/auth/serverAuth";
 import { isAdminRole } from "@/src/modules/auth/roles";
 import { getService,servicePrice,isServiceId,type ServiceId } from "@/src/lib/services-registry";
 export async function accessFor(serviceId:ServiceId,uid?:string){
@@ -17,7 +17,14 @@ export async function accessForRequest(req:Request,id:unknown){
  if(!isServiceId(id))return null;
  let uid:string|undefined;
  let admin=false;
- try{const normalized=req instanceof NextRequest?req:new NextRequest(req.url,{method:req.method,headers:req.headers});const user=await verifyServerAuth(normalized);uid=user.id;admin=isAdminRole(user.role);}catch{}
+ try{
+  const normalized=req instanceof NextRequest?req:new NextRequest(req.url,{method:req.method,headers:req.headers});
+  const user=await verifyServerAuth(normalized);
+  uid=user.id;
+  if(isAdminRole(user.role)){
+   try{await verifyAdminAuth(normalized);admin=true;}catch{admin=false;}
+  }
+ }catch{}
  if(admin){const config=await getService(id);return {serviceId:id,paid:config.paid,enabled:config.enabled,priceBdt:servicePrice(config),allowed:config.enabled,requiresLogin:false};}
  return accessFor(id,uid);
 }
@@ -38,7 +45,7 @@ export async function enforceServiceAccess(req:Request,id:ServiceId):Promise<Res
  if(service.usageLimit===null)return null;
  try{
   const normalized=req instanceof NextRequest?req:new NextRequest(req.url,{method:req.method,headers:req.headers});
-  const user=await verifyServerAuth(normalized,{requireAdminBackend:true});
+  const user=await verifyServerAuth(normalized,{requireAdminBackend:true,checkRevoked:true});
   if(isAdminRole(user.role))return null;
   const ref=db.collection("landbdEntitlements").doc(user.id+"_"+id);
   const admitted=await db.runTransaction(async tx=>{

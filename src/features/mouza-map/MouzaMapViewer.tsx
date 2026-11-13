@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { File, Folder, ChevronLeft, Download, ExternalLink, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/src/shared/ui/Card";
@@ -16,14 +16,37 @@ export default function MouzaMapViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const browse = async (id: string, nextPath: string, push = true) => {
-    setLoading(true); setError(null);
-    try { const { data } = await axios.get("/api/mouza-provider/browse", { params: { parentId: id, path: nextPath }, timeout: 10000 }); setEntries(data.entries); setParentId(id); setPath(nextPath); if (push) setHistory((h) => [...h, parentId]); }
-    catch (e) { setError(e instanceof Error ? e.message : "ফোল্ডার লোড করা যায়নি"); }
-    finally { setLoading(false); }
-  };
-  useEffect(() => { void browse("root", "0:/", false); }, []);
-  const openEntry = (entry: MouzaMapEntry) => entry.isFolder ? void browse(entry.id, `${path}${path.endsWith("/") ? "" : "/"}${entry.name}/`) : setSelected(entry);
+  const browse = useCallback(async (
+    id: string,
+    nextPath: string,
+    push = true,
+    previousParentId?: string,
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await axios.get("/api/mouza-provider/browse", {
+        params: { parentId: id, path: nextPath },
+        timeout: 10000,
+      });
+      setEntries(data.entries);
+      setParentId(id);
+      setPath(nextPath);
+      if (push && previousParentId) setHistory((h) => [...h, previousParentId]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ফোল্ডার লোড করা যায়নি");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void browse("root", "0:/", false);
+  }, [browse]);
+
+  const openEntry = (entry: MouzaMapEntry) => entry.isFolder
+    ? void browse(entry.id, `${path}${path.endsWith("/") ? "" : "/"}${entry.name}/`, true, parentId)
+    : setSelected(entry);
   const back = () => { const previous = history.at(-1); if (!previous) return; setHistory((h) => h.slice(0, -1)); void browse(previous, "0:/", false); };
 
   return <section>

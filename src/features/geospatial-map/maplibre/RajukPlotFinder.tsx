@@ -40,60 +40,98 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
   const [districtGuid, setDistrictGuid] = useState("");
   const [upazilaGuid, setUpazilaGuid] = useState("");
   const [mouzaGuid, setMouzaGuid] = useState("");
-  const [loadingLevel, setLoadingLevel] = useState<"district" | "upazila" | "mouza" | null>(null);
+  const [loadingLevel, setLoadingLevel] = useState<"district" | "upazila" | "mouza" | null>("district");
   const [lookupError, setLookupError] = useState("");
   const layerKind = kind === "ms" ? "ms" : "rs";
   const selectedUpazila = upazilas.find((item) => item.t_guid === upazilaGuid);
   const selectedMouza = mouzas.find((item) => item.m_guid === mouzaGuid);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const handleKindChange = (nextKind: PlotSearchOptions["kind"]) => {
+    const nextLayerKind = nextKind === "ms" ? "ms" : "rs";
+    const sourceChanged = nextLayerKind !== layerKind;
+    setKind(nextKind);
+    if (!sourceChanged) return;
     setDistrictGuid("");
+    setUpazilaGuid("");
+    setMouzaGuid("");
+    setDistricts([]);
+    setUpazilas([]);
+    setMouzas([]);
+    setLookupError("");
+    setLoadingLevel("district");
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setDistrictGuid(value);
     setUpazilaGuid("");
     setMouzaGuid("");
     setUpazilas([]);
     setMouzas([]);
-    setDistricts([]);
     setLookupError("");
-    setLoadingLevel("district");
-    void getOptions<RajukDistrict>(new URLSearchParams({ action: "districts", kind: layerKind }), controller.signal)
+    setLoadingLevel(value ? "upazila" : null);
+  };
+
+  const handleUpazilaChange = (value: string) => {
+    setUpazilaGuid(value);
+    setMouzaGuid("");
+    setMouzas([]);
+    setLookupError("");
+    setLoadingLevel(value ? "mouza" : null);
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void getOptions<RajukDistrict>(
+      new URLSearchParams({ action: "districts", kind: layerKind }),
+      controller.signal,
+    )
       .then(setDistricts)
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) setLookupError(error instanceof Error ? error.message : "জেলার তালিকা পাওয়া যায়নি");
+        if (!controller.signal.aborted) {
+          setLookupError(error instanceof Error ? error.message : "জেলার তালিকা পাওয়া যায়নি");
+        }
       })
-      .finally(() => { if (!controller.signal.aborted) setLoadingLevel(null); });
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingLevel(null);
+      });
     return () => controller.abort();
   }, [layerKind]);
 
   useEffect(() => {
+    if (!districtGuid) return;
     const controller = new AbortController();
-    setUpazilas([]);
-    setMouzas([]);
-    setUpazilaGuid("");
-    setMouzaGuid("");
-    if (!districtGuid) return () => controller.abort();
-    setLookupError("");
-    setLoadingLevel("upazila");
     void getOptions<RajukUpazila>(
-      new URLSearchParams({ action: "upazilas", kind: layerKind, d_guid: districtGuid }), controller.signal,
-    ).then(setUpazilas).catch((error: unknown) => {
-      if (!controller.signal.aborted) setLookupError(error instanceof Error ? error.message : "উপজেলার তালিকা পাওয়া যায়নি");
-    }).finally(() => { if (!controller.signal.aborted) setLoadingLevel(null); });
+      new URLSearchParams({ action: "upazilas", kind: layerKind, d_guid: districtGuid }),
+      controller.signal,
+    )
+      .then(setUpazilas)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setLookupError(error instanceof Error ? error.message : "উপজেলার তালিকা পাওয়া যায়নি");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingLevel(null);
+      });
     return () => controller.abort();
   }, [districtGuid, layerKind]);
 
   useEffect(() => {
+    if (!upazilaGuid) return;
     const controller = new AbortController();
-    setMouzas([]);
-    setMouzaGuid("");
-    if (!upazilaGuid) return () => controller.abort();
-    setLookupError("");
-    setLoadingLevel("mouza");
     void getOptions<RajukMauza>(
-      new URLSearchParams({ action: "mouzas", kind: layerKind, t_guid: upazilaGuid }), controller.signal,
-    ).then(setMouzas).catch((error: unknown) => {
-      if (!controller.signal.aborted) setLookupError(error instanceof Error ? error.message : "মৌজার তালিকা পাওয়া যায়নি");
-    }).finally(() => { if (!controller.signal.aborted) setLoadingLevel(null); });
+      new URLSearchParams({ action: "mouzas", kind: layerKind, t_guid: upazilaGuid }),
+      controller.signal,
+    )
+      .then(setMouzas)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setLookupError(error instanceof Error ? error.message : "মৌজার তালিকা পাওয়া যায়নি");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingLevel(null);
+      });
     return () => controller.abort();
   }, [upazilaGuid, layerKind]);
 
@@ -123,20 +161,20 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label htmlFor="rajuk-search-kind" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">জরিপ স্তর</label>
-          <select id="rajuk-search-kind" className={fieldClass} value={kind} onChange={(event) => setKind(event.target.value as PlotSearchOptions["kind"])}>
+          <select id="rajuk-search-kind" className={fieldClass} value={kind} onChange={(event) => handleKindChange(event.target.value as PlotSearchOptions["kind"])}>
             <option value="rs">RS</option><option value="ms">MS</option><option value="all">RS + MS</option>
           </select>
         </div>
         <div>
           <label htmlFor="rajuk-search-district" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">জেলা</label>
-          <select id="rajuk-search-district" className={fieldClass} value={districtGuid} onChange={(event) => setDistrictGuid(event.target.value)}>
+          <select id="rajuk-search-district" className={fieldClass} value={districtGuid} onChange={(event) => handleDistrictChange(event.target.value)}>
             <option value="">সব জেলা</option>
             {districts.map((item) => <option key={item.d_guid} value={item.d_guid}>{item.m_district}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="rajuk-search-upazila" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">থানা / উপজেলা</label>
-          <select id="rajuk-search-upazila" className={fieldClass} value={upazilaGuid} disabled={!districtGuid} onChange={(event) => setUpazilaGuid(event.target.value)}>
+          <select id="rajuk-search-upazila" className={fieldClass} value={upazilaGuid} disabled={!districtGuid} onChange={(event) => handleUpazilaChange(event.target.value)}>
             <option value="">উপজেলা নির্বাচন</option>
             {upazilas.map((item) => <option key={item.t_guid} value={item.t_guid}>{item.upazila_ps}</option>)}
           </select>

@@ -71,8 +71,9 @@ const emptyAddress = (): NidAddress => ({
 function normalizeAddress(value: unknown): NidAddress {
   const source = asRecord(value);
   if (!source) {
-    const addressLine = firstText(value);
-    return { ...emptyAddress(), addressLine };
+    const address = emptyAddress();
+    address.addressLine = firstText(value);
+    return address;
   }
 
   return {

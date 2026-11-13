@@ -16,37 +16,94 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Probe anonymous government discovery API (no token, no PII)
+      - name: Probe official DLRMS application-session discovery flow (no citizen token, no PII)
         shell: bash
         run: |
           node <<'NODE'
+          const home = "https://dlrms.land.gov.bd/";
           const base = "https://gateway.dlrms.land.gov.bd/core-api/api/public";
-          const endpoints = ["/config/app-access", "/surveys?ROW_STATUS=1"];
-          let failed = false;
-          for (const path of endpoints) {
-            try {
+          const timeout = (ms) => AbortSignal.timeout(ms);
+
+          function setCookies(headers) {
+            return typeof headers.getSetCookie === "function"
+              ? headers.getSetCookie()
+              : (headers.get("set-cookie") ? [headers.get("set-cookie")] : []);
+          }
+
+          function cookieValue(headers, name) {
+            const pattern = new RegExp(`(?:^|[,;]\\s*)${name}=([^;]+)`);
+            for (const header of headers) {
+              const match = header.match(pattern);
+              if (match?.[1]) return match[1].trim();
+            }
+            return null;
+          }
+
+          async function main() {
+            const bootstrap = await fetch(home, {
+              cache: "no-store",
+              headers: {
+                Accept: "text/html",
+                "User-Agent": "LandBD-CI-ReadOnly/1.0",
+              },
+              signal: timeout(15000),
+              redirect: "follow",
+            });
+
+            if (!bootstrap.ok) {
+              throw new Error(`DLRMS application-session bootstrap failed (HTTP ${bootstrap.status})`);
+            }
+
+            const token = cookieValue(setCookies(bootstrap.headers), "dlrms_app_token");
+            if (!token) {
+              throw new Error("DLRMS did not issue dlrms_app_token to the read-only application session");
+            }
+
+            // Never print cookie/token values. Only metadata and response status are logged.
+            const endpoints = [
+              "/divisions?ROW_STATUS=1",
+              "/districts?ROW_STATUS=1",
+            ];
+
+            for (const path of endpoints) {
               const response = await fetch(base + path, {
-                headers: { Accept: "application/json" },
-                signal: AbortSignal.timeout(12000),
+                cache: "no-store",
+                headers: {
+                  Accept: "application/json",
+                  Authorization: `Bearer ${token}`,
+                  Origin: "https://dlrms.land.gov.bd",
+                  Referer: home,
+                  "User-Agent": "LandBD-CI-ReadOnly/1.0",
+                },
+                signal: timeout(15000),
                 redirect: "error",
               });
+
               const type = response.headers.get("content-type") || "";
-              let validJson = false;
-              if (response.ok && type.includes("json")) {
-                const payload = await response.json();
-                validJson = Boolean(payload && typeof payload === "object");
+              if (!response.ok) {
+                console.error(path + ": HTTP " + response.status +
+                  ", content-type=" + type.split(";")[0]);
+                throw new Error("DLRMS application-session discovery request failed");
               }
-              // Metadata only. Never log response bodies, cookies, tokens or citizen data.
+
+              if (!type.includes("json")) {
+                throw new Error(path + ": DLRMS returned non-JSON content");
+              }
+
+              const payload = await response.json();
+              if (!payload || typeof payload !== "object") {
+                throw new Error(path + ": DLRMS returned an invalid JSON payload");
+              }
+
               console.log(path + ": HTTP " + response.status +
-                ", json=" + validJson + ", content-type=" + type.split(";")[0]);
-              if (!response.ok || !validJson) failed = true;
-            } catch (error) {
-              console.log(path + ": NETWORK_ERROR " + (error?.name || "unknown"));
-              failed = true;
+                ", json=true, content-type=" + type.split(";")[0]);
             }
+
+            console.log("PASS: official DLRMS application-session discovery flow is readable.");
           }
-          if (failed) {
-            console.error("Public unauthenticated DLRMS smoke failed or is inaccessible.");
+
+          main().catch((error) => {
+            console.error(error instanceof Error ? error.message : String(error));
             process.exitCode = 1;
-          }
+          });
           NODE

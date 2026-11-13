@@ -241,6 +241,14 @@ function downloadCanvas(canvas: HTMLCanvasElement, fileName: string) {
 export default function RajukTestPage() {
   const [mode, setMode] = useState<PlotMode>("rs");
   const loc = useAddressCascade(mode);
+  const {
+    dGuid,
+    tGuid,
+    mauzaId,
+    selectedMouza,
+    selectedUpazila,
+    setError: setLocationError,
+  } = loc;
   const { isLoggedIn } = useAuth();
   const [plots, setPlots] = useState<RajukPlotFeature[]>([]);
   const [plotsLoaded, setPlotsLoaded] = useState(false);
@@ -266,21 +274,21 @@ export default function RajukTestPage() {
     setPlotInput("");
     setSearchError("");
     setLastRequestUrl("");
-  }, [mode, loc.dGuid, loc.tGuid, loc.mauzaId]);
+  }, [mode, dGuid, tGuid, mauzaId]);
 
   const loadRsPlots = useCallback(async () => {
-    if (!loc.selectedMouza || !loc.selectedUpazila) return;
+    if (!selectedMouza || !selectedUpazila) return;
     setLoadingPlots(true);
     setSearchError("");
     setSelected(null);
     setMsInside([]);
-    loc.setError("");
+    setLocationError("");
     const query = new URLSearchParams({
       action: "plots",
       kind: "rs",
-      mouza: loc.selectedMouza.mauza,
-      jl: String(loc.selectedMouza.jl_no),
-      upazila: loc.selectedUpazila.upazila_ps,
+      mouza: selectedMouza.mauza,
+      jl: String(selectedMouza.jl_no),
+      upazila: selectedUpazila.upazila_ps,
       limit: "2000",
     });
     const url = `/api/rajuk/query?${query}`;
@@ -290,13 +298,13 @@ export default function RajukTestPage() {
       setPlots((data.features ?? []) as RajukPlotFeature[]);
       setPlotsLoaded(true);
     } catch (reason) {
-      loc.setError(reason instanceof Error ? reason.message : "আর এস প্লট লোড করা যায়নি");
+      setLocationError(reason instanceof Error ? reason.message : "আর এস প্লট লোড করা যায়নি");
       setPlots([]);
       setPlotsLoaded(false);
     } finally {
       setLoadingPlots(false);
     }
-  }, [loc.selectedMouza, loc.selectedUpazila, loc.setError]);
+  }, [selectedMouza, selectedUpazila, setLocationError]);
 
   const runSearch = useCallback(async () => {
     setSearchError("");
@@ -311,7 +319,7 @@ export default function RajukTestPage() {
     }
 
     if (mode === "ms") {
-      if (!loc.selectedMouza || !loc.selectedUpazila) {
+      if (!selectedMouza || !selectedUpazila) {
         setSearchError("এম এস প্লট খুঁজতে আগে জেলা, উপজেলা ও মৌজা নির্বাচন করুন।");
         return;
       }
@@ -319,9 +327,9 @@ export default function RajukTestPage() {
       const query = new URLSearchParams({
         action: "plots",
         kind: "ms",
-        mouza: loc.selectedMouza.mauza,
-        jl: String(loc.selectedMouza.jl_no),
-        upazila: loc.selectedUpazila.upazila_ps,
+        mouza: selectedMouza.mauza,
+        jl: String(selectedMouza.jl_no),
+        upazila: selectedUpazila.upazila_ps,
         ms_plot_no: bare,
         limit: "50",
       });
@@ -362,19 +370,19 @@ export default function RajukTestPage() {
       return;
     }
     setSelected(match);
-    if (loc.selectedMouza && loc.selectedUpazila) {
+    if (selectedMouza && selectedUpazila) {
       const query = new URLSearchParams({
         action: "plots",
         kind: "rs",
-        mouza: loc.selectedMouza.mauza,
-        jl: String(loc.selectedMouza.jl_no),
-        upazila: loc.selectedUpazila.upazila_ps,
+        mouza: selectedMouza.mauza,
+        jl: String(selectedMouza.jl_no),
+        upazila: selectedUpazila.upazila_ps,
         rs_plot_no: plotNo(match, "rs") || bare,
         limit: "1",
       });
       setLastRequestUrl(`/api/rajuk/query?${query}`);
     }
-  }, [plotInput, mode, plotsLoaded, plots, loc.selectedMouza, loc.selectedUpazila]);
+  }, [plotInput, mode, plotsLoaded, plots, selectedMouza, selectedUpazila]);
 
   const resultRows = useMemo(() => {
     if (!selected) return [];
@@ -468,7 +476,7 @@ export default function RajukTestPage() {
   const searchDisabled =
     loadingPlots ||
     !plotInput.trim() ||
-    (mode === "rs" ? !plotsLoaded : !loc.selectedMouza || !loc.selectedUpazila);
+    (mode === "rs" ? !plotsLoaded : !selectedMouza || !selectedUpazila);
 
 
   return (
@@ -521,10 +529,10 @@ export default function RajukTestPage() {
                 </SelectField>
                 <div>
                   <label htmlFor="atlas-rajuk-jl" className="block text-xs font-black text-[#496761]">০৪ · জে.এল. নম্বর</label>
-                  <input id="atlas-rajuk-jl" readOnly value={loc.selectedMouza ? String(loc.selectedMouza.jl_no) : ""} placeholder="মৌজা নির্বাচনের পরে দেখাবে" className="mt-1.5 min-h-12 w-full rounded-2xl border border-[#e0e5dc] bg-[#f2f5f0] px-4 text-sm font-extrabold text-[#4d6e68]" />
+                  <input id="atlas-rajuk-jl" readOnly value={selectedMouza ? String(selectedMouza.jl_no) : ""} placeholder="মৌজা নির্বাচনের পরে দেখাবে" className="mt-1.5 min-h-12 w-full rounded-2xl border border-[#e0e5dc] bg-[#f2f5f0] px-4 text-sm font-extrabold text-[#4d6e68]" />
                 </div>
               </div>
-              {mode==="rs" && <button type="button" disabled={!loc.selectedMouza || loadingPlots} onClick={()=>void loadRsPlots()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d6ce] bg-[#e5f0e9] px-5 text-sm font-black text-[#1c626c] hover:bg-[#d6e8dc] disabled:opacity-40 sm:w-auto">
+              {mode==="rs" && <button type="button" disabled={!selectedMouza || loadingPlots} onClick={()=>void loadRsPlots()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#b6d6ce] bg-[#e5f0e9] px-5 text-sm font-black text-[#1c626c] hover:bg-[#d6e8dc] disabled:opacity-40 sm:w-auto">
                 {loadingPlots?<Loader2 size={17} className="animate-spin"/>:<Database size={17}/>} {loadingPlots?"RS দাগ লোড হচ্ছে…":plotsLoaded? "RS দাগ আবার লোড করুন":"এই মৌজার RS দাগ লোড করুন"}
               </button>}
             </div>
@@ -549,7 +557,7 @@ export default function RajukTestPage() {
           {selected ? (
             <section ref={exportRef} className="rounded-[27px] border border-[#dfe5da] bg-white p-5 shadow-[0_12px_35px_rgba(32,59,52,.05)] sm:p-7">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">03 / LIVE GIS RECORD</span><h2 className="mt-1 text-2xl font-black">দাগের বিস্তারিত</h2><p className="mt-1 text-xs text-[#667e75]">উৎস RAJUK · {prefix} · {loc.selectedMouza?.mauza || "নির্বাচিত মৌজা"}</p></div>
+                <div><span className="text-[10px] font-black tracking-[.16em] text-[#bc7550]">03 / LIVE GIS RECORD</span><h2 className="mt-1 text-2xl font-black">দাগের বিস্তারিত</h2><p className="mt-1 text-xs text-[#667e75]">উৎস RAJUK · {prefix} · {selectedMouza?.mauza || "নির্বাচিত মৌজা"}</p></div>
                 <div className="flex gap-2 print:hidden">
                   <button type="button" disabled={downloading} onClick={()=>void handleDownload()} aria-label="দাগের তথ্য ছবি ডাউনলোড" className="grid h-11 w-11 place-items-center rounded-xl border border-[#dfe5dd] bg-[#f5f8f2] text-[#296b71] disabled:opacity-40">{downloading?<Loader2 size={18} className="animate-spin"/>:<Download size={18}/>}</button>
                   <button type="button" disabled={printingPdf} onClick={()=>void handlePdfPrint()} aria-label="দাগের PDF ডাউনলোড" className="grid h-11 w-11 place-items-center rounded-xl border border-[#dfe5dd] bg-[#f5f8f2] text-[#296b71] disabled:opacity-40">{printingPdf?<Loader2 size={18} className="animate-spin"/>:<Printer size={18}/>}</button>

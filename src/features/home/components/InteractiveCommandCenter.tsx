@@ -159,6 +159,9 @@ export default function InteractiveCommandCenter() {
                 setOpen(false);
               }
             }}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
             aria-expanded={open}
             aria-controls="landbd-command-results"
             aria-activedescendant={open && results[activeIndex] ? `landbd-command-${activeIndex}` : undefined}
