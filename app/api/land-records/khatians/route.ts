@@ -23,16 +23,9 @@ export async function GET(request: Request) {
     const owner = khatianSearchText.parse(params.get("owner") || undefined);
     const dagNumber = khatianSearchText.parse(params.get("dagNumber") || undefined);
 
-    if (!khatianNo && !owner && !dagNumber) {
-      return Response.json(
-        {
-          error:
-            "নির্দিষ্ট খতিয়ান নম্বর, দাগ নম্বর অথবা মালিকের নাম দিন। পুরো মৌজার রেকর্ড bulk আকারে তালিকাভুক্ত করা হয় না।",
-        },
-        { status: 400 },
-      );
-    }
-
+    // Empty filters intentionally mean "browse this mouza". The provider keeps
+    // pagination bounded, so the UI can load a mouza index without requesting
+    // the entire dataset in a single response. Search filters remain optional.
     const data = await providers.landRecords.listKhatians({
       surveyKey,
       jlNumberId,
