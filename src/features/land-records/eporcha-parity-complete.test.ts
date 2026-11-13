@@ -16,9 +16,15 @@ describe("ePorcha-inspired LandBD product parity", () => {
   it("keeps three Khatian Book templates and row-level source status", () => {
     const builder = source("src/features/land-records/components/MouzaPorchaReportBuilder.tsx");
     const table = source("src/features/land-records/components/mouza-report/ReportTable.tsx");
-    expect(builder).toContain('{ value: "book", label: "নতুন" }');
-    expect(builder).toContain('{ value: "legacy", label: "রঙিন" }');
-    expect(builder).toContain('{ value: "monochrome", label: "সাদা-কালো" }');
+    expect(builder).toContain('name="pdf-variant"');
+    expect(builder).toContain('value="book"');
+    expect(builder).toContain('value="legacy"');
+    expect(builder).toContain('value="monochrome"');
+    expect(builder).toContain("পূর্ণ মৌজা PDF ডাউনলোড");
+    expect(builder).toContain("পুরনো");
+    expect(builder).toContain("autoDownloadRef.current = true");
+    expect(builder).not.toContain('label="PDF-এর ধরন"');
+    expect(builder).not.toContain('label="প্রিন্ট পেজ"');
     expect(table).toContain("উৎস অবস্থা");
     expect(table).toContain('row.completeness === "complete"');
   });
