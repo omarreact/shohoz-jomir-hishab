@@ -31,7 +31,10 @@ export async function getFullKhatianByVerificationUuid(
     khatianNo: tracking.khatianNo,
   }, signal);
 
-  const exact = page.items.find((row) => row.KHATIAN_NO.trim() === tracking.khatianNo?.trim());
+  const exact = page.items.find((row) =>
+    row.KHATIAN_NO.trim() === tracking.khatianNo?.trim() &&
+    (!tracking.mouzaId || !row.MOUZA_ID || row.MOUZA_ID === tracking.mouzaId),
+  );
   if (!exact) {
     throw new Error("The verified khatian could not be resolved in the public DLRMS index");
   }
