@@ -32,19 +32,25 @@ function renderRecord(khatian: KhatianDetails): string {
 }
 
 describe("AuthoritativeKhatianDetailsView", () => {
-  it("shows total land in its own row using the source value", () => {
+  it("renders the reference nine-column Bangladesh-form structure", () => {
     const html = renderRecord(record);
 
-    expect(html).toContain("প্রাপ্ত দাগ");
-    expect(html).not.toContain("প্রাপ্ত দাগ / মোট জমি");
-    expect(html).toContain("মোট জমি");
-    expect(html).toContain("২.০৪১২ একর");
+    expect(html).toContain("বাংলাদেশ ফরম নং ৫৪৬২");
+    expect(html).toContain("খতিয়ান নং ৩১২");
+    expect(html).toContain("মালিক, অকৃষি প্রজা বা");
+    expect(html).toContain("দাগের মোট জমির পরিমাণ");
+    expect(html).toContain("অংশানুযায়ী জমির পরিমাণ");
+    expect(html).toContain("দং আস্কর আলী");
+    expect(html).toContain("১৯৪৮");
+    expect(html).toContain("২.০৪১২");
   });
 
-  it("keeps the total-land row visible when the source has no value", () => {
+  it("renders the second-page LandBD disclaimer without inventing unavailable values", () => {
     const html = renderRecord({ ...record, TOTAL_LAND: "" });
 
-    expect(html).toContain("মোট জমি");
-    expect(html).toContain("উৎসে নেই");
+    expect(html).toContain("বিশেষ দ্রষ্টব্য:");
+    expect(html).toContain("সরকারি প্রত্যয়িত খতিয়ান নয়");
+    expect(html).toContain("উৎসে অনুপস্থিত");
+    expect(html).toContain("landbd.pincodeit.com");
   });
 });
