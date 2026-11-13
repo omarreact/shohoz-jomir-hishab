@@ -9,7 +9,7 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: [],
   modulePathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/.open-next/", "<rootDir>/.wrangler/"],
-  testPathIgnorePatterns: ["<rootDir>/.open-next/", "<rootDir>/.wrangler/"],
+  testPathIgnorePatterns: ["<rootDir>/.open-next/", "<rootDir>/.wrangler/", "<rootDir>/tests/e2e/"],
   testEnvironment: "node",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",

@@ -87,7 +87,8 @@ test.describe("LandBD GIS control geometry", () => {
       const toolbarBox = await toolbar.boundingBox();
       expect(panelBox).not.toBeNull();
       expect(toolbarBox).not.toBeNull();
-      expect(panelBox!.x + panelBox!.width).toBeLessThan(toolbarBox!.x);
+      if (!panelBox || !toolbarBox) throw new Error("GIS panel or toolbar has no layout box");
+      expect(panelBox.x + panelBox.width).toBeLessThan(toolbarBox.x);
 
       const tablist = page.getByRole("tablist", { name: "GIS ওয়ার্কস্পেস বিভাগ" });
       await expect(tablist).toBeVisible();
