@@ -762,7 +762,7 @@ export default function MouzaPorchaReportBuilder() {
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[var(--muted-foreground)]">
-                {rows.length}টি খতিয়ান {phase === "done" ? `A4 ${pageOrientation === "landscape" ? "Landscape" : "Portrait"} রিপোর্ট হিসেবে প্রস্তুত` : "লোড হয়েছে"}
+                {rows.length}টি খতিয়ান {phase === "done" ? "A4 Portrait রিপোর্ট হিসেবে প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -791,7 +791,7 @@ export default function MouzaPorchaReportBuilder() {
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} খতিয়ান বইটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
+                নিচের A4 Portrait খতিয়ান বইটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
               </p>
             </div>
 
