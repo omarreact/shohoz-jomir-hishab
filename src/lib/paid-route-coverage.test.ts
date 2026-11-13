@@ -24,7 +24,9 @@ describe("LandBD paid service endpoint authorization",()=>{
  });
  test("admin-only mouza export capabilities cannot be elevated by a general auth flag",()=>{
   const source=fs.readFileSync(path.join(process.cwd(),"app/api/mouza-map/download/route.ts"),"utf8");
-  expect(source).toContain("isAdminRole(user.role)");
+  expect(source).toContain("verifyAdminAuth");
+  expect(source).toContain("await verifyAdminAuth(request)");
+  expect(source).not.toContain("isAdminRole(user.role)");
   expect(source).not.toContain("authenticatedFullAccessEnabled");
   expect(source).toContain("Vector PDF export requires admin access.");
  });
