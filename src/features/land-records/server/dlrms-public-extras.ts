@@ -89,7 +89,12 @@ function numberValue(record: JsonRecord, key: string): number | undefined {
 
 export async function fetchPublicKhatianTracking(
   uuid: string,
-  base?: { KHATIAN_NO: string; SURVEY_ID?: number },
+  base?: {
+    KHATIAN_NO: string;
+    SURVEY_ID?: number;
+    JL_NUMBER_ID?: number;
+    MOUZA_ID?: number;
+  },
   signal?: AbortSignal,
 ): Promise<KhatianTracking> {
   if (!UUID_RE.test(uuid)) throw new Error("Invalid DLRMS verification UUID");
@@ -103,23 +108,28 @@ export async function fetchPublicKhatianTracking(
 
   const khatianNo = stringValue(record, "KHATIAN_NO");
   const surveyId = numberValue(record, "SURVEY_ID");
+  const khatianId = numberValue(record, "KHATIAN_ID");
+  const mouzaId = numberValue(record, "MOUZA_ID");
+  const jlNumberId = numberValue(record, "JL_NUMBER_ID");
   const matchesBaseRecord = base
     ? Boolean(
         khatianNo && khatianNo.trim() === base.KHATIAN_NO.trim() &&
-        (!base.SURVEY_ID || !surveyId || base.SURVEY_ID === surveyId),
+        (!base.SURVEY_ID || !surveyId || base.SURVEY_ID === surveyId) &&
+        (!base.JL_NUMBER_ID || !jlNumberId || base.JL_NUMBER_ID === jlNumberId) &&
+        (!base.MOUZA_ID || !mouzaId || base.MOUZA_ID === mouzaId),
       )
     : true;
 
   return {
     displayCode: stringValue(record, "APPLICATION_DISPLAY_CODE") ?? uuid,
     surveyId,
-    khatianId: numberValue(record, "KHATIAN_ID"),
+    khatianId,
     khatianNo,
     officeId: record.OFFICE_ID === null ? null : numberValue(record, "OFFICE_ID"),
     applicationStatus: numberValue(record, "APPLICATION_STATUS"),
     createdAt: stringValue(record, "CREATED_AT"),
-    mouzaId: numberValue(record, "MOUZA_ID"),
-    jlNumberId: numberValue(record, "JL_NUMBER_ID"),
+    mouzaId,
+    jlNumberId,
     owners: stringValue(record, "OWNERS"),
     dags: stringValue(record, "DAGS"),
     totalLandRaw: record.TOTAL_LAND === null ? null : stringValue(record, "TOTAL_LAND"),
