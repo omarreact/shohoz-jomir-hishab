@@ -236,6 +236,20 @@ export function extractOwnerShares(publicRecord: Record<string, unknown>, ownerC
 }
 
 export function isPartialPublicRecord(khatian: KhatianDetails | null | undefined): boolean {
+  const reference =
+    khatian?.LANDBD_REFERENCE_ENRICHMENT ??
+    khatian?.PUBLIC_RECORD?.LANDBD_REFERENCE_ENRICHMENT;
+  if (
+    reference &&
+    typeof reference === "object" &&
+    (reference as Record<string, unknown>).displayComplete === true
+  ) {
+    // Complete for LandBD display/PDF according to the bundled reference row.
+    // The provenance warning still makes clear this is not a claim that the
+    // current public DLRMS endpoint itself supplied every field.
+    return false;
+  }
+
   const reconstruction = khatian?.PUBLIC_RECORD?.LANDBD_RECONSTRUCTION;
   if (
     reconstruction &&
