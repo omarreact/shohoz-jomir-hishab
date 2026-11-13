@@ -1,4 +1,5 @@
 import type { KhatianIndex } from "../types";
+import { normalizeKhatianRecord } from "../normalized-khatian";
 
 const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
 const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
@@ -40,16 +41,19 @@ export function buildMouzaDagRows(rows: KhatianIndex[]): MouzaDagReportRow[] {
   const grouped = new Map<string, { khatians: Set<string>; sourceIds: Set<number> }>();
 
   for (const row of rows) {
-    const khatianNo = normalizeDagToken(row.KHATIAN_NO);
+    const normalized = normalizeKhatianRecord(row);
+    const khatianNo = normalizeDagToken(normalized.khatianNo);
     if (!khatianNo) continue;
 
-    for (const dagNo of splitDagList(row.DAGS)) {
+    for (const dag of normalized.dags) {
+      const dagNo = normalizeDagToken(dag.dagNo);
+      if (!dagNo) continue;
       const current = grouped.get(dagNo) ?? {
         khatians: new Set<string>(),
         sourceIds: new Set<number>(),
       };
       current.khatians.add(khatianNo);
-      current.sourceIds.add(row.ID);
+      current.sourceIds.add(normalized.sourceId);
       grouped.set(dagNo, current);
     }
   }
