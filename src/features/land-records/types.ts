@@ -54,6 +54,21 @@ export interface KhatianMirrorEnrichment {
   TOTAL_LAND?: KhatianMirrorFieldProvenance;
 }
 
+export interface KhatianReferenceEnrichment {
+  source: "LANDBD_BUNDLED_REFERENCE";
+  datasetId: string;
+  datasetPath: string;
+  surveyKey: string;
+  jlNumberId: number;
+  mouzaId: number;
+  changedFields: Array<"OWNERS" | "GUARDIANS" | "DAGS" | "TOTAL_LAND">;
+  /**
+   * Complete relative to the matched registered reference row only; this is
+   * never a claim that the current government public API published every field.
+   */
+  displayComplete: boolean;
+}
+
 export interface KhatianIndex {
   ID: number;
   KHATIAN_NO: string;
@@ -70,6 +85,11 @@ export interface KhatianIndex {
    * the exact first-party compact value instead of misclassifying mirror data.
    */
   LANDBD_MIRROR_ENRICHMENT?: KhatianMirrorEnrichment;
+  /**
+   * Optional survey/mouza-scoped fallback from a registered LandBD reference
+   * dataset. It is never classified as first-party DLRMS evidence.
+   */
+  LANDBD_REFERENCE_ENRICHMENT?: KhatianReferenceEnrichment;
 }
 
 export interface KhatianPage {

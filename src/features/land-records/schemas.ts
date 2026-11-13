@@ -16,6 +16,17 @@ const KhatianMirrorEnrichmentSchema = z.object({
   TOTAL_LAND: KhatianMirrorFieldProvenanceSchema.optional(),
 }).optional();
 
+const KhatianReferenceEnrichmentSchema = z.object({
+  source: z.literal("LANDBD_BUNDLED_REFERENCE"),
+  datasetId: z.string().min(1),
+  datasetPath: z.string().min(1),
+  surveyKey: z.string().min(1),
+  jlNumberId: z.number(),
+  mouzaId: z.number(),
+  changedFields: z.array(z.enum(["OWNERS", "GUARDIANS", "DAGS", "TOTAL_LAND"])),
+  displayComplete: z.boolean(),
+}).optional();
+
 export const KhatianIndexSchema = z.object({
   ID: z.number(),
   KHATIAN_NO: z.string(),
@@ -26,6 +37,7 @@ export const KhatianIndexSchema = z.object({
   MOUZA_ID: z.number(),
   TOTAL_LAND: z.string().optional(),
   LANDBD_MIRROR_ENRICHMENT: KhatianMirrorEnrichmentSchema,
+  LANDBD_REFERENCE_ENRICHMENT: KhatianReferenceEnrichmentSchema,
 });
 export const KhatianPageSchema = z.object({ items: z.array(KhatianIndexSchema), page: z.number().int().positive(), pageSize: z.number().int().positive(), total: z.number().int().nonnegative().optional(), hasNextPage: z.boolean() });
 export const KhatianDetailsSchema = KhatianIndexSchema.extend({

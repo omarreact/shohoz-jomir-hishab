@@ -1,5 +1,6 @@
 import { FullKhatianSchema, type FullKhatian, type FullKhatianDag, type FullKhatianOwner, type KhatianTracking, type SourceEvidence } from "../full-khatian";
 import type { KhatianDetails, KhatianIndex, KhatianPage } from "../types";
+import { enrichKhatianDetailsWithReferenceDatasets } from "./reference-khatian-resolver";
 import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruction";
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
@@ -661,7 +662,23 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   const structuredPublicDags = mergeStructuredDags(officialStructured.dags, mirrorStructured.dags);
   rebuilt = enrichBaseFromStructuredPublic(rebuilt, structuredPublicOwners, structuredPublicDags);
 
-  if (reconstructionStillPartial(rebuilt)) {
+  // Capture the official/mirror state before the scoped bundled reference is
+  // allowed to fill remaining compact fields. This lets the final owner/dag
+  // rows keep truthful per-row provenance.
+  const preReferenceOwnerCounts = new Map<string, number>();
+  for (const owner of splitList(rebuilt.OWNERS)) {
+    const normalized = sourceKey(owner);
+    preReferenceOwnerCounts.set(normalized, (preReferenceOwnerCounts.get(normalized) ?? 0) + 1);
+  }
+  const preReferenceDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
+
+  const referenceMatch = enrichKhatianDetailsWithReferenceDatasets(rebuilt, input.surveyKey);
+  if (referenceMatch) {
+    rebuilt = referenceMatch.record;
+    warnings.push(
+      "সরকারি DLRMS public row আংশিক/compact হওয়ায় registered LandBD reference dataset থেকে অনুপস্থিত display field পূরণ করা হয়েছে। এটি বর্তমান সরকারি প্রত্যয়ন নয়; আইনি ব্যবহারের আগে সরকারি মূল নথির সঙ্গে যাচাই করুন।",
+    );
+  } else if (reconstructionStillPartial(rebuilt)) {
     warnings.push("DLRMS-এর upstream compact তালিকার কিছু অংশ এখনো truncated/আংশিক। LandBD কেবল উৎসে পাওয়া তথ্যই দেখাচ্ছে; অনুপস্থিত তথ্য অনুমান করে যোগ করা হয়নি।");
   }
 
@@ -726,16 +743,28 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     const normalized = sourceKey(row.name);
     const occurrence = (compactOwnerOccurrences.get(normalized) ?? 0) + 1;
     compactOwnerOccurrences.set(normalized, occurrence);
+    const officialCount = preMirrorOwnerCounts.get(normalized) ?? 0;
+    const preReferenceCount = preReferenceOwnerCounts.get(normalized) ?? 0;
     return {
       ...row,
-      source: occurrence <= (preMirrorOwnerCounts.get(normalized) ?? 0)
-        ? row.source : ("DLRMS_MIRROR" as const),
+      source: occurrence <= officialCount
+        ? row.source
+        : occurrence <= preReferenceCount
+          ? ("DLRMS_MIRROR" as const)
+          : ("LANDBD_REFERENCE" as const),
     };
   });
-  const compactDags = publicDags(rebuilt, tracking).map((row) => ({
-    ...row,
-    source: preMirrorDags.has(sourceKey(row.dagNo)) ? row.source : ("DLRMS_MIRROR" as const),
-  }));
+  const compactDags = publicDags(rebuilt, tracking).map((row) => {
+    const normalized = sourceKey(row.dagNo);
+    return {
+      ...row,
+      source: preMirrorDags.has(normalized)
+        ? row.source
+        : preReferenceDags.has(normalized)
+          ? ("DLRMS_MIRROR" as const)
+          : ("LANDBD_REFERENCE" as const),
+    };
+  });
   const owners = mergeStructuredOwners(compactOwners, structuredOwners);
   const dags = mergeStructuredDags(compactDags, structuredDags);
 
@@ -749,6 +778,15 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       fetchedAt,
     },
   ];
+  if (referenceMatch) {
+    evidence.push({
+      field: `registered LandBD reference display fallback (${referenceMatch.enrichment.datasetId}): ${referenceMatch.enrichment.changedFields.join(", ")}`,
+      source: "LANDBD_REFERENCE",
+      official: false,
+      access: "bundled-reference",
+      fetchedAt,
+    });
+  }
   if (mirrorRecord || mirrorDagRecords.length) {
     evidence.push({
       field: "third-party mirror owner/dag expansion (not a government-issued record)",
