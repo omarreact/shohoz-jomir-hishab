@@ -35,7 +35,7 @@ async function mockDlrmsUiPath(page) {
     { ID: 2, NAME: "ঢাকা", NAME_EN: "Dhaka", BBS_CODE: "26", DIVISION_BBS_CODE: "30", ROW_STATUS: 1 },
   ]));
   await page.route("**/api/land-records/upazilas**", (route) => json(route, [
-    { ID: 3, NAME: "গুলশান রাজস্ব সার্কেল", NAME_EN: "Gulshan Revenue Circle", BBS_CODE: "26", DISTRICT_BBS_CODE: "26", ROW_STATUS: 1 },
+    { ID: 3, NAME: "রূপগঞ্জ", NAME_EN: "Rupganj", BBS_CODE: "26", DISTRICT_BBS_CODE: "26", ROW_STATUS: 1 },
   ]));
   await page.route("**/api/land-records/surveys**", (route) => json(route, [
     { SURVEY_ID: 7, LOCAL_NAME: "বি আর এস", SURVEY_ORDER: 7 },
@@ -45,9 +45,9 @@ async function mockDlrmsUiPath(page) {
       ID: 382911,
       MOUZA_ID: 71947,
       MOUZA_NAME: "পাতিরা",
-      JL_NUMBER: "5",
+      JL_NUMBER: "110",
       DISTRICT_NAME: "ঢাকা",
-      UPAZILA_NAME: "গুলশান রাজস্ব সার্কেল",
+      UPAZILA_NAME: "রূপগঞ্জ",
       SURVEY_ID: 7,
       SURVEY_NAME: "বি আর এস",
       SURVEY_NAME_EN: "BRS",
@@ -67,7 +67,7 @@ async function mockDlrmsUiPath(page) {
     IS_LOCKED: 0,
     DIVISION_NAME: "ঢাকা",
     DISTRICT_NAME: "ঢাকা",
-    UPAZILA_NAME: "গুলশান রাজস্ব সার্কেল",
+    UPAZILA_NAME: "রূপগঞ্জ",
     JL_NUMBER: "5",
     MOUZA_NAME: "পাতিরা",
     SURVEY_ID: 7,
@@ -140,9 +140,9 @@ test.describe("LandBD DLRMS browser data path", () => {
 
     await choose(page, "বিভাগ", "ঢাকা");
     await choose(page, "জেলা", "ঢাকা");
-    await choose(page, "উপজেলা / থানা", "গুলশান রাজস্ব সার্কেল");
+    await choose(page, "উপজেলা / থানা", "রূপগঞ্জ");
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
-    await choose(page, "মৌজা (JL নম্বর)", "5 · পাতিরা");
+    await choose(page, "মৌজা (JL নম্বর)", "110 · পাতিরা");
 
     const row = page.locator("tbody tr").filter({ hasText: "349" });
     await expect(row).toHaveCount(1);
