@@ -143,6 +143,27 @@ for(const target of TARGETS){
   if(candidate){
     outcome.listFields=coverage(candidate);
     const id=Number(candidate.ID??candidate.id);
+
+    if(target.survey==="BRS"&&target.khatianNo==="349"){
+      let unfilteredCandidate=null;
+      for(let pageNo=1;pageNo<=12&&!unfilteredCandidate;pageNo++){
+        const unfilteredUrl=new URL(API+"/index-khatian/"+target.survey);
+        unfilteredUrl.searchParams.set("SURVEY",target.survey);
+        unfilteredUrl.searchParams.set("JL_NUMBER_ID",String(jlNumberId));
+        unfilteredUrl.searchParams.set("PAGE_NO",String(pageNo));
+        unfilteredUrl.searchParams.set("PAGE_SIZE","100");
+        const unfiltered=await publicGet(unfilteredUrl,session.token);
+        const unfilteredRows=unfiltered.data?records(unfiltered.data):[];
+        unfilteredCandidate=pickSample(unfilteredRows,target,jlNumberId)??null;
+        if(unfilteredCandidate){
+          outcome.unfilteredPage=pageNo;
+          outcome.unfilteredIdentityMatched=true;
+          outcome.unfilteredFields=coverage(unfilteredCandidate);
+        }
+        if(unfiltered.status!==200||unfilteredRows.length<100)break;
+      }
+      if(!unfilteredCandidate)outcome.unfilteredIdentityMatched=false;
+    }
     const detail=await publicGet(API+"/index-khatian/"+target.survey+"/"+id,session.token);
     outcome.detailStatus=detail.status;
     outcome.detailError=detail.error??null;
