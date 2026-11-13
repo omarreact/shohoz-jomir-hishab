@@ -317,6 +317,7 @@ export function parseLisfOwnerInfo(payload: unknown): FullKhatianOwner[] {
     const address = rawString(addresses[index]);
     const shareRaw = rawString(shares[index]);
     return [{
+      occurrence: index + 1,
       name,
       ...(fatherOrHusband ? { fatherOrHusband } : {}),
       ...(address ? { address } : {}),
