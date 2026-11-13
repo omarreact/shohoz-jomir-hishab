@@ -88,7 +88,7 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
     await choose(page, "মৌজা (JL নম্বর)", /^(?:110|১১০) · পাতিরা$/);
 
-    const generate = page.getByRole("button", { name: "পূর্ণ মৌজা PDF ডাউনলোড" });
+    const generate = page.getByRole("button", { name: "পূর্ণ মৌজা ফলাফল ডাউনলোড করুন" });
     await expect(generate).toBeEnabled();
 
     const downloadStarted = Date.now();
