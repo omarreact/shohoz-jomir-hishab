@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useRef, useState, type RefObject } from "react";
-import { Download, Eye, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
+import { Download, Eye, Map, Printer } from "lucide-react";
 import { FullKhatianSchema, type FullKhatian } from "../full-khatian";
 import { isPartialPublicRecord } from "../lib/khatian-display";
+import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
 import type { KhatianDetails } from "../types";
 import {
   exportKhatianPdf,
   type KhatianPdfOrientation,
 } from "../lib/khatian-pdf-export";
-import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import PdfPreviewDialog, { type PdfPreviewDocument } from "@/src/shared/components/PdfPreviewDialog";
 import AuthoritativeKhatianDetailsView from "./AuthoritativeKhatianDetailsView";
 import FullKhatianSupplement from "./FullKhatianSupplement";
@@ -40,9 +40,18 @@ function buildFileName(khatian: KhatianDetails, surveyKey?: string): string {
     khatian.MOUZA_NAME,
     khatian.KHATIAN_NO,
   ]
-    .map((p) => String(p || "").trim())
+    .map((part) => String(part || "").trim())
     .filter(Boolean);
   return parts.join("-") || "LandBD-Khatian";
+}
+
+function list(value: string | undefined | null): string[] {
+  if (!value?.trim()) return [];
+  return value
+    .replace(/(?:\.\.\.|…)\s*$/u, "")
+    .split(/[,،]/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 export default function KhatianDetailsView({
@@ -64,9 +73,18 @@ export default function KhatianDetailsView({
     fullKhatian ?? (embeddedFull.success ? embeddedFull.data : undefined);
   const pageOrientation = resolveKhatianPageOrientation(surveyKey, khatian.SURVEY_NAME);
   const isIncomplete = Boolean(resolvedFullKhatian && isPartialPublicRecord(resolvedFullKhatian.base));
+  const model = useMemo(
+    () => buildFullKhatianDisplayModel(khatian, resolvedFullKhatian, surveyKey),
+    [khatian, resolvedFullKhatian, surveyKey],
+  );
+
+  const owners = model.owners.map((owner) => owner.name).filter(Boolean);
+  const guardians = model.owners.map((owner) => owner.fatherOrHusband).filter(Boolean);
+  const fallbackGuardians = guardians.length ? guardians : model.guardians;
+  const dags = [...new Set(model.dags.map((dag) => dag.dagNo).filter(Boolean))];
 
   const handleDownloadPdf = useCallback(
-    async (orientation: KhatianPdfOrientation, delivery: "download" | "return" = "download") => {
+    async (delivery: "download" | "return" = "download") => {
       if (!resolvedFullKhatian || isIncomplete) {
         setExportError(isIncomplete
           ? "উৎসের মালিক/অভিভাবক/দাগ তালিকা অসম্পূর্ণ; সম্পূর্ণ PDF তৈরি করা যাবে না।"
@@ -79,14 +97,14 @@ export default function KhatianDetailsView({
         return;
       }
 
-      setExporting(orientation);
+      setExporting(pageOrientation);
       setExportError(null);
 
       try {
         const result = await exportKhatianPdf({
           source,
           fileName: buildFileName(khatian, surveyKey),
-          orientation,
+          orientation: pageOrientation,
           delivery,
         });
 
@@ -102,176 +120,160 @@ export default function KhatianDetailsView({
         setExporting(null);
       }
     },
-    [khatian, resolvedCaptureRef, resolvedFullKhatian, surveyKey, isIncomplete],
+    [khatian, pageOrientation, resolvedCaptureRef, resolvedFullKhatian, surveyKey, isIncomplete],
   );
 
   const isBusy = exporting !== null || fullKhatianLoading || !resolvedFullKhatian || isIncomplete;
 
   return (
-    <div
-      className={`dlrms-print-document dlrms-print-document-${pageOrientation}`}
-      data-print-layout="landbd-v3"
-    >
-      <style>{`
-        .dlrms-fixed-print-watermark,
-        .dlrms-fixed-print-ribbon {
-          display: none;
-        }
+    <div className="space-y-4" data-print-layout="eporcha-parity">
+      <section className="overflow-hidden rounded-2xl border border-[#26372f] bg-[#121b16] text-[#edf3ef] shadow-xl">
+        <header className="flex flex-col gap-4 border-b border-[#24362d] px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold text-[#77887f]">খতিয়ান নং</p>
+            <h2 className="mt-1 text-4xl font-semibold leading-none text-white">{khatian.KHATIAN_NO || "—"}</h2>
+          </div>
+          <div className="inline-flex items-center gap-3 self-start rounded-full border border-[#294137] bg-[#0b130f] px-4 py-2">
+            <span className="text-xs font-semibold text-[#83938a]">মোট জমি</span>
+            <strong className="rounded-full bg-[#1fa775] px-3 py-1 text-sm text-white">
+              {model.totalLand || khatian.TOTAL_LAND || "—"}
+            </strong>
+          </div>
+        </header>
 
-        @media print {
-          .dlrms-fixed-print-watermark {
-            position: fixed;
-            z-index: 40;
-            top: 50%;
-            left: 50%;
-            display: block !important;
-            width: 96mm;
-            height: auto;
-            transform: translate(-50%, -50%) rotate(-24deg);
-            opacity: 0.055;
-            filter: grayscale(1);
-            pointer-events: none;
-            user-select: none;
-          }
+        <div className="grid gap-4 p-5 md:grid-cols-2">
+          <section className="rounded-xl border border-[#26392f] bg-[#0d1511] p-4">
+            <h3 className="text-xs font-semibold tracking-wide text-[#74867c]">প্রশাসনিক তথ্য</h3>
+            <dl className="mt-3 space-y-2 text-sm text-[#c3cec7]">
+              <div><dt className="inline text-[#84958c]">বিভাগ: </dt><dd className="inline">{khatian.DIVISION_NAME || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">জেলা: </dt><dd className="inline">{khatian.DISTRICT_NAME || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">উপজেলা: </dt><dd className="inline">{khatian.UPAZILA_NAME || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">সার্ভে: </dt><dd className="inline">{model.surveyLabel || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">মৌজা: </dt><dd className="inline">{khatian.MOUZA_NAME || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">জে.এল নং: </dt><dd className="inline">{khatian.JL_NUMBER || "—"}</dd></div>
+            </dl>
+          </section>
 
-          .dlrms-print-document-landscape .dlrms-fixed-print-watermark {
-            width: 122mm;
-          }
+          <section className="rounded-xl border border-[#26392f] bg-[#0d1511] p-4">
+            <h3 className="text-xs font-semibold tracking-wide text-[#74867c]">জমির বিবরণ</h3>
+            <dl className="mt-3 space-y-2 text-sm text-[#c3cec7]">
+              <div><dt className="inline text-[#84958c]">দাগ সংখ্যা: </dt><dd className="inline">{dags.length || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">মোট জমি: </dt><dd className="inline">{model.totalLand || khatian.TOTAL_LAND || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">মালিক: </dt><dd className="inline">{owners.join(", ") || "—"}</dd></div>
+              <div><dt className="inline text-[#84958c]">অভিভাবক: </dt><dd className="inline">{fallbackGuardians.join(", ") || "—"}</dd></div>
+            </dl>
+          </section>
+        </div>
 
-          .dlrms-fixed-print-ribbon {
-            position: fixed !important;
-            z-index: 80 !important;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            display: block !important;
-            width: 100%;
-            margin: 0 !important;
-            border: 0 !important;
-            border-radius: 0 !important;
-            background: #fff;
-          }
+        <section className="mx-5 mb-5 rounded-xl border border-[#26392f] bg-[#0c1410] p-4">
+          <h3 className="text-sm font-semibold text-white">বিস্তারিত তথ্য</h3>
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            <div>
+              <p className="text-xs font-semibold text-[#73857b]">মালিক</p>
+              <ul className="mt-2 space-y-1.5 text-sm text-[#d7e0da]">
+                {(owners.length ? owners : ["—"]).map((owner, index) => (
+                  <li key={`${owner}-${index}`} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fa775]" />
+                    <span>{owner}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-[#73857b]">অভিভাবক</p>
+              <ul className="mt-2 space-y-1.5 text-sm text-[#d7e0da]">
+                {(fallbackGuardians.length ? fallbackGuardians : ["—"]).map((guardian, index) => (
+                  <li key={`${guardian}-${index}`} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fa775]" />
+                    <span>{guardian}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
 
-          .dlrms-fixed-print-ribbon svg {
-            width: 100% !important;
-            height: 9mm !important;
-            min-height: 0 !important;
-          }
+          <div className="mt-5">
+            <p className="text-xs font-semibold text-[#73857b]">দাগ নম্বর</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(dags.length ? dags : ["—"]).map((dag, index) => (
+                <span key={`${dag}-${index}`} className="rounded-full bg-[#11382a] px-3 py-1 text-sm font-semibold text-[#2bc18a]">
+                  {dag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
 
-          .dlrms-print-document-landscape .dlrms-fixed-print-ribbon svg {
-            height: 8mm !important;
-          }
-        }
-      `}</style>
+        {exportError ? (
+          <p className="mx-5 mb-4 rounded-lg border border-red-900/60 bg-red-950/30 px-3 py-2 text-sm font-semibold text-red-300" role="alert">
+            {exportError}
+          </p>
+        ) : null}
 
-      <div
-        className="mb-3 flex flex-col items-stretch gap-2 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
-        data-exclude-export="1"
-      >
-        <p className="text-xs font-semibold text-[var(--muted-foreground)] sm:mr-auto sm:self-center">
-          A4 {pageOrientation === "landscape" ? "ল্যান্ডস্কেপ" : "পোর্ট্রেট"} প্রস্তাবিত · PDF দেখুন বা ডাউনলোড করুন
-        </p>
+        {!resolvedFullKhatian || isIncomplete ? (
+          <p className="mx-5 mb-4 rounded-lg border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-sm text-amber-300" role="status">
+            {fullKhatianLoading ? "সম্পূর্ণ খতিয়ানের তথ্য যাচাই হচ্ছে; PDF সাময়িকভাবে বন্ধ।"
+              : isIncomplete ? "উৎসে সব মালিক, অভিভাবক বা দাগ প্রকাশিত হয়নি। অসম্পূর্ণ তথ্য দিয়ে সম্পূর্ণ PDF তৈরি বন্ধ।"
+              : fullKhatianFailed ? "পূর্ণ রেকর্ড লোড হয়নি। আবার চেষ্টা করুন।"
+              : "সম্পূর্ণ রেকর্ড প্রস্তুত হলে PDF অপশন সক্রিয় হবে।"}
+          </p>
+        ) : null}
 
-        <button
-          type="button"
-          onClick={() => void handleDownloadPdf(pageOrientation, "return")}
-          disabled={isBusy}
-          data-exclude-export="1"
-          className="landbd-primary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {exporting === pageOrientation ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          ) : <Eye size={17} />}
-          <span>PDF প্রিভিউ দেখুন</span>
-        </button>
+        <footer className="flex flex-wrap items-center gap-2 border-t border-[#24362d] px-5 py-4">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            disabled={isBusy}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#1fa775] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            <Printer size={16} /> প্রিন্ট করুন
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDownloadPdf("download")}
+            disabled={isBusy}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#1fa775] px-5 py-2 text-sm font-semibold text-[#2bc18a] disabled:opacity-50"
+          >
+            {exporting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Download size={16} />}
+            খতিয়ান ডাউনলোড
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDownloadPdf("return")}
+            disabled={isBusy}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#31453b] px-4 py-2 text-sm font-semibold text-[#a9b7af] disabled:opacity-50"
+          >
+            <Eye size={16} /> PDF প্রিভিউ
+          </button>
+          <a
+            href="/mouza-map"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#31453b] px-4 py-2 text-sm font-semibold text-[#a9b7af]"
+          >
+            <Map size={16} /> ফ্রি মৌজা ম্যাপ
+          </a>
+        </footer>
+      </section>
 
-        <button
-          type="button"
-          onClick={() => void handleDownloadPdf("portrait")}
-          disabled={isBusy}
-          data-exclude-export="1"
-          className="landbd-secondary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {exporting === "portrait" ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span>পোর্ট্রেট তৈরি হচ্ছে…</span>
-            </>
-          ) : (
-            <>
-              <RectangleVertical size={16} />
-              <Download size={15} className="opacity-70" />
-              <span>A4 পোর্ট্রেট ডাউনলোড</span>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => void handleDownloadPdf("landscape")}
-          disabled={isBusy}
-          data-exclude-export="1"
-          className="landbd-secondary-button inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {exporting === "landscape" ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span>ল্যান্ডস্কেপ তৈরি হচ্ছে…</span>
-            </>
-          ) : (
-            <>
-              <RectangleHorizontal size={16} />
-              <Download size={15} className="opacity-70" />
-              <span>A4 ল্যান্ডস্কেপ ডাউনলোড</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {!resolvedFullKhatian || isIncomplete ? (
-        <p className="mb-2 text-sm font-semibold text-amber-800 print:hidden" role="status">
-          {fullKhatianLoading ? "সম্পূর্ণ খতিয়ানের তথ্য যাচাই হচ্ছে; PDF সাময়িকভাবে বন্ধ।"
-            : isIncomplete ? "উৎসে সব মালিক, অভিভাবক বা দাগ প্রকাশিত হয়নি। অসম্পূর্ণ তথ্য দিয়ে সম্পূর্ণ খতিয়ানের PDF তৈরি বন্ধ।"
-            : fullKhatianFailed ? "পূর্ণ রেকর্ড লোড হয়নি। আবার চেষ্টা করুন; অসম্পূর্ণ PDF তৈরি করা হচ্ছে না।"
-            : "সম্পূর্ণ রেকর্ড প্রস্তুত হলে PDF অপশন সক্রিয় হবে।"}
-        </p>
-      ) : null}
-      {exportError ? (
-        <p
-          className="mb-2 text-right text-sm font-semibold text-red-600 print:hidden"
-          data-exclude-export="1"
-          role="alert"
-        >
-          {exportError}
-        </p>
-      ) : null}
-
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="dlrms-fixed-print-watermark"
-        src="/brand/logo-bangla.svg"
-        alt=""
-        aria-hidden="true"
-      />
-      <LandBdPrintRibbon className="dlrms-fixed-print-ribbon" />
-
-      <div ref={resolvedCaptureRef} data-khatian-pdf-body="1" className="w-full bg-white">
+      <div className="khatian-pdf-source-host" aria-hidden="true">
         <AuthoritativeKhatianDetailsView
           khatian={khatian}
           fullKhatian={resolvedFullKhatian}
           surveyKey={surveyKey}
+          captureRef={resolvedCaptureRef}
           pageOrientation={pageOrientation}
         />
-        {resolvedFullKhatian ? (
-          <FullKhatianSupplement
-            fullKhatian={resolvedFullKhatian}
-            pageOrientation={pageOrientation}
-          />
-        ) : null}
       </div>
-      {pdfPreview ? (
-        <PdfPreviewDialog document={pdfPreview} onClose={() => setPdfPreview(null)} />
+
+      {resolvedFullKhatian ? (
+        <details className="rounded-xl border border-[#26372f] bg-[#101813] text-[#c3cec7] print:hidden">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#dbe4de]">অতিরিক্ত উৎস-তথ্য দেখুন</summary>
+          <div className="border-t border-[#26372f] bg-white p-3 text-black">
+            <FullKhatianSupplement fullKhatian={resolvedFullKhatian} pageOrientation={pageOrientation} />
+          </div>
+        </details>
       ) : null}
+
+      {pdfPreview ? <PdfPreviewDialog document={pdfPreview} onClose={() => setPdfPreview(null)} /> : null}
     </div>
   );
 }
