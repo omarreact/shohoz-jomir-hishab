@@ -84,6 +84,12 @@ jobs:
           SMOKE_TIMEOUT_MS: "10000"
         run: node scripts/qa/live-routing-smoke.mjs
 
+      - name: Historical imagery provider smoke
+        env:
+          IMAGERY_SMOKE_TIMEOUT_MS: "20000"
+          IMAGERY_SMOKE_ATTEMPTS: "3"
+        run: node scripts/qa/free-imagery-provider-smoke.mjs
+
       - name: Responsive Chromium QA
         env:
           QA_BASE_URL: http://127.0.0.1:3000

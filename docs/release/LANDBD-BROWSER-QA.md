@@ -25,3 +25,9 @@ The runner starts the temporary localhost server with `LANDBD_PUBLIC_ACCESS=true
 
 
 The local QA server raises `PROXY_RATE_LIMIT_MAX` to 10000 only for the ephemeral runner because route smoke + Chromium together deliberately generate many requests from the single localhost IP. Production rate-limit settings are not changed.
+
+
+## Historical imagery acceptance
+The browser suite switches among the configured EOxCloudless 2016 and NASA MODIS historical choices and checks selected state. A separate read-only provider smoke requests one Bangladesh sample tile from EOX and each configured NASA date (2003, 2010, 2020, 2025), requiring a successful image response. The provider check retries transient network failures but fails the release gate when a configured source is unavailable.
+
+This verifies UI switching and provider reachability only. It does not certify imagery as cadastral evidence; the existing resolution and licensing warnings remain authoritative.

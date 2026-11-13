@@ -133,4 +133,31 @@ test.describe("LandBD GIS control geometry", () => {
       await expect(tablist.getByRole("tab")).toHaveCount(4);
     }
   });
+  test("historical imagery choices switch in the real map workspace", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await allowFreeGisAccess(page);
+    await goto(page, "/geospatial-map");
+    await dismissLocationConsent(page);
+
+    const panel = page.locator("#atlas-map-workspace-panel");
+    await expect(panel).toBeVisible();
+    await panel.getByRole("tab", { name: "বেসম্যাপ" }).click();
+
+    const sentinel = panel.getByRole("button", { name: /Sentinel-2 · ২০১৬/ });
+    const modis2003 = panel.getByRole("button", { name: /NASA MODIS · 2003|NASA MODIS · ২০০৩/ });
+    const modis2025 = panel.getByRole("button", { name: /NASA MODIS · 2025|NASA MODIS · ২০২৫/ });
+    await expect(sentinel).toBeVisible();
+    await expect(modis2003).toBeVisible();
+    await expect(modis2025).toBeVisible();
+
+    await sentinel.click();
+    await expect(sentinel).toHaveAttribute("aria-pressed", "true");
+    await modis2003.click();
+    await expect(modis2003).toHaveAttribute("aria-pressed", "true");
+    await expect(sentinel).toHaveAttribute("aria-pressed", "false");
+    await modis2025.click();
+    await expect(modis2025).toHaveAttribute("aria-pressed", "true");
+    await expect(modis2003).toHaveAttribute("aria-pressed", "false");
+  });
+
 });
