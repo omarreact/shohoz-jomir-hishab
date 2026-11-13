@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, type RefObject } from "react";
-import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
 import { buildFullKhatianDisplayModel } from "../lib/full-khatian-display";
+import "./khatian-official.css";
 
 type Props = {
   khatian: KhatianDetails;
@@ -19,22 +19,11 @@ function bangla(value: string | number | undefined | null): string {
   return String(value).replace(/[0-9]/g, (digit) => "০১২৩৪৫৬৭৮৯"[Number(digit)]);
 }
 
-function present(value: unknown): boolean {
-  return value !== null && value !== undefined && Boolean(String(value).trim()) && String(value).trim() !== "—";
+function plainArea(value: string | undefined): string {
+  if (!value) return "—";
+  return bangla(value.replace(/s*একরs*$/u, "").trim());
 }
 
-const tableBorder = "#8fb69d";
-const tableHeader = "#e2f0e7";
-const tableSoft = "#f7faf8";
-const ink = "#173427";
-const muted = "#526b5d";
-const sectionGreen = "#0f5536";
-
-/**
- * Source-driven Khatian sheet. The result body is intentionally rendered as one
- * disciplined bordered table so identity, owners/guardians, and dag details
- * stay visually connected in the older official khatian-style format.
- */
 export default function AuthoritativeKhatianDetailsView({
   khatian,
   fullKhatian,
@@ -46,206 +35,168 @@ export default function AuthoritativeKhatianDetailsView({
     () => buildFullKhatianDisplayModel(khatian, fullKhatian, surveyKey),
     [khatian, fullKhatian, surveyKey],
   );
-  const guardians = model.guardians.filter(present);
-  const hasClass = model.dags.some((dag) => present(dag.landClass));
-  const hasTotalArea = model.dags.some((dag) => present(dag.totalArea));
-  const hasKhatianArea = model.dags.some((dag) => present(dag.shareArea || dag.area));
-  const hasShare = model.dags.some((dag) => present(dag.khatianShare));
-  const hasOwnerShare = model.owners.some((owner) => present(owner.share));
-  const hasVerifiedGuardian = model.owners.some((owner) => present(owner.fatherOrHusband));
-  // formatAcre already includes the Bengali unit; never append "একর" twice.
-  const totalLand = model.totalLand ? bangla(model.totalLand) : "উৎসে নেই";
-  const quality = model.reconstruction?.FIELD_QUALITY as
-    | Record<string, { PARTIAL?: boolean }>
-    | undefined;
-  const ownerPartial = Boolean(quality?.OWNERS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.OWNERS);
-  const dagPartial = Boolean(quality?.DAGS?.PARTIAL) || /(?:\.{3}|…)\s*$/u.test(khatian.DAGS);
+
+  const ownerNames = model.owners.map((owner) => owner.name).filter(Boolean);
+  const ownerShares = model.owners.map((owner) => owner.share).filter(Boolean);
+  const ownerRelations = model.owners.map((owner) => owner.fatherOrHusband).filter(Boolean);
+  const dagNumbers = model.dags.map((dag) => dag.dagNo).filter(Boolean);
+  const landClasses = model.dags.map((dag) => dag.landClass).filter(Boolean);
+  const totalAreas = model.dags.map((dag) => dag.totalArea).filter(Boolean);
+  const khatianShares = model.dags.map((dag) => dag.khatianShare).filter(Boolean);
+  const shareAreas = model.dags.map((dag) => dag.shareArea || dag.area).filter(Boolean);
 
   return (
-    <article
+    <div
       ref={captureRef ?? undefined}
+      data-khatian-official-pdf="1"
       data-page-orientation={pageOrientation}
       data-print-document="khatian"
-      className="relative w-full min-w-0 overflow-hidden rounded-xl border bg-white shadow-sm"
+      className="khatian-official-root"
       style={{
-        backgroundColor: "#ffffff",
-        borderColor: "#c9ded0",
-        color: ink,
-        fontFamily: 'var(--font-report), "Kalpurush", "Nirmala UI", sans-serif',
+        color: "#111111",
+        background: "#ffffff",
+        fontFamily: 'var(--font-nikosh), "Nikosh", "Nirmala UI", serif',
       }}
     >
-      <div className="flex h-1.5 w-full" aria-hidden="true">
-        <span className="w-3/5" data-pdf-surface="top-green" style={{ backgroundColor: "#006a45" }} />
-        <span className="w-1/5" data-pdf-surface="top-gold" style={{ backgroundColor: "#d7a327" }} />
-        <span className="w-1/5" data-pdf-surface="top-red" style={{ backgroundColor: "#c52d43" }} />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center print:hidden" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/logo-bangla.svg" alt="" className="w-[40%] -rotate-12 object-contain" style={{ opacity: 0.045 }} />
-      </div>
-
-      <div className="relative z-10 p-4 sm:p-6">
-        <header className="grid gap-3 border-b pb-3 sm:grid-cols-[1fr_auto]" style={{ borderColor: tableBorder }}>
-          <div className="flex min-w-0 items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/logo-bangla.svg" alt="LandBD" className="h-14 w-14 shrink-0 object-contain" />
-            <div className="min-w-0">
-              <p className="text-[11px] font-black tracking-wide" style={{ color: "#006a45" }}>LandBD · ভূমি রেকর্ড</p>
-              <h1 className="mt-0.5 text-[22px] font-black leading-tight" style={{ color: "#143e29" }}>
-                {model.badgeBn} খতিয়ান নং {bangla(khatian.KHATIAN_NO)}
-              </h1>
-              <p className="mt-0.5 text-[12px] font-semibold" style={{ color: muted }}>
-                {model.surveyLabel || "সার্ভে তথ্য নেই"} · {khatian.MOUZA_NAME || "মৌজা অজ্ঞাত"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <div className="text-right text-[11px] font-semibold leading-4" style={{ color: muted }}>
-              <div>Verify via LandBD</div>
-              <div>QR স্ক্যান করুন</div>
-            </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/api/reports/mouza-porcha/qr?target=dlrms-khatian"
-              alt="LandBD khatian search page QR"
-              className="h-20 w-20 border bg-white object-contain p-1"
-              style={{ borderColor: tableBorder }}
-            />
-          </div>
+      <section className="khatian-official-page khatian-official-form-page">
+        <header className="khatian-official-heading">
+          <p>বাংলাদেশ ফরম নং ৫৪৬২ (সংশোধিত)</p>
+          <h1>খতিয়ান নং {bangla(khatian.KHATIAN_NO)}</h1>
+          <span />
         </header>
 
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full border-collapse text-[12px] leading-5" style={{ borderColor: tableBorder }}>
-            <tbody>
-              <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                <th colSpan={6} className="border px-3 py-1.5 text-center text-[14px] font-black" style={{ borderColor: tableBorder, color: sectionGreen }}>
-                  খতিয়ান পরিচিতি
-                </th>
-              </tr>
-              <tr>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>জেলা</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{khatian.DISTRICT_NAME || "—"}</td>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>উপজেলা</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{khatian.UPAZILA_NAME || "—"}</td>
-              </tr>
-              <tr style={{ backgroundColor: tableSoft }}>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>মৌজা</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{khatian.MOUZA_NAME || "—"}</td>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>জে.এল নং</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(khatian.JL_NUMBER)}</td>
-              </tr>
-              <tr>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত মালিক{ownerPartial ? " (আংশিক)" : ""}</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.ownerCount)}{ownerPartial ? " (আংশিক)" : ""}</td>
-                <th className="border px-2.5 py-1.5 text-left font-extrabold" style={{ borderColor: tableBorder, backgroundColor: tableHeader }}>প্রাপ্ত দাগ</th>
-                <td colSpan={2} className="border px-2.5 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{bangla(model.dagCount)}{dagPartial ? " (আংশিক)" : ""}</td>
-              </tr>
-
-              {model.isPartial ? (
-                <tr>
-                  <td colSpan={6} className="border px-3 py-1.5 text-center font-bold" style={{ borderColor: "#e4c77f", backgroundColor: "#fff8e7", color: "#805315" }}>
-                    উৎস রেকর্ড আংশিক — LandBD কোনো অনুপস্থিত তথ্য অনুমান করেনি।
-                  </td>
-                </tr>
-              ) : null}
-
-              <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                <th colSpan={6} className="border px-3 py-1.5 text-center text-[14px] font-black" style={{ borderColor: tableBorder, color: sectionGreen }}>
-                  মালিক ও অভিভাবক তালিকা
-                </th>
-              </tr>
-              <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                <th className="w-12 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>ক্রম</th>
-                <th colSpan={5 - Number(hasOwnerShare) - Number(hasVerifiedGuardian)} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>মালিকের নাম</th>
-                {hasVerifiedGuardian ? <th className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>পিতা/স্বামী (উৎসে সংযুক্ত)</th> : null}
-                {hasOwnerShare ? (
-                  <th className="w-24 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>অংশ</th>
-                ) : null}
-              </tr>
-              {model.owners.length ? model.owners.map((owner, index) => (
-                <tr key={`${owner.name}-${index}`} style={{ backgroundColor: index % 2 ? tableSoft : "#ffffff" }}>
-                  <td className="border px-2 py-1.5 text-center font-bold" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                  <td colSpan={5 - Number(hasOwnerShare) - Number(hasVerifiedGuardian)} className="border px-2 py-1.5 font-semibold" style={{ borderColor: tableBorder }}>{owner.name || "—"}</td>
-                  {hasVerifiedGuardian ? <td className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{owner.fatherOrHusband || "—"}</td> : null}
-                  {hasOwnerShare ? (
-                    <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{present(owner.share) ? bangla(owner.share) : "—"}</td>
-                  ) : null}
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6} className="border px-3 py-3 text-center" style={{ borderColor: tableBorder, color: muted }}>
-                    উৎসে মালিকের তথ্য নেই
-                  </td>
-                </tr>
-              )}
-              {guardians.length ? (
-                <>
-                  <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                    <th colSpan={6} className="border px-3 py-1.5 text-left font-bold" style={{ borderColor: tableBorder }}>
-                      অভিভাবক তালিকা (মালিকের সঙ্গে সম্পর্ক উৎসে যাচাইকৃত নয়)
-                    </th>
-                  </tr>
-                  {guardians.map((guardian, index) => (
-                    <tr key={`guardian-${index}`}>
-                      <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                      <td colSpan={5} className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{guardian}</td>
-                    </tr>
-                  ))}
-                </>
-              ) : null}
-
-              <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                <th colSpan={6} className="border px-3 py-1.5 text-center text-[14px] font-black" style={{ borderColor: tableBorder, color: sectionGreen }}>
-                  দাগ ও জমির বিবরণ
-                </th>
-              </tr>
-              <tr data-pdf-surface="table-head" style={{ backgroundColor: tableHeader }}>
-                <th className="w-12 border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>ক্রম</th>
-                <th colSpan={5 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>দাগ নং</th>
-                {hasClass ? <th className="border px-2 py-1.5 text-left font-black" style={{ borderColor: tableBorder }}>শ্রেণী</th> : null}
-                {hasTotalArea ? <th className="border px-2 py-1.5 text-right font-black" style={{ borderColor: tableBorder }}>দাগের মোট জমি</th> : null}
-                {hasKhatianArea ? <th className="border px-2 py-1.5 text-right font-black" style={{ borderColor: tableBorder }}>খতিয়ানের অংশ</th> : null}
-                {hasShare ? <th className="border px-2 py-1.5 text-center font-black" style={{ borderColor: tableBorder }}>অংশ/হিস্যা</th> : null}
-              </tr>
-              {model.dags.length ? model.dags.map((dag, index) => (
-                <tr key={`${dag.dagNo}-${index}`} style={{ backgroundColor: index % 2 ? tableSoft : "#ffffff" }}>
-                  <td className="border px-2 py-1.5 text-center font-bold" style={{ borderColor: tableBorder }}>{bangla(index + 1)}</td>
-                  <td colSpan={5 - Number(hasClass) - Number(hasTotalArea) - Number(hasKhatianArea) - Number(hasShare)} className="border px-2 py-1.5 font-bold" style={{ borderColor: tableBorder }}>{bangla(dag.dagNo)}</td>
-                  {hasClass ? <td className="border px-2 py-1.5" style={{ borderColor: tableBorder }}>{dag.landClass || "—"}</td> : null}
-                  {hasTotalArea ? <td className="border px-2 py-1.5 text-right" style={{ borderColor: tableBorder }}>{bangla(dag.totalArea)}</td> : null}
-                  {hasKhatianArea ? <td className="border px-2 py-1.5 text-right" style={{ borderColor: tableBorder }}>{bangla(dag.shareArea || dag.area)}</td> : null}
-                  {hasShare ? <td className="border px-2 py-1.5 text-center" style={{ borderColor: tableBorder }}>{bangla(dag.khatianShare)}</td> : null}
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6} className="border px-3 py-3 text-center" style={{ borderColor: tableBorder, color: muted }}>
-                    উৎসে দাগের তথ্য পাওয়া যায়নি।
-                  </td>
-                </tr>
-              )}
-
-              <tr data-pdf-surface="soft" style={{ backgroundColor: tableSoft }}>
-                <th colSpan={3} className="border px-3 py-2 text-right font-extrabold" style={{ borderColor: tableBorder }}>
-                  মোট জমি
-                </th>
-                <td colSpan={3} className="border px-3 py-2 text-center font-bold" style={{ borderColor: tableBorder }}>
-                  {totalLand}
-                </td>
-              </tr>
-
-              <tr>
-                <td colSpan={6} className="border px-3 py-2 text-[11px] font-semibold leading-5" data-pdf-surface="soft" style={{ backgroundColor: "#f4f8f5", borderColor: tableBorder, color: muted }}>
-                  <strong style={{ color: "#17462e" }}>রেকর্ড যাচাই নোট:</strong> এটি DLRMS উৎসে পাওয়া তথ্যের সাজানো অনুলিপি, সরকারি প্রত্যয়িত পর্চা নয়।
-                  অনুপস্থিত কোনো তথ্য অনুমান করা হয়নি। আইনি কাজে ব্যবহারের আগে সরকারি মূল নথির সঙ্গে যাচাই করুন।
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="khatian-official-location">
+          <span>জেলা : <strong>{khatian.DISTRICT_NAME || "—"}</strong></span>
+          <span>উপজেলা /সার্কেল : <strong>{khatian.UPAZILA_NAME || "—"}</strong></span>
+          <span>মৌজা : <strong>{khatian.MOUZA_NAME || "—"}</strong></span>
+          <span>জে.এল নং : <strong>{bangla(khatian.JL_NUMBER || "—")}</strong></span>
         </div>
-      </div>
-      <div data-pdf-exclude="1"><LandBdPrintRibbon className="print:hidden" /></div>
-    </article>
+
+        <table className="khatian-official-table">
+          <colgroup>
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "13%" }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>মালিক, অকৃষি প্রজা বা<br />ইজারাদারের নাম ও ঠিকানা</th>
+              <th>অংশ</th>
+              <th>মোট ভূমি উন্নয়ন কর</th>
+              <th>দাগ নং</th>
+              <th>জমির শ্রেণী</th>
+              <th>দাগের মোট জমির পরিমাণ<br />(একর)</th>
+              <th>দাগের মধ্যে অত্র<br />খতিয়ানের অংশ</th>
+              <th>অংশানুযায়ী জমির পরিমাণ<br />(একর)</th>
+              <th>দখল/স্বত্ব বিষয়ক বা অন্যান্য<br />বিষয়ে মন্তব্য</th>
+            </tr>
+            <tr className="khatian-official-column-numbers">
+              {["১","২","৩","৪","৫","৬","৭","৮","৯"].map((number) => <th key={number}>{number}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div className="khatian-official-lines">
+                  {(ownerNames.length ? ownerNames : ["—"]).map((name, index) => (
+                    <span key={`${name}-${index}`}>{name}</span>
+                  ))}
+                </div>
+                {ownerRelations.length ? (
+                  <div className="khatian-official-owner-relations">
+                    {ownerRelations.map((relation, index) => <span key={`${relation}-${index}`}>{relation}</span>)}
+                  </div>
+                ) : null}
+              </td>
+              <td>
+                <div className="khatian-official-lines">
+                  {(ownerShares.length ? ownerShares : ["—"]).map((share, index) => (
+                    <span key={`${share}-${index}`}>{bangla(share)}</span>
+                  ))}
+                </div>
+              </td>
+              <td>—</td>
+              <td>
+                <div className="khatian-official-lines khatian-official-dags">
+                  {(dagNumbers.length ? dagNumbers : ["—"]).map((dag, index) => (
+                    <span key={`${dag}-${index}`}>{bangla(dag)}</span>
+                  ))}
+                </div>
+              </td>
+              <td>
+                <div className="khatian-official-lines">
+                  {(landClasses.length ? landClasses : ["—"]).map((landClass, index) => (
+                    <span key={`${landClass}-${index}`}>{landClass}</span>
+                  ))}
+                </div>
+              </td>
+              <td>
+                <div className="khatian-official-lines">
+                  {(totalAreas.length ? totalAreas : ["—"]).map((area, index) => (
+                    <span key={`${area}-${index}`}>{plainArea(area)}</span>
+                  ))}
+                </div>
+              </td>
+              <td>
+                <div className="khatian-official-lines">
+                  {(khatianShares.length ? khatianShares : ["—"]).map((share, index) => (
+                    <span key={`${share}-${index}`}>{bangla(share)}</span>
+                  ))}
+                </div>
+              </td>
+              <td>
+                <div className="khatian-official-lines">
+                  {(shareAreas.length ? shareAreas : [model.totalLand || "—"]).map((area, index) => (
+                    <span key={`${area}-${index}`}>{plainArea(area)}</span>
+                  ))}
+                </div>
+              </td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="khatian-official-page-number">1/2</div>
+      </section>
+
+      <section className="khatian-official-page khatian-official-note-page">
+        <header className="khatian-official-heading">
+          <p>বাংলাদেশ ফরম নং ৫৪৬২ (সংশোধিত)</p>
+          <h1>খতিয়ান নং {bangla(khatian.KHATIAN_NO)}</h1>
+          <span />
+        </header>
+
+        <div className="khatian-official-location">
+          <span>জেলা : <strong>{khatian.DISTRICT_NAME || "—"}</strong></span>
+          <span>উপজেলা /সার্কেল : <strong>{khatian.UPAZILA_NAME || "—"}</strong></span>
+          <span>মৌজা : <strong>{khatian.MOUZA_NAME || "—"}</strong></span>
+          <span>জে.এল নং : <strong>{bangla(khatian.JL_NUMBER || "—")}</strong></span>
+        </div>
+
+        <div className="khatian-official-notes">
+          <h2>বিশেষ দ্রষ্টব্য:</h2>
+          <ol>
+            <li>এই খতিয়ানটি LandBD-এ উপলভ্য DLRMS/সরকারি ভূমি রেকর্ড উৎসের তথ্য সাজিয়ে প্রস্তুত করা হয়েছে। এটি তথ্য দেখার ও তুলনার সহায়ক অনুলিপি; সরকারি প্রত্যয়িত খতিয়ান নয়।</li>
+            <li>সরকারি, আইনি, নামজারি, নিবন্ধন বা আদালতের কাজে ব্যবহারের আগে land.gov.bd বা সংশ্লিষ্ট সরকারি কর্তৃপক্ষের মূল/প্রত্যয়িত নথির সঙ্গে তথ্য যাচাই করতে হবে।</li>
+            <li>উৎসে অনুপস্থিত মালিক, অভিভাবক, দাগ, শ্রেণী, অংশ বা জমির পরিমাণ LandBD অনুমান করে পূরণ করে না।</li>
+            <li>ভূমি বিষয়ক সরকারি সেবা ও তথ্যের জন্য সংশ্লিষ্ট সরকারি পোর্টাল ও ভূমি সেবা হটলাইন ব্যবহার করুন।</li>
+          </ol>
+
+          <div className="khatian-official-source-note">
+            <strong>তথ্যসূত্র:</strong> DLRMS / সরকারি ভূমি রেকর্ড উৎস<br />
+            <strong>সার্ভে:</strong> {model.surveyLabel || "—"}<br />
+            <strong>LandBD:</strong> landbd.pincodeit.com
+          </div>
+        </div>
+
+        <div className="khatian-official-page-number">2/2</div>
+      </section>
+    </div>
   );
 }

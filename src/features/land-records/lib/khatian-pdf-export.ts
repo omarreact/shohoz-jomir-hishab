@@ -101,7 +101,11 @@ function setImportant(node: HTMLElement | null | undefined, property: string, va
   node?.style.setProperty(property, value, "important");
 }
 
-function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
+function compactPdfClone(
+  clone: HTMLElement,
+  exportWidthPx: number,
+  preserveOfficialStyles = false,
+): void {
   const fontFamily = exportFontFamily();
   clone.style.width = `${exportWidthPx}px`;
   clone.style.maxWidth = `${exportWidthPx}px`;
@@ -124,6 +128,23 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
     .forEach((node) => {
       node.style.display = "none";
     });
+
+  if (preserveOfficialStyles) {
+    const pageHeightPx = Math.round((exportWidthPx * 210) / 297);
+    clone.style.padding = "0";
+    clone.style.display = "block";
+    clone.style.background = "#ffffff";
+    clone.style.color = "#111111";
+    clone.style.fontFamily = 'var(--font-nikosh), "Nikosh", "Nirmala UI", serif';
+    clone.querySelectorAll<HTMLElement>(".khatian-official-page").forEach((page) => {
+      page.style.setProperty("width", `${exportWidthPx}px`, "important");
+      page.style.setProperty("height", `${pageHeightPx}px`, "important");
+      page.style.setProperty("min-height", `${pageHeightPx}px`, "important");
+      page.style.setProperty("margin", "0", "important");
+      page.style.setProperty("box-shadow", "none", "important");
+    });
+    return;
+  }
 
   clone.querySelectorAll<HTMLElement>("*").forEach((node) => {
     for (const className of Array.from(node.classList)) {
@@ -199,6 +220,19 @@ function compactPdfClone(clone: HTMLElement, exportWidthPx: number): void {
   });
 }
 
+function collectOfficialPageSlices(root: HTMLElement): Array<{ offsetY: number; height: number }> {
+  const rootRect = root.getBoundingClientRect();
+  return Array.from(root.querySelectorAll<HTMLElement>(".khatian-official-page"))
+    .map((page) => {
+      const rect = page.getBoundingClientRect();
+      return {
+        offsetY: Math.max(0, Math.round(rect.top - rootRect.top)),
+        height: Math.max(1, Math.round(rect.height)),
+      };
+    })
+    .filter((slice) => slice.height > 0);
+}
+
 function collectBreakpoints(root: HTMLElement): number[] {
   const rootRect = root.getBoundingClientRect();
   const candidates: Element[] = [
@@ -263,9 +297,12 @@ async function buildPdfAtScale(
   orientation: KhatianPdfOrientation,
   exportWidthPx: number,
   delivery: "download" | "return",
+  plainDocument = false,
 ): Promise<{ pages: number; scale: number; blob: Blob; fileName: string }> {
   const totalHeight = Math.max(clone.scrollHeight, clone.clientHeight, 1);
-  const slices = planA4Slices(totalHeight, collectBreakpoints(clone), orientation, exportWidthPx);
+  const slices = plainDocument
+    ? collectOfficialPageSlices(clone)
+    : planA4Slices(totalHeight, collectBreakpoints(clone), orientation, exportWidthPx);
   if (!slices.length || slices.length > MAX_PAGES) {
     throw new Error(`Unsafe PDF page count: ${slices.length}`);
   }
@@ -285,8 +322,10 @@ async function buildPdfAtScale(
 
   const content = contentSizeMm(orientation, PDF_MARGIN_MM);
   const contentBox = getLandBdA4ContentBox(orientation, PDF_MARGIN_MM);
-  const contentWidth = content.width;
-  const contentHeight = content.height;
+  const pdfPageWidth = pdf.internal.pageSize.getWidth();
+  const pdfPageHeight = pdf.internal.pageSize.getHeight();
+  const contentWidth = plainDocument ? pdfPageWidth : content.width;
+  const contentHeight = plainDocument ? pdfPageHeight : content.height;
   const orientationLabel = orientation === "landscape" ? "ল্যান্ডস্কেপ" : "পোর্ট্রেট";
   const pageImages: Array<{ bytes: Uint8Array; height: number }> = [];
 
@@ -348,10 +387,12 @@ async function buildPdfAtScale(
     }
 
     const pageBlob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
-    const renderedHeight = Math.min(
-      contentHeight,
-      (slice.height * contentWidth) / exportWidthPx,
-    );
+    const renderedHeight = plainDocument
+      ? pdfPageHeight
+      : Math.min(
+          contentHeight,
+          (slice.height * contentWidth) / exportWidthPx,
+        );
     canvas.width = 1;
     canvas.height = 1;
 
@@ -376,21 +417,23 @@ async function buildPdfAtScale(
     pdf.addImage(
       image.bytes,
       "JPEG",
-      contentBox.x,
-      contentBox.y,
+      plainDocument ? 0 : contentBox.x,
+      plainDocument ? 0 : contentBox.y,
       contentWidth,
       image.height,
       undefined,
       "FAST",
     );
-    drawLandBdPdfChrome(pdf, {
-      title: fileName,
-      subtitle: `A4 ${orientationLabel} · খতিয়ান রিপোর্ট`,
-      source: "DLRMS / LandBD data workspace",
-      pageNumber: i + 1,
-      pageCount: pageImages.length,
-    });
-    drawKhatianAccentRibbon(pdf);
+    if (!plainDocument) {
+      drawLandBdPdfChrome(pdf, {
+        title: fileName,
+        subtitle: `A4 ${orientationLabel} · খতিয়ান রিপোর্ট`,
+        source: "DLRMS / LandBD data workspace",
+        pageNumber: i + 1,
+        pageCount: pageImages.length,
+      });
+      drawKhatianAccentRibbon(pdf);
+    }
   }
 
   const pdfBlob = pdf.output("blob");
@@ -470,12 +513,15 @@ export async function exportKhatianPdf(
   ].join(";");
 
   const clone = options.source.cloneNode(true) as HTMLElement;
+  const preserveOfficialStyles =
+    options.source.dataset.khatianOfficialPdf === "1" ||
+    options.source.querySelector("[data-khatian-official-pdf='1']") !== null;
   viewport.appendChild(clone);
   host.appendChild(viewport);
   document.body.appendChild(host);
 
   try {
-    compactPdfClone(clone, exportWidthPx);
+    compactPdfClone(clone, exportWidthPx, preserveOfficialStyles);
     viewport.style.height = "auto";
     viewport.style.overflow = "visible";
     await waitForAssets(clone);
@@ -497,6 +543,7 @@ export async function exportKhatianPdf(
           orientation,
           exportWidthPx,
           options.delivery ?? "download",
+          preserveOfficialStyles,
         );
         return { ok: true, ...result, orientation };
       } catch (error) {
