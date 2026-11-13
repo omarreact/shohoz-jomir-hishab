@@ -18,3 +18,7 @@ Covered behaviors:
 - Local runtime checks for retained canonical pages and retired public routes
 
 The workflow is read-only and starts only a local Next.js server on the GitHub runner. It does not deploy, mutate production, write Firestore data, or use privileged user credentials.
+
+
+## Local policy mode
+The runner starts the temporary localhost server with `LANDBD_PUBLIC_ACCESS=true`. This is the application's existing public-access override and is scoped only to the ephemeral GitHub Actions process. It is required because CI intentionally has no production Firebase Admin credentials, which otherwise makes the fail-closed policy display maintenance mode. Production/staging environment settings are not modified.

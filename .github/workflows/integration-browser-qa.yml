@@ -67,7 +67,7 @@ jobs:
       - name: Start local production server
         shell: bash
         run: |
-          PORT=3000 HOSTNAME=127.0.0.1 npm start > /tmp/landbd-next.log 2>&1 &
+          LANDBD_PUBLIC_ACCESS=true PORT=3000 HOSTNAME=127.0.0.1 npm start > /tmp/landbd-next.log 2>&1 &
           echo $! > /tmp/landbd-next.pid
           for attempt in $(seq 1 60); do
             if curl --fail --silent --show-error http://127.0.0.1:3000/login > /dev/null; then
