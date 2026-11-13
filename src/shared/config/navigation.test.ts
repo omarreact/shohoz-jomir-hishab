@@ -21,10 +21,8 @@ describe("canonical navigation and deep links", () => {
     expect(isFeatureRouteActive("/admin/users/create", "/admin/users")).toBe(true);
     expect(isFeatureRouteActive("/administer", "/admin")).toBe(false);
     expect(isFeatureRouteActive("/dlrms-khatian?survey=BRS", "/dlrms-khatian")).toBe(true);
-    expect(isFeatureRouteActive("/map", "/geospatial-map")).toBe(true);
-    expect(isFeatureRouteActive("/dap-map", "/geospatial-map")).toBe(true);
-    expect(isFeatureRouteActive("/khatian", "/khatiyan")).toBe(true);
     expect(isFeatureRouteActive("/survey-khatian", "/dlrms-khatian")).toBe(true);
+    expect(isFeatureRouteActive("/map", "/geospatial-map")).toBe(false);
     expect(isFeatureRouteActive("/admin", "/")).toBe(false);
   });
 });

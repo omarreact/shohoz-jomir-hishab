@@ -207,10 +207,10 @@ export default function MobileExplore() {
       <section className="mt-5 space-y-3 rounded-[20px] border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
         <h2 className="text-base font-black">আমার LandBD</h2>
         <Link
-          href={canSeeAdmin ? FEATURE_ROUTES.admin : isLoggedIn ? "/my-purchases" : FEATURE_ROUTES.login}
+          href={canSeeAdmin ? FEATURE_ROUTES.admin : isLoggedIn ? "/explore" : FEATURE_ROUTES.login}
           className="flex min-h-12 items-center gap-3 rounded-xl bg-[var(--secondary)] px-3 text-sm font-bold text-[var(--foreground)] no-underline">
           {canSeeAdmin ? <ShieldCheck size={19} /> : <UserRound size={19} />}
-          <span className="flex-1">{canSeeAdmin ? "অ্যাডমিন ড্যাশবোর্ড" : isLoggedIn ? "আমার কেনাকাটা" : "অ্যাকাউন্ট লগইন"}</span>
+          <span className="flex-1">{canSeeAdmin ? "অ্যাডমিন ড্যাশবোর্ড" : isLoggedIn ? "সব ভূমি সেবা" : "অ্যাকাউন্ট লগইন"}</span>
           <ArrowRight size={17} />
         </Link>
         <Link href="/" className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-[var(--foreground)] no-underline">

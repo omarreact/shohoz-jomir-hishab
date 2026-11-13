@@ -46,7 +46,7 @@ function Result() {
           <button type="button" className="min-h-11 rounded-xl border border-emerald-800 px-4 py-2 font-bold text-emerald-800" onClick={() => void refresh()}>
             অবস্থা আবার দেখুন
           </button>
-          <Link className="inline-flex min-h-11 items-center rounded-xl px-3 font-semibold text-emerald-800 underline" href="/my-purchases">আমার কেনাকাটা</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-xl px-3 font-semibold text-emerald-800 underline" href="/contact">পেমেন্ট সহায়তা</Link>
           <Link className="inline-flex min-h-11 items-center rounded-xl px-3 font-semibold text-emerald-800 underline" href="/">হোম</Link>
         </div>
         <p className="mt-5 text-xs leading-5 text-slate-500">শুধু সার্ভারে গেটওয়ে-যাচাইকৃত পেমেন্টই পরিশোধিত হিসেবে দেখানো হয়। অনিশ্চিত লেনদেনের জন্য পুনরায় অর্থ পাঠানোর আগে অর্ডার যাচাই করুন।</p>

@@ -44,7 +44,6 @@ function collectDevice() {
 export default function VisitTracker() {
   const pathname = usePathname();
   const isMapRoute =
-    pathname?.startsWith("/dap-map") ||
     pathname?.startsWith("/geospatial-map") ||
     pathname?.startsWith("/mouza-map");
 

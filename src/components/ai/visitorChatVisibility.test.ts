@@ -7,7 +7,6 @@ describe("visitor AI chat visibility", () => {
     "/mouza-map",
     "/mouza-map/export",
     "/rajuk-test",
-    "/dap-map",
   ])(
     "does not overlay the map workspace at %s",
     (path) => expect(isVisitorChatHiddenOnRoute(path)).toBe(true),

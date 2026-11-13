@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 const REPORT_ID = /^LANDBD-[A-Z0-9]{8,20}$/;
 const FALLBACK_TARGETS: Record<string, string> = {
   "dlrms-khatian": "/dlrms-khatian",
-  "mouza-porcha-report": "/mouza-porcha-report",
+  "mouza-porcha-report": "/mouza-khatian-book",
+  "mouza-khatian-book": "/mouza-khatian-book",
 };
 
 const LANDBD_QR_LOGO = `

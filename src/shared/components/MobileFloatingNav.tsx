@@ -35,9 +35,7 @@ export default function MobileFloatingNav() {
     pathname.startsWith("/maintenance") ||
     pathname.startsWith("/403") ||
     pathname.startsWith("/geospatial-map") ||
-    pathname.startsWith("/lios-map") ||
-    pathname.startsWith("/warishsanad") ||
-    pathname.startsWith("/warish/")
+    pathname.startsWith("/lios-map")
   ) return null;
 
   return (

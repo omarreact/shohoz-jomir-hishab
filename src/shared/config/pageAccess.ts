@@ -52,13 +52,6 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
-    id: "/khatian",
-    name: "খতিয়ান (পুরনো লিংক)",
-    description: "/khatiyan-এ রিডাইরেক্ট — SEO/পুরনো বুকমার্কের জন্য।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
     id: "/dlrms-khatian",
     name: "ডিএলআরএমএস খতিয়ান অনুসন্ধান",
     description: "সরকারি পাবলিক ডিএলআরএমএস ডেটা থেকে খতিয়ান অনুসন্ধান।",
@@ -69,13 +62,6 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     id: "/survey-khatian",
     name: "সার্ভে খতিয়ান (পুরনো লিংক)",
     description: "/dlrms-khatian-এ রিডাইরেক্ট হওয়া পুরনো সার্ভে খতিয়ান রুট।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
-    id: "/namjari-khatian",
-    name: "নামজারি খতিয়ান",
-    description: "নামজারি খতিয়ানের মৌজাভিত্তিক ব্রাউজ, অনুসন্ধান ও বিস্তারিত রেকর্ড।",
     category: "খতিয়ান ও রেকর্ড",
     defaultAccess: "public",
   },
@@ -94,51 +80,9 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     defaultAccess: "public",
   },
   {
-    id: "/mouza-porcha-report",
-    name: "মৌজা পর্চা রিপোর্ট",
-    description: "মৌজাভিত্তিক খতিয়ান, মালিক, দাগ ও জমির তথ্যসহ রিপোর্ট তৈরি।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
-    id: "/settlement-khatian",
-    name: "সেটেলমেন্ট খতিয়ান",
-    description: "সেটেলমেন্ট খতিয়ান অনুসন্ধান ও তথ্য।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
     id: "/porcha",
     name: "পর্চা",
     description: "পর্চা সম্পর্কিত সেবা ও তথ্য।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "logged_in",
-  },
-  {
-    id: "/nid_dob",
-    name: "জাতীয় পরিচয়পত্র যাচাই (পুরনো লিংক)",
-    description: "প্রশাসকের পরিচয় যাচাই টুলে প্রবেশ।",
-    category: "পরীক্ষামূলক",
-    defaultAccess: "admin",
-  },
-  {
-    id: "/nid-copy",
-    name: "জন্মনিবন্ধন যাচাই",
-    description: "অনুমোদিত সদস্যের জন্য সংবেদনশীল নিবন্ধন যাচাই।",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "logged_in",
-  },
-  {
-    id: "/warishsanad",
-    name: "ওয়ারিশান সনদপত্র",
-    description: "DNCC v8 A4 সনদ development workspace — sample/non-official output.",
-    category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
-    id: "/warish",
-    name: "ওয়ারিশ সনদপত্র",
-    description: "DNCC ওয়ার্ড/অঞ্চল রেফারেন্সসহ logged-in editable draft certificate workspace.",
     category: "খতিয়ান ও রেকর্ড",
     defaultAccess: "logged_in",
   },
@@ -147,13 +91,6 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     name: "রিপোর্ট যাচাই",
     description: "LandBD-generated মৌজা পর্চা রিপোর্টের Report ID যাচাই।",
     category: "খতিয়ান ও রেকর্ড",
-    defaultAccess: "public",
-  },
-  {
-    id: "/dap-map",
-    name: "রাজউক ড্যাপ ম্যাপ",
-    description: "/geospatial-map-এ রিডাইরেক্ট হওয়া পুরনো DAP ম্যাপ URL।",
-    category: "মানচিত্র ও জিআইএস",
     defaultAccess: "public",
   },
   {
@@ -167,13 +104,6 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     id: "/geospatial-map",
     name: "উন্নত জিআইএস ম্যাপ",
     description: "MapLibre অ্যাডভান্সড শেল — সরাসরি URL; প্রাইমারি নেভে নয়।",
-    category: "মানচিত্র ও জিআইএস",
-    defaultAccess: "public",
-  },
-  {
-    id: "/map",
-    name: "মানচিত্র (পুরনো লিংক)",
-    description: "/geospatial-map-এ সরাসরি রিডাইরেক্ট।",
     category: "মানচিত্র ও জিআইএস",
     defaultAccess: "public",
   },
@@ -195,14 +125,6 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
     id: "/faraez",
     name: "ফারায়েজ ক্যালকুলেটর",
     description: "ইসলামি উত্তরাধিকার হিসাব।",
-    category: "হিসাব ও পরিমাপ",
-    defaultAccess: "public",
-  },
-  { id: "/my-purchases", name: "আমার কেনাকাটা", description: "অ্যাকাউন্টের ডিজিটাল সেবা পেমেন্ট ও রসিদ", category: "মূল", defaultAccess: "logged_in" },
-  {
-    id: "/history",
-    name: "হিসাবের ইতিহাস",
-    description: "ব্যবহারকারীর সংরক্ষিত বা সাম্প্রতিক হিসাব।",
     category: "হিসাব ও পরিমাপ",
     defaultAccess: "public",
   },
@@ -271,9 +193,8 @@ const PAGE_ACCESS_LEVEL_SET = new Set<string>(PAGE_ACCESS_LEVELS);
 
 // Sensitive tools require a signed member session even if a stale Firestore
 // page-access override accidentally tries to make their route public.
-const MEMBER_MINIMUM_ROUTES = new Set(["/porcha", "/nid-copy"]);
+const MEMBER_MINIMUM_ROUTES = new Set(["/porcha"]);
 function enforceMinimumAccess(route: string, level: PageAccessLevel): PageAccessLevel {
-  if (route === "/nid_dob" && (level === "public" || level === "logged_in")) return "admin";
   return MEMBER_MINIMUM_ROUTES.has(route) && level === "public" ? "logged_in" : level;
 }
 

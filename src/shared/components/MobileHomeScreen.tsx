@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   ArrowRight, BookOpen, Calculator, FileSearch, FileText,
-  History, MapPinned, Ruler, Scale, ShieldCheck, type LucideIcon,
+  MapPinned, Ruler, Scale, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 
@@ -34,12 +34,8 @@ const MORE_ACTIONS: readonly Action[] = [
     subtitle: "অংশের হিসাব", icon: Calculator,
   },
   {
-    href: FEATURE_ROUTES.mouzaPorchaReport, title: "পর্চা রিপোর্ট",
+    href: FEATURE_ROUTES.mouzaKhatianBook, title: "মৌজা খতিয়ান বই",
     subtitle: "নথি ও প্রিন্ট", icon: FileText,
-  },
-  {
-    href: FEATURE_ROUTES.history, title: "কাজের ইতিহাস",
-    subtitle: "পূর্বের হিসাব", icon: History,
   },
   {
     href: FEATURE_ROUTES.blog, title: "গাইড ও ব্লগ",

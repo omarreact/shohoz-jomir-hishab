@@ -55,10 +55,10 @@ describe("LandBD routing inventory", () => {
       expect(sources.has(entry.destination)).toBe(false);
       expect(getPageAccessLevel(entry.destination, getDefaultPageAccessRules())).toBe("public");
     }
-    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/map")?.destination)
-      .toBe(FEATURE_ROUTES.landMap);
-    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/dap-map")?.destination)
-      .toBe(FEATURE_ROUTES.landMap);
+    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/survey-khatian")?.destination)
+      .toBe(FEATURE_ROUTES.dlrmsKhatian);
+    expect(sources.has("/map")).toBe(false);
+    expect(sources.has("/dap-map")).toBe(false);
   });
 
   it("keeps feature links registered and excludes noindex editors from sitemap", () => {

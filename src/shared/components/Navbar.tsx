@@ -52,17 +52,12 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   home: Home,
   records: Calculator,
   dlrmsKhatian: Search,
-  settlementKhatian: FileText,
-  mouzaPorchaReport: FileText,
   landMeasurement: Ruler,
   inheritance: Users,
   landMap: Map,
   mouzaDownload: Map,
   mapQa: Map,
   documents: FileText,
-  warish: Users,
-  warishSanad: FileText,
-  history: BookOpen,
   blog: BookOpen,
   faq: BookOpen,
   contact: Users,
@@ -528,7 +523,7 @@ export default function Navbar() {
                     </div>
 
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <Link href="/my-purchases" onClick={() => setSidebarOpen(false)} className="flex items-center justify-center gap-2 rounded-[12px] border border-[var(--border-color)] px-3 py-2.5 text-sm font-bold no-underline">আমার কেনাকাটা</Link>
+                      <Link href="/explore" onClick={() => setSidebarOpen(false)} className="flex items-center justify-center gap-2 rounded-[12px] border border-[var(--border-color)] px-3 py-2.5 text-sm font-bold no-underline">সব ভূমি সেবা</Link>
                       {canAccessAdmin ? (
                       <Link
                         href={FEATURE_ROUTES.admin}

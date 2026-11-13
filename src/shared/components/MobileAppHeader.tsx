@@ -22,7 +22,7 @@ export default function MobileAppHeader() {
       : (activeKey ? FEATURE_LABELS[activeKey].bn : "LandBD");
   const accountHref = isLoggedIn && isStaffRole(user?.role)
     ? FEATURE_ROUTES.admin
-    : isLoggedIn ? "/my-purchases" : FEATURE_ROUTES.login;
+    : isLoggedIn ? "/explore" : FEATURE_ROUTES.login;
 
   return (
     <header

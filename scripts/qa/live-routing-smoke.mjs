@@ -38,15 +38,12 @@ if (maintenance) {
   await check("anonymous admin blocked", "/admin", [503]);
   await check("anonymous sensitive API blocked", "/api/porcha?q=qa", [503]);
 } else {
-  for (const path of ["/", "/khatiyan", "/dlrms-khatian", "/mouza-porcha-report",
+  for (const path of ["/", "/khatiyan", "/dlrms-khatian", "/mouza-khatian-book",
     "/geospatial-map", "/mouza-map", "/blog", "/login", "/faq"]) {
     await check("public page " + path, path, [200]);
   }
   for (const [legacy, target] of [
-    ["/khatian", "/khatiyan"],
     ["/survey-khatian", "/dlrms-khatian"],
-    ["/map", "/geospatial-map"],
-    ["/dap-map", "/geospatial-map"],
   ]) {
     await check("legacy " + legacy, legacy, [307, 308], r =>
       !!r.location && new URL(r.location, origin).pathname === target);
