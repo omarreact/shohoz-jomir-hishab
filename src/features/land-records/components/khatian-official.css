@@ -205,3 +205,27 @@
     page-break-after: auto !important;
   }
 }
+
+.khatian-pdf-source-host {
+  position: fixed;
+  z-index: -10;
+  top: 0;
+  left: -20000px;
+  width: 297mm;
+  pointer-events: none;
+}
+
+@media print {
+  .khatian-pdf-source-host {
+    position: static !important;
+    z-index: auto !important;
+    left: auto !important;
+    width: auto !important;
+    pointer-events: auto !important;
+  }
+
+  body > *:not(#\__next) {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
