@@ -780,7 +780,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   ];
   if (referenceMatch) {
     evidence.push({
-      field: `bundled Patira reference display fallback: ${referenceMatch.enrichment.changedFields.join(", ")}`,
+      field: `registered LandBD reference display fallback (${referenceMatch.enrichment.datasetId}): ${referenceMatch.enrichment.changedFields.join(", ")}`,
       source: "LANDBD_REFERENCE",
       official: false,
       access: "bundled-reference",
