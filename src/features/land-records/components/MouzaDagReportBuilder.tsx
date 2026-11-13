@@ -158,6 +158,7 @@ export default function MouzaDagReportBuilder() {
       const result = await fetchMouzaKhatianIndex({
         surveyKey,
         jlNumberId: selectedMouza.ID,
+        endpoint: "/api/land-records/mouza-dag-report",
         signal: controller.signal,
         onProgress: (count, total) => {
           setLoaded(count);
