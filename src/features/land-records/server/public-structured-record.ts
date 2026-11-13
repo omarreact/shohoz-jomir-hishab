@@ -191,22 +191,50 @@ export function extractStructuredPublicRecord(
  * mouza's owners into our source model.
  */
 export function mirrorRecordMatchesBase(
-  base: Pick<KhatianIndex, "ID" | "KHATIAN_NO" | "JL_NUMBER_ID">,
+  base: Pick<KhatianIndex, "ID" | "KHATIAN_NO" | "JL_NUMBER_ID" | "MOUZA_ID">,
   record: Record<string, unknown> | null,
+  surveyKey?: string,
 ): boolean {
   if (!record || Number(record.ID ?? record.id) !== base.ID) return false;
+
   const recordNo = record.KHATIAN_NO ?? record.khatianNo;
   if (recordNo !== undefined && String(recordNo).trim() !== base.KHATIAN_NO.trim()) return false;
+
   const recordJl = record.JL_NUMBER_ID ?? record.jlNumberId;
   if (recordJl !== undefined && Number(recordJl) !== base.JL_NUMBER_ID) return false;
+
+  const recordMouza = record.MOUZA_ID ?? record.mouzaId;
+  if (
+    recordMouza !== undefined &&
+    base.MOUZA_ID > 0 &&
+    Number(recordMouza) !== base.MOUZA_ID
+  ) return false;
+
+  if (surveyKey) {
+    const advertisedSurvey = [
+      record.SURVEY,
+      record.SURVEY_KEY,
+      record.SURVEY_NAME_EN,
+      record.survey,
+      record.surveyKey,
+    ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+    if (
+      advertisedSurvey &&
+      advertisedSurvey.replace(/[\s_-]+/g, "").toUpperCase() !==
+        surveyKey.replace(/[\s_-]+/g, "").toUpperCase()
+    ) return false;
+  }
+
   return true;
 }
 
 export function extractVerifiedMirrorCompactRow(
   base: KhatianIndex,
   record: Record<string, unknown> | null,
+  surveyKey?: string,
 ): KhatianIndex | null {
-  if (!record || !mirrorRecordMatchesBase(base, record)) return null;
+  if (!record || !mirrorRecordMatchesBase(base, record, surveyKey)) return null;
 
   const select = (...keys: string[]): string => {
     for (const key of keys) {
@@ -281,6 +309,7 @@ export async function fetchStrictPublicMirrorRecord(
     jlNumberId: number;
     khatianNo: string;
     id: number;
+    mouzaId?: number;
     dagNumber?: string;
     owner?: string;
   },
@@ -312,7 +341,15 @@ export async function fetchStrictPublicMirrorRecord(
     });
     if (!response.ok) return null;
     const payload = await response.json();
-    return records(payload).find((row) => Number(row.ID ?? row.id) === input.id) ?? null;
+    const baseIdentity = {
+      ID: input.id,
+      KHATIAN_NO: input.khatianNo,
+      JL_NUMBER_ID: input.jlNumberId,
+      MOUZA_ID: input.mouzaId ?? 0,
+    };
+    return records(payload).find((row) =>
+      mirrorRecordMatchesBase(baseIdentity, row, input.surveyKey),
+    ) ?? null;
   } catch {
     return null;
   } finally {
