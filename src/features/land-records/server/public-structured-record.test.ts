@@ -40,7 +40,7 @@ describe("public structured khatian record helpers", () => {
   });
 
   it("rejects mirror rows with mismatched ID, khatian number or JL", () => {
-    const official = { ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911 };
+    const official = { ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 71947 };
     expect(mirrorRecordMatchesBase(official, {
       ID: 999, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
     })).toBe(false);
@@ -51,8 +51,15 @@ describe("public structured khatian record helpers", () => {
       ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382912,
     })).toBe(false);
     expect(mirrorRecordMatchesBase(official, {
-      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911,
-    })).toBe(true);
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 71947,
+    }, "BRS")).toBe(true);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 70000,
+    }, "BRS")).toBe(false);
+    expect(mirrorRecordMatchesBase(official, {
+      ID: 123, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 71947,
+      SURVEY_KEY: "RS",
+    }, "BRS")).toBe(false);
   });
 
   it("extracts structured owner and dag details without inventing relationships", () => {
@@ -194,7 +201,32 @@ describe("public structured khatian record helpers", () => {
     });
     expect(extractVerifiedMirrorCompactRow(base, { ...raw, ID: 111 })).toBeNull();
     expect(extractVerifiedMirrorCompactRow(base, { ...raw, KHATIAN_NO: "349" })).toBeNull();
-    expect(extractVerifiedMirrorCompactRow(base, { ...raw, JL_NUMBER_ID: 999 })).toBeNull();
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, JL_NUMBER_ID: 999 }, "BRS")).toBeNull();
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, MOUZA_ID: 70000 }, "BRS")).toBeNull();
+    expect(extractVerifiedMirrorCompactRow(base, { ...raw, SURVEY: "RS" }, "BRS")).toBeNull();
+  });
+
+  it("strict mirror lookup ignores same-ID rows from another mouza or survey", async () => {
+    const fetchMock = jest.fn(async () => Response.json({
+      data: {
+        items: [
+          { ID: 34901, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 70000, SURVEY: "BRS", OWNERS: "ভুল মৌজা" },
+          { ID: 34901, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 71947, SURVEY: "RS", OWNERS: "ভুল জরিপ" },
+          { ID: 34901, KHATIAN_NO: "349", JL_NUMBER_ID: 382911, MOUZA_ID: 71947, SURVEY: "BRS", OWNERS: "সঠিক রেকর্ড" },
+        ],
+      },
+    }));
+    global.fetch = fetchMock as typeof fetch;
+
+    const record = await fetchStrictPublicMirrorRecord({
+      surveyKey: "BRS",
+      jlNumberId: 382911,
+      khatianNo: "349",
+      id: 34901,
+      mouzaId: 71947,
+    });
+
+    expect(record?.OWNERS).toBe("সঠিক রেকর্ড");
   });
 
   it("passes dag filters to the strict public mirror lookup", async () => {
