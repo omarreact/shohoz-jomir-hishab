@@ -75,6 +75,7 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/land-records/surveys", get: "public", mutate: "public" },
   { path: "/api/land-records/upazilas", get: "public", mutate: "public" },
   { path: "/api/map-visits", get: "public", mutate: "public" },
+  { path: "/api/mouza-map/catalogue", get: "public", mutate: "public" },
   { path: "/api/mouza-map/download", get: "public", mutate: "public" },
   { path: "/api/mouza-map/mock-download/[fileId]", get: "public", mutate: "public" },
   { path: "/api/mouza-map/mock-thumbnail/[fileId]", get: "public", mutate: "public" },
