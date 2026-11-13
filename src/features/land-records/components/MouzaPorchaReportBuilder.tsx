@@ -411,9 +411,11 @@ export default function MouzaPorchaReportBuilder() {
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
+        autoDownloadRef.current = false;
         setPhase("idle");
         return;
       }
+      autoDownloadRef.current = false;
       setLocalError(error instanceof Error ? error.message : "রিপোর্ট তৈরি করা যায়নি।");
       setPhase("idle");
     } finally {
@@ -423,6 +425,7 @@ export default function MouzaPorchaReportBuilder() {
   };
 
   const cancelGeneration = () => {
+    autoDownloadRef.current = false;
     abortRef.current?.abort();
     abortRef.current = null;
     setGenerating(false);
