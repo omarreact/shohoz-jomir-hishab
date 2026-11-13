@@ -110,6 +110,10 @@ function fromStructuredDag(dag: FullKhatianDag): NormalizedDagRow {
   };
 }
 
+function sourceLooksPartial(value: unknown): boolean {
+  return /(?:\.{3,}|…+)\s*$/u.test(normalizeRecordText(value));
+}
+
 function compactOwners(index: KhatianIndex): NormalizedOwnerRow[] {
   const owners = splitRecordList(index.OWNERS);
   const guardians = splitRecordList(index.GUARDIANS);
@@ -173,9 +177,12 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
   const totalLandRaw = normalizeRecordText(full?.base.TOTAL_LAND || index.TOTAL_LAND);
   const compactGuardians = splitRecordList(index.GUARDIANS);
   const missingFields: NormalizedKhatianRecord["missingFields"] = [];
-  if (!owners.length) missingFields.push("owners");
-  if (!owners.some((owner) => owner.father || owner.mother || owner.spouse || owner.guardian) && !compactGuardians.length) missingFields.push("guardians");
-  if (!dags.length) missingFields.push("dags");
+  if (!owners.length || sourceLooksPartial(index.OWNERS)) missingFields.push("owners");
+  if (
+    (!owners.some((owner) => owner.father || owner.mother || owner.spouse || owner.guardian) && !compactGuardians.length) ||
+    sourceLooksPartial(index.GUARDIANS)
+  ) missingFields.push("guardians");
+  if (!dags.length || sourceLooksPartial(index.DAGS)) missingFields.push("dags");
   if (!totalLandRaw) missingFields.push("totalLand");
 
   const hasEnrichment = Boolean(
