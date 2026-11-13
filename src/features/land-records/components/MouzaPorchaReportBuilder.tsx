@@ -145,7 +145,7 @@ export default function MouzaPorchaReportBuilder() {
   }, [district, loadUpazilas]);
 
   useEffect(() => {
-    if (district && upazila) void loadSurveys(district, upazila);
+    if (district && upazila) void loadSurveys(district, upazila, true);
   }, [district, upazila, loadSurveys]);
 
   useEffect(() => {
@@ -499,8 +499,8 @@ export default function MouzaPorchaReportBuilder() {
     <>
       <HeroBanner
         badge="ভূমি রেকর্ড"
-        title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের A4 রিপোর্ট তৈরি করুন। Portrait বা Landscape বেছে নেওয়া যাবে; প্রতিটি পৃষ্ঠায় Bangla LandBD watermark ও footer ribbon থাকবে।"
+        title="মৌজা ভিত্তিক খতিয়ান বই"
+        description="একটি মৌজার উপলভ্য খতিয়ান, মালিক, অভিভাবক, দাগ ও জমির পরিমাণ একত্র করে A4 খতিয়ান বই তৈরি করুন। Survey ও নামজারি—উভয় ধরন নির্বাচন করা যাবে; Portrait বা Landscape বেছে নেওয়া যাবে।"
         pattern="grid"
       />
 
@@ -508,7 +508,7 @@ export default function MouzaPorchaReportBuilder() {
         <section className="report-controls">
           <Card>
             <CardHeader>
-              <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
+              <CardTitle>খতিয়ান বইয়ের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
                 বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। Portrait বা Landscape layout বেছে নিন; preview এবং Print একই orientation ব্যবহার করবে।
               </CardDescription>
@@ -616,7 +616,7 @@ export default function MouzaPorchaReportBuilder() {
                   className="landbd-primary-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {generating ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
-                  রিপোর্ট তৈরি করুন
+                  খতিয়ান বই তৈরি করুন
                 </button>
                 {generating ? (
                   <button
@@ -689,7 +689,7 @@ export default function MouzaPorchaReportBuilder() {
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} রিপোর্টটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
+                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} খতিয়ান বইটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
               </p>
             </div>
 
