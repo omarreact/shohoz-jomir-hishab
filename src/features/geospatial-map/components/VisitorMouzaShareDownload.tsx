@@ -55,7 +55,7 @@ export default function VisitorMouzaShareDownload() {
       setError("");
       try {
         const params = new URLSearchParams({ action: "districts", kind: surveyKind });
-        const res = await fetch("/api/rajuk/query?" + params.toString(), { cache: "no-store" });
+        const res = await fetch("/api/mouza-map/catalogue?" + params.toString(), { cache: "no-store" });
         const data = (await res.json()) as { features?: District[]; error?: string };
         if (!res.ok) throw new Error(data.error || "জেলা লোড করা যায়নি");
         if (!cancelled) setDistricts(Array.isArray(data.features) ? data.features : []);
@@ -89,7 +89,7 @@ export default function VisitorMouzaShareDownload() {
           d_guid: districtGuid,
           kind: surveyKind,
         });
-        const res = await fetch("/api/rajuk/query?" + params.toString(), { cache: "no-store" });
+        const res = await fetch("/api/mouza-map/catalogue?" + params.toString(), { cache: "no-store" });
         const data = (await res.json()) as { features?: Upazila[]; error?: string };
         if (!res.ok) throw new Error(data.error || "উপজেলা লোড করা যায়নি");
         if (!cancelled) setUpazilas(Array.isArray(data.features) ? data.features : []);
@@ -121,7 +121,7 @@ export default function VisitorMouzaShareDownload() {
           t_guid: upazilaGuid,
           kind: surveyKind,
         });
-        const res = await fetch("/api/rajuk/query?" + params.toString(), { cache: "no-store" });
+        const res = await fetch("/api/mouza-map/catalogue?" + params.toString(), { cache: "no-store" });
         const data = (await res.json()) as { features?: Mouza[]; error?: string };
         if (!res.ok) throw new Error(data.error || "মৌজা লোড করা যায়নি");
         if (!cancelled) setMouzas(Array.isArray(data.features) ? data.features : []);
