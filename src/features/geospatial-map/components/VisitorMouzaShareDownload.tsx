@@ -165,12 +165,17 @@ export default function VisitorMouzaShareDownload() {
     try {
       const params = new URLSearchParams({
         mouza: selectedMouza.mauza,
-        jl: String(selectedMouza.jl_no ?? ""),
         format: "png",
         layers: "combined",
         satellite: "true",
         maxDim: String(maxDim),
       });
+      // The shared RAJUK mouza hierarchy carries RS-side JL values. MS catalogue
+      // rows intentionally do not claim that JL, so never send the placeholder
+      // into a combined export where it could incorrectly filter RS geometry.
+      if (surveyKind === "rs" && String(selectedMouza.jl_no ?? "").trim()) {
+        params.set("jl", String(selectedMouza.jl_no));
+      }
       const res = await fetch("/api/mouza-map/download?" + params.toString(), {
         signal: controller.signal,
         cache: "no-store",
@@ -193,7 +198,7 @@ export default function VisitorMouzaShareDownload() {
     } finally {
       window.clearTimeout(timeout);
     }
-  }, [selectedMouza]);
+  }, [selectedMouza, surveyKind]);
 
   const preview = useCallback(async () => {
     if (!selectedMouza || previewing || downloading) return;
