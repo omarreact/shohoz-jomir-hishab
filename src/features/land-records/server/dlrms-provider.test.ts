@@ -183,4 +183,87 @@ describe("DLRMS public land-record provider", () => {
     expect(list.items[0].TOTAL_LAND).toBe("0.338");
     expect(detail.TOTAL_LAND).toBe("0.338");
   });
+
+  it("rejects provider-level mirror enrichment when same ID belongs to another mouza or survey", async () => {
+    process.env.DLRMS_ENRICH_ENABLED = "1";
+    process.env.DLRMS_ENRICH_BASE_URL = "https://mirror.example/api/dlrms";
+
+    global.fetch = jest.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "https://dlrms.land.gov.bd/") {
+        return new Response("<!doctype html>", {
+          status: 200,
+          headers: {
+            "set-cookie": "dlrms_app_token=public-token; expires=Wed, 01 Jan 2031 00:00:00 GMT; path=/",
+          },
+        });
+      }
+      if (url.startsWith("https://mirror.example/api/dlrms/index-khatian/BRS?")) {
+        expect(new Headers(init?.headers).get("Authorization")).toBeNull();
+        return Response.json({
+          data: {
+            items: [
+              {
+                ID: 7940305,
+                KHATIAN_NO: "349",
+                JL_NUMBER_ID: 382911,
+                MOUZA_ID: 70000,
+                SURVEY: "BRS",
+                OWNERS: "ভুল মৌজার মালিক",
+                DAGS: "999",
+                GUARDIANS: "ভুল অভিভাবক",
+              },
+              {
+                ID: 7940305,
+                KHATIAN_NO: "349",
+                JL_NUMBER_ID: 382911,
+                MOUZA_ID: 71947,
+                SURVEY: "RS",
+                OWNERS: "ভুল জরিপের মালিক",
+                DAGS: "998",
+                GUARDIANS: "ভুল অভিভাবক",
+              },
+            ],
+          },
+        });
+      }
+      if (url.includes("/index-khatian/BRS?")) {
+        expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer public-token");
+        return Response.json({
+          data: {
+            items: [{
+              ID: 7940305,
+              KHATIAN_NO: "349",
+              OWNERS: "সরকারি মালিক,...",
+              DAGS: "1974,...",
+              GUARDIANS: "সরকারি অভিভাবক,...",
+              JL_NUMBER_ID: 382911,
+              MOUZA_ID: 71947,
+              TOTAL_LAND: "0.338",
+            }],
+            meta: { totalItems: 1, totalPages: 1 },
+          },
+        });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    }) as typeof fetch;
+
+    const { dlrmsLandRecordProvider: provider } = await import("./dlrms-provider");
+    const page = await provider.listKhatians({
+      surveyKey: "BRS",
+      jlNumberId: 382911,
+      khatianNo: "349",
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(page.items[0]).toMatchObject({
+      OWNERS: "সরকারি মালিক,...",
+      DAGS: "1974,...",
+      GUARDIANS: "সরকারি অভিভাবক,...",
+      MOUZA_ID: 71947,
+    });
+    expect(page.items[0].LANDBD_MIRROR_ENRICHMENT).toBeUndefined();
+  });
+
 });
