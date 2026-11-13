@@ -86,8 +86,8 @@ export interface KhatianIndex {
    */
   LANDBD_MIRROR_ENRICHMENT?: KhatianMirrorEnrichment;
   /**
-   * Optional scoped fallback from LandBD's existing Patira BRS reference data.
-   * This is never classified as first-party DLRMS evidence.
+   * Optional survey/mouza-scoped fallback from a registered LandBD reference
+   * dataset. It is never classified as first-party DLRMS evidence.
    */
   LANDBD_REFERENCE_ENRICHMENT?: KhatianReferenceEnrichment;
 }
