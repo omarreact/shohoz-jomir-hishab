@@ -17,7 +17,7 @@ export default function NamjariKhatianPage() {
         <>
           <SurveyKhatianSearch variant="mutation" />
           <div className="border-t border-[var(--border-color)] bg-[var(--canvas)] pb-10 pt-4">
-            <KhatianVerificationLookup />
+            <KhatianVerificationLookup mode="mutation" />
           </div>
         </>
       </ServicePaywallGate>
