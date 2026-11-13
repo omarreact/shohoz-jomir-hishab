@@ -8,6 +8,23 @@ async function goto(page, path) {
   await page.waitForTimeout(250);
 }
 
+async function allowFreeGisAccess(page) {
+  await page.route("**/api/services/access?serviceId=geospatial-map", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        serviceId: "geospatial-map",
+        allowed: true,
+        requiresLogin: false,
+        enabled: true,
+        paid: false,
+        priceBdt: 0,
+      }),
+    });
+  });
+}
+
 test.describe("LandBD responsive navigation", () => {
   test("mobile uses only the drawer navigation", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -21,7 +38,7 @@ test.describe("LandBD responsive navigation", () => {
     await opener.click();
     const dialog = page.getByRole("dialog", { name: "মোবাইল সাইডবার মেনু" });
     await expect(dialog).toBeVisible();
-    const section = dialog.locator('button[aria-expanded]').first();
+    const section = dialog.locator('button[aria-expanded="false"]').first();
     await expect(section).toBeVisible();
     await section.click();
     await expect(section).toHaveAttribute("aria-expanded", "true");
@@ -54,6 +71,7 @@ test.describe("LandBD responsive navigation", () => {
 test.describe("LandBD GIS control geometry", () => {
   test("mobile workspace hides the competing right toolbar while open", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await allowFreeGisAccess(page);
     await goto(page, "/geospatial-map");
 
     const toggle = page.getByRole("button", { name: /খুঁজুন \/ স্তর|প্যানেল বন্ধ/ });
@@ -76,6 +94,7 @@ test.describe("LandBD GIS control geometry", () => {
       { width: 1440, height: 900 },
     ]) {
       await page.setViewportSize(viewport);
+      await allowFreeGisAccess(page);
       await goto(page, "/geospatial-map");
 
       const panel = page.locator("#atlas-map-workspace-panel");
