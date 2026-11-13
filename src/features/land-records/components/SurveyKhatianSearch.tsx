@@ -108,6 +108,19 @@ export default function SurveyKhatianSearch() {
     });
   }, [district, upazila, selectedDistrict, selectedUpazila, selectedSurvey, loadMouzas]);
 
+  useEffect(() => {
+    if (!selectedMouza || !surveyKey) return;
+    setPage(1);
+    setViewMode("search");
+    setLocalError(null);
+    void loadKhatians({
+      surveyKey,
+      jlNumberId: selectedMouza.ID,
+      page: 1,
+      pageSize: 20,
+    });
+  }, [selectedMouza, surveyKey, loadKhatians]);
+
   const resetResults = () => {
     setKhatians(null);
     setSelectedKhatian(null);
@@ -169,15 +182,6 @@ export default function SurveyKhatianSearch() {
       setLocalError("প্রথমে বিভাগ, জেলা, উপজেলা, সার্ভে ও মৌজা নির্বাচন করুন।");
       return;
     }
-    if (!hasSearchTerm) {
-      setLocalError(
-        mode === "khatian"
-          ? "নির্দিষ্ট খতিয়ান নম্বর লিখুন। পুরো মৌজার খতিয়ান তালিকা bulk আকারে দেখানো হয় না।"
-          : "দাগ নম্বর অথবা মালিকের নাম—অন্তত একটি লিখুন। পুরো মৌজার সব দাগ/মালিক bulk আকারে দেখানো হয় না।",
-      );
-      return;
-    }
-
     setLocalError(null);
     setPage(targetPage);
     setViewMode("search");
@@ -242,7 +246,7 @@ export default function SurveyKhatianSearch() {
 
   const displayedError = localError || error;
   const locationReady = Boolean(division && district && upazila && surveyId && mouzaId);
-  const searchReady = locationReady && hasSearchTerm;
+  const searchReady = locationReady;
   const resultReady = Boolean(khatians || viewMode === "details");
 
   return (
@@ -250,7 +254,7 @@ export default function SurveyKhatianSearch() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="DLRMS খতিয়ান অনুসন্ধান"
-        description="বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করে নির্দিষ্ট খতিয়ান, দাগ বা মালিকের তথ্য অনুসন্ধান করুন।"
+        description="বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করলেই খতিয়ান তালিকা দেখুন; এরপর খতিয়ান, দাগ বা মালিক দিয়ে ফলাফল সংকুচিত করুন।"
         pattern="grid"
       />
 
@@ -288,10 +292,10 @@ export default function SurveyKhatianSearch() {
                   <ShieldCheck className="mt-0.5 shrink-0 text-[var(--primary)]" size={20} />
                   <div>
                     <p className="text-sm font-black text-[var(--foreground)]">
-                      নির্দিষ্ট খতিয়ান / দাগ / মালিক অনুসন্ধান
+                      মৌজা ব্রাউজ + নির্দিষ্ট অনুসন্ধান
                     </p>
                     <p className="mt-1 text-xs leading-6 text-[var(--muted-foreground)]">
-                      পুরো মৌজার সব খতিয়ান একসাথে bulk দেখানো হয় না। বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করে নির্দিষ্ট খতিয়ান নম্বর, দাগ বা মালিকের নাম দিয়ে খুঁজুন।
+                      মৌজা নির্বাচন করলেই পেজভিত্তিক খতিয়ান তালিকা স্বয়ংক্রিয়ভাবে লোড হবে। নিচের ঘর খালি রাখলে পুরো মৌজা ব্রাউজ হবে; খতিয়ান, দাগ বা মালিক দিলে ফলাফল ফিল্টার হবে।
                     </p>
                   </div>
                 </div>
@@ -378,8 +382,8 @@ export default function SurveyKhatianSearch() {
                     label="মৌজা / JL"
                     value={mouzaId}
                     onChange={(e) => {
-                      setMouzaId(e.target.value);
                       resetResults();
+                      setMouzaId(e.target.value);
                     }}
                     options={[
                       { value: "", label: empty },
@@ -442,7 +446,7 @@ export default function SurveyKhatianSearch() {
                     অনুসন্ধান
                   </button>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    ফলাফল পেজ অনুসারে দেখানো হয় (প্রতি পেজ ২০টি)।
+                    সার্চ ঘর খালি থাকলে নির্বাচিত মৌজার সব উপলভ্য খতিয়ান পেজ অনুসারে দেখানো হয় (প্রতি পেজ ২০টি)।
                   </p>
                 </div>
               </CardBody>
@@ -451,7 +455,9 @@ export default function SurveyKhatianSearch() {
             {khatians ? (
               <section className="mt-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-black text-[var(--foreground)]">অনুসন্ধান ফলাফল</h2>
+                  <h2 className="text-lg font-black text-[var(--foreground)]">
+                    {hasSearchTerm ? "অনুসন্ধান ফলাফল" : "মৌজার খতিয়ান তালিকা"}
+                  </h2>
                   <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
                     <button
                       type="button"
@@ -481,11 +487,12 @@ export default function SurveyKhatianSearch() {
                   </div>
                 ) : (
                   <div className="landbd-table-wrap">
-                    <table className="w-full min-w-[36rem] border-collapse text-sm">
+                    <table className="w-full min-w-[48rem] border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-[var(--border-color)] bg-[var(--secondary)]/40 text-left text-xs text-[var(--muted-foreground)]">
                           <th className="px-3 py-2.5 font-semibold">খতিয়ান নং</th>
                           <th className="px-3 py-2.5 font-semibold">মালিক</th>
+                          <th className="px-3 py-2.5 font-semibold">অভিভাবক</th>
                           <th className="px-3 py-2.5 font-semibold">দাগ</th>
                           <th className="px-3 py-2.5 font-semibold">মোট জমি</th>
                           <th className="px-3 py-2.5 font-semibold text-right">অ্যাকশন</th>
@@ -496,6 +503,7 @@ export default function SurveyKhatianSearch() {
                           <tr key={item.ID} className="border-b border-[var(--border-color)]/70 last:border-0">
                             <td className="px-3 py-2.5 font-semibold tabular-nums">{item.KHATIAN_NO || "—"}</td>
                             <td className="max-w-[14rem] break-words px-3 py-2.5 text-sm">{item.OWNERS || "—"}</td>
+                            <td className="max-w-[14rem] break-words px-3 py-2.5 text-sm">{item.GUARDIANS || "—"}</td>
                             <td className="max-w-[10rem] break-words px-3 py-2.5 text-sm tabular-nums">{item.DAGS || "—"}</td>
                             <td className="px-3 py-2.5 text-sm tabular-nums">{item.TOTAL_LAND || "—"}</td>
                             <td className="px-3 py-2.5 text-right">
