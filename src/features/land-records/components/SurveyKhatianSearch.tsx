@@ -17,13 +17,25 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
-import { SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
+import {
+  MUTATION_SURVEY_ID,
+  SURVEY_KEY_BY_ID,
+  type KhatianDetails,
+  type KhatianIndex,
+} from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
 
 const empty = "-- নির্বাচন করুন --";
 type SearchMode = "khatian" | "advanced";
 
-export default function SurveyKhatianSearch() {
+export type SurveyKhatianSearchVariant = "survey" | "mutation";
+
+export default function SurveyKhatianSearch({
+  variant = "survey",
+}: {
+  variant?: SurveyKhatianSearchVariant;
+}) {
+  const isMutation = variant === "mutation";
   const {
     divisions,
     districts,
@@ -80,9 +92,16 @@ export default function SurveyKhatianSearch() {
   const hasSearchTerm =
     mode === "khatian" ? Boolean(khatianNo.trim()) : Boolean(owner.trim() || dagNumber.trim());
 
+  const visibleSurveys = useMemo(
+    () =>
+      surveys.filter((item) =>
+        isMutation ? item.SURVEY_ID === MUTATION_SURVEY_ID : item.SURVEY_ID !== MUTATION_SURVEY_ID
+      ),
+    [surveys, isMutation],
+  );
   const surveyOptions = useMemo(
-    () => surveys.map((item) => ({ value: item.SURVEY_ID, label: item.LOCAL_NAME })),
-    [surveys],
+    () => visibleSurveys.map((item) => ({ value: item.SURVEY_ID, label: item.LOCAL_NAME })),
+    [visibleSurveys],
   );
 
   useEffect(() => {
@@ -94,8 +113,13 @@ export default function SurveyKhatianSearch() {
   }, [district, loadUpazilas]);
 
   useEffect(() => {
-    if (district && upazila) void loadSurveys(district, upazila);
-  }, [district, upazila, loadSurveys]);
+    if (district && upazila) void loadSurveys(district, upazila, isMutation);
+  }, [district, upazila, isMutation, loadSurveys]);
+
+  useEffect(() => {
+    if (!isMutation || surveyId || !visibleSurveys.length) return;
+    setSurveyId(String(visibleSurveys[0].SURVEY_ID));
+  }, [isMutation, surveyId, visibleSurveys]);
 
   useEffect(() => {
     if (!selectedSurvey || !selectedDistrict || !selectedUpazila) return;
@@ -252,9 +276,13 @@ export default function SurveyKhatianSearch() {
   return (
     <>
       <HeroBanner
-        badge="ভূমি রেকর্ড"
-        title="DLRMS খতিয়ান অনুসন্ধান"
-        description="বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করলেই খতিয়ান তালিকা দেখুন; এরপর খতিয়ান, দাগ বা মালিক দিয়ে ফলাফল সংকুচিত করুন।"
+        badge={isMutation ? "নামজারি রেকর্ড" : "ভূমি রেকর্ড"}
+        title={isMutation ? "নামজারি খতিয়ান অনুসন্ধান" : "DLRMS খতিয়ান অনুসন্ধান"}
+        description={
+          isMutation
+            ? "বিভাগ → জেলা → উপজেলা → মৌজা নির্বাচন করে নামজারি খতিয়ানের উপলভ্য তালিকা ব্রাউজ করুন; খতিয়ান, দাগ বা মালিক দিয়ে ফলাফল সংকুচিত করুন।"
+            : "বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা নির্বাচন করলেই খতিয়ান তালিকা দেখুন; এরপর খতিয়ান, দাগ বা মালিক দিয়ে ফলাফল সংকুচিত করুন।"
+        }
         pattern="grid"
       />
 
@@ -371,12 +399,12 @@ export default function SurveyKhatianSearch() {
                     disabled={!district}
                   />
                   <Select
-                    label="সার্ভে"
+                    label={isMutation ? "খতিয়ানের ধরন" : "সার্ভে"}
                     value={surveyId}
                     onChange={(e) => handleSurveyChange(e.target.value)}
                     options={[{ value: "", label: empty }, ...surveyOptions]}
                     loading={loading.surveys}
-                    disabled={!upazila}
+                    disabled={!upazila || (isMutation && surveyOptions.length === 1)}
                   />
                   <Select
                     label="মৌজা / JL"
@@ -544,7 +572,7 @@ export default function SurveyKhatianSearch() {
                 <ArrowLeft size={16} /> ফিরে যান
               </button>
               <a
-                href="/mouza-porcha-report"
+                href={isMutation ? "/mouza-porcha-report?mode=mutation" : "/mouza-porcha-report"}
                 className="landbd-secondary-button inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-[var(--primary)]"
               >
                 <ExternalLink size={15} /> মৌজা রিপোর্ট
