@@ -10,6 +10,8 @@ export type NormalizedOwnerRow = {
   mother?: string;
   spouse?: string;
   guardian?: string;
+  /** Source wording for the relationship column, when available. */
+  relationRaw?: string;
   address?: string;
   shareRaw?: string;
   source: LandRecordSource | "COMPACT_INDEX";
@@ -89,6 +91,7 @@ function fromStructuredOwner(owner: FullKhatianOwner, occurrence: number): Norma
     mother: normalizeRecordText(owner.mother) || legacyRelation.mother || undefined,
     spouse: normalizeRecordText(owner.spouse) || legacyRelation.spouse || undefined,
     guardian: normalizeRecordText(owner.guardian) || legacyRelation.guardian || undefined,
+    relationRaw: normalizeRecordText(owner.fatherOrHusband || owner.father || owner.mother || owner.spouse || owner.guardian) || undefined,
     address: normalizeRecordText(owner.address) || undefined,
     shareRaw: normalizeRecordText(owner.shareRaw) || undefined,
     source: owner.source,
@@ -114,6 +117,7 @@ function compactOwners(index: KhatianIndex): NormalizedOwnerRow[] {
     occurrence: indexNo + 1,
     name,
     ...relationParts(guardians[indexNo] ?? (guardians.length === 1 ? guardians[0] : undefined)),
+    relationRaw: normalizeRecordText(guardians[indexNo] ?? (guardians.length === 1 ? guardians[0] : "")) || undefined,
     source: "COMPACT_INDEX" as const,
   }));
 }
@@ -127,7 +131,7 @@ function compactDags(index: KhatianIndex): NormalizedDagRow[] {
 
 function ownerIdentity(row: NormalizedOwnerRow): string {
   return [
-    row.name, row.father, row.mother, row.spouse, row.guardian, row.address, row.shareRaw,
+    row.name, row.father, row.mother, row.spouse, row.guardian, row.relationRaw, row.address, row.shareRaw,
   ].map((value) => normalizeRecordText(value).toLocaleLowerCase("bn-BD")).join("|");
 }
 
