@@ -254,6 +254,16 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
   const owners = mergeOwnerEvidence(compactOwnerRows, structuredOwners);
   const dags = mergeDagEvidence(compactDagRows, structuredDags);
   const totalLandRaw = normalizeRecordText(full?.base?.TOTAL_LAND || index.TOTAL_LAND);
+  const guardianRows = compactGuardians.length
+    ? compactGuardians
+    : owners
+        .map((owner) => owner.relationRaw || [
+          owner.father ? `পিতা: ${owner.father}` : "",
+          owner.mother ? `মাতা: ${owner.mother}` : "",
+          owner.spouse ? `স্বামী/স্ত্রী: ${owner.spouse}` : "",
+          owner.guardian ? `অভিভাবক: ${owner.guardian}` : "",
+        ].filter(Boolean).join(" · "))
+        .filter(Boolean);
   const missingFields: NormalizedKhatianRecord["missingFields"] = [];
   if (!owners.length || sourceLooksPartial(index.OWNERS)) missingFields.push("owners");
   if (
@@ -275,7 +285,7 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
     sourceId: index.ID,
     khatianNo: normalizeRecordNumber(index.KHATIAN_NO),
     owners,
-    guardians: compactGuardians,
+    guardians: guardianRows,
     dags,
     totalLandRaw,
     evidence: full?.evidence ?? [],
