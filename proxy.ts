@@ -116,8 +116,6 @@ function securityResponseHeaders(requestId: string, pathname: string): Record<st
   // frameable for their local PDF viewer, without allowing external embedding.
   const pdfViewerPage =
     pathname === "/dlrms-khatian" ||
-    pathname === "/namjari-khatian" ||
-    pathname === "/mouza-porcha-report" ||
     pathname === "/mouza-khatian-book" ||
     pathname === "/mouza-dag-report";
   return {

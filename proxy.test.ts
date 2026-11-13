@@ -168,7 +168,7 @@ describe("LandBD request-boundary access policy", () => {
   it("allows only same-origin PDF frames on the report pages", async () => {
     mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
 
-    for (const route of ["/dlrms-khatian", "/mouza-porcha-report"]) {
+    for (const route of ["/dlrms-khatian", "/mouza-khatian-book", "/mouza-dag-report"]) {
       const response = await proxy(request(route));
       expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN");
       expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
