@@ -11,7 +11,10 @@ import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-repo
 import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
-import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
+import MouzaPorchaDocument, {
+  type MouzaKhatianBookVariant,
+  type MouzaPorchaReportMeta,
+} from "./MouzaPorchaDocument";
 import {
   buildMouzaReportRows,
   stableReportPayload,
@@ -111,6 +114,7 @@ export default function MouzaPorchaReportBuilder() {
   const [mouzaId, setMouzaId] = useState("");
   const [includeHalSabek, setIncludeHalSabek] = useState(false);
   const [pageOrientation, setPageOrientation] = useState<MouzaReportOrientation>("portrait");
+  const [pdfVariant, setPdfVariant] = useState<MouzaKhatianBookVariant>("book");
   const [rows, setRows] = useState<KhatianIndex[]>([]);
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
@@ -463,9 +467,10 @@ export default function MouzaPorchaReportBuilder() {
         source,
         pageSelector: ".report-page",
         fileName: [
-          "LandBD-Mouza-Porcha",
+          "LandBD-Mouza-Khatian-Book",
           selectedMouza?.MOUZA_NAME,
           selectedSurvey?.LOCAL_NAME,
+          pdfVariant,
           reportMeta?.reportId,
         ].filter(Boolean).join("-"),
         orientation: pageOrientation,
@@ -559,6 +564,16 @@ export default function MouzaPorchaReportBuilder() {
                   ]}
                   loading={loading.mouzas}
                   disabled={!surveyId}
+                />
+                <Select
+                  label="PDF-এর ধরন"
+                  value={pdfVariant}
+                  onChange={(event) => setPdfVariant(event.target.value as MouzaKhatianBookVariant)}
+                  options={[
+                    { value: "book", label: "নতুন" },
+                    { value: "legacy", label: "পুরনো · রঙিন" },
+                    { value: "monochrome", label: "পুরনো · সাদা-কালো" },
+                  ]}
                 />
                 <Select
                   label="প্রিন্ট পেজ"
@@ -706,6 +721,7 @@ export default function MouzaPorchaReportBuilder() {
                 jlNumber={selectedMouza?.JL_NUMBER ?? ""}
                 reportMeta={reportMeta}
                 pageOrientation={pageOrientation}
+                variant={pdfVariant}
               />
             </div>
           </section>
