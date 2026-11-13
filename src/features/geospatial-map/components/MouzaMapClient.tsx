@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import VisitorMouzaShareDownload from "./VisitorMouzaShareDownload";
+import VectorPdfExportControl from "./VectorPdfExportControl";
+import { isAdminRole } from "@/src/modules/auth/roles";
 
 const MouzaExportMap = dynamic(() => import("../maplibre/MouzaExportMap"), {
   ssr: false,
@@ -11,7 +13,7 @@ const MouzaExportMap = dynamic(() => import("../maplibre/MouzaExportMap"), {
 
 /** Public download uses live RAJUK locations; advanced georeferenced exports require authentication. */
 export default function MouzaMapClient() {
-  const { isLoggedIn, loading } = useAuth();
+  const { user, isLoggedIn, loading } = useAuth();
 
   if (loading) {
     return <div role="status" className="grid min-h-72 place-items-center rounded-[25px] bg-white text-sm font-bold text-[#54746e]">সার্ভিস প্রস্তুত হচ্ছে…</div>;
@@ -21,6 +23,7 @@ export default function MouzaMapClient() {
     return (
       <div className="relative h-[min(72dvh,760px)] min-h-[470px] w-full overflow-hidden rounded-[26px] border border-[#dce5dc] bg-[#ebf0e8] shadow-[0_12px_40px_rgba(29,62,51,.12)]">
         <MouzaExportMap />
+        {isAdminRole(user?.role) ? <VectorPdfExportControl /> : null}
       </div>
     );
   }
