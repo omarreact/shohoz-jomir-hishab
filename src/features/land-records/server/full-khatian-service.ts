@@ -73,6 +73,10 @@ function trackingMatchesBase(base: KhatianDetails, tracking: KhatianTracking): b
   if (!tracking.khatianNo || tracking.khatianNo.trim() !== base.KHATIAN_NO.trim()) return false;
   if (base.SURVEY_ID && tracking.surveyId && base.SURVEY_ID !== tracking.surveyId) return false;
   if (base.JL_NUMBER_ID && tracking.jlNumberId && base.JL_NUMBER_ID !== tracking.jlNumberId) return false;
+  if (base.MOUZA_ID && tracking.mouzaId && base.MOUZA_ID !== tracking.mouzaId) return false;
+  // DLRMS tracking KHATIAN_ID is an application/tracking identifier and is not
+  // the same namespace as /public/index-khatian/{survey}/{id}; do not compare
+  // those two unrelated IDs as if they were interchangeable.
   return true;
 }
 
@@ -400,6 +404,7 @@ async function fetchFilteredMirrorRecords(
             jlNumberId: base.JL_NUMBER_ID,
             khatianNo: base.KHATIAN_NO,
             id: base.ID,
+            mouzaId: base.MOUZA_ID || undefined,
             dagNumber,
           },
           signal,
@@ -616,6 +621,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
           jlNumberId: rebuilt.JL_NUMBER_ID,
           khatianNo: rebuilt.KHATIAN_NO,
           id: rebuilt.ID,
+          mouzaId: rebuilt.MOUZA_ID || undefined,
         }, signal)
       : Promise.resolve(null),
     rebuilt.JL_NUMBER_ID
@@ -623,10 +629,10 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       : Promise.resolve([]),
   ]);
   // Reject misidentified mirror payloads before structured extraction.
-  const mirrorRecord = mirrorRecordMatchesBase(rebuilt, unverifiedMirrorRecord)
+  const mirrorRecord = mirrorRecordMatchesBase(rebuilt, unverifiedMirrorRecord, input.surveyKey)
     ? unverifiedMirrorRecord : null;
   const mirrorDagRecords = unverifiedMirrorDagRecords.filter((row) =>
-    mirrorRecordMatchesBase(rebuilt, row));
+    mirrorRecordMatchesBase(rebuilt, row, input.surveyKey));
   if (unverifiedMirrorRecord && !mirrorRecord) {
     warnings.push("Unverified mirror record ID/JL mismatch; source ignored.");
   }
@@ -645,7 +651,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   // and DAGS, without structured sub-record arrays. Previously that payload
   // was fetched but its main lists were never used.
   const verifiedMirrorRows = [mirrorRecord, ...mirrorDagRecords]
-    .map((record) => extractVerifiedMirrorCompactRow(rebuilt, record))
+    .map((record) => extractVerifiedMirrorCompactRow(rebuilt, record, input.surveyKey))
     .filter((row): row is NonNullable<typeof row> => row !== null);
   if (verifiedMirrorRows.length) {
     rebuilt = reconstructKhatian(rebuilt, verifiedMirrorRows);
