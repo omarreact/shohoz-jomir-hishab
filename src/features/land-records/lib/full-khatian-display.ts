@@ -15,7 +15,8 @@ function area(value: string | undefined): string | undefined {
 }
 
 function ownerRelation(owner: ReturnType<typeof normalizeKhatianRecord>["owners"][number]): string | undefined {
-  if (owner.relationRaw) return owner.relationRaw;
+  const hasSeparatedRelation = Boolean(owner.father || owner.mother || owner.spouse);
+  if (!hasSeparatedRelation && owner.relationRaw) return owner.relationRaw;
   const parts = [
     owner.father ? `পিতা: ${owner.father}` : "",
     owner.mother ? `মাতা: ${owner.mother}` : "",
