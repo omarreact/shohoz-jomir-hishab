@@ -70,7 +70,8 @@ async function mockLandRecordBook(page) {
 }
 
 async function choose(page, label, option) {
-  const section = page.getByLabel(label);
+  const section = page.locator(".report-controls").locator(`section[aria-label="${label}"]`);
+  await expect(section).toHaveCount(1);
   await expect(section).toBeVisible();
   await section.getByRole("button", { name: option, exact: true }).click();
 }
