@@ -153,7 +153,7 @@ test.describe("LandBD GIS control geometry", () => {
     await expect(panel).toBeVisible();
     await panel.getByRole("tab", { name: "বেসম্যাপ" }).click();
 
-    const sentinel = panel.getByRole("button", { name: /Sentinel-2 · 2016|Sentinel-2 · ২০১৬/ });
+    const sentinel = panel.getByRole("button", { name: /Sentinel-(?:2|২) · (?:2016|২০১৬)/ });
     const modis2003 = panel.getByRole("button", { name: /NASA MODIS · 2003|NASA MODIS · ২০০৩/ });
     const modis2025 = panel.getByRole("button", { name: /NASA MODIS · 2025|NASA MODIS · ২০২৫/ });
     await expect(sentinel).toBeVisible();
