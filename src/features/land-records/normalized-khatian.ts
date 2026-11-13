@@ -86,13 +86,14 @@ function relationParts(value: string | undefined): Pick<NormalizedOwnerRow, "fat
 
 function fromStructuredOwner(owner: FullKhatianOwner, occurrence: number): NormalizedOwnerRow {
   const legacyRelation = relationParts(owner.fatherOrHusband);
+  const hasSeparatedRelation = Boolean(owner.father || owner.mother || owner.spouse || owner.guardian);
   return {
     occurrence,
     name: normalizeRecordText(owner.name),
-    father: normalizeRecordText(owner.father) || legacyRelation.father || undefined,
-    mother: normalizeRecordText(owner.mother) || legacyRelation.mother || undefined,
-    spouse: normalizeRecordText(owner.spouse) || legacyRelation.spouse || undefined,
-    guardian: normalizeRecordText(owner.guardian) || legacyRelation.guardian || undefined,
+    father: normalizeRecordText(owner.father) || (!hasSeparatedRelation ? legacyRelation.father : "") || undefined,
+    mother: normalizeRecordText(owner.mother) || (!hasSeparatedRelation ? legacyRelation.mother : "") || undefined,
+    spouse: normalizeRecordText(owner.spouse) || (!hasSeparatedRelation ? legacyRelation.spouse : "") || undefined,
+    guardian: normalizeRecordText(owner.guardian) || (!hasSeparatedRelation ? legacyRelation.guardian : "") || undefined,
     relationRaw: normalizeRecordText(owner.fatherOrHusband || owner.father || owner.mother || owner.spouse || owner.guardian) || undefined,
     address: normalizeRecordText(owner.address) || undefined,
     shareRaw: normalizeRecordText(owner.shareRaw) || undefined,
