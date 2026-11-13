@@ -143,7 +143,7 @@ test.describe("LandBD GIS control geometry", () => {
     await expect(panel).toBeVisible();
     await panel.getByRole("tab", { name: "বেসম্যাপ" }).click();
 
-    const sentinel = panel.getByRole("button", { name: /Sentinel-2 · ২০১৬/ });
+    const sentinel = panel.getByRole("button", { name: /Sentinel-2 · 2016|Sentinel-2 · ২০১৬/ });
     const modis2003 = panel.getByRole("button", { name: /NASA MODIS · 2003|NASA MODIS · ২০০৩/ });
     const modis2025 = panel.getByRole("button", { name: /NASA MODIS · 2025|NASA MODIS · ২০২৫/ });
     await expect(sentinel).toBeVisible();
@@ -155,6 +155,9 @@ test.describe("LandBD GIS control geometry", () => {
     await modis2003.click();
     await expect(modis2003).toHaveAttribute("aria-pressed", "true");
     await expect(sentinel).toHaveAttribute("aria-pressed", "false");
+    const earthLink = panel.getByRole("link", { name: /Google Earth/ });
+    await expect(earthLink).toBeVisible();
+    await expect(earthLink).toHaveAttribute("target", "_blank");
     await modis2025.click();
     await expect(modis2025).toHaveAttribute("aria-pressed", "true");
     await expect(modis2003).toHaveAttribute("aria-pressed", "false");
