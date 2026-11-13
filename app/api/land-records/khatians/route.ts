@@ -34,6 +34,10 @@ async function unifiedMouzaSearch(input: {
     sourcePage += 1;
   }
 
+  if (keepGoing) {
+    throw new Error("Mouza search page limit exceeded; refusing to return a partial filtered result.");
+  }
+
   const filtered = [...byId.values()].filter((row) =>
     normalizedRecordMatches(normalizeKhatianRecord(row), input.query),
   );
