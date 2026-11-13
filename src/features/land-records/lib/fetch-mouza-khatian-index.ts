@@ -51,6 +51,7 @@ async function fetchJsonWithRetry<T>(
 export type FetchMouzaKhatianIndexInput = {
   surveyKey: string;
   jlNumberId: number;
+  endpoint?: "/api/land-records/mouza-porcha-report" | "/api/land-records/mouza-dag-report";
   signal?: AbortSignal;
   onProgress?: (loaded: number, expected: number | null) => void;
 };
@@ -63,6 +64,7 @@ export type FetchMouzaKhatianIndexResult = {
 export async function fetchMouzaKhatianIndex({
   surveyKey,
   jlNumberId,
+  endpoint = "/api/land-records/mouza-porcha-report",
   signal,
   onProgress,
 }: FetchMouzaKhatianIndexInput): Promise<FetchMouzaKhatianIndexResult> {
@@ -85,7 +87,7 @@ export async function fetchMouzaKhatianIndex({
       pageSize: String(PAGE_SIZE),
     });
     return fetchJsonWithRetry<KhatianPage>(
-      `/api/land-records/mouza-porcha-report?${params.toString()}`,
+      `${endpoint}?${params.toString()}`,
       { signal, cache: "no-store" },
     );
   };
