@@ -33,10 +33,14 @@ async function allowFreeGisAccess(page) {
 
 async function dismissLocationConsent(page) {
   const consent = page.getByRole("dialog", { name: "লোকেশন অনুমতি" });
-  if (await consent.isVisible().catch(() => false)) {
-    await consent.getByRole("button", { name: "বন্ধ" }).click();
-    await expect(consent).toBeHidden();
-  }
+  // The consent prompt is mounted after client hydration, so an immediate
+  // isVisible() check can race and let the modal intercept later map clicks.
+  const appeared = await consent.waitFor({ state: "visible", timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!appeared) return;
+  await consent.getByRole("button", { name: "বন্ধ" }).click();
+  await expect(consent).toBeHidden();
 }
 
 test.describe("LandBD responsive navigation", () => {
