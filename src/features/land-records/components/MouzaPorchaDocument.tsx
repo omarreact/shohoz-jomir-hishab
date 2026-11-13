@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import LandBdPrintRibbon from "@/src/shared/components/LandBdPrintRibbon";
 import ReportTable from "./mouza-report/ReportTable";
-import CompactHeader from "./mouza-report/ReportHeader";
-import LegalDisclaimer from "./mouza-report/LegalDisclaimer";
 import "./mouza-report/report-document.css";
 import type { KhatianIndex } from "../types";
 import {
@@ -41,6 +38,22 @@ type Props = {
   variant?: MouzaKhatianBookVariant;
 };
 
+const bnDigits = "০১২৩৪৫৬৭৮৯";
+const arDigits = "٠١٢٣٤٥٦٧٨٩";
+
+function toBanglaNumber(value: string | number): string {
+  return String(value).replace(/[0-9]/g, (digit) => bnDigits[Number(digit)]);
+}
+
+function numericLand(value: string): number {
+  const latin = value
+    .replace(/[০-৯]/g, (digit) => String(bnDigits.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String(arDigits.indexOf(digit)))
+    .replace(/[^d.+-]/g, "");
+  const parsed = Number(latin);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export default function MouzaPorchaDocument({
   rows,
   halSabek,
@@ -58,11 +71,15 @@ export default function MouzaPorchaDocument({
   const reportRows = useMemo(() => buildMouzaReportRows(rows, halSabek), [rows, halSabek]);
   const segments = useMemo(() => segmentMouzaReportRows(reportRows), [reportRows]);
   const pages = useMemo(
-    () => paginateMouzaReportRows(segments, undefined, undefined, pageOrientation),
+    () => paginateMouzaReportRows(segments, 48, 48, pageOrientation),
     [segments, pageOrientation],
   );
   const gapSummary = useMemo(
     () => summarizeNumericKhatianGaps(reportRows.map((row) => row.khatianNo)),
+    [reportRows],
+  );
+  const totalLand = useMemo(
+    () => reportRows.reduce((sum, row) => sum + numericLand(row.totalLandAcre), 0),
     [reportRows],
   );
 
@@ -71,24 +88,20 @@ export default function MouzaPorchaDocument({
   const showGuardians = reportRows.some((row) => row.guardians.length > 0);
   const showDags = reportRows.some((row) => row.dags.length > 0);
   const showLandArea = reportRows.some((row) => Boolean(row.totalLandAcre));
-  const mappedKhatianCount = includeHalSabek
-    ? reportRows.filter((row) => row.history.length > 0).length
-    : 0;
-  const unavailableMappingCount = includeHalSabek ? Math.max(0, rows.length - mappedKhatianCount) : 0;
-  const referenceEnrichedCount = rows.filter((row) =>
-    row.LANDBD_REFERENCE_ENRICHMENT?.source === "LANDBD_BUNDLED_REFERENCE"
-  ).length;
   const completeCount = rows.length;
   const targetCount = expectedRecords ?? completeCount;
   const isCountComplete = expectedRecords === null || completeCount === expectedRecords;
+  const referenceEnrichedCount = rows.filter((row) =>
+    row.LANDBD_REFERENCE_ENRICHMENT?.source === "LANDBD_BUNDLED_REFERENCE"
+  ).length;
   const reportId = reportMeta?.reportId ?? "REPORT-ID-PENDING";
-  const generatedLabel = reportMeta
+  const generatedDate = reportMeta
     ? new Intl.DateTimeFormat("bn-BD", {
-        dateStyle: "medium",
-        timeStyle: "medium",
+        dateStyle: "long",
         timeZone: "Asia/Dhaka",
       }).format(new Date(reportMeta.generatedAt))
     : "প্রস্তুত হচ্ছে…";
+  const totalPages = pages.length + 1;
 
   if (!rows.length) return null;
 
@@ -98,156 +111,105 @@ export default function MouzaPorchaDocument({
       className={`landbd-report-font report-variant-${variant}`}
       data-bangla-ignore="true"
       translate="no"
-      aria-label="মৌজা পর্চা রিপোর্ট"
+      aria-label="মৌজা ভিত্তিক খতিয়ান বই"
     >
-      {/* Bundled Bengali webfonts are already loaded by LandBD; no remote font dependency. */}
       <div className="report-page-stack">
-        {pages.map((pageRows, pageIndex) => {
-          const firstPage = pageIndex === 0;
-          const pageStartIndex = pages.slice(0, pageIndex).reduce((sum, item) => sum + item.length, 0);
-          return (
-            <article
-              className={`report-page report-page-${pageOrientation}`}
-              data-page-orientation={pageOrientation}
-              key={`page-${pageIndex + 1}`}
-            >
-              <div className="report-top-accent" aria-hidden="true"><i /><i /><i /></div>
-              <div className="report-watermark" aria-hidden="true">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand/logo-bangla.svg" alt="" />
+        <article className="report-page report-page-portrait report-cover-page" data-page-orientation="portrait">
+          <div className="report-cover-hero">
+            <div className="report-cover-brand-row">
+              <strong>landbd.pincodeit.com</strong>
+              <span>ডিজিটাল ভূমি রেকর্ড</span>
+            </div>
+            <div className="report-cover-rule" />
+            <p className="report-cover-eyebrow">LAND RECORDS / MOUZA COLLECTION</p>
+            <h1>মৌজা ভিত্তিক<br /><em>খতিয়ান বই</em></h1>
+            <p className="report-cover-survey">{surveyName || "সার্ভে"} জরিপ • সম্পূর্ণ খতিয়ান তালিকা</p>
+            <div className="report-cover-map-lines" aria-hidden="true">
+              <i /><i /><i /><i />
+            </div>
+            <div className="report-cover-bottom-copy">
+              <span>ভূমির তথ্য, এক মলাটে।</span>
+              <b>{(surveyName || "RECORD").toUpperCase()} / RECORD BOOK</b>
+            </div>
+          </div>
+
+          <div className="report-cover-body">
+            <p className="report-cover-label">নির্বাচিত মৌজা</p>
+            <h2>{mouzaName || "—"}</h2>
+
+            <div className="report-cover-meta-grid">
+              <div><span>বিভাগ</span><strong>{rows[0]?.DIVISION_NAME || "—"}</strong></div>
+              <div><span>জেলা</span><strong>{districtName || "—"}</strong></div>
+              <div><span>উপজেলা / থানা</span><strong>{upazilaName || "—"}</strong></div>
+              <div><span>মৌজা</span><strong>{mouzaName || "—"}</strong></div>
+              <div><span>জে.এল. নম্বর</span><strong>{jlNumber || "—"}</strong></div>
+              <div><span>জরিপ</span><strong>{surveyName || "—"}</strong></div>
+            </div>
+
+            <div className="report-cover-stats">
+              <div>
+                <span>মোট খতিয়ান</span>
+                <strong>{toBanglaNumber(completeCount)}</strong>
               </div>
-              {firstPage ? (
-                <>
-                  <header className="report-document-header">
-                    <div className="report-official-left">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img className="report-official-logo" src="/brand/logo-bangla.svg" alt="সহজ জমির হিসাব - LandBD" />
-                      <p>তথ্যসূত্র : DLRMS ভূমি রেকর্ড</p>
-                      <p>সার্ভে : {surveyName || "—"}</p>
-                    </div>
-
-                    <div className="report-official-center">
-                      <h1>{variant === "book" ? "মৌজা ভিত্তিক খতিয়ান বই" : "মৌজা খতিয়ান বই"}</h1>
-                      <p>{mouzaName || "—"} মৌজা</p>
-                    </div>
-
-                    <div className="report-official-right">
-                      <div className="report-qr-box">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={
-                            reportMeta?.verificationRegistered
-                              ? "/api/reports/mouza-porcha/qr?id=" + encodeURIComponent(reportId)
-                              : "/api/reports/mouza-porcha/qr?target=mouza-porcha-report"
-                          }
-                          alt={reportMeta?.verificationRegistered ? "LandBD verification QR" : "LandBD report QR"}
-                        />
-                        <span>{reportMeta?.verificationRegistered ? "Verify via LandBD" : "Open in LandBD"}</span>
-                      </div>
-                      <div>
-                        <p>Report ID: <b className="report-latin-id">{reportId}</b></p>
-                        <p>{reportMeta?.verificationRegistered ? "QR যাচাই সক্রিয়" : "তথ্যভিত্তিক রিপোর্ট"}</p>
-                      </div>
-                    </div>
-                  </header>
-
-                  <div className="report-location-row">
-                    <span>জেলা : <strong>{districtName || "—"}</strong></span>
-                    <span>উপজেলা / রাজস্ব সার্কেল : <strong>{upazilaName || "—"}</strong></span>
-                    <span>মৌজা : <strong>{mouzaName || "—"}</strong></span>
-                    <span>জে.এল নং : <strong>{jlNumber || "—"}</strong></span>
-                  </div>
-
-                  <table className="report-summary-table">
-                    <tbody>
-                      <tr>
-                        <td>মোট খতিয়ান</td>
-                        <td><strong>{completeCount}</strong></td>
-                        <td>প্রত্যাশিত</td>
-                        <td><strong>{targetCount}</strong></td>
-                        <td>তৈরির সময়</td>
-                        <td><strong>{generatedLabel}</strong></td>
-                      </tr>
-                      <tr>
-                        <td>হাল/সাবেক mapping</td>
-                        <td><strong>{includeHalSabek ? mappedKhatianCount + " / " + completeCount : "অন্তর্ভুক্ত নয়"}</strong></td>
-                        <td>সূচি সংগ্রহ</td>
-                        <td><strong>{isCountComplete ? "সংখ্যায় পূর্ণ" : "আংশিক"}</strong></td>
-                        <td>রিপোর্ট অবস্থা</td>
-                        <td><strong>{reportMeta?.verificationRegistered ? "যাচাইযোগ্য" : "তথ্যভিত্তিক"}</strong></td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {gapSummary.count > 0 ? (
-                    <p className="report-collection-note">
-                      সংখ্যাগত ধারায় সম্ভাব্য ফাঁক: {gapSummary.count}
-                      {gapSummary.samples.length ? " (নমুনা: " + gapSummary.samples.join(", ") + ")" : ""}।
-                      এটি সরকারি রেকর্ড অনুপস্থিত থাকার প্রমাণ নয়।
-                    </p>
-                  ) : null}
-
-                  <p className="report-collection-note">
-                    সংখ্যায় পূর্ণ মানে শুধু প্রত্যাশিত সংখ্যক খতিয়ান-সূচি পাওয়া গেছে; প্রতিটি মালিক, অভিভাবক ও দাগ বর্তমান সরকারি public API-তে সম্পূর্ণ প্রকাশিত হওয়ার নিশ্চয়তা নয়।
-                    {referenceEnrichedCount > 0
-                      ? ` ${referenceEnrichedCount}টি row-তে compact DLRMS field একটি matching registered LandBD reference dataset দিয়ে সম্পূরক করা হয়েছে; এটি বর্তমান সরকারি প্রত্যয়ন নয়।`
-                      : ""}
-                    সরকারি মূল নথিতে যাচাই করুন।
-                  </p>
-
-                  {includeHalSabek && unavailableMappingCount > 0 ? (
-                    <p className="report-collection-note">
-                      {unavailableMappingCount}টি খতিয়ানে হাল/সাবেক mapping প্রকাশিত বা পাওয়া যায়নি।
-                    </p>
-                  ) : null}
-
-                  <LegalDisclaimer />
-                </>
-              ) : (
-                <CompactHeader
-                  mouzaName={mouzaName}
-                  jlNumber={jlNumber}
-                  surveyName={surveyName}
-                  reportId={reportId}
-                />
-              )}
-
-              <div className="report-table-wrapper">
-                <ReportTable
-                  rows={pageRows}
-                  showHistory={showHistory}
-                  showOwners={showOwners}
-                  showGuardians={showGuardians}
-                  showDags={showDags}
-                  showLandArea={showLandArea}
-                  startIndex={pageStartIndex}
-                />
+              <div>
+                <span>মোট জমি (একর)</span>
+                <strong>{toBanglaNumber(totalLand.toFixed(2))}</strong>
               </div>
+            </div>
 
-              <footer className="report-page-footer">
-                <div>
-                  <strong>তথ্যসূত্র</strong>
-                  <span>DLRMS / সরকারি ভূমি রেকর্ড উৎস</span>
-                </div>
-                <div className="report-footer-center">
-                  <strong>পৃষ্ঠা {pageIndex + 1} / {pages.length}</strong>
-                  <span className="report-latin-id">{reportId}</span>
-                </div>
-                <div className="report-footer-source">
-                  <strong>তৈরির সময়</strong>
-                  <span>{generatedLabel}</span>
-                </div>
-                <div className="report-footer-disclaimer">
-                  এটি সরকারি প্রত্যয়িত পর্চা নয়। দাপ্তরিক বা আইনি ব্যবহারের আগে সরকারি মূল নথির সাথে যাচাই করুন।
-                </div>
-              </footer>
-              <LandBdPrintRibbon className="report-page-ribbon" />
-            </article>
-          );
-        })}
+            <p className="report-cover-date">প্রস্তুতের তারিখ: {generatedDate}</p>
+            <p className="report-cover-disclaimer">
+              এটি তথ্যের সংকলন, প্রত্যয়িত পর্চা নয়। শুধুমাত্র দেখার জন্য; সরকারি বা আইনি কাজে ব্যবহারের আগে সরকারি মূল রেকর্ড যাচাই করুন।
+            </p>
+            <p className="report-cover-integrity">
+              সূচি: {isCountComplete ? "সংখ্যায় পূর্ণ" : `${completeCount} / ${targetCount}`} ·
+              সম্ভাব্য সংখ্যাগত ফাঁক: {gapSummary.count} ·
+              reference-enriched row: {referenceEnrichedCount} ·
+              Report ID: <span className="report-latin-id">{reportId}</span>
+            </p>
+          </div>
+
+          <footer className="report-book-footer">
+            <span>landbd.pincodeit.com · ভূমি রেকর্ড ও মৌজা ম্যাপ</span>
+            <span>পৃষ্ঠা নং ১ / {toBanglaNumber(totalPages)}</span>
+          </footer>
+        </article>
+
+        {pages.map((pageRows, pageIndex) => (
+          <article
+            className="report-page report-page-portrait report-book-data-page"
+            data-page-orientation="portrait"
+            key={`page-${pageIndex + 2}`}
+          >
+            <header className="report-book-header">
+              <div className="report-book-header-top">landbd.pincodeit.com / মৌজা ভিত্তিক খতিয়ান বই</div>
+              <h2>{mouzaName || "—"} · {surveyName || "—"}</h2>
+              <div className="report-book-header-meta">
+                <span>জেলা: {districtName || "—"}</span>
+                <span>উপজেলা: {upazilaName || "—"}</span>
+                <span>জে.এল.: {jlNumber || "—"}</span>
+                <span>খতিয়ান: {toBanglaNumber(completeCount)}</span>
+              </div>
+            </header>
+
+            <div className="report-table-wrapper">
+              <ReportTable
+                rows={pageRows}
+                showHistory={showHistory}
+                showOwners={showOwners}
+                showGuardians={showGuardians}
+                showDags={showDags}
+                showLandArea={showLandArea}
+              />
+            </div>
+
+            <footer className="report-book-footer">
+              <span>landbd.pincodeit.com · ভূমি রেকর্ড ও মৌজা ম্যাপ</span>
+              <span>পৃষ্ঠা নং {toBanglaNumber(pageIndex + 2)} / {toBanglaNumber(totalPages)}</span>
+            </footer>
+          </article>
+        ))}
       </div>
-
-      
     </section>
   );
 }
