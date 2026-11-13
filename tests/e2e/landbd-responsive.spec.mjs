@@ -15,6 +15,12 @@ async function goto(page, path) {
 }
 
 async function allowFreeGisAccess(page) {
+  // GIS-control tests are not location-consent tests. Seed the app's existing
+  // consent key before navigation so remounts cannot reopen the modal and
+  // intercept unrelated control interactions.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("landbd_map_visit_consent_v3", "recorded");
+  });
   await page.route("**/api/services/access?serviceId=geospatial-map", async (route) => {
     await route.fulfill({
       status: 200,
