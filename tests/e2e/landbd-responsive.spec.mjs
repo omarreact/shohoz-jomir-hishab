@@ -88,7 +88,7 @@ test.describe("LandBD GIS control geometry", () => {
     if ((await toggle.textContent())?.includes("খুঁজুন")) await toggle.click();
 
     const panel = page.locator("#atlas-map-workspace-panel");
-    const toolbar = page.locator('[aria-label="GIS মানচিত্র টুলবার"]');
+    const toolbar = page.getByLabel(/^(?:GIS|জিআইএস) মানচিত্র টুলবার$/);
     await expect(panel).toBeVisible();
     await expect(toolbar).toBeHidden();
 
@@ -107,7 +107,7 @@ test.describe("LandBD GIS control geometry", () => {
       await goto(page, "/geospatial-map");
 
       const panel = page.locator("#atlas-map-workspace-panel");
-      const toolbar = page.locator('[aria-label="GIS মানচিত্র টুলবার"]');
+      const toolbar = page.getByLabel(/^(?:GIS|জিআইএস) মানচিত্র টুলবার$/);
       await expect(panel).toBeVisible();
       await expect(toolbar).toBeVisible();
 
