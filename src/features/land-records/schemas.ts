@@ -17,9 +17,10 @@ const KhatianMirrorEnrichmentSchema = z.object({
 }).optional();
 
 const KhatianReferenceEnrichmentSchema = z.object({
-  source: z.literal("LANDBD_BUNDLED_PATIRA_REFERENCE"),
-  dataset: z.string(),
-  surveyKey: z.literal("BRS"),
+  source: z.literal("LANDBD_BUNDLED_REFERENCE"),
+  datasetId: z.string().min(1),
+  datasetPath: z.string().min(1),
+  surveyKey: z.string().min(1),
   jlNumberId: z.number(),
   mouzaId: z.number(),
   changedFields: z.array(z.enum(["OWNERS", "GUARDIANS", "DAGS", "TOTAL_LAND"])),
