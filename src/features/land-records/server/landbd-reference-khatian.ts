@@ -47,7 +47,13 @@ function split(value: unknown): string[] {
 }
 
 function token(value: string): string {
-  return value.replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
+  return value
+    .normalize("NFC")
+    .replace(/[০-৯]/g, (digit) => String(BN_DIGITS.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("bn-BD");
 }
 
 function multisetCovers(container: string[], subset: string[]): boolean {
@@ -63,6 +69,13 @@ function multisetCovers(container: string[], subset: string[]): boolean {
     counts.set(key, remaining - 1);
   }
   return true;
+}
+
+function referenceListCompatible(official: string, reference: string): boolean {
+  const officialItems = split(official);
+  const referenceItems = split(reference);
+  if (!officialItems.length || !referenceItems.length) return true;
+  return multisetCovers(referenceItems, officialItems);
 }
 
 function preferReferenceList(official: string, reference: string): {
@@ -136,11 +149,27 @@ export function enrichPatiraBrsWithLandBdReference(
     TOTAL_LAND: row.TOTAL_LAND ?? "",
   };
 
-  const ownerResult = preferReferenceList(official.OWNERS, clean(source.Column2));
-  const guardianResult = preferReferenceList(official.GUARDIANS, clean(source.Column3));
-  const dagResult = preferReferenceList(official.DAGS, clean(source.Column4));
+  const reference = {
+    OWNERS: clean(source.Column2),
+    GUARDIANS: clean(source.Column3),
+    DAGS: clean(source.Column4),
+    TOTAL_LAND: clean(source.Column5),
+  };
 
-  const referenceTotal = clean(source.Column5);
+  // Never blend the bundled row with a current official row that contains a
+  // contradictory owner/guardian/dag identity. The fallback is only allowed
+  // when the reference strictly covers the visible official values.
+  if (
+    !referenceListCompatible(official.OWNERS, reference.OWNERS) ||
+    !referenceListCompatible(official.GUARDIANS, reference.GUARDIANS) ||
+    !referenceListCompatible(official.DAGS, reference.DAGS)
+  ) return null;
+
+  const ownerResult = preferReferenceList(official.OWNERS, reference.OWNERS);
+  const guardianResult = preferReferenceList(official.GUARDIANS, reference.GUARDIANS);
+  const dagResult = preferReferenceList(official.DAGS, reference.DAGS);
+
+  const referenceTotal = reference.TOTAL_LAND;
   const totalChanged = !clean(official.TOTAL_LAND) && Boolean(referenceTotal);
   const changedFields = [
     ownerResult.changed ? "OWNERS" : null,
