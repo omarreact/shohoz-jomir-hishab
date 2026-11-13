@@ -1,4 +1,5 @@
 import type { KhatianDetails, KhatianIndex } from "../types";
+import { isPartialPublicRecord } from "../lib/khatian-display";
 import {
   enrichPatiraBrsDetailsWithLandBdReference,
   enrichPatiraBrsWithLandBdReference,
@@ -103,5 +104,6 @@ describe("LandBD Patira BRS bundled reference fallback", () => {
       source: "LANDBD_BUNDLED_PATIRA_REFERENCE",
       displayComplete: true,
     });
+    expect(isPartialPublicRecord(result?.record)).toBe(false);
   });
 });
