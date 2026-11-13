@@ -72,7 +72,7 @@ export default function MouzaPorchaDocument({
     : 0;
   const unavailableMappingCount = includeHalSabek ? Math.max(0, rows.length - mappedKhatianCount) : 0;
   const referenceEnrichedCount = rows.filter((row) =>
-    row.LANDBD_REFERENCE_ENRICHMENT?.source === "LANDBD_BUNDLED_PATIRA_REFERENCE"
+    row.LANDBD_REFERENCE_ENRICHMENT?.source === "LANDBD_BUNDLED_REFERENCE"
   ).length;
   const completeCount = rows.length;
   const targetCount = expectedRecords ?? completeCount;
@@ -186,7 +186,7 @@ export default function MouzaPorchaDocument({
                   <p className="report-collection-note">
                     সংখ্যায় পূর্ণ মানে শুধু প্রত্যাশিত সংখ্যক খতিয়ান-সূচি পাওয়া গেছে; প্রতিটি মালিক, অভিভাবক ও দাগ বর্তমান সরকারি public API-তে সম্পূর্ণ প্রকাশিত হওয়ার নিশ্চয়তা নয়।
                     {referenceEnrichedCount > 0
-                      ? ` ${referenceEnrichedCount}টি row-তে compact DLRMS field LandBD-এর বিদ্যমান Patira BRS reference dataset দিয়ে সম্পূরক করা হয়েছে; এটি বর্তমান সরকারি প্রত্যয়ন নয়।`
+                      ? ` ${referenceEnrichedCount}টি row-তে compact DLRMS field একটি matching registered LandBD reference dataset দিয়ে সম্পূরক করা হয়েছে; এটি বর্তমান সরকারি প্রত্যয়ন নয়।`
                       : ""}
                     সরকারি মূল নথিতে যাচাই করুন।
                   </p>
