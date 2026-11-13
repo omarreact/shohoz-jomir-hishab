@@ -1,5 +1,6 @@
 import type { FullKhatian } from "../full-khatian";
 import type { KhatianDetails } from "../types";
+import { normalizeKhatianRecord } from "../normalized-khatian";
 import { acreFromDlrmsValue, formatAcre } from "@/src/modules/land/jsonArea";
 import { buildKhatianDisplayModel, type KhatianDisplayModel, type ParsedDagRow } from "./khatian-display";
 
@@ -13,126 +14,56 @@ function area(value: string | undefined): string | undefined {
   return number === null ? undefined : formatAcre(number);
 }
 
-/** The paper record and the export must both use verified FullKhatian rows.
- * The legacy header-only table ignored full.owners and full.dags even when
- * the server had successfully reconstructed the full record.
+function ownerRelation(owner: ReturnType<typeof normalizeKhatianRecord>["owners"][number]): string | undefined {
+  const hasSeparatedRelation = Boolean(owner.father || owner.mother || owner.spouse);
+  if (!hasSeparatedRelation && owner.relationRaw) return owner.relationRaw;
+  const parts = [
+    owner.father ? `পিতা: ${owner.father}` : "",
+    owner.mother ? `মাতা: ${owner.mother}` : "",
+    owner.spouse ? `স্বামী/স্ত্রী: ${owner.spouse}` : "",
+    owner.guardian ? `অভিভাবক: ${owner.guardian}` : "",
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
+/**
+ * Individual Khatian, Mouza Khatian Book and Mouza Dag Book all start from the
+ * same normalized record model. Rich FullKhatian rows win when available;
+ * compact index fields remain a source-preserving fallback.
  */
 export function buildFullKhatianDisplayModel(
   khatian: KhatianDetails,
   full: FullKhatian | undefined,
   surveyKey?: string,
 ): KhatianDisplayModel {
-  const model = buildKhatianDisplayModel(khatian, surveyKey);
-  if (!full) return model;
+  const base = buildKhatianDisplayModel(khatian, surveyKey);
+  const normalized = normalizeKhatianRecord(khatian, full);
 
-  const authoritativeOwners = full.owners.filter(
-    (row) => row.source !== "LISF_MOCK" && row.name.trim(),
-  );
-  const ownersByName = new Map<string, typeof authoritativeOwners>();
-  for (const owner of authoritativeOwners) {
-    const normalized = key(owner.name);
-    ownersByName.set(normalized, [...(ownersByName.get(normalized) ?? []), owner]);
-  }
-  const fromFull = authoritativeOwners.map((row) => ({
-    name: row.name,
-    share: row.shareRaw,
-    fatherOrHusband: row.fatherOrHusband,
+  const owners = normalized.owners.map((owner) => ({
+    name: owner.name,
+    share: owner.shareRaw,
+    fatherOrHusband: ownerRelation(owner),
   }));
 
-  // When a structured owner list contains exactly the same source names
-  // (including duplicate-name multiplicity), its own linked guardian/share
-  // fields can be displayed without guessing based on compact row order.
-  const compactNames = model.owners.map((row) => key(row.name)).sort();
-  const structuredNames = fromFull.map((row) => key(row.name)).sort();
-  const completeNameMatch = structuredNames.length === compactNames.length &&
-    structuredNames.every((name, index) => name === compactNames[index]);
+  const dags: ParsedDagRow[] = normalized.dags.map((dag) => ({
+    dagNo: dag.dagNo,
+    landClass: dag.landClass || dag.agriculturalType,
+    area: area(dag.khatianAreaRaw),
+    shareArea: area(dag.khatianAreaRaw),
+    totalArea: area(dag.totalAreaRaw),
+  }));
 
-  // Count name occurrences, not just unique names. The full source may omit
-  // an owner still visible in the compact row, or carry several namesakes.
-  const compactCounts = new Map<string, number>();
-  const fullCounts = new Map<string, number>();
-  for (const owner of model.owners) {
-    const name = key(owner.name);
-    compactCounts.set(name, (compactCounts.get(name) ?? 0) + 1);
-  }
-  for (const owner of fromFull) {
-    const name = key(owner.name);
-    fullCounts.set(name, (fullCounts.get(name) ?? 0) + 1);
-  }
-  const consumedCompact = new Map<string, number>();
-  const compactRowsMissingFromFull = model.owners.filter((owner) => {
-    const name = key(owner.name);
-    const occurrence = (consumedCompact.get(name) ?? 0) + 1;
-    consumedCompact.set(name, occurrence);
-    return occurrence > (fullCounts.get(name) ?? 0);
-  });
-
-  // When full data gives more rows, include all remaining compact evidence
-  // instead of silently discarding a name missing from the enriched subset.
-  const preferFullRows = fromFull.length > model.owners.length ||
-    (completeNameMatch && fromFull.some((row) => row.fatherOrHusband || row.share));
-  const owners = preferFullRows
-    ? [...fromFull, ...compactRowsMissingFromFull]
-    : model.owners.map((row) => {
-        const candidates = ownersByName.get(key(row.name)) ?? [];
-        // Never attach one person's parent/share to two same-name compact
-        // entries when the upstream has not individually linked those rows.
-        const verified = compactCounts.get(key(row.name)) === 1 && candidates.length === 1
-          ? candidates[0] : undefined;
-        return {
-          ...row,
-          share: row.share || verified?.shareRaw,
-          fatherOrHusband: verified?.fatherOrHusband,
-        };
-      });
-
-  const sourceDags = full.dags.filter((row) => row.source !== "LISF_MOCK" && row.dagNo.trim());
-  const detailedDags = new Map<string, typeof sourceDags>();
-  for (const row of sourceDags) {
-    const number = key(row.dagNo);
-    detailedDags.set(number, [...(detailedDags.get(number) ?? []), row]);
-  }
-  const converted = (
-    row: (typeof sourceDags)[number],
-    previous?: ParsedDagRow,
-  ): ParsedDagRow => ({
-    dagNo: previous?.dagNo || row.dagNo,
-    landClass: row.landType || row.agriculturalType || previous?.landClass,
-    area: area(row.khatianAreaRaw) || previous?.area,
-    shareArea: area(row.khatianAreaRaw) || previous?.shareArea,
-    totalArea: area(row.totalAreaRaw) || previous?.totalArea,
-    khatianShare: previous?.khatianShare,
-  });
-  const dags: ParsedDagRow[] = [];
-  const seen = new Set<string>();
-  for (const row of model.dags) {
-    const number = key(row.dagNo);
-    if (seen.has(number)) continue;
-    seen.add(number);
-    const variants = detailedDags.get(number);
-    if (!variants?.length) {
-      dags.push(row);
-      continue;
-    }
-    // Keep each explicitly sourced land-class/area variant as a separate row.
-    variants.forEach((variant, index) => {
-      dags.push(converted(variant, index === 0 ? row : undefined));
-    });
-  }
-  for (const [number, variants] of detailedDags) {
-    if (seen.has(number)) continue;
-    seen.add(number);
-    variants.forEach((variant) => dags.push(converted(variant)));
-  }
+  const resolvedOwners = owners.length ? owners : base.owners;
+  const resolvedDags = dags.length ? dags : base.dags;
 
   return {
-    ...model,
-    owners,
-    dags,
-    ownerCount: owners.length,
-    dagCount: new Set(dags.map((row) => key(row.dagNo))).size,
-    hasOwnerShares: owners.some((row) => Boolean(row.share)),
-    hasDagAreas: dags.some((row) => Boolean(row.area || row.shareArea || row.totalArea)),
-    hasLandClass: dags.some((row) => Boolean(row.landClass)),
+    ...base,
+    owners: resolvedOwners,
+    dags: resolvedDags,
+    ownerCount: resolvedOwners.length,
+    dagCount: new Set(resolvedDags.map((row) => key(row.dagNo))).size,
+    hasOwnerShares: resolvedOwners.some((row) => Boolean(row.share)),
+    hasDagAreas: resolvedDags.some((row) => Boolean(row.area || row.shareArea || row.totalArea)),
+    hasLandClass: resolvedDags.some((row) => Boolean(row.landClass)),
   };
 }

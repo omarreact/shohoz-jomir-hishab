@@ -24,6 +24,8 @@ export type MouzaPorchaReportMeta = {
   verificationRegistered: boolean;
 };
 
+export type MouzaKhatianBookVariant = "book" | "legacy" | "monochrome";
+
 type Props = {
   rows: KhatianIndex[];
   halSabek: HalSabekReportState;
@@ -36,6 +38,7 @@ type Props = {
   jlNumber: string;
   reportMeta: MouzaPorchaReportMeta | null;
   pageOrientation: MouzaReportOrientation;
+  variant?: MouzaKhatianBookVariant;
 };
 
 export default function MouzaPorchaDocument({
@@ -50,6 +53,7 @@ export default function MouzaPorchaDocument({
   jlNumber,
   reportMeta,
   pageOrientation,
+  variant = "book",
 }: Props) {
   const reportRows = useMemo(() => buildMouzaReportRows(rows, halSabek), [rows, halSabek]);
   const segments = useMemo(() => segmentMouzaReportRows(reportRows), [reportRows]);
@@ -91,7 +95,7 @@ export default function MouzaPorchaDocument({
   return (
     <section
       id="mouza-porcha-report"
-      className="landbd-report-font"
+      className={`landbd-report-font report-variant-${variant}`}
       data-bangla-ignore="true"
       translate="no"
       aria-label="মৌজা পর্চা রিপোর্ট"
@@ -123,7 +127,7 @@ export default function MouzaPorchaDocument({
                     </div>
 
                     <div className="report-official-center">
-                      <h1>মৌজা পর্চা রিপোর্ট</h1>
+                      <h1>{variant === "book" ? "মৌজা ভিত্তিক খতিয়ান বই" : "মৌজা খতিয়ান বই"}</h1>
                       <p>{mouzaName || "—"} মৌজা</p>
                     </div>
 

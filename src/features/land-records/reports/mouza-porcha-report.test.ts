@@ -34,6 +34,16 @@ describe("mouza porcha report helpers", () => {
     expect(row.guardians).toEqual(["পিং মোঃ করিম", "জং মোঃ সালাম"]);
     expect(row.dags).toEqual(["1252", "1260", "1265/1209"]);
     expect(row.totalLandAcre).toBe("10.8616");
+    expect(row.completeness).toBe("complete");
+    expect(row.missingFields).toEqual([]);
+  });
+
+  it("marks a source-truncated Khatian row as partial for the book", () => {
+    const [row] = buildMouzaReportRows([
+      { ...baseRow, OWNERS: "মোঃ আব্দুর রহমান,...", DAGS: "1252,..." },
+    ], {});
+    expect(row.completeness).toBe("partial");
+    expect(row.missingFields).toEqual(expect.arrayContaining(["owners", "dags"]));
   });
 
   it("only exposes Hal/Sabek history supplied by the mapping source", () => {

@@ -45,7 +45,7 @@ export default function ReportTable({
   showLandArea: boolean;
   startIndex: number;
 }) {
-  const numberLabels = ["১", "২", "৩", "৪", "৫", "৬", "৭"];
+  const numberLabels = ["১", "২", "৩", "৪", "৫", "৬", "৭", "৮"];
   const columns = [
     { key: "serial", label: "ক্রম", weight: 6, visible: true },
     { key: "khatian", label: "খতিয়ান নং", weight: 11, visible: true },
@@ -54,6 +54,7 @@ export default function ReportTable({
     { key: "dags", label: "দাগ নং", weight: 14, visible: showDags },
     { key: "history", label: "দাগ পরিবর্তন (সাবেক → হাল)", weight: 19, visible: showHistory },
     { key: "landArea", label: "জমির পরিমাণ (একর)", weight: 10, visible: showLandArea },
+    { key: "status", label: "উৎস অবস্থা", weight: 12, visible: true },
   ].filter((column) => column.visible);
   const totalWeight = columns.reduce((sum, column) => sum + column.weight, 0);
 
@@ -97,9 +98,17 @@ export default function ReportTable({
               if (column.key === "history") {
                 return <td key={column.key} className="report-dag-cell"><DagHistoryCell history={row.history} /></td>;
               }
+              if (column.key === "landArea") {
+                return (
+                  <td key={column.key} className="report-land-area">
+                    {row.totalLandAcre ? row.totalLandAcre + " একর" : "—"}
+                  </td>
+                );
+              }
               return (
-                <td key={column.key} className="report-land-area">
-                  {row.totalLandAcre ? row.totalLandAcre + " একর" : "—"}
+                <td key={column.key} className="report-source-status">
+                  <strong>{row.completeness === "complete" ? "পূর্ণ" : row.completeness === "enriched" ? "সম্পূরক" : "আংশিক"}</strong>
+                  {row.missingFields.length ? <span className="report-cell-item">অসম্পূর্ণ: {row.missingFields.join(", ")}</span> : null}
                 </td>
               );
             })}

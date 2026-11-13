@@ -11,7 +11,10 @@ import { generatePagedReportPdf } from "@/src/shared/lib/pdf/generate-paged-repo
 import { logger } from "@/src/shared/utils/logger";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
 import { SURVEY_KEY_BY_ID, type KhatianIndex, type KhatianPage } from "../types";
-import MouzaPorchaDocument, { type MouzaPorchaReportMeta } from "./MouzaPorchaDocument";
+import MouzaPorchaDocument, {
+  type MouzaKhatianBookVariant,
+  type MouzaPorchaReportMeta,
+} from "./MouzaPorchaDocument";
 import {
   buildMouzaReportRows,
   stableReportPayload,
@@ -111,6 +114,7 @@ export default function MouzaPorchaReportBuilder() {
   const [mouzaId, setMouzaId] = useState("");
   const [includeHalSabek, setIncludeHalSabek] = useState(false);
   const [pageOrientation, setPageOrientation] = useState<MouzaReportOrientation>("portrait");
+  const [pdfVariant, setPdfVariant] = useState<MouzaKhatianBookVariant>("book");
   const [rows, setRows] = useState<KhatianIndex[]>([]);
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
   const [reportMeta, setReportMeta] = useState<MouzaPorchaReportMeta | null>(null);
@@ -145,7 +149,7 @@ export default function MouzaPorchaReportBuilder() {
   }, [district, loadUpazilas]);
 
   useEffect(() => {
-    if (district && upazila) void loadSurveys(district, upazila);
+    if (district && upazila) void loadSurveys(district, upazila, true);
   }, [district, upazila, loadSurveys]);
 
   useEffect(() => {
@@ -463,9 +467,10 @@ export default function MouzaPorchaReportBuilder() {
         source,
         pageSelector: ".report-page",
         fileName: [
-          "LandBD-Mouza-Porcha",
+          "LandBD-Mouza-Khatian-Book",
           selectedMouza?.MOUZA_NAME,
           selectedSurvey?.LOCAL_NAME,
+          pdfVariant,
           reportMeta?.reportId,
         ].filter(Boolean).join("-"),
         orientation: pageOrientation,
@@ -499,8 +504,8 @@ export default function MouzaPorchaReportBuilder() {
     <>
       <HeroBanner
         badge="ভূমি রেকর্ড"
-        title="মৌজা পর্চা রিপোর্ট"
-        description="একটি মৌজার খতিয়ান, মালিক, অভিভাবক, দাগ ও উৎসে প্রকাশিত জমির পরিমাণ একত্র করে Kalpurush ফন্টে সরকারি খতিয়ান-ধাঁচের A4 রিপোর্ট তৈরি করুন। Portrait বা Landscape বেছে নেওয়া যাবে; প্রতিটি পৃষ্ঠায় Bangla LandBD watermark ও footer ribbon থাকবে।"
+        title="মৌজা ভিত্তিক খতিয়ান বই"
+        description="একটি মৌজার উপলভ্য খতিয়ান, মালিক, অভিভাবক, দাগ ও জমির পরিমাণ একত্র করে A4 খতিয়ান বই তৈরি করুন। Survey ও নামজারি—উভয় ধরন নির্বাচন করা যাবে; Portrait বা Landscape বেছে নেওয়া যাবে।"
         pattern="grid"
       />
 
@@ -508,7 +513,7 @@ export default function MouzaPorchaReportBuilder() {
         <section className="report-controls">
           <Card>
             <CardHeader>
-              <CardTitle>রিপোর্টের এলাকা নির্বাচন</CardTitle>
+              <CardTitle>খতিয়ান বইয়ের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
                 বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। Portrait বা Landscape layout বেছে নিন; preview এবং Print একই orientation ব্যবহার করবে।
               </CardDescription>
@@ -559,6 +564,16 @@ export default function MouzaPorchaReportBuilder() {
                   ]}
                   loading={loading.mouzas}
                   disabled={!surveyId}
+                />
+                <Select
+                  label="PDF-এর ধরন"
+                  value={pdfVariant}
+                  onChange={(event) => setPdfVariant(event.target.value as MouzaKhatianBookVariant)}
+                  options={[
+                    { value: "book", label: "নতুন" },
+                    { value: "legacy", label: "রঙিন" },
+                    { value: "monochrome", label: "সাদা-কালো" },
+                  ]}
                 />
                 <Select
                   label="প্রিন্ট পেজ"
@@ -616,7 +631,7 @@ export default function MouzaPorchaReportBuilder() {
                   className="landbd-primary-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {generating ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
-                  রিপোর্ট তৈরি করুন
+                  খতিয়ান বই তৈরি করুন
                 </button>
                 {generating ? (
                   <button
@@ -689,7 +704,7 @@ export default function MouzaPorchaReportBuilder() {
             <div className="mb-3 print:hidden">
               <h2 className="text-lg font-black text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
               <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} রিপোর্টটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
+                নিচের A4 {pageOrientation === "landscape" ? "Landscape" : "Portrait"} খতিয়ান বইটি PDF হিসেবে দেখুন বা ডাউনলোড করুন; Print অপশনও রয়েছে।
               </p>
             </div>
 
@@ -706,6 +721,7 @@ export default function MouzaPorchaReportBuilder() {
                 jlNumber={selectedMouza?.JL_NUMBER ?? ""}
                 reportMeta={reportMeta}
                 pageOrientation={pageOrientation}
+                variant={pdfVariant}
               />
             </div>
           </section>

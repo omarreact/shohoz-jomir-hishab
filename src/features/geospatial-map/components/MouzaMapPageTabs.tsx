@@ -24,7 +24,7 @@ export default function MouzaMapPageTabs({ demoBrowserEnabled }: { demoBrowserEn
           <div>
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#bdd3c6] bg-white/80 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#28636b]"><MapPinned size={14}/> Bangladesh · cadastral workspace</p>
             <h1 className="max-w-[720px] text-4xl font-black leading-[1.16] tracking-[-.05em] text-[#183c41] sm:text-5xl">মৌজা নকশা <span className="text-[#bc7651]">থেকে</span><br/>জমির তথ্য পর্যন্ত।</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#57706b]">প্রাপ্য RAJUK জরিপ ডেটা দিয়ে নির্দিষ্ট মৌজা খুঁজুন, মানচিত্র দেখুন, GIS প্রিভিউ ডাউনলোড করুন এবং সরকারি DLRS নকশার উৎস যাচাই করুন।</p>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#57706b]">প্রাপ্য RAJUK জরিপ ডেটা দিয়ে কভারেজ ও সার্ভে বেছে মৌজা ম্যাপ তালিকা ব্রাউজ করুন, অন-ডিমান্ড প্রিভিউ দেখুন, GIS শেয়ার কপি ডাউনলোড করুন এবং সরকারি DLRS/Settlement PDF উৎস যাচাই করুন।</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/geospatial-map" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#1e5860] px-5 text-sm font-extrabold text-white transition hover:bg-[#183d43]"><Compass size={17}/> পূর্ণ GIS ম্যাপ <ArrowUpRight size={15}/></Link>
               <Link href="/dlrms-khatian" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#b7cbc0] bg-white/90 px-5 text-sm font-extrabold text-[#295e62]"><BookMarked size={17}/> খতিয়ান অনুসন্ধান</Link>
@@ -78,9 +78,9 @@ export default function MouzaMapPageTabs({ demoBrowserEnabled }: { demoBrowserEn
                 <h3 className="text-sm font-black">GIS প্রক্রিয়া</h3>
                 <div className="mt-4 space-y-4">
                   {[
-                    ["01","এলাকা নির্বাচন","প্রাপ্য RAJUK জেলা → উপজেলা → মৌজা"],
-                    ["02","দাগ ও স্তর","RS / MS পৃথক অথবা মিলিয়ে দেখুন"],
-                    ["03","সঠিক উৎস","সরকারি জরিপ নকশা আলাদাভাবে যাচাই"],
+                    ["01","কভারেজ ও সার্ভে","ঢাকা coverage → RS / MS → জেলা → উপজেলা"],
+                    ["02","ম্যাপ তালিকা ও প্রিভিউ","মৌজা / JL বেছে অন-ডিমান্ড GIS প্রিভিউ"],
+                    ["03","ডাউনলোড ও উৎস","Visitor PNG · Admin Vector PDF · সরকারি DLRS যাচাই"],
                   ].map(([no,title,detail])=>(
                     <div key={no} className="flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f1e9d9] text-xs font-black text-[#aa7149]">{no}</span><div><p className="text-xs font-black">{title}</p><p className="mt-1 text-[11px] leading-5 text-[#718079]">{detail}</p></div></div>
                   ))}

@@ -92,8 +92,10 @@ function normalizedKey(value: string): string {
 function dedupeOwners(rows: FullKhatianOwner[]): FullKhatianOwner[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = [row.name, row.fatherOrHusband, row.address, row.shareRaw]
-      .map((part) => normalizedKey(part ?? "")).join("|");
+    const key = [
+      row.name, row.fatherOrHusband, row.father, row.mother, row.spouse,
+      row.guardian, row.address, row.shareRaw,
+    ].map((part) => normalizedKey(part ?? "")).join("|");
     if (!normalizedKey(row.name) || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -124,22 +126,24 @@ export function extractStructuredPublicRecord(
       if (!row) continue;
       const name = primitiveString(row, "NAME", "OWNER_NAME", "OWNER", "name", "ownerName");
       if (!name) continue;
+      const father = primitiveString(row, "FATHER_NAME", "FATHER", "fatherName", "father");
+      const mother = primitiveString(row, "MOTHER_NAME", "MOTHER", "motherName", "mother");
+      const spouse = primitiveString(row, "SPOUSE_NAME", "HUSBAND_NAME", "WIFE_NAME", "spouseName", "husbandName", "wifeName");
+      const guardian = primitiveString(row, "GUARDIAN_NAME", "GUARDIAN", "guardianName", "guardian");
       owners.push({
+        occurrence: owners.length + 1,
         name,
         fatherOrHusband: primitiveString(
           row,
           "FATHER_OR_HUSBAND",
           "FATHER_HUSBAND",
           "FATHER_HUSBAND_NAME",
-          "FATHER_NAME",
-          "HUSBAND_NAME",
-          "GUARDIAN_NAME",
-          "GUARDIAN",
           "fatherOrHusband",
-          "fatherName",
-          "husbandName",
-          "guardianName",
-        ),
+        ) ?? father ?? spouse ?? guardian,
+        father,
+        mother,
+        spouse,
+        guardian,
         address: primitiveString(row, "ADDRESS", "OWNER_ADDRESS", "ADDRESS_DETAILS", "address", "ownerAddress"),
         shareRaw: primitiveString(row, "SHARE", "OWNER_SHARE", "SHARE_AMOUNT", "SHARE_VALUE", "ANSHO", "PART", "share", "ownerShare"),
         source,

@@ -205,7 +205,7 @@ function MutationResultCard({ record }: { record: MutationRecord }) {
   );
 }
 
-export default function KhatianVerificationLookup() {
+export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "all" | "mutation" }) {
   const [dlrmsValue, setDlrmsValue] = useState("");
   const [dlrmsLoading, setDlrmsLoading] = useState(false);
   const [dlrmsError, setDlrmsError] = useState<string | null>(null);
@@ -273,7 +273,7 @@ export default function KhatianVerificationLookup() {
   return (
     <section className="mx-auto w-full max-w-7xl space-y-4 px-3 pt-4 sm:px-6 sm:pt-6" aria-labelledby="dlrms-verify-heading">
       {/* DLRMS QR Verification */}
-      <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 shadow-sm dark:border-emerald-900/70 dark:from-emerald-950/30 dark:via-slate-950 dark:to-sky-950/20">
+      <div className={mode === "mutation" ? "hidden" : "overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 shadow-sm dark:border-emerald-900/70 dark:from-emerald-950/30 dark:via-slate-950 dark:to-sky-950/20"}>
         <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[.72fr_1.28fr] lg:items-center">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#006a4e] text-white shadow-sm">
@@ -387,7 +387,7 @@ export default function KhatianVerificationLookup() {
       </div>
 
       {/* DLRMS result */}
-      {dlrmsRecord ? (
+      {mode !== "mutation" && dlrmsRecord ? (
         <div id="verified-khatian-result" className="scroll-mt-4 pt-2">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/25">
             <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-100">

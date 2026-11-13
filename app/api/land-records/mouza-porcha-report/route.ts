@@ -6,12 +6,11 @@ import { providers } from "@/src/features/land-records/server/provider";
 import { enrichKhatianWithReferenceDatasets } from "@/src/features/land-records/server/reference-khatian-resolver";
 import { z } from "zod";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS"]);
+const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 
 /**
  * Dedicated paged endpoint for the Mouza Porcha Report builder.
  *
- * The normal /khatians endpoint intentionally requires a specific search term.
  * This route is separate because report generation needs the complete khatian
  * index for one explicitly selected JL/mouza. It stays paginated so a large
  * mouza is never materialized in one serverless request.

@@ -7,6 +7,7 @@ export const SERVICE_DEFINITIONS = [
  {id:"geospatial-map",path:"/geospatial-map",name:"জিআইএস মানচিত্র",category:"map"},
  {id:"dlrms-khatian",path:"/dlrms-khatian",name:"ডিএলআরএমএস খতিয়ান",category:"record"},
  {id:"mouza-porcha",path:"/mouza-porcha-report",name:"মৌজা পর্চা রিপোর্ট",category:"record"},
+ {id:"mouza-dag-book",path:"/mouza-dag-report",name:"মৌজা ভিত্তিক দাগ বই",category:"record"},
  {id:"settlement-khatian",path:"/settlement-khatian",name:"সেটেলমেন্ট খতিয়ান",category:"record"},
  {id:"porcha",path:"/porcha",name:"পর্চা অনুসন্ধান",category:"record"},
  {id:"warish",path:"/warish",name:"ওয়ারিশ হিসাব ও খসড়া",category:"certificate"},
