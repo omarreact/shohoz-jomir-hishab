@@ -23,7 +23,7 @@ const QUICK_LINKS = [
   { href: FEATURE_ROUTES.dlrmsKhatian, label: "খতিয়ান খুঁজুন", icon: FileSearch },
   { href: FEATURE_ROUTES.landMeasurement, label: "জমি পরিমাপ", icon: Calculator },
   { href: FEATURE_ROUTES.landMap, label: "জিআইএস মানচিত্র", icon: MapPinned },
-  { href: FEATURE_ROUTES.history, label: "হিসাব ইতিহাস", icon: BookOpen },
+  { href: FEATURE_ROUTES.mouzaKhatianBook, label: "মৌজা খতিয়ান বই", icon: BookOpen },
 ] as const;
 
 type InstallEvent = Event & {

@@ -67,7 +67,7 @@ describe("LandBD routing inventory", () => {
       if (route === "/admin" || route === "/login") continue;
       expect(pages.has(route)).toBe(true);
     }
-    const sitemapRoutes = new Set(PUBLIC_SITEMAP_KEYS.map(k => FEATURE_ROUTES[k]));
+    const sitemapRoutes = new Set<string>(PUBLIC_SITEMAP_KEYS.map(k => FEATURE_ROUTES[k]));
     expect(sitemapRoutes.has("/warish")).toBe(false);
     expect(sitemapRoutes.has("/warishsanad")).toBe(false);
     expect(sitemapRoutes.has("/porcha")).toBe(false);
