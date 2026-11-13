@@ -64,7 +64,7 @@ export default function RajukMapControls({ mapRef, mapReady, locating, goToMyLoc
   };
 
   return (
-    <div className="absolute right-3 top-[79px] z-[56] flex max-h-[calc(100dvh-160px)] flex-col items-end gap-2 lg:right-4" aria-label="GIS মানচিত্র টুলবার">
+    <div className="absolute right-3 top-[82px] z-[56] flex max-h-[calc(100dvh-180px)] flex-col items-end gap-2 overflow-y-auto overscroll-contain [scrollbar-width:none] lg:right-4" aria-label="GIS মানচিত্র টুলবার">
       <div className="overflow-hidden rounded-md border border-[var(--border-color)] shadow-[0_4px_18px_rgba(20,40,70,.2)]">
         <button type="button" className={buttonClass} aria-label="জুম বাড়ান" title="Zoom in" disabled={!mapReady} onClick={() => mapRef.current?.zoomIn({ duration: 200 })}><Plus size={18}/></button>
         <button type="button" className={buttonClass} aria-label="জুম কমান" title="Zoom out" disabled={!mapReady} onClick={() => mapRef.current?.zoomOut({ duration: 200 })}><Minus size={18}/></button>

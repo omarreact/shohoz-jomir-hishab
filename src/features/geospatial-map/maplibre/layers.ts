@@ -25,7 +25,7 @@ export const VECTOR_LAYER_STYLES = {
     id: VECTOR_LAYERS.rsBoundaryLine,
     type: "line",
     source: VECTOR_SOURCES.rsBoundary,
-    paint: { "line-color": "#f01e1e", "line-width": 2.4, "line-opacity": 1 },
+    paint: { "line-color": "#181e1d", "line-width": 2.4, "line-opacity": 1 },
   } satisfies LineLayerSpecification,
   msBoundaryFill: {
     id: VECTOR_LAYERS.msBoundaryFill,
@@ -37,7 +37,7 @@ export const VECTOR_LAYER_STYLES = {
     id: VECTOR_LAYERS.msBoundaryLine,
     type: "line",
     source: VECTOR_SOURCES.msBoundary,
-    paint: { "line-color": "#6930c3", "line-width": 2.1, "line-opacity": 1 },
+    paint: { "line-color": "#dc2626", "line-width": 2.1, "line-opacity": 1 },
   } satisfies LineLayerSpecification,
   rsPlotLabels: {
     id: VECTOR_LAYERS.rsPlotLabels,
@@ -50,7 +50,7 @@ export const VECTOR_LAYER_STYLES = {
       "text-allow-overlap": false,
       "symbol-placement": "point",
     },
-    paint: { "text-color": "#b91c1c", "text-halo-color": "#ffffff", "text-halo-width": 1.8, "text-halo-blur": 0.15 },
+    paint: { "text-color": "#161e1b", "text-halo-color": "#ffffff", "text-halo-width": 1.8, "text-halo-blur": 0.15 },
   } satisfies SymbolLayerSpecification,
   msPlotLabels: {
     id: VECTOR_LAYERS.msPlotLabels,
@@ -63,19 +63,19 @@ export const VECTOR_LAYER_STYLES = {
       "text-allow-overlap": false,
       "symbol-placement": "point",
     },
-    paint: { "text-color": "#7c3aed", "text-halo-color": "#ffffff", "text-halo-width": 1.8, "text-halo-blur": 0.15 },
+    paint: { "text-color": "#b91c1c", "text-halo-color": "#ffffff", "text-halo-width": 1.8, "text-halo-blur": 0.15 },
   } satisfies SymbolLayerSpecification,
   selectedPlotFill: {
     id: VECTOR_LAYERS.selectedPlotFill,
     type: "fill",
     source: VECTOR_SOURCES.selectedPlot,
-    paint: { "fill-color": ["case", ["==", ["get", "_layer_source"], "ms"], "#a78bfa", "#93c5fd"], "fill-opacity": 0.12 },
+    paint: { "fill-color": ["case", ["==", ["get", "_layer_source"], "ms"], "#fecaca", "#cbd5e1"], "fill-opacity": 0.12 },
   } satisfies FillLayerSpecification,
   selectedPlotLine: {
     id: VECTOR_LAYERS.selectedPlotLine,
     type: "line",
     source: VECTOR_SOURCES.selectedPlot,
-    paint: { "line-color": ["case", ["==", ["get", "_layer_source"], "ms"], "#6d28d9", "#1d4ed8"], "line-width": 4, "line-opacity": 1 },
+    paint: { "line-color": ["case", ["==", ["get", "_layer_source"], "ms"], "#dc2626", "#181e1d"], "line-width": 4, "line-opacity": 1 },
   } satisfies LineLayerSpecification,
   locationPoint: {
     id: VECTOR_LAYERS.locationPoint,
