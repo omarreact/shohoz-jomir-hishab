@@ -169,12 +169,89 @@ function dedupeDags(rows: NormalizedDagRow[]): NormalizedDagRow[] {
   return output;
 }
 
+function normalizedName(value: string): string {
+  return normalizeRecordText(value).toLocaleLowerCase("bn-BD");
+}
+
+function nameCounts(rows: NormalizedOwnerRow[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const name = normalizedName(row.name);
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * Merge structured and compact owner evidence without guessing duplicate-name
+ * relationships. If structured evidence is incomplete, compact rows remain the
+ * authoritative presentation fallback. If structured evidence is equal or
+ * fuller, keep all structured rows and append only compact occurrences that
+ * have no structured counterpart.
+ */
+function mergeOwnerEvidence(
+  compact: NormalizedOwnerRow[],
+  structured: NormalizedOwnerRow[],
+): NormalizedOwnerRow[] {
+  if (!structured.length) return dedupeOwners(compact);
+  if (!compact.length) return dedupeOwners(structured);
+
+  const compactCounts = nameCounts(compact);
+  const structuredCounts = nameCounts(structured);
+  const exactMultiplicity =
+    compact.length === structured.length &&
+    [...compactCounts.entries()].every(([name, count]) => structuredCounts.get(name) === count);
+
+  if (exactMultiplicity) return dedupeOwners(structured);
+
+  // A smaller structured set is not enough to safely link guardians/shares to
+  // repeated compact names. Preserve all compact occurrences rather than guess.
+  if (structured.length < compact.length) return dedupeOwners(compact);
+
+  const remainingCompact = new Map(compactCounts);
+  for (const row of structured) {
+    const name = normalizedName(row.name);
+    const left = remainingCompact.get(name) ?? 0;
+    if (left > 0) remainingCompact.set(name, left - 1);
+  }
+
+  const consumed = new Map<string, number>();
+  const compactOnly = compact.filter((row) => {
+    const name = normalizedName(row.name);
+    const occurrence = (consumed.get(name) ?? 0) + 1;
+    consumed.set(name, occurrence);
+    const missing = remainingCompact.get(name) ?? 0;
+    const total = compactCounts.get(name) ?? 0;
+    return occurrence > total - missing;
+  });
+
+  return dedupeOwners([...structured, ...compactOnly]);
+}
+
+function mergeDagEvidence(
+  compact: NormalizedDagRow[],
+  structured: NormalizedDagRow[],
+): NormalizedDagRow[] {
+  if (!structured.length) return dedupeDags(compact);
+  if (!compact.length) return dedupeDags(structured);
+
+  const represented = new Set(structured.map((row) => normalizeRecordNumber(row.dagNo)));
+  const compactOnly = compact.filter((row) => !represented.has(normalizeRecordNumber(row.dagNo)));
+  return dedupeDags([...structured, ...compactOnly]);
+}
+
 export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian): NormalizedKhatianRecord {
-  const structuredOwners = full?.owners?.map((owner, indexNo) => fromStructuredOwner(owner, indexNo + 1)) ?? [];
-  const structuredDags = full?.dags?.map(fromStructuredDag) ?? [];
-  const owners = dedupeOwners(structuredOwners.length ? structuredOwners : compactOwners(index));
-  const dags = dedupeDags(structuredDags.length ? structuredDags : compactDags(index));
-  const totalLandRaw = normalizeRecordText(full?.base.TOTAL_LAND || index.TOTAL_LAND);
+  const compactOwnerRows = compactOwners(index);
+  const compactDagRows = compactDags(index);
+  const structuredOwners = (full?.owners ?? [])
+    .filter((owner) => owner.source !== "LISF_MOCK")
+    .map((owner, indexNo) => fromStructuredOwner(owner, indexNo + 1));
+  const structuredDags = (full?.dags ?? [])
+    .filter((dag) => dag.source !== "LISF_MOCK")
+    .map(fromStructuredDag);
+  const owners = mergeOwnerEvidence(compactOwnerRows, structuredOwners);
+  const dags = mergeDagEvidence(compactDagRows, structuredDags);
+  const totalLandRaw = normalizeRecordText(full?.base?.TOTAL_LAND || index.TOTAL_LAND);
   const compactGuardians = splitRecordList(index.GUARDIANS);
   const missingFields: NormalizedKhatianRecord["missingFields"] = [];
   if (!owners.length || sourceLooksPartial(index.OWNERS)) missingFields.push("owners");
@@ -188,7 +265,7 @@ export function normalizeKhatianRecord(index: KhatianIndex, full?: FullKhatian):
   const hasEnrichment = Boolean(
     index.LANDBD_MIRROR_ENRICHMENT ||
     index.LANDBD_REFERENCE_ENRICHMENT ||
-    full?.evidence.some((item) => !item.official),
+    full?.evidence?.some((item) => !item.official),
   );
   const completeness: NormalizedCompleteness =
     missingFields.length ? "partial" : hasEnrichment ? "enriched" : "complete";
