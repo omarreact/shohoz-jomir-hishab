@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, FileText, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
+import { Download, Eye, Loader2, RefreshCcw, ShieldCheck, Square } from "lucide-react";
 import HeroBanner from "@/src/shared/ui/HeroBanner";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/src/shared/ui/Card";
 import { Select } from "@/src/shared/ui/Select";
@@ -113,7 +113,7 @@ export default function MouzaPorchaReportBuilder() {
   const [surveyId, setSurveyId] = useState("");
   const [mouzaId, setMouzaId] = useState("");
   const [includeHalSabek, setIncludeHalSabek] = useState(false);
-  const [pageOrientation, setPageOrientation] = useState<MouzaReportOrientation>("portrait");
+  const pageOrientation: MouzaReportOrientation = "portrait";
   const [pdfVariant, setPdfVariant] = useState<MouzaKhatianBookVariant>("book");
   const [rows, setRows] = useState<KhatianIndex[]>([]);
   const [halSabek, setHalSabek] = useState<HalSabekReportState>({});
@@ -128,6 +128,8 @@ export default function MouzaPorchaReportBuilder() {
   const [pdfBusy, setPdfBusy] = useState<"preview" | "download" | null>(null);
   const [pdfPreview, setPdfPreview] = useState<PdfPreviewDocument | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const autoDownloadRef = useRef(false);
+  const handlePdfRef = useRef<(action: "preview" | "download") => Promise<void>>(async () => {});
 
   const selectedDistrict = districts.find((item) => item.BBS_CODE === district);
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
@@ -177,6 +179,7 @@ export default function MouzaPorchaReportBuilder() {
     setLocalError(null);
     setVerificationWarning(null);
     setPdfPreview(null);
+    autoDownloadRef.current = false;
   };
 
   const changeDivision = (value: string) => {
@@ -491,6 +494,15 @@ export default function MouzaPorchaReportBuilder() {
     }
   };
 
+  handlePdfRef.current = handlePdf;
+
+  useEffect(() => {
+    if (!autoDownloadRef.current) return;
+    if (generating || phase !== "done" || pdfBusy !== null || rows.length === 0) return;
+    autoDownloadRef.current = false;
+    void handlePdfRef.current("download");
+  }, [generating, phase, pdfBusy, rows.length]);
+
   const displayedError = localError || locationError;
   const progressTotal = expectedRecords ?? Math.max(loadedRecords, rows.length);
   const phaseLabel =
@@ -505,7 +517,7 @@ export default function MouzaPorchaReportBuilder() {
       <HeroBanner
         badge="ভূমি রেকর্ড"
         title="মৌজা ভিত্তিক খতিয়ান বই"
-        description="একটি মৌজার উপলভ্য খতিয়ান, মালিক, অভিভাবক, দাগ ও জমির পরিমাণ একত্র করে A4 খতিয়ান বই তৈরি করুন। Survey ও নামজারি—উভয় ধরন নির্বাচন করা যাবে; Portrait বা Landscape বেছে নেওয়া যাবে।"
+        description="বিভাগ, জেলা, উপজেলা, সার্ভে ও মৌজা নির্বাচন করে সম্পূর্ণ মৌজার খতিয়ান বই PDF আকারে তৈরি ও ডাউনলোড করুন। নতুন, পুরনো রঙিন এবং পুরনো সাদা-কালো—তিনটি ধরন থেকে বেছে নেওয়া যাবে।"
         pattern="grid"
       />
 
@@ -515,7 +527,7 @@ export default function MouzaPorchaReportBuilder() {
             <CardHeader>
               <CardTitle>খতিয়ান বইয়ের এলাকা নির্বাচন</CardTitle>
               <CardDescription>
-                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। Portrait বা Landscape layout বেছে নিন; preview এবং Print একই orientation ব্যবহার করবে।
+                বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা/JL নির্বাচন করুন। সব ধাপ নির্বাচন হলে PDF-এর ধরন বেছে “পূর্ণ মৌজা PDF ডাউনলোড” চাপুন।
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -565,25 +577,7 @@ export default function MouzaPorchaReportBuilder() {
                   loading={loading.mouzas}
                   disabled={!surveyId}
                 />
-                <Select
-                  label="PDF-এর ধরন"
-                  value={pdfVariant}
-                  onChange={(event) => setPdfVariant(event.target.value as MouzaKhatianBookVariant)}
-                  options={[
-                    { value: "book", label: "নতুন" },
-                    { value: "legacy", label: "রঙিন" },
-                    { value: "monochrome", label: "সাদা-কালো" },
-                  ]}
-                />
-                <Select
-                  label="প্রিন্ট পেজ"
-                  value={pageOrientation}
-                  onChange={(event) => setPageOrientation(event.target.value as MouzaReportOrientation)}
-                  options={[
-                    { value: "portrait", label: "A4 Portrait" },
-                    { value: "landscape", label: "A4 Landscape" },
-                  ]}
-                />
+
               </div>
 
               <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
@@ -623,35 +617,125 @@ export default function MouzaPorchaReportBuilder() {
                 </div>
               ) : null}
 
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => void generateReport()}
-                  disabled={generating || !mouzaId}
-                  className="landbd-primary-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {generating ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
-                  খতিয়ান বই তৈরি করুন
-                </button>
-                {generating ? (
-                  <button
-                    type="button"
-                    onClick={cancelGeneration}
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700"
-                  >
-                    <Square size={15} /> বন্ধ করুন
-                  </button>
-                ) : null}
-                {rows.length > 0 && !generating ? (
-                  <button
-                    type="button"
-                    onClick={() => void generateReport()}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] px-4 py-2.5 text-sm font-semibold text-slate-700"
-                  >
-                    <RefreshCcw size={16} /> আবার তৈরি
-                  </button>
-                ) : null}
-              </div>
+              <section className="mt-6 scroll-mt-20 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-5 md:p-7">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-lg font-semibold text-[var(--foreground)] md:text-xl">সম্পূর্ণ মৌজার খতিয়ান বই</h2>
+                    <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)]">
+                      নির্বাচিত মৌজার সব খতিয়ান একত্র করে PDF বই তৈরি হবে। পুরনো ধরন আলাদা করে নেওয়া যায়। PDF প্রস্তুত হলে সরাসরি ডাউনলোড হবে।
+                    </p>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      {division && district && upazila && surveyId && mouzaId
+                        ? "সব ধাপ নির্বাচন করা হয়েছে।"
+                        : "PDF তৈরি করতে সব ধাপ নির্বাচন করুন।"}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 flex-col gap-3">
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-medium text-[var(--foreground)]">PDF-এর ধরন</legend>
+
+                      <label
+                        className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "book" ? "border-[#055E45] bg-emerald-50 text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}
+                      >
+                        <input
+                          type="radio"
+                          className="accent-[#055E45]"
+                          name="pdf-variant"
+                          checked={pdfVariant === "book"}
+                          onChange={() => setPdfVariant("book")}
+                          value="book"
+                        />
+                        <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-[#055E45] bg-[#055E45]" />
+                        নতুন
+                      </label>
+
+                      <div className="space-y-1.5 rounded-xl border border-[var(--border-color)] bg-slate-50/70 p-2">
+                        <p className="px-1 text-xs font-medium text-[var(--muted-foreground)]">পুরনো</p>
+                        <div className="flex gap-2">
+                          <label
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "legacy" ? "border-[#055E45] bg-emerald-50 text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}
+                          >
+                            <input
+                              type="radio"
+                              className="accent-[#055E45]"
+                              name="pdf-variant"
+                              checked={pdfVariant === "legacy"}
+                              onChange={() => setPdfVariant("legacy")}
+                              value="legacy"
+                            />
+                            <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-[#cbef77] bg-[#102632]" />
+                            রঙিন
+                          </label>
+
+                          <label
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "monochrome" ? "border-[#055E45] bg-emerald-50 text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}
+                          >
+                            <input
+                              type="radio"
+                              className="accent-[#055E45]"
+                              name="pdf-variant"
+                              checked={pdfVariant === "monochrome"}
+                              onChange={() => setPdfVariant("monochrome")}
+                              value="monochrome"
+                            />
+                            <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-black bg-white" />
+                            সাদা-কালো
+                          </label>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        {pdfVariant === "book"
+                          ? "নতুন ধরন"
+                          : pdfVariant === "legacy"
+                            ? "পুরনো · রঙিন ধরন"
+                            : "পুরনো · সাদা-কালো ধরন"}
+                      </p>
+                    </fieldset>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (rows.length > 0 && phase === "done" && !generating && pdfBusy === null) {
+                          void handlePdfRef.current("download");
+                          return;
+                        }
+                        autoDownloadRef.current = true;
+                        void generateReport();
+                      }}
+                      disabled={!division || !district || !upazila || !surveyId || !mouzaId || generating || pdfBusy !== null}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#055E45] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#064c39] disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {generating || pdfBusy === "download" ? <Loader2 className="animate-spin" size={16} /> : null}
+                      {generating ? "PDF তৈরি হচ্ছে…" : pdfBusy === "download" ? "PDF প্রস্তুত হচ্ছে…" : "পূর্ণ মৌজা PDF ডাউনলোড"}
+                    </button>
+
+                    {generating ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          autoDownloadRef.current = false;
+                          cancelGeneration();
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-700"
+                      >
+                        <Square size={14} /> বন্ধ করুন
+                      </button>
+                    ) : null}
+
+                    {rows.length > 0 && !generating ? (
+                      <button
+                        type="button"
+                        onClick={() => void generateReport()}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] px-3 py-2 text-xs font-semibold text-slate-700"
+                      >
+                        <RefreshCcw size={14} /> আবার তৈরি
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
 
               {generating ? (
                 <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
