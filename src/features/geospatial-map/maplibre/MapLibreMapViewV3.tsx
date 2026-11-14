@@ -2,55 +2,49 @@
 
 import RajukStyleMapHeader from "./RajukStyleMapHeader";
 import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
-import RajukMapControls from "./RajukMapControls";
-import RajukCoordinateStatus from "./RajukCoordinateStatus";
-import RajukParcelInspector from "./RajukParcelInspector";
 import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
-  ChevronDown,
-  ChevronUp,
-  Crosshair,
+  Compass,
+  Download,
+  Expand,
+  ExternalLink,
+  History,
+  Home,
   Layers3,
+  List,
   Loader2,
+  LocateFixed,
   Map as MapIcon,
-  MapPin,
-  MousePointer2,
-  Pentagon,
-  Ruler,
-  Square,
-  Trash2,
-  Undo2,
+  Minus,
+  Plus,
+  Printer,
+  Satellite,
+  Search,
+  Settings2,
   X,
+  type LucideIcon,
 } from "lucide-react";
-import { ScaleControl, type Map as MapLibreInstance } from "maplibre-gl";
-import type { FeatureCollection, Geometry } from "geojson";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
+import type { Map as MapLibreInstance } from "maplibre-gl";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { formatBanglaNumber } from "@/src/shared/i18n/bangla";
 import {
-  GOOGLE_EARTH_2003_URL,
   FREE_IMAGERY_OPTIONS,
+  GOOGLE_EARTH_2003_URL,
+  GOOGLE_EARTH_HISTORICAL_DOCS_URL,
   LAYERS,
   type LayerKey,
   type Tab,
 } from "./mapConstants";
-import type { BasemapKey } from "./types";
-import { canToggleRasterLayer, defaultRasterLayerVisibility, hideAvailableRasterLayers, setRasterLayerVisibility } from "./layerControlPolicy";
-import { detailRows, isMsFeature, msNumber, rsNumber } from "./mapUtils";
+import { DAP_BOUNDS, type BasemapKey } from "./types";
 import {
-  measurementFeatureCollection,
-  summarizeMeasurement,
-  type LngLatTuple,
-  type MeasurementMode,
-} from "./mapMeasurement";
+  canToggleRasterLayer,
+  defaultRasterLayerVisibility,
+  hideAvailableRasterLayers,
+  setRasterLayerVisibility,
+} from "./layerControlPolicy";
+import { detailRows, isMsFeature, msNumber, rsNumber } from "./mapUtils";
 
 type Props = {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -66,8 +60,6 @@ type Props = {
   searchPlots: (options?: PlotSearchOptions) => void;
   goToMyLocation: () => void;
   locating: boolean;
-  identifyMode: boolean;
-  setIdentifyMode: (value: boolean | ((current: boolean) => boolean)) => void;
   panelOpen: boolean;
   setPanelOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   tab: Tab;
@@ -94,39 +86,33 @@ type Props = {
   isAdvanced: boolean;
   routingCalculator: "khatiyan" | "faraez" | null;
   validateAndRoute: (calculator: "khatiyan" | "faraez", feature: RajukPlotFeature) => void;
-  activeDetails: Array<{ label: string; value: string }>;
 };
 
-const MEASURE_SOURCE_ID = "landbd-user-measurement";
-const MEASURE_FILL_LAYER_ID = "landbd-user-measurement-fill";
-const MEASURE_LINE_LAYER_ID = "landbd-user-measurement-line";
-const MEASURE_POINT_LAYER_ID = "landbd-user-measurement-points";
-
-const EMPTY_MEASUREMENT: FeatureCollection<Geometry> = {
-  type: "FeatureCollection",
-  features: [],
-};
-
-const MEASURE_TOOLS: Array<{
-  mode: MeasurementMode;
+type ToolDef = {
+  id: Tab;
   label: string;
-  icon: typeof MapPin;
-}> = [
-  { mode: "point", label: "পয়েন্ট", icon: MapPin },
-  { mode: "line", label: "লাইন", icon: Ruler },
-  { mode: "polygon", label: "পলিগন", icon: Pentagon },
-  { mode: "rectangle", label: "আয়তক্ষেত্র", icon: Square },
-  { mode: "distance", label: "দূরত্ব", icon: Crosshair },
+  Icon: LucideIcon;
+};
+
+const TOOLS: ToolDef[] = [
+  { id: "search", label: "দাগ ও মৌজা খুঁজুন", Icon: Search },
+  { id: "layers", label: "লেয়ার", Icon: Layers3 },
+  { id: "basemap", label: "বেসম্যাপ", Icon: Satellite },
+  { id: "history", label: "ঐতিহাসিক স্যাটেলাইট", Icon: History },
+  { id: "legend", label: "লেজেন্ড", Icon: List },
+  { id: "settings", label: "মানচিত্র সেটিংস", Icon: Settings2 },
 ];
 
-function setGeoJsonData(map: MapLibreInstance, data: FeatureCollection<Geometry>): void {
-  const source = map.getSource(MEASURE_SOURCE_ID) as
-    | { setData: (value: FeatureCollection<Geometry>) => void }
-    | undefined;
-  source?.setData(data);
-}
+const TOOL_LABELS: Record<Tab, string> = {
+  search: "দাগ ও মৌজা অনুসন্ধান",
+  layers: "লেয়ার নিয়ন্ত্রণ",
+  basemap: "বেসম্যাপ",
+  history: "ঐতিহাসিক স্যাটেলাইট",
+  legend: "লেজেন্ড",
+  settings: "মানচিত্র সেটিংস",
+};
 
-function bn(value: number, digits = 2): string {
+function bn(value: number, digits = 0): string {
   return formatBanglaNumber(value, {
     maximumFractionDigits: digits,
     minimumFractionDigits: 0,
@@ -150,31 +136,67 @@ function PlotCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-2xl border p-3 text-left transition ${
+      className={[
+        "w-full rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
         active
           ? "border-[var(--primary)] bg-[var(--brand-green-faint)] shadow-sm"
-          : "border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]"
-      }`}
+          : "border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]",
+      ].join(" ")}
+      aria-pressed={active}
     >
-      <div className="mb-2 flex items-center gap-2">
-        <span className="rounded-lg bg-[#15535a] px-2 py-0.5 text-xs font-bold text-white">
+      <span className="mb-3 flex items-center gap-2">
+        <span className="rounded-lg bg-[#15535a] px-2.5 py-1 text-base font-bold text-white">
           {kind === "rs" ? "আরএস" : "এমএস"}
         </span>
-        <span className="text-sm font-bold text-[var(--foreground)]">{title}</span>
-      </div>
-      <div className="space-y-1.5">
+        <span className="text-base font-bold text-[var(--foreground)]">{title}</span>
+      </span>
+      <span className="space-y-2">
         {rows.slice(0, 5).map(([label, value]) => (
-          <div key={label} className="flex items-start justify-between gap-3 text-xs">
+          <span key={label} className="flex items-start justify-between gap-3 text-base">
             <span className="shrink-0 text-[var(--muted-foreground)]">{label}</span>
-            <span className="text-right font-semibold text-[var(--foreground)]">{value}</span>
-          </div>
+            <span className="max-w-[58%] break-words text-right font-semibold text-[var(--foreground)]">
+              {value === "—" ? "তথ্য পাওয়া যায়নি" : value}
+            </span>
+          </span>
         ))}
-      </div>
+      </span>
     </button>
   );
 }
 
-export default function MapLibreMapViewV2({
+function SettingsButton({
+  Icon,
+  label,
+  onClick,
+  pressed,
+  disabled,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  pressed?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={pressed}
+      className={[
+        "flex min-h-12 items-center gap-2 rounded-xl border px-3 text-left text-base font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40",
+        pressed
+          ? "border-[var(--primary)] bg-[var(--brand-green-soft)] text-[var(--primary)]"
+          : "border-[var(--border-color)] bg-white text-[var(--foreground)] hover:bg-[var(--brand-green-faint)]",
+      ].join(" ")}
+    >
+      <Icon size={20} aria-hidden="true" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+export default function MapLibreMapViewV3({
   containerRef,
   mapRef,
   initError,
@@ -188,8 +210,6 @@ export default function MapLibreMapViewV2({
   searchPlots,
   goToMyLocation,
   locating,
-  identifyMode,
-  setIdentifyMode,
   panelOpen,
   setPanelOpen,
   tab,
@@ -208,185 +228,59 @@ export default function MapLibreMapViewV2({
   isAdvanced,
   routingCalculator,
   validateAndRoute,
-  activeDetails,
 }: Props) {
-  const [measurePanelOpen, setMeasurePanelOpen] = useState(false);
-  const [measureMode, setMeasureMode] = useState<MeasurementMode | null>(null);
-  const [measureKind, setMeasureKind] = useState<MeasurementMode>("polygon");
-  const [measurePoints, setMeasurePoints] = useState<LngLatTuple[]>([]);
   const [threeD, setThreeD] = useState(false);
-  const previousIdentifyRef = useRef<boolean | null>(null);
-  const scaleControlRef = useRef<ScaleControl | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const rsResults = useMemo(() => results.filter((feature) => !isMsFeature(feature)), [results]);
+  const msResults = useMemo(() => results.filter((feature) => isMsFeature(feature)), [results]);
+  const activeLayers = useMemo(() => LAYERS.filter((layer) => layers[layer.key]), [layers]);
 
   useEffect(() => {
-    // Keep the workspace expanded on wide displays, collapsed on narrow ones.
-    // A user-controlled close persists until the breakpoint changes.
-    const query = window.matchMedia("(min-width: 1024px)");
-    const syncPanel = () => setPanelOpen(query.matches);
-    syncPanel();
-    query.addEventListener("change", syncPanel);
-    return () => query.removeEventListener("change", syncPanel);
-  }, [setPanelOpen]);
-
-  useEffect(() => {
-    if (panelOpen) setMeasurePanelOpen(false);
-  }, [panelOpen]);
-
-  const rsResults = results.filter((feature) => !isMsFeature(feature));
-  const msResults = results.filter((feature) => isMsFeature(feature));
-  const summary = useMemo(
-    () => summarizeMeasurement(measureKind, measurePoints),
-    [measureKind, measurePoints],
-  );
-
-  const restoreIdentify = useCallback(() => {
-    if (previousIdentifyRef.current !== null) {
-      setIdentifyMode(previousIdentifyRef.current);
-      previousIdentifyRef.current = null;
-    }
-  }, [setIdentifyMode]);
-
-  const finishMeasurement = useCallback(() => {
-    setMeasureMode(null);
-    restoreIdentify();
-  }, [restoreIdentify]);
-
-  const startMeasurement = useCallback(
-    (mode: MeasurementMode) => {
-      if (previousIdentifyRef.current === null) {
-        previousIdentifyRef.current = identifyMode;
-      }
-      setIdentifyMode(false);
-      setMeasureKind(mode);
-      setMeasureMode(mode);
-      setMeasurePoints([]);
-      setMeasurePanelOpen(true);
-      setPanelOpen(false);
-    },
-    [identifyMode, setIdentifyMode, setPanelOpen],
-  );
-
-  const clearMeasurement = useCallback(() => {
-    setMeasurePoints([]);
-    setMeasureMode(null);
-    restoreIdentify();
-    const map = mapRef.current;
-    if (map) setGeoJsonData(map, EMPTY_MEASUREMENT);
-  }, [mapRef, restoreIdentify]);
-
-  const undoMeasurement = useCallback(() => {
-    setMeasurePoints((current) => current.slice(0, -1));
+    const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map) return;
-
-    if (!map.getSource(MEASURE_SOURCE_ID)) {
-      map.addSource(MEASURE_SOURCE_ID, {
-        type: "geojson",
-        data: EMPTY_MEASUREMENT,
-      });
-    }
-    if (!map.getLayer(MEASURE_FILL_LAYER_ID)) {
-      map.addLayer({
-        id: MEASURE_FILL_LAYER_ID,
-        type: "fill",
-        source: MEASURE_SOURCE_ID,
-        filter: ["==", ["geometry-type"], "Polygon"],
-        paint: {
-          "fill-color": "#d47749",
-          "fill-opacity": 0.22,
-        },
-      });
-    }
-    if (!map.getLayer(MEASURE_LINE_LAYER_ID)) {
-      map.addLayer({
-        id: MEASURE_LINE_LAYER_ID,
-        type: "line",
-        source: MEASURE_SOURCE_ID,
-        filter: ["in", ["geometry-type"], ["literal", ["LineString", "Polygon"]]],
-        paint: {
-          "line-color": "#15535a",
-          "line-width": 3,
-          "line-opacity": 0.95,
-        },
-      });
-    }
-    if (!map.getLayer(MEASURE_POINT_LAYER_ID)) {
-      map.addLayer({
-        id: MEASURE_POINT_LAYER_ID,
-        type: "circle",
-        source: MEASURE_SOURCE_ID,
-        filter: ["==", ["geometry-type"], "Point"],
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#ffffff",
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#d47749",
-        },
-      });
-    }
-
-    if (!scaleControlRef.current) {
-      const scale = new ScaleControl({ maxWidth: 110, unit: "metric" });
-      scaleControlRef.current = scale;
-      map.addControl(scale, "bottom-right");
-    }
-  }, [mapReady, mapRef]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !panelOpen) return;
+      event.preventDefault();
+      setPanelOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [panelOpen, setPanelOpen]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map) return;
-    setGeoJsonData(map, measurementFeatureCollection(measureKind, measurePoints));
-  }, [mapReady, mapRef, measureKind, measurePoints]);
+    if (!panelOpen) return;
+    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [panelOpen, tab]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map || !measureMode) return;
+  const openTool = (next: Tab) => {
+    if (panelOpen && tab === next) {
+      setPanelOpen(false);
+      return;
+    }
+    setTab(next);
+    setPanelOpen(true);
+  };
 
-    const canvas = map.getCanvas();
-    const previousCursor = canvas.style.cursor;
-    canvas.style.cursor = "crosshair";
-
-    const onClick = (event: { lngLat: { lng: number; lat: number } }) => {
-      const point: LngLatTuple = [event.lngLat.lng, event.lngLat.lat];
-      setMeasurePoints((current) => {
-        if (measureMode === "point") {
-          window.setTimeout(finishMeasurement, 0);
-          return [point];
-        }
-        if (measureMode === "rectangle") {
-          const next = current.length >= 1 ? [current[0], point] : [point];
-          if (next.length === 2) window.setTimeout(finishMeasurement, 0);
-          return next;
-        }
-        if (measureMode === "distance") {
-          const next = [...current, point].slice(0, 2);
-          if (next.length === 2) window.setTimeout(finishMeasurement, 0);
-          return next;
-        }
-        return [...current, point];
-      });
-    };
-
-    map.on("click", onClick);
-    return () => {
-      map.off("click", onClick);
-      canvas.style.cursor = previousCursor;
-    };
-  }, [finishMeasurement, mapReady, mapRef, measureMode]);
-
-  useEffect(() => {
-    return () => {
-      restoreIdentify();
-    };
-  }, [restoreIdentify]);
+  const fullExtent = () => {
+    mapRef.current?.fitBounds(
+      [
+        [DAP_BOUNDS[0][1], DAP_BOUNDS[0][0]],
+        [DAP_BOUNDS[1][1], DAP_BOUNDS[1][0]],
+      ],
+      { padding: 50, maxZoom: 13, duration: 450 },
+    );
+  };
 
   const resetNorth = () => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.easeTo({ bearing: 0, pitch: 0, duration: 450 });
+    mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 300 });
     setThreeD(false);
   };
 
@@ -395,9 +289,40 @@ export default function MapLibreMapViewV2({
     if (!map) return;
     const next = !threeD;
     setThreeD(next);
-    map.easeTo({ pitch: next ? 55 : 0, duration: 500 });
+    map.easeTo({ pitch: next ? 55 : 0, duration: 350 });
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        const element = mapRef.current?.getContainer().closest("main");
+        if (!element) throw new Error("Map container unavailable");
+        await element.requestFullscreen();
+      }
+      window.setTimeout(() => mapRef.current?.resize(), 120);
+      setFeedback("");
+    } catch {
+      setFeedback("এই ব্রাউজারে পূর্ণপর্দা চালু করা যায়নি।");
+    }
+  };
+
+  const savePng = () => {
+    try {
+      const canvas = mapRef.current?.getCanvas();
+      if (!canvas) return;
+      const url = canvas.toDataURL("image/png");
+      if (!url.startsWith("data:image/png")) throw new Error("Export failed");
+      const link = document.createElement("a");
+      link.download = "landbd-gis-map.png";
+      link.href = url;
+      link.click();
+      setFeedback("");
+    } catch {
+      setFeedback("বর্তমান বেসম্যাপ উৎস PNG সংরক্ষণের অনুমতি দেয় না।");
+    }
+  };
 
   if (initError) {
     return (
@@ -405,8 +330,12 @@ export default function MapLibreMapViewV2({
         <div className="max-w-md rounded-[28px] border border-[var(--border-color)] bg-white p-8 shadow-xl">
           <MapIcon className="mx-auto text-[var(--primary)]" size={30} />
           <h2 className="mt-3 text-xl font-black">মানচিত্র চালু হয়নি</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{initError}</p>
-          <button type="button" className="mt-5 min-h-11 rounded-full bg-[var(--primary)] px-6 text-sm font-bold text-white" onClick={() => window.location.reload()}>
+          <p className="mt-2 text-base leading-7 text-[var(--muted-foreground)]">{initError}</p>
+          <button
+            type="button"
+            className="mt-5 min-h-12 rounded-full bg-[var(--primary)] px-6 text-base font-bold text-white"
+            onClick={() => window.location.reload()}
+          >
             পুনরায় চেষ্টা
           </button>
         </div>
@@ -415,69 +344,87 @@ export default function MapLibreMapViewV2({
   }
 
   return (
-    <main className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--background)] font-sans text-[var(--foreground)] [&_.maplibregl-ctrl-group]:!hidden [&_.maplibregl-ctrl-scale]:!rounded-full [&_.maplibregl-ctrl-scale]:!border-0 [&_.maplibregl-ctrl-scale]:!bg-white/95 [&_.maplibregl-ctrl-scale]:!px-3 [&_.maplibregl-ctrl-scale]:!py-2 [&_.maplibregl-ctrl-scale]:!font-bold">
+    <main className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--background)] font-sans text-[var(--foreground)] [&_.maplibregl-ctrl-group]:!hidden">
       <div
         ref={containerRef}
         aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"
         className="absolute inset-0 h-full w-full [&_.maplibregl-map]:!h-full [&_.maplibregl-canvas]:!h-full [&_.maplibregl-canvas]:!w-full"
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[var(--brand-green-soft)]/50 to-transparent pb-24" />
-      <div className="absolute inset-x-0 top-0 z-[90]"><RajukStyleMapHeader /></div>
-
-      <div className="absolute left-3 top-[82px] z-[75]">
-        <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 text-xs font-extrabold text-[var(--primary)] shadow-lg">
-          {panelOpen ? <X size={17} /> : <Layers3 size={17} />} {panelOpen ? "প্যানেল বন্ধ" : "খুঁজুন / স্তর"}
-        </button>
+      <div className="absolute inset-x-0 top-0 z-[90]">
+        <RajukStyleMapHeader />
       </div>
+
+      <nav
+        aria-label="GIS মানচিত্র সাইডবার"
+        aria-orientation="vertical"
+        className="absolute left-2 top-[92px] z-[82] flex flex-col gap-2 sm:left-3"
+      >
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)]/97 p-1.5 shadow-[0_12px_40px_rgba(11,45,30,.16)] backdrop-blur-sm">
+          {TOOLS.map(({ id, label, Icon }) => {
+            const active = panelOpen && tab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => openTool(id)}
+                aria-label={label}
+                title={label}
+                aria-expanded={active}
+                aria-controls="atlas-map-workspace-panel"
+                className={[
+                  "grid h-12 w-12 place-items-center rounded-xl transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
+                  active
+                    ? "bg-[var(--primary)] text-white"
+                    : "text-[var(--primary)] hover:bg-[var(--brand-green-faint)]",
+                ].join(" ")}
+              >
+                <Icon size={21} aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setPanelOpen(false);
+            goToMyLocation();
+          }}
+          disabled={!mapReady || locating}
+          aria-label="আমার অবস্থান"
+          title="আমার অবস্থান"
+          className="grid h-12 w-12 place-items-center rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)]/97 text-[var(--primary)] shadow-lg transition hover:bg-[var(--brand-green-faint)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {locating ? <Loader2 size={21} className="animate-spin" /> : <LocateFixed size={21} />}
+        </button>
+      </nav>
 
       <aside
         id="atlas-map-workspace-panel"
-        aria-label="GIS অনুসন্ধান ও লেয়ার নিয়ন্ত্রণ"
-        className={["absolute bottom-[84px] left-3 top-[140px] z-[65] w-[min(90vw,342px)] flex-col overflow-hidden rounded-xl border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:bottom-4", panelOpen ? "flex" : "hidden"].join(" ")}
+        aria-label={TOOL_LABELS[tab]}
+        aria-hidden={!panelOpen}
+        className={[
+          "absolute bottom-2 left-2 right-2 z-[78] max-h-[72dvh] overflow-hidden rounded-2xl border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.18)] backdrop-blur-md sm:bottom-3 sm:left-[76px] sm:right-auto sm:top-[92px] sm:max-h-none sm:w-[min(390px,calc(100vw-92px))]",
+          panelOpen ? "flex flex-col" : "hidden",
+        ].join(" ")}
       >
-        <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-5 pb-3 pt-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green-soft)] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[var(--primary)]">LANDBD · GIS MASTER PLAN</span>
-            <span className="text-[11px] font-bold text-[var(--muted-foreground)]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
-          </div>
-          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[var(--foreground)]">LandBD <span className="text-[var(--primary)]">GIS এটলাস</span></h1>
-          <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">RAJUK উৎসের দাগ অনুসন্ধান, স্তর নির্বাচন ও স্যাটেলাইট তুলনা।</p>
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-4 py-3">
+          <h2 className="text-lg font-black text-[var(--foreground)]">{TOOL_LABELS[tab]}</h2>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setPanelOpen(false)}
+            aria-label="প্যানেল বন্ধ"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[var(--primary)] transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-
-        <div className="grid grid-cols-4 gap-1 border-y border-[var(--border-color)] bg-white px-2 py-2" role="tablist" aria-label="GIS ওয়ার্কস্পেস বিভাগ">
-          {(["search", "layers", "basemap", "results"] as Tab[]).map((item) => (
-            <button
-              key={item}
-              id={`atlas-gis-tab-${item}`}
-              type="button"
-              role="tab"
-              aria-controls="atlas-gis-tab-panel"
-              aria-selected={tab === item}
-              tabIndex={tab === item ? 0 : -1}
-              onClick={() => setTab(item)}
-              onKeyDown={(event) => {
-                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-                event.preventDefault();
-                const tabs: Tab[] = ["search", "layers", "basemap", "results"];
-                const index = tabs.indexOf(item);
-                const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
-                  (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-                const next = tabs[nextIndex];
-                setTab(next);
-                requestAnimationFrame(() => document.getElementById(`atlas-gis-tab-${next}`)?.focus());
-              }}
-              className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"].join(" ")}>
-              {item === "search" ? "খুঁজুন" : item === "layers" ? "স্তর" : item === "basemap" ? "বেসম্যাপ" : "ফলাফল"}
-              {item === "results" && results.length > 0 ? <span className="ml-1 text-[10px]">({bn(results.length,0)})</span> : null}
-            </button>
-          ))}
-        </div>
-
-        <div id="atlas-gis-tab-panel" role="tabpanel" aria-labelledby={`atlas-gis-tab-${tab}`} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-width:thin]">
           {tab === "search" ? (
-            <>
+            <div className="space-y-4">
               <RajukPlotFinder
                 plotNo={plotNo}
                 setPlotNo={setPlotNo}
@@ -485,176 +432,317 @@ export default function MapLibreMapViewV2({
                 searchPlots={searchPlots}
                 vectorStatus={vectorStatus}
               />
-              <p className="px-2 text-[11px] leading-5 text-[var(--muted-foreground)]">দাগ নম্বর, জেলা, উপজেলা ও মৌজা দিয়ে খুঁজুন। ফলাফল ‘ফলাফল’ বিভাগে দেখাবে।</p>
-            </>
-          ) : tab === "layers" ? (
-            <>
-              <div className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
-                <h2 className="text-sm font-black text-[var(--foreground)]">ক্যাডাস্ট্রাল লেয়ার</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">RS (কালো) ও MS (লাল) পৃথকভাবে চালু বা বন্ধ করুন।</p>
-                <p className="mt-3 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-[11px] leading-5 text-[var(--muted-foreground)]">একটি RS বা MS টিকবক্সই তার রাস্টার, ভেক্টর সীমানা ও দাগ লেবেল একসঙ্গে দেখাবে বা লুকাবে।</p>
-              </div>
 
+              {results.length ? (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-base font-bold">
+                      আরএস {bn(rsResults.length)} · এমএস {bn(msResults.length)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearResults}
+                      className="min-h-11 rounded-xl border border-[var(--border-color)] px-3 text-base font-bold text-[var(--primary)]"
+                    >
+                      ফলাফল মুছুন
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {rsResults.map((feature, index) => (
+                      <PlotCard
+                        key={"rs-" + String(feature.plotId ?? index)}
+                        kind="rs"
+                        feature={feature}
+                        active={selected === feature}
+                        onSelect={() => selectResult(feature)}
+                      />
+                    ))}
+                    {msResults.map((feature, index) => (
+                      <PlotCard
+                        key={"ms-" + String(feature.plotId ?? index)}
+                        kind="ms"
+                        feature={feature}
+                        active={selected === feature}
+                        onSelect={() => selectResult(feature)}
+                      />
+                    ))}
+                  </div>
+                  {selected ? (
+                    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
+                      <p className="mb-3 text-base font-black text-[var(--primary)]">নির্বাচিত দাগের কাজ</p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          disabled={routingCalculator !== null}
+                          onClick={() => void validateAndRoute("khatiyan", selected)}
+                          className="min-h-12 rounded-xl bg-[var(--primary)] px-3 text-base font-bold text-white disabled:opacity-50"
+                        >
+                          খতিয়ান হিসাব
+                        </button>
+                        <button
+                          type="button"
+                          disabled={routingCalculator !== null}
+                          onClick={() => void validateAndRoute("faraez", selected)}
+                          className="min-h-12 rounded-xl border border-[var(--border-color)] bg-white px-3 text-base font-bold disabled:opacity-50"
+                        >
+                          ফারায়েজ
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-[var(--border-color)] bg-white p-4 text-base leading-7 text-[var(--muted-foreground)]">
+                  দাগ নম্বর, জেলা, উপজেলা বা মৌজা দিয়ে খুঁজুন। ম্যাপে সরাসরি দাগে ক্লিক করলে শুধু দাগের তথ্য popup-এ দেখাবে।
+                </p>
+              )}
+            </div>
+          ) : tab === "layers" ? (
+            <div className="space-y-3">
+              <p className="text-base leading-7 text-[var(--muted-foreground)]">
+                RS (কালো) ও MS (লাল) সহ উপলভ্য লেয়ার চালু বা বন্ধ করুন। বন্ধ করলে সংশ্লিষ্ট vector boundary ও label-ও লুকাবে।
+              </p>
               {LAYERS.map((layer) => (
-                <section key={layer.key} className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
+                <section key={layer.key} className="rounded-2xl border border-[var(--border-color)] bg-white p-4">
                   <label className="flex cursor-pointer items-start justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="flex items-center gap-2 text-sm font-extrabold"><i aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{backgroundColor:layer.color}} /> {layer.label}</span>
-                      <span className="mt-1 block text-[11px] leading-4 text-[var(--muted-foreground)]">{layer.description}</span>
+                      <span className="flex items-center gap-2 text-base font-extrabold">
+                        <i
+                          aria-hidden="true"
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: layer.color }}
+                        />
+                        {layer.label}
+                      </span>
+                      <span className="mt-1 block text-base leading-7 text-[var(--muted-foreground)]">
+                        {layer.description}
+                      </span>
                     </span>
-                    <input type="checkbox" checked={layers[layer.key]} disabled={!canToggleRasterLayer(layer.key, isAdvanced)} onChange={(e) => setLayers((v) => setRasterLayerVisibility(v, layer.key, e.target.checked, isAdvanced))} className="mt-1 h-5 w-5 shrink-0 accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40" />
+                    <input
+                      type="checkbox"
+                      checked={layers[layer.key]}
+                      disabled={!canToggleRasterLayer(layer.key, isAdvanced)}
+                      onChange={(event) =>
+                        setLayers((current) =>
+                          setRasterLayerVisibility(
+                            current,
+                            layer.key,
+                            event.target.checked,
+                            isAdvanced,
+                          ),
+                        )
+                      }
+                      className="mt-1 h-6 w-6 shrink-0 accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                    />
                   </label>
-                  {canToggleRasterLayer(layer.key, isAdvanced) && (
-                    <div className="mt-3">
-                      <div className="mb-1 flex justify-between text-[10px] font-bold text-[var(--muted-foreground)]"><span>স্বচ্ছতা</span><span>{bn(opacity[layer.key]*100,0)}%</span></div>
-                      <input aria-label={layer.label + " স্বচ্ছতা"} type="range" min="0" max="1" step=".05" value={opacity[layer.key]} onChange={(e) => setOpacity((v) => ({...v,[layer.key]:Number(e.target.value)}))} className="w-full accent-[var(--primary)]" />
+                  {canToggleRasterLayer(layer.key, isAdvanced) ? (
+                    <div className="mt-4">
+                      <div className="mb-2 flex justify-between text-base font-bold text-[var(--muted-foreground)]">
+                        <span>স্বচ্ছতা</span>
+                        <span>{bn(opacity[layer.key] * 100)}%</span>
+                      </div>
+                      <input
+                        aria-label={layer.label + " স্বচ্ছতা"}
+                        type="range"
+                        min="0"
+                        max="1"
+                        step=".05"
+                        value={opacity[layer.key]}
+                        onChange={(event) =>
+                          setOpacity((current) => ({
+                            ...current,
+                            [layer.key]: Number(event.target.value),
+                          }))
+                        }
+                        className="w-full accent-[var(--primary)]"
+                      />
                     </div>
-                  )}
+                  ) : null}
                 </section>
               ))}
-              <section aria-label="মানচিত্র লেজেন্ড" className="rounded-md border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
-                <h3 className="mb-2 text-xs font-black text-[var(--primary)]">Map legend / লেজেন্ড</h3>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-[var(--foreground)]">
-                  {LAYERS.map((layer) => (
-                    <span key={layer.key} className="flex items-center gap-2">
-                      <i aria-hidden="true" className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
-                      {layer.label}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
-              </section>
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => {
-                  setLayers((current) => hideAvailableRasterLayers(current, isAdvanced));
-                }} className="min-h-11 rounded-xl border border-[var(--border-color)] bg-white px-2 text-xs font-bold text-[var(--primary)]">দৃশ্যমান স্তর বন্ধ</button>
-                <button type="button" onClick={() => {
-                  setLayers(defaultRasterLayerVisibility(isAdvanced));
-                  setShowRsBoundary(true);
-                  setShowMsBoundary(true);
-                }} className="min-h-11 rounded-xl bg-[var(--primary)] px-2 text-xs font-bold text-white">ডিফল্ট স্তর</button>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setLayers((current) => hideAvailableRasterLayers(current, isAdvanced))}
+                  className="min-h-12 rounded-xl border border-[var(--border-color)] bg-white px-3 text-base font-bold text-[var(--primary)]"
+                >
+                  দৃশ্যমান লেয়ার বন্ধ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLayers(defaultRasterLayerVisibility(isAdvanced));
+                    setShowRsBoundary(true);
+                    setShowMsBoundary(true);
+                  }}
+                  className="min-h-12 rounded-xl bg-[var(--primary)] px-3 text-base font-bold text-white"
+                >
+                  ডিফল্ট লেয়ার
+                </button>
               </div>
-            </>
+            </div>
           ) : tab === "basemap" ? (
-            <>
-              <h2 className="text-sm font-black">ভিত্তি মানচিত্র</h2>
-              {([["satellite","সাম্প্রতিক স্যাটেলাইট","Esri World Imagery · উৎসভেদে তারিখ/রেজোলিউশন ভিন্ন"],["light","রাস্তার মানচিত্র","CARTO / OpenStreetMap রোড বেসম্যাপ"]] as const).map(([key,label,detail]) => (
-                <button key={key} onClick={() => setBasemap(key)} aria-pressed={basemap===key} type="button" className={["w-full rounded-2xl border p-4 text-left transition",basemap===key?"border-[var(--primary)] bg-[var(--brand-green-faint)] ring-1 ring-[var(--primary)]":"border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]"].join(" ")}>
-                  <span className="flex items-center gap-2 text-sm font-black"><MapIcon size={16} className="text-[var(--primary)]"/>{label}</span>
-                  <span className="mt-1.5 block text-[11px] leading-4 text-[var(--muted-foreground)]">{detail}</span>
+            <div className="space-y-3">
+              {([
+                ["satellite", "সাম্প্রতিক স্যাটেলাইট", "Esri World Imagery · উৎসভেদে তারিখ ও resolution ভিন্ন"],
+                ["light", "রাস্তার মানচিত্র", "CARTO / OpenStreetMap"],
+              ] as const).map(([key, label, detail]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={basemap === key}
+                  onClick={() => setBasemap(key)}
+                  className={[
+                    "w-full rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
+                    basemap === key
+                      ? "border-[var(--primary)] bg-[var(--brand-green-faint)]"
+                      : "border-[var(--border-color)] bg-white hover:bg-[var(--brand-green-faint)]",
+                  ].join(" ")}
+                >
+                  <span className="flex items-center gap-2 text-base font-black">
+                    <MapIcon size={20} className="text-[var(--primary)]" />
+                    {label}
+                  </span>
+                  <span className="mt-2 block text-base leading-7 text-[var(--muted-foreground)]">{detail}</span>
                 </button>
               ))}
-              <div className="border-t border-[var(--border-color)] pt-3">
-                <div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-black">ঐতিহাসিক চিত্র</h3><span className="text-[10px] font-bold text-[var(--muted-foreground)]">FREE DATA</span></div>
-                <p className="mb-3 text-[11px] leading-5 text-[var(--muted-foreground)]">উৎস পরিবর্তনে বর্তমান দাগ ও ম্যাপের অবস্থান একই থাকবে। কিছু স্যাটেলাইট চিত্রে খুব কম বিস্তারিত দেখা যায়।</p>
-                {FREE_IMAGERY_OPTIONS.map((option) => (
-                  <button key={option.key} type="button" aria-pressed={basemap===option.key} onClick={() => setBasemap(option.key)} className={["mb-2 block w-full rounded-xl border p-3 text-left",basemap===option.key?"border-[var(--primary)] bg-[var(--brand-green-faint)]":"border-[var(--border-color)] bg-white hover:border-[var(--primary)]"].join(" ")}>
-                    <span className="block text-xs font-black">{option.label}</span>
-                    <span className="mt-1 block text-[11px] text-[var(--muted-foreground)]">{option.description}</span>
-                    <span className="mt-1 block text-[10px] leading-4 text-[var(--muted-foreground)]">{option.detail}</span>
-                  </button>
-                ))}
+            </div>
+          ) : tab === "history" ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-4">
+                <p className="text-base leading-7 text-[var(--muted-foreground)]">
+                  Google Earth historical imagery archive-এ ২০০৩ বা অন্য বছর স্থানভেদে থাকতে পারে, কিন্তু Google Maps Platform কোনো supported historical raster-tile API দেয় না। LandBD তাই Google Earth tiles scrape করে না। নিচের ২০০৩ layer হলো NASA MODIS, Google Earth নয়।
+                </p>
               </div>
-              {basemap === "satellite2003" && <a href={GOOGLE_EARTH_2003_URL} target="_blank" rel="noopener noreferrer" className="block rounded-xl bg-[var(--brand-green-faint)] p-3 text-xs font-bold text-[var(--primary)] underline">Google Earth-এ আলাদা ঐতিহাসিক উৎস দেখুন</a>}
-            </>
-          ) : (
-            <>
-              <h2 className="text-sm font-black">ম্যাপে পাওয়া দাগ</h2>
-              <p className="text-[11px] leading-5 text-[var(--muted-foreground)]">আরএস: {bn(rsResults.length,0)} · এমএস: {bn(msResults.length,0)}। ফলাফল সরাসরি RAJUK সার্ভিস থেকে আসে।</p>
-              {results.length ? <>
-                <button type="button" onClick={clearResults} className="text-xs font-bold text-[var(--primary)] underline">ফলাফলের তালিকা মুছুন</button>
-                <div className="space-y-2">
-                  {rsResults.map((feature,index) => <PlotCard key={"rs-"+(feature.plotId??index)} kind="rs" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
-                  {msResults.map((feature,index) => <PlotCard key={"ms-"+(feature.plotId??index)} kind="ms" feature={feature} active={selected === feature} onSelect={() => selectResult(feature)}/>)}
-                </div>
-              </> : <div className="rounded-2xl border border-dashed border-[var(--border-color)] bg-white p-6 text-center text-xs leading-6 text-[var(--muted-foreground)]">দাগ বাছাই করুন বা উপরের অনুসন্ধান থেকে একটি দাগ নম্বর লিখুন।</div>}
-              {selected && (
-                <div className="xl:hidden">
-                  <RajukParcelInspector
-                    selected={selected}
-                    activeDetails={activeDetails}
-                    routingCalculator={routingCalculator}
-                    validateAndRoute={validateAndRoute}
-                  />
-                </div>
+              {FREE_IMAGERY_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={basemap === option.key}
+                  onClick={() => setBasemap(option.key)}
+                  className={[
+                    "block w-full rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]",
+                    basemap === option.key
+                      ? "border-[var(--primary)] bg-[var(--brand-green-faint)]"
+                      : "border-[var(--border-color)] bg-white hover:border-[var(--primary)]",
+                  ].join(" ")}
+                >
+                  <span className="block text-base font-black">{option.label}</span>
+                  <span className="mt-2 block text-base leading-7 text-[var(--muted-foreground)]">
+                    {option.description}
+                  </span>
+                  <span className="mt-1 block text-base leading-7 text-[var(--muted-foreground)]">{option.detail}</span>
+                </button>
+              ))}
+              <a
+                href={GOOGLE_EARTH_2003_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-white px-4 text-base font-bold text-[var(--primary)]"
+              >
+                Google Earth historical imagery খুলুন
+                <ExternalLink size={19} />
+              </a>
+              <a
+                href={GOOGLE_EARTH_HISTORICAL_DOCS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-white px-4 text-base font-bold text-[var(--primary)]"
+              >
+                Google-এর historical imagery নির্দেশিকা
+                <ExternalLink size={19} />
+              </a>
+            </div>
+          ) : tab === "legend" ? (
+            <div className="space-y-3">
+              {activeLayers.length ? (
+                activeLayers.map((layer) => (
+                  <div
+                    key={layer.key}
+                    className="flex items-center gap-3 rounded-xl border border-[var(--border-color)] bg-white p-3 text-base font-semibold"
+                  >
+                    <i
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 rounded"
+                      style={{ backgroundColor: layer.color }}
+                    />
+                    <span>{layer.label}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-xl border border-dashed border-[var(--border-color)] p-4 text-base text-[var(--muted-foreground)]">
+                  কোনো optional layer সক্রিয় নেই।
+                </p>
               )}
-            </>
-          )}
+              <p className="text-base leading-7 text-[var(--muted-foreground)]">
+                RS boundary কালো এবং MS boundary লাল। রঙ layer শনাক্তকরণের জন্য; এটি সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <SettingsButton
+                  Icon={Plus}
+                  label="জুম বাড়ান"
+                  disabled={!mapReady}
+                  onClick={() => mapRef.current?.zoomIn({ duration: 180 })}
+                />
+                <SettingsButton
+                  Icon={Minus}
+                  label="জুম কমান"
+                  disabled={!mapReady}
+                  onClick={() => mapRef.current?.zoomOut({ duration: 180 })}
+                />
+                <SettingsButton Icon={Home} label="পূর্ণ এলাকা" disabled={!mapReady} onClick={fullExtent} />
+                <SettingsButton Icon={Compass} label="উত্তর দিক" disabled={!mapReady} onClick={resetNorth} />
+                <SettingsButton
+                  Icon={MapIcon}
+                  label="3D ভিউ"
+                  disabled={!mapReady}
+                  pressed={threeD}
+                  onClick={toggleThreeD}
+                />
+                <SettingsButton
+                  Icon={Expand}
+                  label="পূর্ণপর্দা"
+                  disabled={!mapReady}
+                  pressed={fullscreen}
+                  onClick={() => void toggleFullscreen()}
+                />
+                <SettingsButton Icon={Download} label="PNG সংরক্ষণ" disabled={!mapReady} onClick={savePng} />
+                <SettingsButton Icon={Printer} label="প্রিন্ট" disabled={!mapReady} onClick={() => window.print()} />
+              </div>
 
-          <OfficialLandSourceDock detailed />
-          <p className="pb-4 text-[10px] leading-5 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
+              {feedback ? (
+                <p role="alert" className="rounded-xl bg-[#fff1ed] p-3 text-base leading-7 text-[#a73a28]">
+                  {feedback}
+                </p>
+              ) : null}
+
+              <OfficialLandSourceDock detailed />
+              <p className="text-base leading-7 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
+            </div>
+          )}
         </div>
       </aside>
 
-      <div className={panelOpen ? "max-lg:hidden" : ""}>
-        <RajukMapControls
-        mapRef={mapRef}
-        mapReady={mapReady}
-        locating={locating}
-        goToMyLocation={goToMyLocation}
-        resetNorth={resetNorth}
-        toggleThreeD={toggleThreeD}
-        threeD={threeD}
-        />
-      </div>
-
-      {selected && (
-        <div className="absolute right-[64px] top-[96px] z-[50] hidden max-h-[calc(100dvh-235px)] w-[min(27vw,300px)] overflow-y-auto rounded-lg shadow-2xl xl:block">
-          <RajukParcelInspector
-            selected={selected}
-            activeDetails={activeDetails}
-            routingCalculator={routingCalculator}
-            validateAndRoute={validateAndRoute}
-          />
+      {toast ? (
+        <div
+          role="status"
+          className="pointer-events-none absolute left-[70px] right-3 top-[92px] z-[95] mx-auto max-w-[520px] rounded-xl bg-[var(--primary)] px-4 py-3 text-center text-base font-bold text-white shadow-xl"
+        >
+          {toast}
         </div>
-      )}
+      ) : null}
 
-      <div className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[58] mx-auto w-fit max-w-[calc(100%-24px)] lg:left-[366px] lg:right-[72px] lg:w-auto lg:max-w-[520px]">
-        {measurePanelOpen && (
-          <div className="mb-2 rounded-[24px] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-2xl">
-            <div className="flex items-center justify-between gap-2">
-              <div><p className="text-xs font-black">পরিমাপ ও জরিপ টুলস</p><p className="text-[10px] text-[var(--muted-foreground)]">মানচিত্রে ট্যাপ করে বিন্দু বসান</p></div>
-              <button type="button" onClick={() => setMeasurePanelOpen(false)} aria-label="পরিমাপ প্যানেল বন্ধ" className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--secondary)]"><ChevronDown size={18}/></button>
-            </div>
-            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
-              {MEASURE_TOOLS.map(({mode,label,icon:Icon}) => (
-                <button key={mode} type="button" onClick={() => startMeasurement(mode)} aria-pressed={measureMode===mode}
-                  className={["flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs font-bold",measureMode===mode?"bg-[#d9784b] text-white":"bg-[var(--secondary)] text-[var(--foreground)]"].join(" ")}>
-                  <Icon size={16}/>{label}
-                </button>
-              ))}
-              <button type="button" disabled={!measurePoints.length} onClick={undoMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold disabled:opacity-30"><Undo2 size={16}/>ফেরান</button>
-              <button type="button" onClick={clearMeasurement} className="flex min-h-11 shrink-0 items-center gap-1 rounded-xl bg-[var(--brand-green-faint)] px-3 text-xs font-bold text-[var(--muted-foreground)]"><Trash2 size={16}/>মুছুন</button>
-            </div>
-            {measureMode && (
-              <button type="button" onClick={finishMeasurement} className="mt-2 rounded-lg border border-[#b8ccc1] px-3 py-2 text-xs font-bold">মাপ শেষ করুন</button>
-            )}
-            <div role="status" className="mt-2 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-xs font-bold text-[var(--foreground)]">
-              {measureKind==="point" && summary.point ? <>অক্ষাংশ {bn(summary.point[1],6)} · দ্রাঘিমাংশ {bn(summary.point[0],6)}</> :
-               (measureKind==="line" || measureKind==="distance") && summary.distanceMeters ? <>দূরত্ব {bn(summary.distanceMeters,2)} মিটার · {bn(summary.distanceMeters*3.28084,2)} ফুট</> :
-               summary.area.isValid ? <>আয়তন {bn(summary.area.shotok,4)} শতাংশ · {bn(summary.area.katha,4)} কাঠা · {bn(summary.area.acre,4)} একর</> :
-               "মাপ শুরু করতে একটি টুল নির্বাচন করুন।"}
-            </div>
-          </div>
-        )}
-        <div className="flex items-center justify-between gap-2 rounded-[22px] border border-[var(--border-color)] bg-[var(--card-bg)]/98 p-2 shadow-[0_14px_50px_rgba(11,45,30,.14)] backdrop-blur-sm">
-          <div className="flex items-center gap-2 pl-1">
-            <span className="hidden h-8 w-8 place-items-center rounded-xl bg-[var(--brand-green-soft)] text-[var(--primary)] sm:grid"><MapPin size={17}/></span>
-            <div className="hidden sm:block"><p className="text-[11px] font-black">GIS ও দাগ যাচাই</p><p className="text-[10px] text-[var(--muted-foreground)]">{measureMode ? "পরিমাপ চলছে" : identifyMode ? "দাগ শনাক্ত চালু" : "দাগ শনাক্ত বন্ধ"}</p></div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button type="button" onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((v) => !v); setMeasurePanelOpen(false); }} aria-pressed={identifyMode}
-              className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[var(--primary)] text-white":"bg-[var(--secondary)]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
-            <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--brand-green-soft)] px-3 text-xs font-black text-[var(--primary)]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
+      {!mapReady ? (
+        <div className="pointer-events-none absolute inset-0 z-[28] grid place-items-center bg-[var(--background)]/70">
+          <div className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-base font-black shadow-xl">
+            <Loader2 size={20} className="animate-spin" />
+            GIS মানচিত্র তৈরি হচ্ছে…
           </div>
         </div>
-      </div>
-
-      <div className={measurePanelOpen ? "hidden" : ""}><RajukCoordinateStatus mapRef={mapRef} mapReady={mapReady} /></div>
-
-      {toast && <div role="status" className="pointer-events-none absolute left-[142px] right-[60px] top-[82px] z-[95] rounded-xl bg-[var(--primary)] px-3 py-2 text-center text-[11px] font-bold text-white shadow-xl lg:left-[380px] lg:right-[76px] lg:mx-auto lg:max-w-[440px]">{toast}</div>}
-
-      {!mapReady && <div className="pointer-events-none absolute inset-0 z-[28] grid place-items-center bg-[var(--background)]/70"><div className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black shadow-xl"><Loader2 size={18} className="animate-spin"/> GIS মানচিত্র তৈরি হচ্ছে…</div></div>}
+      ) : null}
     </main>
   );
 }
