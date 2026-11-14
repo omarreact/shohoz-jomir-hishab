@@ -5,7 +5,7 @@ function source(file: string): string {
   return fs.readFileSync(path.join(process.cwd(), file), "utf8");
 }
 
-describe("ePorcha-inspired LandBD product parity", () => {
+describe("ePorcha-derived LandBD functional parity", () => {
   it("uses one search box for Khatian, Dag, owner and guardian after Mouza selection", () => {
     const ui = source("src/features/land-records/components/SurveyKhatianSearch.tsx");
     expect(ui).toContain("খতিয়ান / দাগ / মালিক / অভিভাবক");
@@ -31,7 +31,7 @@ describe("ePorcha-inspired LandBD product parity", () => {
     expect(table).toContain('row.completeness === "complete"');
   });
 
-  it("uses the dark five-column ePorcha-style browser for survey and book pages", () => {
+  it("keeps the five-column browser flow while enforcing LandBD screen styling", () => {
     const survey = source("src/features/land-records/components/SurveyKhatianSearch.tsx");
     const book = source("src/features/land-records/components/MouzaPorchaReportBuilder.tsx");
     const selector = source("src/features/land-records/components/LandRecordSelectionColumn.tsx");
@@ -39,9 +39,17 @@ describe("ePorcha-inspired LandBD product parity", () => {
       expect(survey).toContain(label);
       expect(book).toContain(label);
     }
-    expect(selector).toContain("bg-[#101813]");
-    expect(survey).toContain("bg-[#0a110d]");
-    expect(book).toContain("bg-[#0a110d]");
+    expect(selector).toContain("app-surface");
+    expect(survey).toContain("font-mixed");
+    expect(book).toContain("font-mixed");
+    expect(selector).toContain("bg-[var(--secondary)]");
+    expect(survey).toContain("bg-[var(--background)]");
+    expect(book).toContain("bg-[var(--background)]");
+    for (const referenceColor of ["#101813", "#0a110d", "#1fa775", "#2bc18a"]) {
+      expect(selector).not.toContain(referenceColor);
+      expect(survey).not.toContain(referenceColor);
+      expect(book).not.toContain(referenceColor);
+    }
   });
 
   it("matches the uploaded Mouza Khatian Book cover and compact record-table structure", () => {
