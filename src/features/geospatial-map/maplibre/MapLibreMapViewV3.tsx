@@ -238,6 +238,11 @@ export default function MapLibreMapViewV3({
   const msResults = useMemo(() => results.filter((feature) => isMsFeature(feature)), [results]);
   const activeLayers = useMemo(() => LAYERS.filter((layer) => layers[layer.key]), [layers]);
 
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
+    requestAnimationFrame(() => document.getElementById(`atlas-map-tool-${tab}`)?.focus());
+  }, [setPanelOpen, tab]);
+
   useEffect(() => {
     const onFullscreenChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onFullscreenChange);
@@ -248,11 +253,11 @@ export default function MapLibreMapViewV3({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || !panelOpen) return;
       event.preventDefault();
-      setPanelOpen(false);
+      closePanel();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [panelOpen, setPanelOpen]);
+  }, [closePanel, panelOpen]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -366,6 +371,7 @@ export default function MapLibreMapViewV3({
             return (
               <button
                 key={id}
+                id={`atlas-map-tool-${id}`}
                 type="button"
                 onClick={() => openTool(id)}
                 aria-label={label}
@@ -414,7 +420,7 @@ export default function MapLibreMapViewV3({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={() => setPanelOpen(false)}
+            onClick={closePanel}
             aria-label="প্যানেল বন্ধ"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[var(--primary)] transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
           >
