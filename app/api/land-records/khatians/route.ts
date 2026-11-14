@@ -3,10 +3,8 @@ import { KhatianPageSchema, idParam, khatianSearchText, pageSize, positivePage }
 import { normalizeKhatianRecord, normalizedRecordMatches } from "@/src/features/land-records/normalized-khatian";
 import { providers } from "@/src/features/land-records/server/provider";
 import { ok, providerError } from "@/src/features/land-records/server/http";
-import type { KhatianIndex } from "@/src/features/land-records/types";
-import { z } from "zod";
+import { normalizeSurveyKey, type KhatianIndex } from "@/src/features/land-records/types";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 const MAX_BROWSE_PAGES = 1000;
 const SEARCH_BATCH_SIZE = 100;
 
@@ -57,7 +55,8 @@ export async function GET(request: Request) {
   if (denied) return denied;
   try {
     const params = new URL(request.url).searchParams;
-    const surveyKey = surveyKeySchema.parse(params.get("surveyKey"));
+    const surveyKey = normalizeSurveyKey(params.get("surveyKey"));
+    if (!surveyKey) return Response.json({ error: "Invalid survey key" }, { status: 400 });
     const jlNumberId = Number(idParam.parse(params.get("jlNumberId")));
     if (!Number.isSafeInteger(jlNumberId)) {
       return Response.json({ error: "Invalid JL number" }, { status: 400 });
