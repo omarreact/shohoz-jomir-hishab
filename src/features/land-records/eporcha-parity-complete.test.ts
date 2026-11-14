@@ -42,7 +42,7 @@ describe("ePorcha-derived LandBD functional parity", () => {
     expect(selector).toContain("app-surface");
     expect(survey).toContain("font-mixed");
     expect(book).toContain("font-mixed");
-    expect(selector).toContain("bg-[var(--card-bg)]");
+    expect(selector).toContain("bg-[var(--secondary)]");
     expect(survey).toContain("bg-[var(--background)]");
     expect(book).toContain("bg-[var(--background)]");
     for (const referenceColor of ["#101813", "#0a110d", "#1fa775", "#2bc18a"]) {
