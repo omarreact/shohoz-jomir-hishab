@@ -35,9 +35,9 @@
 
   /* LandBD typography policy:
      all non-heading text uses Kalpurush; semantic headings retain the prior UI stack. */
-  --font-inter: "Segoe UI", Arial, sans-serif;
   --font-kalpurush: "Kalpurush", var(--font-nikosh), "Nirmala UI", serif;
-  --font-heading: var(--font-inter), var(--font-nikosh), "Nirmala UI", sans-serif;
+  --font-heading: "Segoe UI", Arial, var(--font-nikosh), "Nirmala UI", sans-serif;
+  --font-inter: var(--font-kalpurush);
   --font-hind-siliguri: var(--font-kalpurush);
   --font-noto-bengali: var(--font-kalpurush);
   --font-english: var(--font-kalpurush);
