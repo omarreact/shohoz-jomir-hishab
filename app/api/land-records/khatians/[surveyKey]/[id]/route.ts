@@ -4,10 +4,8 @@ import { reconstructKhatian } from "@/src/features/land-records/server/khatian-r
 import { enrichKhatianDetailsWithReferenceDatasets } from "@/src/features/land-records/server/reference-khatian-resolver";
 import { providers } from "@/src/features/land-records/server/provider";
 import { ok, providerError } from "@/src/features/land-records/server/http";
-import type { KhatianPage } from "@/src/features/land-records/types";
-import { z } from "zod";
+import { normalizeSurveyKey, type KhatianPage } from "@/src/features/land-records/types";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 
 async function safeSearch(input: Parameters<typeof providers.landRecords.listKhatians>[0], signal: AbortSignal): Promise<KhatianPage | null> {
   try {
@@ -29,7 +27,8 @@ export async function GET(request: Request, context: { params: Promise<{ surveyK
   if(denied)return denied;
   try {
     const params = await context.params;
-    const surveyKey = surveyKeySchema.parse(params.surveyKey);
+    const surveyKey = normalizeSurveyKey(params.surveyKey);
+    if (!surveyKey) return Response.json({ error: "Invalid survey key" }, { status: 400 });
     const id = Number(idParam.parse(params.id));
     if (!Number.isSafeInteger(id)) return Response.json({ error: "Invalid Khatian ID" }, { status: 400 });
 
