@@ -27,7 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Map as MapLibreInstance } from "maplibre-gl";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { RajukPlotFeature } from "@/src/types/rajuk-runtime";
 import { formatBanglaNumber } from "@/src/shared/i18n/bangla";
 import {
