@@ -280,7 +280,6 @@ export default function MapLibreMap() {
       ].forEach((layer) => {
         if (!map.getLayer(layer.id)) map.addLayer(layer as maplibregl.LayerSpecification);
       });
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     };
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
@@ -424,7 +423,7 @@ export default function MapLibreMap() {
         setVectorStatus(error instanceof Error ? error.message : "দাগের সীমানা লোড করা যায়নি");
       }
     }
-  }, [notify]);
+  }, [clearPlotSelection, notify, showPlotPopup]);
 
   useEffect(() => {
     const map = mapRef.current;
