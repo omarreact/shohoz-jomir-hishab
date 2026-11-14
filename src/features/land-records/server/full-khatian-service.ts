@@ -139,15 +139,22 @@ function publicDags(base: KhatianDetails, tracking?: KhatianTracking): FullKhati
   return dags.map((dagNo) => ({ dagNo, source: "DLRMS_PUBLIC" as const }));
 }
 
-function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
+export function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
   // Equal names alone do not prove that the source lists refer to the same
-  // ownership entry. Parent, share and address can distinguish separate rows.
+  // ownership entry. Preserve every structured relationship that can
+  // distinguish same-name owners; never collapse a mother/spouse/guardian-only row.
   const normalize = (text: string | undefined) =>
     (text ?? "").replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
   const detail = (row: FullKhatianOwner) =>
-    Boolean(row.fatherOrHusband || row.shareRaw || row.address);
+    Boolean(
+      row.fatherOrHusband || row.father || row.mother || row.spouse ||
+      row.guardian || row.shareRaw || row.address,
+    );
   const identity = (row: FullKhatianOwner) =>
-    [row.name, row.fatherOrHusband, row.shareRaw, row.address].map(normalize).join("|");
+    [
+      row.name, row.fatherOrHusband, row.father, row.mother, row.spouse,
+      row.guardian, row.shareRaw, row.address,
+    ].map(normalize).join("|");
   const result: FullKhatianOwner[] = [];
   for (const candidate of [...enriched, ...publicRows]) {
     const sameName = result.filter((row) => normalize(row.name) === normalize(candidate.name));

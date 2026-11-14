@@ -47,11 +47,20 @@ function dlrmsAreaLabel(value: string | null | undefined): string {
   return formatAcre(acreFromDlrmsValue(value, "acre"));
 }
 
+function officialPublicRecord(record: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!record) return {};
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => !key.startsWith("LANDBD_")),
+  );
+}
+
 export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: Props) {
   const { tracking, halSabek, lisf, evidence, warnings } = fullKhatian;
   const additionalFields = extractKhatianAdditionalFields(fullKhatian.base, fullKhatian.base.SURVEY_NAME);
   const structuredOwners = fullKhatian.owners.filter(
-    (owner) => owner.fatherOrHusband || owner.address || owner.shareRaw,
+    (owner) =>
+      owner.fatherOrHusband || owner.father || owner.mother || owner.spouse ||
+      owner.guardian || owner.address || owner.shareRaw,
   );
   const structuredDags = fullKhatian.dags.filter(
     (dag) => dag.landType || dag.agriculturalType || dag.totalAreaRaw || dag.khatianAreaRaw ||
@@ -64,7 +73,13 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
     lisf.deeds.length > 0 || lisf.formattedRecord !== undefined
   );
 
-  const showOwnerFather = structuredOwners.some((owner) => Boolean(owner.fatherOrHusband?.trim()));
+  const rawPublicRecord = officialPublicRecord(fullKhatian.base.PUBLIC_RECORD);
+  const hasRawPublicRecord = Object.keys(rawPublicRecord).length > 0;
+  const showOwnerLegacyRelation = structuredOwners.some((owner) => Boolean(owner.fatherOrHusband?.trim()));
+  const showOwnerFather = structuredOwners.some((owner) => Boolean(owner.father?.trim()));
+  const showOwnerMother = structuredOwners.some((owner) => Boolean(owner.mother?.trim()));
+  const showOwnerSpouse = structuredOwners.some((owner) => Boolean(owner.spouse?.trim()));
+  const showOwnerGuardian = structuredOwners.some((owner) => Boolean(owner.guardian?.trim()));
   const showOwnerAddress = structuredOwners.some((owner) => Boolean(owner.address?.trim()));
   const showOwnerShare = structuredOwners.some((owner) => Boolean(owner.shareRaw?.trim()));
   const showDagClass = structuredDags.some((dag) => Boolean(dag.landType?.trim() || dag.agriculturalType?.trim()));
@@ -165,7 +180,11 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
               <thead>
                 <tr>
                   <th className="border border-black px-2 py-1.5 text-left font-normal">মালিক</th>
-                  {showOwnerFather ? <th className="border border-black px-2 py-1.5 text-left font-normal">পিতা/স্বামী</th> : null}
+                  {showOwnerLegacyRelation ? <th className="border border-black px-2 py-1.5 text-left font-normal">সম্পর্ক / পিতা / স্বামী</th> : null}
+                  {showOwnerFather ? <th className="border border-black px-2 py-1.5 text-left font-normal">পিতা</th> : null}
+                  {showOwnerMother ? <th className="border border-black px-2 py-1.5 text-left font-normal">মাতা</th> : null}
+                  {showOwnerSpouse ? <th className="border border-black px-2 py-1.5 text-left font-normal">স্বামী / স্ত্রী</th> : null}
+                  {showOwnerGuardian ? <th className="border border-black px-2 py-1.5 text-left font-normal">অভিভাবক</th> : null}
                   {showOwnerAddress ? <th className="border border-black px-2 py-1.5 text-left font-normal">ঠিকানা</th> : null}
                   {showOwnerShare ? <th className="border border-black px-2 py-1.5 text-left font-normal">অংশ</th> : null}
                 </tr>
@@ -174,7 +193,11 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
                 {structuredOwners.map((owner, index) => (
                   <tr key={`${owner.name}-${index}`}>
                     <td className="border border-black px-2 py-1.5">{owner.name}</td>
-                    {showOwnerFather ? <td className="border border-black px-2 py-1.5">{owner.fatherOrHusband || "—"}</td> : null}
+                    {showOwnerLegacyRelation ? <td className="border border-black px-2 py-1.5">{owner.fatherOrHusband || "—"}</td> : null}
+                    {showOwnerFather ? <td className="border border-black px-2 py-1.5">{owner.father || "—"}</td> : null}
+                    {showOwnerMother ? <td className="border border-black px-2 py-1.5">{owner.mother || "—"}</td> : null}
+                    {showOwnerSpouse ? <td className="border border-black px-2 py-1.5">{owner.spouse || "—"}</td> : null}
+                    {showOwnerGuardian ? <td className="border border-black px-2 py-1.5">{owner.guardian || "—"}</td> : null}
                     {showOwnerAddress ? <td className="border border-black px-2 py-1.5">{owner.address || "—"}</td> : null}
                     {showOwnerShare ? <td className="border border-black px-2 py-1.5">{owner.shareRaw || "—"}</td> : null}
                   </tr>
@@ -221,6 +244,15 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
               </tbody>
             </table>
           </div>
+        </Panel>
+      ) : null}
+
+      {hasRawPublicRecord ? (
+        <Panel title="সরকারি DLRMS উৎসের সকল প্রকাশিত ফিল্ড">
+          <p className="mb-3 text-[12px]">
+            সরকারি public detail response-এ প্রকাশিত সব non-sensitive field মূল field-name সহ নিচে দেখানো হচ্ছে।
+          </p>
+          <FormattedKhatianRecord record={rawPublicRecord} />
         </Panel>
       ) : null}
 

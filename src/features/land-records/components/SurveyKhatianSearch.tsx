@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, Eye, Loader2, Search, X } from "lucide-react";
 import { useSurveyKhatian } from "../hooks/useSurveyKhatian";
-import { MUTATION_SURVEY_ID, SURVEY_KEY_BY_ID, type KhatianDetails, type KhatianIndex } from "../types";
+import { MUTATION_SURVEY_ID, resolveSurveyKey, type KhatianDetails, type KhatianIndex } from "../types";
 import KhatianDetailsView from "./KhatianDetailsView";
 import LandRecordSelectionColumn from "./LandRecordSelectionColumn";
 
@@ -33,16 +33,20 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
   const selectedUpazila = upazilas.find((item) => item.BBS_CODE === upazila);
   const selectedSurvey = surveys.find((item) => String(item.SURVEY_ID) === surveyId);
   const selectedMouza = mouzas.find((item) => String(item.ID) === mouzaId);
-  const surveyKey = surveyId ? SURVEY_KEY_BY_ID[Number(surveyId)] : undefined;
+  const surveyKey = resolveSurveyKey(selectedMouza);
 
   const visibleSurveys = useMemo(
-    () => surveys.filter((item) => isMutation ? item.SURVEY_ID === MUTATION_SURVEY_ID : item.SURVEY_ID !== MUTATION_SURVEY_ID),
+    () => surveys.filter((item) =>
+      isMutation ? item.SURVEY_ID === MUTATION_SURVEY_ID : item.SURVEY_ID !== MUTATION_SURVEY_ID,
+    ),
     [surveys, isMutation],
   );
 
   useEffect(() => { if (division) void loadDistricts(division); }, [division, loadDistricts]);
   useEffect(() => { if (district) void loadUpazilas(district); }, [district, loadUpazilas]);
-  useEffect(() => { if (district && upazila) void loadSurveys(district, upazila, isMutation); }, [district, upazila, isMutation, loadSurveys]);
+  useEffect(() => {
+    if (district && upazila) void loadSurveys(district, upazila, isMutation);
+  }, [district, upazila, isMutation, loadSurveys]);
   useEffect(() => {
     if (!isMutation || surveyId || !visibleSurveys.length) return;
     setSurveyId(String(visibleSurveys[0].SURVEY_ID));
@@ -59,7 +63,11 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
   }, [district, upazila, selectedDistrict, selectedUpazila, selectedSurvey, loadMouzas]);
 
   useEffect(() => {
-    if (!selectedMouza || !surveyKey) return;
+    if (!selectedMouza) return;
+    if (!surveyKey) {
+      setLocalError("এই সার্ভের সরকারি API key মৌজা response-এ পাওয়া যায়নি। অন্য মৌজা/সার্ভে নির্বাচন করুন বা নিচের verification lookup ব্যবহার করুন।");
+      return;
+    }
     setPage(1);
     setQuery("");
     setViewMode("search");
@@ -140,7 +148,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
   };
 
   const displayedError = localError || error;
-  const locationReady = Boolean(division && district && upazila && surveyId && mouzaId);
+  const locationReady = Boolean(division && district && upazila && surveyId && mouzaId && surveyKey);
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-mixed">
@@ -153,7 +161,9 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
             {isMutation ? "বিনামূল্যে নামজারি খতিয়ান অনুসন্ধান করুন" : "বিনামূল্যে অনলাইনে খতিয়ান অনুসন্ধান করুন"}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted-foreground)] md:text-base">
-            বিভাগ, জেলা, উপজেলা, {isMutation ? "নামজারি" : "সার্ভে"} ও মৌজা বেছে উপলভ্য খতিয়ান ব্রাউজ করুন।
+            {isMutation
+              ? "বিভাগ, জেলা, উপজেলা, নামজারি ও মৌজা বেছে উপলভ্য খতিয়ান ব্রাউজ করুন।"
+              : "বিভাগ, জেলা, উপজেলা, খতিয়ানের ধরন ও মৌজা বেছে সরকারি DLRMS-এ প্রকাশিত সার্ভে খতিয়ান ব্রাউজ করুন। নামজারি/Mutation এবং QR/DCR যাচাই নিচের সরকারি verification অংশে আছে।"}
             একটি search box থেকেই খতিয়ান, দাগ, মালিক বা অভিভাবক খুঁজে পাওয়া যাবে।
           </p>
         </div>

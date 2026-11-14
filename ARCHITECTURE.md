@@ -2,7 +2,7 @@
 
 **Branch:** `main`  
 **Stack:** Next.js App Router · TypeScript · Firebase Auth/Firestore · MapLibre · ArcGIS/RAJUK proxies  
-**Last updated:** 2026-11-12
+**Last updated:** 2026-11-14
 
 This document is the authoritative map of production domains, dependency rules, and invariants.  
 It extends the existing Phase 0/1 notes under `docs/architecture/`.
@@ -32,8 +32,9 @@ It extends the existing Phase 0/1 notes under `docs/architecture/`.
 
 | Domain | UI routes | Domain logic | External services |
 |--------|-----------|--------------|-------------------|
-| **Maps / GIS** | `/geospatial-map` (canonical), `/mouza-map`, `/dap-map` (redirect alias), `/rajuk-test` | `src/features/geospatial-map`, `src/features/maps`, `src/lib/gis` | `src/services/rajuk/*`, `/api/rajuk/*`, `/api/mouza-map/*` |
-| **Khatiyan** | `/khatiyan`, `/khatian` | `src/modules/khatiyan/*` | GIS bridge only |
+| **Maps / GIS** | `/geospatial-map` (canonical), `/mouza-map`, `/rajuk-test` | `src/features/geospatial-map`, `src/features/maps`, `src/lib/gis` | `src/services/rajuk/*`, `/api/rajuk/*`, `/api/mouza-map/*` |
+| **Land records** | `/dlrms-khatian`, `/mouza-khatian-book`, `/mouza-dag-report` | `src/features/land-records/*` | DLRMS public API, Mutation verification, optional LISF, provenance-marked LandBD references |
+| **Khatiyan calculator** | `/khatiyan` | `src/modules/khatiyan/*`, `src/features/khatiyan/*` | GIS bridge only |
 | **Faraez** | `/faraez` | `src/modules/faraez/*` | GIS bridge only |
 | **Land measurement** | `/land-measurement` | `src/modules/land/*` | none |
 | **Blog** | `/blog`, `/blog/[category]/[slug]` | `src/features/blog/*` | Firestore via `/api/blogs` |
@@ -93,10 +94,16 @@ These must never be violated. Tests under `src/modules/**` and `tests/` enforce 
 3. Token / portal credentials stay server-only (`src/services/rajuk/rajukAuth.service.ts`).  
 4. Raster pipeline: tiles → mosaic → polygon mask → GeoTIFF/RAW (`src/lib/gis/*` + `mouzaRasterExport.service.ts`).
 
+### Land records
+1. Public survey browse uses the official DLRMS application-session provider; survey keys returned by official Mouza payloads are accepted when they match the safe key contract.
+2. Mutation/নামজারি is resolved through its public QR/DCR verification surface; LandBD must not pretend an unverified `index-khatian/MUTATION` browse endpoint exists.
+3. DLRMS, Mutation, LISF and bundled-reference values retain explicit provenance. Reference/mirror data must never be labelled first-party DLRMS.
+4. Public source payloads are sanitized before browser exposure; token/cookie/password/secret fields are removed.
+
 ### Platform
 1. Firebase remains primary auth + application database (see `AGENTS.md`).  
-2. Admin authorization is **server-side** (claims / Firestore roles), never client-only.  
-3. Domain route failures are isolated via `app/<domain>/error.tsx` + `DomainErrorFallback`.
+2. Page/admin authorization is **server-side in `proxy.ts`** (plus route-level API guards), never client-only. `ConditionalShell` is layout-only.
+3. Domain route failures are isolated via route-level `error.tsx` boundaries where present.
 
 ---
 
@@ -158,9 +165,13 @@ Cross-domain rule: a change under `src/features/geospatial-map` or `src/services
 | Route | Access | Domain |
 |-------|--------|--------|
 | `/`, `/blog/*`, `/faq`, `/contact`, `/privacy`, `/terms` | Public | Platform / Blog |
-| `/khatiyan`, `/faraez`, `/land-measurement`, `/porcha` | Public tools | Domain calculators |
+| `/khatiyan`, `/faraez`, `/land-measurement` | Public tools (subject to service policy) | Domain calculators |
+| `/porcha` | Logged-in minimum | Records |
+| `/dlrms-khatian` | Public/service-policy gated survey + QR/DCR verification | Land records |
+| `/mouza-khatian-book`, `/mouza-dag-report` | Public/service-policy gated reports | Land records |
+| `/survey-khatian` | Permanent compatibility redirect to `/dlrms-khatian` | Land records |
 | `/geospatial-map`, `/mouza-map` | Public maps (subject to service/page policy) | Maps |
-| `/dap-map` | Permanent compatibility redirect to `/geospatial-map` | Maps |
+| `/rajuk-test` | Admin by default page-access policy | Maps QA |
 | `/login` | Public | Auth |
 | `/admin/*` | Staff (server-enforced) | Admin |
 | `/api/rajuk/*`, `/api/mouza-map/*` | Public proxy (rate-limited / token server-side) | Maps infra |
@@ -168,7 +179,15 @@ Cross-domain rule: a change under `src/features/geospatial-map` or `src/services
 
 ---
 
-## 8. Safe change checklist
+## 8. Deployment policy
+
+- GitHub `main` is the only Vercel deploy-enabled branch in `vercel.json`.
+- Vercel project-level preview deployments are disabled to prevent feature/PR pushes from consuming the build quota.
+- Cloudflare/OpenNext compatibility remains validated in CI; no production promotion occurs from pull-request validation.
+
+---
+
+## 9. Safe change checklist
 
 Before modifying a file:
 
@@ -182,7 +201,7 @@ Before modifying a file:
 
 ---
 
-## 9. Incremental boundary plan (non-destructive)
+## 10. Incremental boundary plan (non-destructive)
 
 Already in place:
 - Domain modules under `src/modules/{faraez,khatiyan,land,auth}`  
@@ -199,7 +218,7 @@ Next increments (when needed, small PRs):
 
 ---
 
-## 10. Related docs
+## 11. Related docs
 
 - `AGENTS.md` — non-negotiable product constraints (Firebase, RAJUK, no Supabase/Prisma migration)  
 - `docs/architecture/PHASE-0-AUDIT.md`  

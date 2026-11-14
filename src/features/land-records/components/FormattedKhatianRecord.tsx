@@ -47,7 +47,11 @@ export default function FormattedKhatianRecord({ record }: { record: unknown }) 
 
   return (
     <div>
-      <table className="w-full table-fixed border-collapse text-left text-[14px] leading-6">
+      <table
+        className="w-full table-fixed border-collapse text-left text-[14px] leading-6"
+        data-bangla-ignore="true"
+        translate="no"
+      >
         <thead>
           <tr data-pdf-surface="table-head">
             <th className="w-2/5 border border-slate-300 px-3 py-2">উৎস ফিল্ড</th>

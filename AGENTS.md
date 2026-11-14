@@ -87,8 +87,8 @@ Do not replace these systems unnecessarily.
 ---
 
 # 8. GIS MAP UI REQUIREMENT
-The canonical production GIS route is `/geospatial-map`. The legacy `/dap-map` URL is a compatibility alias that redirects to it. Keep the canonical GIS experience visually polished, responsive, and easy to use.
-Use the existing project's UI system first. If Bootstrap is genuinely useful for the DAP map interface, controls, responsive layout, cards, modals, tabs, or map controls, you may add/use Bootstrap. However, do not introduce Bootstrap unnecessarily, do not duplicate Tailwind and Bootstrap styles, avoid CSS conflicts, and use one consistent design language.
+The canonical production GIS route is `/geospatial-map`. The retired `/dap-map` page is not part of the active route registry; do not recreate it unless the owner explicitly requests a compatibility redirect. Keep the canonical GIS experience visually polished, responsive, and easy to use.
+Use the existing Tailwind/Radix design system first. Do not introduce a second UI framework for the GIS workspace unless there is a demonstrated requirement that the existing system cannot satisfy.
 
 ---
 
@@ -99,14 +99,14 @@ Use the existing MapLibre implementation for the canonical GIS map. Leaflet/Reac
 
 ---
 
-# 10. DAP-MAP PUBLIC FALLBACK
-This is mandatory. When the RAJUK private token is empty, missing, invalid, expired, rejected, or unavailable, the canonical `/geospatial-map` experience (including requests arriving through `/dap-map`) MUST continue loading all publicly available RAJUK data.
-Never allow private authentication failure to make `/dap-map` blank.
+# 10. GIS PUBLIC FALLBACK
+This is mandatory. When an optional RAJUK private credential is empty, missing, invalid, expired, rejected, or unavailable, the canonical `/geospatial-map` experience MUST continue loading every publicly available RAJUK source that the official public configuration permits.
+Never allow optional private authentication failure to make the canonical public map blank.
 
 ---
 
-# 11. DAP-MAP BOOTSTRAP REQUIREMENT
-If Bootstrap is needed to make `/dap-map` properly functional or visually polished, install and configure it correctly. Before adding Bootstrap, check whether the existing Tailwind/Radix UI implementation already satisfies the requirement.
+# 11. GIS UI FRAMEWORK REQUIREMENT
+Keep the canonical GIS workspace on the existing Tailwind/Radix system. Reuse the current MapLibre controls/components instead of adding overlapping control frameworks.
 
 ---
 
@@ -140,7 +140,7 @@ ADMIN AUTHORIZATION -> Firebase Custom Claims / secure Firestore role
 RAJUK AUTHENTICATION -> RAJUK token managed server-side
 RAJUK DATA -> RAJUK/ArcGIS APIs
 MAP -> MapLibre for canonical GIS; Leaflet/React-Leaflet only where existing specialized views require it
-UI -> Existing Tailwind/Radix system, Bootstrap ONLY if genuinely beneficial for /dap-map
+UI -> Existing Tailwind/Radix system; avoid overlapping UI frameworks in the canonical GIS workspace
 OPTIONAL CACHE -> Redis where already required
 
 ---
