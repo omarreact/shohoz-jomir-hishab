@@ -65,6 +65,13 @@ describe("LandBD map-first GIS workspace", () => {
     expect(constants).toContain('color: "#dc2626"');
   });
 
+  it("registers historical raster sources lazily instead of at map startup", () => {
+    expect(controller).toContain('(["satellite", "light"] as BasemapKey[])');
+    expect(controller).toContain("if (!map.getSource(sourceId))");
+    expect(controller).toContain("BASEMAP_SOURCE_DEFINITIONS[basemap]");
+    expect(controller).toContain("Historical sources are registered lazily");
+  });
+
   it("labels historical imagery truthfully and never embeds Google Earth tiles", () => {
     expect(constants).toContain('label: "NASA MODIS · 2003"');
     expect(constants).toContain("gibs.earthdata.nasa.gov");
