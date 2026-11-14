@@ -3,9 +3,9 @@ import { FullKhatianSchema } from "@/src/features/land-records/full-khatian";
 import { idParam, khatianSearchText } from "@/src/features/land-records/schemas";
 import { getFullKhatian } from "@/src/features/land-records/server/full-khatian-service";
 import { ok, providerError } from "@/src/features/land-records/server/http";
+import { normalizeSurveyKey } from "@/src/features/land-records/types";
 import { z } from "zod";
 
-const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
 const bbsCodeSchema = z.string().regex(/^\d{1,3}$/);
 const verificationUuidSchema = z.string().regex(
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -33,9 +33,8 @@ export async function GET(
   const denied=await enforceServiceAccess(request,"dlrms-khatian");
   if(denied)return denied;  try {
     const params = await context.params;
-    const parsedSurvey = surveyKeySchema.safeParse(params.surveyKey);
-    if (!parsedSurvey.success) return badRequest("Invalid survey key");
-    const surveyKey = parsedSurvey.data;
+    const surveyKey = normalizeSurveyKey(params.surveyKey);
+    if (!surveyKey) return badRequest("Invalid survey key");
 
     const parsedId = parsePositiveId(params.id, "Khatian ID");
     if (parsedId instanceof Response) return parsedId;
