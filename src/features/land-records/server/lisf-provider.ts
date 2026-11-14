@@ -384,15 +384,7 @@ const authorizedProvider: LisfProvider = {
     const preset = isAbortSignal(contextOrSignal) ? {} : (contextOrSignal ?? {});
     const credentials = configuredCredentials();
     if (!credentials) {
-      return {
-        status: "not-configured",
-        message: "Authorized LISF service_id/access_code are not configured on the LandBD server.",
-        owners: [],
-        dags: [],
-        referenceKhatians: [],
-        referenceDags: [],
-        deeds: [],
-      };
+      return publicDlrmsFallbackProvider.enrichKhatian(base, contextOrSignal, explicitSignal);
     }
 
     const surveyType = lisfSurveyType(base);
