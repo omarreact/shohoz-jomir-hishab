@@ -18,7 +18,8 @@
     "maps:cadastral:mark": "node scripts/maps/national-cadastral-mark-coverage.mjs",
     "maps:cadastral:upload-r2": "node scripts/maps/national-cadastral-upload-r2.mjs",
     "maps:cadastral:fetch": "node scripts/maps/national-cadastral-fetch.mjs",
-    "maps:cadastral:audit-candidate": "node scripts/maps/national-cadastral-audit-candidate.mjs"
+    "maps:cadastral:audit-candidate": "node scripts/maps/national-cadastral-audit-candidate.mjs",
+    "maps:cadastral:survey-inventory": "node scripts/maps/national-cadastral-dlrms-survey-inventory.mjs"
   },
   "engines": {
     "node": "22.x"

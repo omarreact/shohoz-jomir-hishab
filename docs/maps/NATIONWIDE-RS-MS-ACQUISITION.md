@@ -15,6 +15,13 @@ Machine-readable source/coverage state: `data/maps/national-cadastral/catalog.js
 
 Public viewing/search does not equal redistribution permission. Paid/authenticated/licensed files are stored or republished only when acquisition metadata records the applicable rights.
 
+## Official DLRMS survey-applicability inventory
+The public DLRMS administrative metadata can be scanned without requesting khatian/owner data:
+```bash
+npm run maps:cadastral:survey-inventory
+```
+The inventory records district/upazila survey availability only. An observed RS row is positive applicability evidence; an absent row is never treated as legal proof that RS does not apply.
+
 ## Candidate archive quarantine\nBefore official ingest, audit any copied/shared scan archive locally:\n```bash\nnpm run maps:cadastral:audit-candidate -- --root ./candidate-maps --out ./candidate-report.json\n```\nUse `--require-clean-provenance` when a pipeline must fail on third-party-branded files. The scanner inventories filenames, bytes, formats and survey hints only; it never uploads/publishes or claims legal authority. A folder named `City Survey` is reported separately and is not auto-converted to MS.\n\n## Intake contract
 Keep acquired binaries outside Git. Each file needs a same-name `.meta.json` sidecar.
 
