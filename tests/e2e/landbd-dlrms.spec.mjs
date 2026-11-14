@@ -157,8 +157,7 @@ test.describe("LandBD DLRMS browser data path", () => {
     await choose(page, "বিভাগ", "ঢাকা");
     await choose(page, "জেলা", "ঢাকা");
     await choose(page, "উপজেলা / থানা", "রূপগঞ্জ");
-    const surveyPicker = page.locator('section[aria-label="খতিয়ানের ধরন"]');
-    await expect(surveyPicker.getByRole("button", { name: "নামজারি খতিয়ান (নামজারি)", exact: true })).toBeVisible();
+    await expect(page.getByText("Mutation / নামজারি QR যাচাই", { exact: true })).toBeVisible();
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
     await choose(page, "মৌজা (JL নম্বর)", /^(?:110|১১০) · পাতিরা$/);
 
