@@ -45,6 +45,19 @@
   --font-ui: var(--font-kalpurush);
   --font-report: var(--font-kalpurush);
   --font-sans: var(--font-kalpurush);
+
+  /* Readability scale: keep the existing hierarchy while making dense LandBD
+     UI copy easier to read across desktop and mobile. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.75rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.875rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 2rem;
 }
 
 @layer base {
@@ -87,8 +100,8 @@
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-ui);
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: 18px;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color .2s ease, color .2s ease;
