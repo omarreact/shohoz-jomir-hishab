@@ -36,6 +36,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: National cadastral catalog integrity
+        run: npm run maps:cadastral:coverage
+
+      - name: National cadastral inventory script syntax
+        run: node --check scripts/maps/national-cadastral-dlrms-survey-inventory.mjs
+
       - name: Land-record regression tests
         run: >-
           npm test -- --ci

@@ -1,0 +1,117 @@
+name: LandBD Integration Browser QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "proxy.ts"
+      - "scripts/qa/**"
+      - "tests/e2e/**"
+      - ".github/workflows/integration-browser-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landbd-browser-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install browser test runner without changing package files
+        shell: bash
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "No system Chrome/Chromium executable is available on the runner." >&2
+            exit 1
+          fi
+          "$CHROME_BIN" --version
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
+
+      - name: Production build
+        shell: bash
+        run: |
+          set -o pipefail
+          for attempt in 1 2 3; do
+            if npm run build -- --webpack 2>&1 | tee browser-qa-build.log; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ] || ! grep -Eq 'next/font|Failed to fetch.*font|ECONNRESET|ENOTFOUND|ETIMEDOUT' browser-qa-build.log; then
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Start local production server
+        shell: bash
+        run: |
+          LANDBD_PUBLIC_ACCESS=true PROXY_RATE_LIMIT_MAX=10000 PORT=3000 HOSTNAME=127.0.0.1 npm start > /tmp/landbd-next.log 2>&1 &
+          echo $! > /tmp/landbd-next.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/landbd-next.log
+          exit 1
+
+      - name: Runtime route smoke
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:3000
+          SMOKE_TIMEOUT_MS: "10000"
+        run: node scripts/qa/live-routing-smoke.mjs
+
+      - name: Historical imagery provider smoke
+        env:
+          IMAGERY_SMOKE_TIMEOUT_MS: "20000"
+          IMAGERY_SMOKE_ATTEMPTS: "3"
+        run: node scripts/qa/free-imagery-provider-smoke.mjs
+
+      - name: Responsive Chromium QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-responsive.spec.mjs --workers=1 --reporter=line
+
+      - name: DLRMS BRS browser data-path QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-dlrms.spec.mjs --workers=1 --reporter=line
+
+      - name: Mouza Khatian Book PDF browser QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-pdf.spec.mjs --workers=1 --reporter=line
+
+      - name: Upload browser QA diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-browser-qa-diagnostics
+          path: |
+            /tmp/landbd-next.log
+            test-results/
+          if-no-files-found: warn
+          retention-days: 3

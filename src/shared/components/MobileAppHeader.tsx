@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MapPinned, Search, ShieldCheck, UserRound } from "lucide-react";
+import { Home, MapPinned, ShieldCheck, UserRound } from "lucide-react";
+import MobileSidebar from "@/src/shared/components/MobileSidebar";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
 import { FEATURE_ROUTES, FEATURE_LABELS } from "@/src/shared/config/feature-routes";
@@ -22,7 +23,7 @@ export default function MobileAppHeader() {
       : (activeKey ? FEATURE_LABELS[activeKey].bn : "LandBD");
   const accountHref = isLoggedIn && isStaffRole(user?.role)
     ? FEATURE_ROUTES.admin
-    : isLoggedIn ? "/my-purchases" : FEATURE_ROUTES.login;
+    : isLoggedIn ? "/explore" : FEATURE_ROUTES.login;
 
   return (
     <header
@@ -45,14 +46,7 @@ export default function MobileAppHeader() {
           </p>
           <p className="truncate text-[17px] font-black leading-tight text-[var(--foreground)]">{title}</p>
         </div>
-        <Link
-          href="/explore"
-          aria-label="সেবা ও সার্চ"
-          aria-current={pathname === "/explore" ? "page" : undefined}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] no-underline"
-        >
-          <Search size={21} />
-        </Link>
+        <MobileSidebar />
         <Link
           href={accountHref}
           aria-label={isLoggedIn ? "আমার অ্যাকাউন্ট" : "লগইন"}

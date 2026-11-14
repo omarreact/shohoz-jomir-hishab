@@ -54,12 +54,6 @@ describe("ePorcha-inspired LandBD product parity", () => {
     expect(css).toContain("ePorcha reference-book overrides");
   });
 
-  it("integrates mutation-only QR/DCR verification on the dedicated Namjari page", () => {
-    const page = source("app/(public)/namjari-khatian/page.tsx");
-    expect(page).toContain('<SurveyKhatianSearch variant="mutation" />');
-    expect(page).toContain('<KhatianVerificationLookup mode="mutation" />');
-  });
-
   it("implements Division to District to Upazila to Survey to Map list to Preview/PDF", () => {
     const ui = source("src/features/geospatial-map/components/VisitorMouzaShareDownload.tsx");
     for (const label of ["০১ · বিভাগ", "০২ · জেলা", "০৩ · উপজেলা / থানা", "০৪ · সার্ভে", "০৫ · ম্যাপ তালিকা"]) {

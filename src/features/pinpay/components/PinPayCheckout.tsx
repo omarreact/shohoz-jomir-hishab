@@ -78,7 +78,7 @@ export default function PinPayCheckout({ orderId }: { orderId: string }) {
   if (!order) return <main className="mx-auto max-w-xl px-4 py-16 text-center">
     <h1 className="text-2xl font-bold">পেমেন্ট তথ্য পাওয়া যায়নি</h1>
     <p className="my-5 text-sm text-slate-600" role="alert">{message}</p>
-    <Link href="/my-purchases" className="text-emerald-700 underline">আমার অর্ডার দেখুন</Link>
+    <Link href="/contact" className="text-emerald-700 underline">অর্ডার সহায়তা নিন</Link>
   </main>;
 
   const seconds = Math.max(0, Math.ceil((Date.parse(order.expiresAt) - now) / 1000));
@@ -169,6 +169,6 @@ export default function PinPayCheckout({ orderId }: { orderId: string }) {
       PinPay কখনো bKash/Nagad PIN, OTP বা পাসওয়ার্ড চায় না। SMS বা স্ক্রিনশট নিজে থেকে অর্থপ্রদানের প্রমাণ নয়।
       কেবল অনুমোদিত অ্যাকাউন্টের স্বাধীন বিবরণী যাচাই শেষে সেবা সক্রিয় হয়।
     </p>
-    <div className="text-center"><Link className="text-sm font-bold text-emerald-800 underline" href="/my-purchases">আমার অর্ডার ও রসিদ</Link></div>
+    <div className="text-center"><Link className="text-sm font-bold text-emerald-800 underline" href="/contact">পেমেন্ট সহায়তা</Link></div>
   </main>;
 }

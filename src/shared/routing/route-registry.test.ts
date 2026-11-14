@@ -55,10 +55,10 @@ describe("LandBD routing inventory", () => {
       expect(sources.has(entry.destination)).toBe(false);
       expect(getPageAccessLevel(entry.destination, getDefaultPageAccessRules())).toBe("public");
     }
-    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/map")?.destination)
-      .toBe(FEATURE_ROUTES.landMap);
-    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/dap-map")?.destination)
-      .toBe(FEATURE_ROUTES.landMap);
+    expect(LEGACY_ROUTE_REDIRECTS.find(r => r.source === "/survey-khatian")?.destination)
+      .toBe(FEATURE_ROUTES.dlrmsKhatian);
+    expect(sources.has("/map")).toBe(false);
+    expect(sources.has("/dap-map")).toBe(false);
   });
 
   it("keeps feature links registered and excludes noindex editors from sitemap", () => {
@@ -67,7 +67,7 @@ describe("LandBD routing inventory", () => {
       if (route === "/admin" || route === "/login") continue;
       expect(pages.has(route)).toBe(true);
     }
-    const sitemapRoutes = new Set(PUBLIC_SITEMAP_KEYS.map(k => FEATURE_ROUTES[k]));
+    const sitemapRoutes = new Set<string>(PUBLIC_SITEMAP_KEYS.map(k => FEATURE_ROUTES[k]));
     expect(sitemapRoutes.has("/warish")).toBe(false);
     expect(sitemapRoutes.has("/warishsanad")).toBe(false);
     expect(sitemapRoutes.has("/porcha")).toBe(false);

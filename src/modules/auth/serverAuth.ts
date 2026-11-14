@@ -132,6 +132,23 @@ export async function verifyServerAuth(
 
   if (!token) throw new Error("Unauthorized");
 
+  const isCloudflareWorker = process.env.LANDBD_PLATFORM === "cloudflare-workers";
+
+  // Firebase Admin/Firestore is not a supported dependency in the current
+  // Cloudflare Workers staging runtime. Avoid importing it for ordinary
+  // member-session verification there; validate the signed Firebase ID token
+  // directly against Google's public certificates instead.
+  //
+  // Privileged/admin callers remain fail-closed and MUST have the authoritative
+  // Admin backend so account lock/deletion/revocation state cannot be bypassed.
+  if (isCloudflareWorker) {
+    if (options.requireAdminBackend) {
+      throw new Error("Firebase Admin unavailable");
+    }
+    const payload = await verifyFirebaseIdTokenWithoutAdmin(token);
+    return userFromClaims(payload as Record<string, unknown>, payload.sub!);
+  }
+
   const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
 
   if (!isFirebaseAdminReady()) {

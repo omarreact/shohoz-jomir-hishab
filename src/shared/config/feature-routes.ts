@@ -2,19 +2,16 @@
  * Canonical product routes used by navigation, command search and CTAs.
  *
  * Product domains:
- * - records → khatiyan / DLRMS / settlement / history
+ * - records → khatiyan / DLRMS
  * - calculations → measurement / faraez
  * - maps → full-screen GIS / mouza export / staff QA
- * - documents → porcha / report / warish workspaces
+ * - documents → porcha / khatian book
  * - guides → blog / FAQ / contact / policy
  */
 export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
   dlrmsKhatian: "/dlrms-khatian",
-  namjariKhatian: "/namjari-khatian",
-  settlementKhatian: "/settlement-khatian",
-  mouzaPorchaReport: "/mouza-porcha-report",
   mouzaKhatianBook: "/mouza-khatian-book",
   mouzaDagBook: "/mouza-dag-report",
   landMeasurement: "/land-measurement",
@@ -25,9 +22,6 @@ export const FEATURE_ROUTES = {
   /** Staff QA workspace — exposed in navigation only to Admin/Super Admin. */
   mapQa: "/rajuk-test",
   documents: "/porcha",
-  warish: "/warish",
-  warishSanad: "/warishsanad",
-  history: "/history",
   blog: "/blog",
   faq: "/faq",
   contact: "/contact",
@@ -43,9 +37,6 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   home: { en: "Home", bn: "হোম" },
   records: { en: "Land records", bn: "খতিয়ান" },
   dlrmsKhatian: { en: "DLRMS khatian", bn: "ডিএলআরএমএস খতিয়ান" },
-  namjariKhatian: { en: "Mutation khatian", bn: "নামজারি খতিয়ান" },
-  settlementKhatian: { en: "Settlement khatian", bn: "সেটেলমেন্ট খতিয়ান" },
-  mouzaPorchaReport: { en: "Mouza porcha report", bn: "মৌজা পর্চা রিপোর্ট" },
   mouzaKhatianBook: { en: "Mouza khatian book", bn: "মৌজা খতিয়ান বই" },
   mouzaDagBook: { en: "Mouza dag book", bn: "মৌজা দাগ বই" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
@@ -54,9 +45,6 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   mouzaDownload: { en: "Download mouza map", bn: "মৌজা ম্যাপ" },
   mapQa: { en: "Plot area", bn: "প্লট এরিয়া" },
   documents: { en: "Porcha", bn: "পর্চা" },
-  warish: { en: "Warish", bn: "ওয়ারিশ" },
-  warishSanad: { en: "Warish certificate", bn: "ওয়ারিশ সনদ" },
-  history: { en: "History", bn: "ইতিহাস" },
   blog: { en: "Blog", bn: "ব্লগ" },
   faq: { en: "FAQ", bn: "প্রশ্নোত্তর" },
   contact: { en: "Contact", bn: "যোগাযোগ" },
@@ -70,19 +58,13 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
-  "namjariKhatian",
-  "settlementKhatian",
-  "history",
   "landMeasurement",
   "inheritance",
   "landMap",
   "mouzaDownload",
   "documents",
-  "mouzaPorchaReport",
   "mouzaKhatianBook",
   "mouzaDagBook",
-  "warish",
-  "warishSanad",
   "blog",
   "faq",
   "contact",
@@ -94,15 +76,12 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
-  "namjariKhatian",
   "landMeasurement",
   "inheritance",
   "landMap",
   "mouzaDownload",
-  "mouzaPorchaReport",
   "mouzaKhatianBook",
   "mouzaDagBook",
-  "warishSanad",
   "blog",
 ];
 
@@ -119,9 +98,6 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "home",
   "records",
   "dlrmsKhatian",
-  "namjariKhatian",
-  "settlementKhatian",
-  "mouzaPorchaReport",
   "mouzaKhatianBook",
   "mouzaDagBook",
   "landMeasurement",

@@ -78,20 +78,12 @@ const ACTIONS: Action[] = [
     keywords: "mouza map export download মৌজা ম্যাপ",
   },
   {
-    label: "মৌজা পর্চা রিপোর্ট",
+    label: "মৌজা খতিয়ান বই",
     description: "রিপোর্ট ও ডকুমেন্ট ওয়ার্কস্পেস খুলুন",
     group: "ডকুমেন্ট",
-    href: FEATURE_ROUTES.mouzaPorchaReport,
+    href: FEATURE_ROUTES.mouzaKhatianBook,
     icon: FileText,
     keywords: "report porcha document রিপোর্ট পর্চা",
-  },
-  {
-    label: "ওয়ারিশ সনদ",
-    description: "ওয়ারিশ তথ্য ও সনদ তৈরির ওয়ার্কস্পেস",
-    group: "ডকুমেন্ট",
-    href: FEATURE_ROUTES.warishSanad,
-    icon: FileText,
-    keywords: "warish sanad heir certificate ওয়ারিশ সনদ",
   },
   {
     label: "ভূমি গাইড",

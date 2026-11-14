@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "src/features/land-records/**"
+      - "src/modules/porcha/data/porcha.json"
       - "scripts/qa/dlrms-public-source-coverage.mjs"
       - ".github/workflows/dlrms-public-source-coverage.yml"
   workflow_dispatch:
@@ -22,5 +24,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Read-only official DLRMS coverage (no citizen token or personal-data logs)
+      - name: Read-only official DLRMS coverage (strict known-sample verification; no citizen token or personal-data logs)
+        env:
+          DLRMS_QA_STRICT: "1"
         run: node scripts/qa/dlrms-public-source-coverage.mjs

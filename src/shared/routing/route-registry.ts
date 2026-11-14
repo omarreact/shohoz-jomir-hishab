@@ -7,10 +7,7 @@ import type { AppRole } from "@/src/modules/auth/roles";
  * Firestore's existing page-access editor does not need a data migration.
  */
 export const LEGACY_ROUTE_REDIRECTS = [
-  { source: "/khatian", destination: "/khatiyan", permanent: true },
   { source: "/survey-khatian", destination: "/dlrms-khatian", permanent: true },
-  { source: "/map", destination: "/geospatial-map", permanent: true },
-  { source: "/dap-map", destination: "/geospatial-map", permanent: true },
 ] as const;
 
 export type AdminMinimumRole = "staff" | "admin" | "super_admin";
@@ -33,7 +30,6 @@ export const ADMIN_ROUTE_REGISTRY: readonly {
   { path: "/admin/orders", name: "অর্ডার ও ঝুঁকি পর্যালোচনা", minimumRole: "admin" },
   { path: "/admin/services", name: "সেবার মূল্য", minimumRole: "admin" },
   { path: "/admin/settings/payment", name: "পেমেন্ট সেটিংস", minimumRole: "admin" },
-  { path: "/admin/ai-assistant", name: "AI সহায়ক", minimumRole: "admin" },
   { path: "/admin/security", name: "নিরাপত্তা", minimumRole: "super_admin" },
   { path: "/admin/settings", name: "সেটিংস", minimumRole: "admin" },
   { path: "/admin/page-access", name: "পেইজ অ্যাক্সেস", minimumRole: "super_admin" },

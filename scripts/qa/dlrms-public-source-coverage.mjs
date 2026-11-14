@@ -7,6 +7,7 @@ import patiraReference from "../../src/modules/porcha/data/porcha.json" with { t
 const HOME="https://dlrms.land.gov.bd/";
 const ORIGIN="https://dlrms.land.gov.bd";
 const API="https://gateway.dlrms.land.gov.bd/core-api/api/public";
+const STRICT=process.env.DLRMS_QA_STRICT==="1";
 const TARGETS=[
   {survey:"BRS",jlNumberId:382911,khatianNo:"349",expectedId:7940305},
   {survey:"RS",surveyId:2},
@@ -99,9 +100,10 @@ if(!session.token){
     result:"ACCESS_BLOCKED",verifiedSampleCount:0,
     explanation:"Public app session unavailable; no khatian fetched.",
   }));
-  process.exit(0);
+  if(STRICT)process.exitCode=1;
+  process.exit();
 }
-let verifiedSampleCount=0,partialSampleCount=0;
+let verifiedSampleCount=0,partialSampleCount=0,knownBrsVerified=false;
 for(const target of TARGETS){
   const outcome={
     survey:target.survey,query:target.khatianNo?"KNOWN_KHATIAN":"SURVEY_SAMPLE",
@@ -198,6 +200,9 @@ for(const target of TARGETS){
       if(outcome.detailIdentityMatched){
         outcome.detailFields=coverage(selected);
         verifiedSampleCount++;
+        if(target.survey==="BRS"&&target.khatianNo==="349"&&id===7940305){
+          knownBrsVerified=true;
+        }
         if(outcome.detailFields.owner.ellipsis||outcome.detailFields.guardian.ellipsis
           ||outcome.detailFields.dag.ellipsis)partialSampleCount++;
       }
@@ -205,8 +210,13 @@ for(const target of TARGETS){
   }
   console.log("DLRMS_PUBLIC_QA_SAMPLE",JSON.stringify(outcome));
 }
+const strictPass=knownBrsVerified&&verifiedSampleCount>0;
 console.log("DLRMS_PUBLIC_QA_RESULT",JSON.stringify({
-  result:verifiedSampleCount?"SOURCE_SAMPLED":"NO_VERIFIED_RECORDS",
-  verifiedSampleCount,partialSampleCount,
+  result:strictPass?"KNOWN_BRS_VERIFIED":verifiedSampleCount?"SOURCE_SAMPLED":"NO_VERIFIED_RECORDS",
+  verifiedSampleCount,partialSampleCount,knownBrsVerified,
   note:"Public source coverage only; never certifies khatian completeness.",
 }));
+if(STRICT&&!strictPass){
+  console.error("STRICT_FAIL: known BRS 349 (ID 7940305) was not verified from the official public source.");
+  process.exitCode=1;
+}

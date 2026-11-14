@@ -25,8 +25,8 @@ describe("site access policy", () => {
     expect(result.pageAccess["/"]).toBe("public");
     expect(result.pageAccess["/mouza-map"]).toBe("public");
     expect(result.pageAccess["/dlrms-khatian"]).toBe("public");
-    expect(result.pageAccess["/nid-copy"]).toBe("logged_in");
-    expect(result.pageAccess["/my-purchases"]).toBe("logged_in");
+    expect(result.pageAccess["/nid-copy"]).toBeUndefined();
+    expect(result.pageAccess["/my-purchases"]).toBeUndefined();
     expect(result.pageAccess["/rajuk-test"]).toBe("admin");
     expect(result.pageAccess["/ms-test"]).toBe("super_admin");
   });

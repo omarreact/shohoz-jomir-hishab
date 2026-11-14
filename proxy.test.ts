@@ -168,7 +168,7 @@ describe("LandBD request-boundary access policy", () => {
   it("allows only same-origin PDF frames on the report pages", async () => {
     mockGetSiteAccessPolicy.mockResolvedValue(policy(false));
 
-    for (const route of ["/dlrms-khatian", "/mouza-porcha-report"]) {
+    for (const route of ["/dlrms-khatian", "/mouza-khatian-book", "/mouza-dag-report"]) {
       const response = await proxy(request(route));
       expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN");
       expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
@@ -202,6 +202,101 @@ describe("LandBD request-boundary access policy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(mockGetSiteAccessPolicy).not.toHaveBeenCalled();
+  });
+
+  const previousProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const previousPlatform = process.env.LANDBD_PLATFORM;
+  const previousFullAccess = process.env.LANDBD_AUTHENTICATED_FULL_ACCESS;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    for (const [key, previous] of [
+      ["NEXT_PUBLIC_FIREBASE_PROJECT_ID", previousProjectId],
+      ["LANDBD_PLATFORM", previousPlatform],
+      ["LANDBD_AUTHENTICATED_FULL_ACCESS", previousFullAccess],
+    ] as const) {
+      if (previous === undefined) delete process.env[key];
+      else process.env[key] = previous;
+    }
+  });
+
+  function workerSignedTokenRequest(pathname: string, role = "Admin"): NextRequest {
+    const kid = "landbd-proxy-policy-test";
+    const encodedHeader = Buffer.from(JSON.stringify({ kid })).toString("base64url");
+    const token = `${encodedHeader}.e30.fake-signature`;
+    const jose = jest.requireMock("jose") as { importX509: jest.Mock; jwtVerify: jest.Mock };
+    jose.importX509.mockResolvedValue({});
+    jose.jwtVerify.mockResolvedValue({ payload: { sub: "staff-uid", role } });
+    jest.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ [kid]: "test-certificate" }),
+    } as Response);
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "landbd-test";
+    process.env.LANDBD_PLATFORM = "cloudflare-workers";
+    return new NextRequest(`https://landbd.example${pathname}`, {
+      headers: { cookie: `access_token=${token}` },
+    });
+  }
+
+  it("fails closed for privileged page rules when Firebase Admin is unavailable", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false, { "/mouza-map": "admin" }));
+    mockVerifyServerAuth.mockImplementation(async (_request, options) => {
+      if (options?.requireAdminBackend) throw new Error("Firebase Admin unavailable");
+      return { id: "staff-uid", email: "staff@example.test", name: null, role: "Admin" };
+    });
+    const req = workerSignedTokenRequest("/mouza-map");
+    const response = await proxy(req);
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(mockVerifyServerAuth).toHaveBeenCalledWith(req, {
+      requireAdminBackend: true,
+      checkRevoked: true,
+    });
+  });
+
+  it("does not allow full-access mode to bypass a hidden route without authoritative staff auth", async () => {
+    process.env.LANDBD_AUTHENTICATED_FULL_ACCESS = "true";
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false, { "/mouza-map": "hidden" }));
+    mockVerifyServerAuth.mockImplementation(async (_request, options) => {
+      if (options?.requireAdminBackend) throw new Error("Firebase Admin unavailable");
+      return { id: "staff-uid", email: "staff@example.test", name: null, role: "Admin" };
+    });
+    const req = workerSignedTokenRequest("/mouza-map");
+    const response = await proxy(req);
+    expect(response.status).toBe(404);
+    expect(mockVerifyServerAuth).toHaveBeenCalledWith(req, {
+      requireAdminBackend: true,
+      checkRevoked: true,
+    });
+  });
+
+  it("allows authoritative staff on admin-restricted pages when the proxy X509 check is unavailable", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false, { "/mouza-map": "admin" }));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "staff-uid", email: "staff@example.test", name: null, role: "Admin",
+    });
+    const req = workerSignedTokenRequest("/mouza-map");
+    const jose = jest.requireMock("jose") as { jwtVerify: jest.Mock };
+    jose.jwtVerify.mockRejectedValueOnce(new Error("Certificate lookup unavailable"));
+    const response = await proxy(req);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(mockVerifyServerAuth).toHaveBeenCalledWith(req, {
+      requireAdminBackend: true,
+      checkRevoked: true,
+    });
+  });
+
+  it("keeps ordinary member pages available on Workers without privileged backend verification", async () => {
+    mockGetSiteAccessPolicy.mockResolvedValue(policy(false, { "/mouza-map": "logged_in" }));
+    mockVerifyServerAuth.mockResolvedValue({
+      id: "member-uid", email: "user@example.test", name: null, role: "User",
+    });
+    const req = workerSignedTokenRequest("/mouza-map", "User");
+    const response = await proxy(req);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(mockVerifyServerAuth).toHaveBeenCalledWith(req);
   });
 
   it("uses Firestore-backed page access instead of hard-coded mouza access", async () => {

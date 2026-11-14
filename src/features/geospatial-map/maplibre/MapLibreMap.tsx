@@ -68,7 +68,7 @@ export default function MapLibreMap() {
   const mapReadyRef = useRef(false);
   const identifyModeRef = useRef(true);
 
-  const [tab, setTab] = useState<Tab>("layers");
+  const [tab, setTab] = useState<Tab>("search");
   const [panelOpen, setPanelOpen] = useState(false);
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>(PUBLIC_LAYER_VISIBILITY);
   const [opacity, setOpacity] = useState<Record<LayerKey, number>>(PUBLIC_LAYER_OPACITY);
@@ -105,7 +105,6 @@ export default function MapLibreMap() {
     setOpacity(isAdvanced ? { ...ADVANCED_LAYER_OPACITY } : { ...PUBLIC_LAYER_OPACITY });
     setShowRsBoundary(true);
     setShowMsBoundary(true);
-    setPanelOpen(false);
     if (!isAdvanced) {
       setBasemap((current) => (PUBLIC_BASEMAP_KEYS.includes(current) ? current : "satellite"));
     }
@@ -505,10 +504,8 @@ export default function MapLibreMap() {
       setLayers={setLayers}
       opacity={opacity}
       setOpacity={setOpacity}
-      showRsBoundary={showRsBoundary}
-      setShowRsBoundary={setShowRsBoundary}
-      showMsBoundary={showMsBoundary}
-      setShowMsBoundary={setShowMsBoundary}
+            setShowRsBoundary={setShowRsBoundary}
+            setShowMsBoundary={setShowMsBoundary}
       results={results}
       clearResults={clearResults}
       selected={selected}

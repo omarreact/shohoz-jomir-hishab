@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Layers3, MapPinned } from "lucide-react";
+import { ArrowUpRight, BookOpen, MapPinned } from "lucide-react";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
 /** GIS keeps its compact map toolbar but uses the canonical LandBD white/green brand. */
@@ -24,7 +24,7 @@ export default function RajukStyleMapHeader() {
 
         <div className="hidden min-w-0 text-center lg:block">
           <p className="text-[13px] font-extrabold text-[var(--foreground)]">ডিজিটাল ভূমি ও নগর পরিকল্পনা মানচিত্র</p>
-          <p className="text-[10px] text-[var(--muted-foreground)]">RS / MS প্লট • DAP স্তর • স্যাটেলাইট তুলনা</p>
+          <p className="text-[10px] text-[var(--muted-foreground)]">RS কালো · MS লাল • DAP স্তর • স্যাটেলাইট তুলনা</p>
         </div>
 
         <nav aria-label="অন্যান্য মানচিত্র সেবা" className="flex min-w-0 items-center gap-1 sm:gap-2">
@@ -34,13 +34,6 @@ export default function RajukStyleMapHeader() {
             className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-2 text-[11px] font-bold text-[var(--primary)] transition hover:bg-[var(--brand-green-soft)] sm:px-3"
           >
             <MapPinned size={16} /><span className="hidden sm:inline">মৌজা ম্যাপ</span>
-          </Link>
-          <Link
-            href="/rajuk-test"
-            aria-label="দাগ যাচাই"
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-2 text-[11px] font-bold text-[var(--primary)] transition hover:bg-[var(--brand-green-soft)] sm:px-3"
-          >
-            <Layers3 size={16} /><span className="hidden sm:inline">দাগ যাচাই</span>
           </Link>
           <Link
             href="/dlrms-khatian"

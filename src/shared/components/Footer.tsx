@@ -6,7 +6,7 @@ import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { NAV_SECTIONS, navRoute } from "@/src/shared/config/navigation";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
-const FOOTER_EXCLUSIONS = new Set(["mapQa", "warish"]);
+const FOOTER_EXCLUSIONS = new Set(["mapQa"]);
 const GROUPS = NAV_SECTIONS.map(section => ({
   title: section.label,
   links: section.keys

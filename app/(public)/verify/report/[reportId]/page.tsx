@@ -125,8 +125,8 @@ export default async function ReportVerificationPage({
           </div>
 
           <div className="mt-6">
-            <Link href={isKhatianView ? "/dlrms-khatian" : "/mouza-porcha-report"} className="font-semibold text-[#006a4e] hover:underline">
-              ← {isKhatianView ? "DLRMS খতিয়ানে ফিরে যান" : "মৌজা পর্চা রিপোর্টে ফিরে যান"}
+            <Link href={isKhatianView ? "/dlrms-khatian" : "/mouza-khatian-book"} className="font-semibold text-[#006a4e] hover:underline">
+              ← {isKhatianView ? "DLRMS খতিয়ানে ফিরে যান" : "মৌজা খতিয়ান বইতে ফিরে যান"}
             </Link>
           </div>
         </div>

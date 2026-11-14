@@ -8,7 +8,6 @@ import {
   Calculator,
   ChevronRight,
   Download,
-  FileClock,
   FileSearch,
   FileText,
   HelpCircle,
@@ -48,8 +47,6 @@ const DOMAINS: Domain[] = [
     tools: [
       { href: FEATURE_ROUTES.dlrmsKhatian, title: "DLRMS খতিয়ান", description: "জেলা, উপজেলা, মৌজা ও খতিয়ান নম্বরভিত্তিক অনুসন্ধান।", meta: "সরকারি উৎসভিত্তিক", icon: FileSearch },
       { href: FEATURE_ROUTES.records, title: "খতিয়ান হিসাব", description: "হিস্যা, আনা, গন্ডা ও জমির পরিমাণ হিসাব।", meta: "ক্যালকুলেশন", icon: Calculator },
-      { href: FEATURE_ROUTES.settlementKhatian, title: "সেটেলমেন্ট খতিয়ান", description: "সেটেলমেন্ট রেকর্ড সম্পর্কিত ওয়ার্কস্পেস।", meta: "রেকর্ড", icon: ScrollText },
-      { href: FEATURE_ROUTES.history, title: "কাজের ইতিহাস", description: "আগের হিসাব ও ব্যবহৃত টুলে দ্রুত ফিরে যান।", meta: "সাম্প্রতিক কাজ", icon: FileClock },
     ],
   },
   {
@@ -79,9 +76,7 @@ const DOMAINS: Domain[] = [
     icon: FileText,
     tools: [
       { href: FEATURE_ROUTES.documents, title: "পর্চা", description: "পর্চা ও ভূমি নথির সহায়ক রিসোর্স।", meta: "নথি", icon: FileText },
-      { href: FEATURE_ROUTES.mouzaPorchaReport, title: "মৌজা পর্চা রিপোর্ট", description: "রিপোর্ট, যাচাই ও প্রিন্ট ওয়ার্কস্পেস।", meta: "A4 / Export", icon: ScrollText },
-      { href: FEATURE_ROUTES.warish, title: "ওয়ারিশ", description: "ওয়ারিশ তথ্যের কাঠামোবদ্ধ কাজের ধাপ।", meta: "Workflow", icon: Scale },
-      { href: FEATURE_ROUTES.warishSanad, title: "ওয়ারিশ সনদ", description: "লাইভ প্রিভিউসহ সনদ তৈরির স্টুডিও।", meta: "Document studio", icon: FileText },
+      { href: FEATURE_ROUTES.mouzaKhatianBook, title: "মৌজা খতিয়ান বই", description: "রিপোর্ট, যাচাই ও প্রিন্ট ওয়ার্কস্পেস।", meta: "A4 / Export", icon: ScrollText },
     ],
   },
   {

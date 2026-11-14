@@ -14,38 +14,29 @@ describe("page access registry", () => {
       "/",
       "/blog",
       "/contact",
-      "/dap-map",
       "/dlrms-khatian",
       "/faq",
       "/faraez",
       "/geospatial-map",
-      "/history",
-      "/khatian",
       "/khatiyan",
       "/land-measurement",
-      "/map",
       "/mouza-map",
       "/mouza-khatian-book",
       "/mouza-dag-report",
-      "/namjari-khatian",
       "/ms-test",
       "/porcha",
       "/privacy",
       "/rajuk-test",
-      "/settlement-khatian",
       "/terms",
     ].forEach((route) => expect(ids.has(route)).toBe(true));
   });
 
-  it("registers sensitive record workspaces and enforces a member-only minimum", () => {
+  it("keeps the remaining Porcha workspace member-only", () => {
     const rules = getDefaultPageAccessRules();
-    expect(rules["/nid-copy"]).toBe("logged_in");
     expect(rules["/porcha"]).toBe("logged_in");
-    rules["/nid-copy"] = "public";
     rules["/porcha"] = "public";
-    expect(getPageAccessLevel("/nid-copy", rules)).toBe("logged_in");
     expect(getPageAccessLevel("/porcha", rules)).toBe("logged_in");
-    expect(sanitizePageAccessRules({ "/nid-copy": "public", "/porcha": "public" })["/nid-copy"]).toBe("logged_in");
+    expect(sanitizePageAccessRules({ "/porcha": "public" })["/porcha"]).toBe("logged_in");
   });
 
   it("defaults QA routes to staff-only access", () => {
@@ -83,9 +74,24 @@ describe("page access registry", () => {
   });
 });
 
-test("cannot relax the legacy administrative NID tool to public or member access", () => {
-  for (const level of ["public", "logged_in"] as const) {
-    expect(getPageAccessLevel("/nid_dob", { "/nid_dob": level })).toBe("admin");
-    expect(sanitizePageAccessRules({ "/nid_dob": level })["/nid_dob"]).toBe("admin");
+test("retired pages are absent from the access registry", () => {
+  const removed = [
+    "/dap-map",
+    "/history",
+    "/khatian",
+    "/map",
+    "/mouza-porcha-report",
+    "/my-purchases",
+    "/namjari-khatian",
+    "/nid-copy",
+    "/nid_dob",
+    "/settlement-khatian",
+    "/warish",
+    "/warishsanad"
+];
+  const defaults = getDefaultPageAccessRules();
+  for (const route of removed) {
+    expect(defaults[route]).toBeUndefined();
+    expect(resolvePageDefinition(route)).toBeNull();
   }
 });

@@ -11,13 +11,10 @@ import {
   FileText,
   Home,
   LogIn,
-  LogOut,
   Map,
-  Menu,
   Ruler,
   Search,
   ShieldCheck,
-  User,
   Users,
   X,
   type LucideIcon,
@@ -25,13 +22,13 @@ import {
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isAdminRole, isStaffRole } from "@/src/modules/auth/roles";
 import { NAV_SECTIONS, isFeatureRouteActive } from "@/src/shared/config/navigation";
-import { buildLoginHref } from "@/src/modules/auth/loginRedirect";
 import {
   FEATURE_LABELS,
   FEATURE_ROUTES,
   type FeatureRouteKey,
 } from "@/src/shared/config/feature-routes";
 import { SITE_CONFIG } from "@/src/shared/config/site";
+import MobileSidebar from "@/src/shared/components/MobileSidebar";
 
 type NavItem = {
   key: FeatureRouteKey | "cms";
@@ -52,17 +49,12 @@ const NAV_ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   home: Home,
   records: Calculator,
   dlrmsKhatian: Search,
-  settlementKhatian: FileText,
-  mouzaPorchaReport: FileText,
   landMeasurement: Ruler,
   inheritance: Users,
   landMap: Map,
   mouzaDownload: Map,
   mapQa: Map,
   documents: FileText,
-  warish: Users,
-  warishSanad: FileText,
-  history: BookOpen,
   blog: BookOpen,
   faq: BookOpen,
   contact: Users,
@@ -109,7 +101,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const isMapRoute =
     pathname.startsWith("/geospatial-map") || pathname.startsWith("/lios-map");
-  const { user, isLoggedIn, loading: authLoading, logout } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const canSeeMapQa = isLoggedIn && isAdminRole(user?.role);
   const canAccessAdmin = isLoggedIn && isStaffRole(user?.role);
 
@@ -125,34 +117,30 @@ export default function Navbar() {
     }).catch(()=>undefined);
     return()=>{alive=false;};
   },[]);
-  const visibleGroups = useMemo(
-    () =>
-      [...NAV_GROUPS,...cmsGroups].map((group) => ({
-        ...group,
-        items: group.items.filter((item) => !item.adminOnly || canSeeMapQa),
-      })).filter((group) => group.items.length > 0),
-    [canSeeMapQa,cmsGroups],
-  );
+  const visibleGroups = useMemo(() => {
+    // Five stable desktop dropdown groups, even on tablet widths. Additional
+    // CMS links stay accessible under Guides rather than adding top-level tabs.
+    const cmsItems = cmsGroups.flatMap((group) => group.items);
+    return NAV_GROUPS.map((group) => ({
+      ...group,
+      items: [
+        ...group.items.filter((item) => !item.adminOnly || canSeeMapQa),
+        ...(group.id === "guides" ? cmsItems : []),
+      ],
+    })).filter((group) => group.items.length > 0);
+  }, [canSeeMapQa, cmsGroups]);
 
   const searchableNav = useMemo<NavItem[]>(
     () => [navItem("home"), ...visibleGroups.flatMap((group) => group.items)],
     [visibleGroups],
   );
 
-  const activeGroupId = useMemo(
-    () => visibleGroups.find((group) => groupIsActive(pathname, group))?.id ?? null,
-    [pathname, visibleGroups],
-  );
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarGroup, setSidebarGroup] = useState<string | null>(null);
   const [desktopOpenGroup, setDesktopOpenGroup] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const desktopNavRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setSidebarOpen(false);
     setDesktopOpenGroup(null);
     setSearchOpen(false);
   }, [pathname]);
@@ -161,13 +149,11 @@ export default function Navbar() {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSidebarOpen(false);
-        setSearchOpen(true);
+            setSearchOpen(true);
       }
       if (event.key === "Escape") {
         setSearchOpen(false);
-        setSidebarOpen(false);
-        setDesktopOpenGroup(null);
+            setDesktopOpenGroup(null);
       }
     };
 
@@ -199,21 +185,6 @@ export default function Navbar() {
     );
   }, [query, searchableNav]);
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.assign("/");
-  };
-
-  const openSidebar = () => {
-    setSidebarGroup(activeGroupId ?? "records");
-    setSidebarOpen(true);
-  };
-
-  const openSearchFromSidebar = () => {
-    setSidebarOpen(false);
-    setSearchOpen(true);
-  };
-
   const shell =
     "border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--card-bg)_94%,transparent)] text-[var(--foreground)] shadow-sm backdrop-blur-xl";
 
@@ -229,7 +200,6 @@ export default function Navbar() {
           <Link
             href={FEATURE_ROUTES.home}
             className="flex min-w-0 shrink-0 items-center gap-2 no-underline"
-            onClick={() => setSidebarOpen(false)}
             aria-label={`${SITE_CONFIG.name} — হোম`}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
@@ -239,7 +209,7 @@ export default function Navbar() {
               <span className="block truncate text-sm font-bold tracking-tight sm:text-base">
                 {SITE_CONFIG.name}
               </span>
-              <span className="hidden text-[10px] font-medium leading-none text-[var(--muted-foreground)] sm:block">
+              <span className="hidden text-[10px] font-medium leading-none text-[var(--muted-foreground)] xl:block">
                 {SITE_CONFIG.shortName}
               </span>
             </span>
@@ -247,7 +217,7 @@ export default function Navbar() {
 
           <div
             ref={desktopNavRef}
-            className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 md:flex"
           >
             {visibleGroups.map((group) => {
               const GroupIcon = group.icon;
@@ -260,19 +230,25 @@ export default function Navbar() {
                   className="relative"
                   onMouseEnter={() => setDesktopOpenGroup(group.id)}
                   onMouseLeave={() => setDesktopOpenGroup(null)}
+                  onFocus={() => setDesktopOpenGroup(group.id)}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      setDesktopOpenGroup(null);
+                    }
+                  }}
                 >
                   <button
                     type="button"
                     aria-haspopup="menu"
                     aria-expanded={open}
                     onClick={() => setDesktopOpenGroup(open ? null : group.id)}
-                    className={`flex items-center gap-1.5 rounded-[12px] px-2.5 py-2 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] 2xl:px-3 2xl:text-sm ${
+                    className={`flex items-center gap-1 rounded-[12px] px-1.5 py-2 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)] lg:gap-1.5 lg:px-2.5 lg:text-[13px] 2xl:px-3 2xl:text-sm ${
                       active
                         ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                         : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                     }`}
                   >
-                    <GroupIcon size={15} className="shrink-0" />
+                    <GroupIcon size={15} className="hidden shrink-0 xl:block" />
                     <span className="whitespace-nowrap">{group.label}</span>
                     <ChevronDown
                       size={14}
@@ -288,7 +264,7 @@ export default function Navbar() {
                     }`}
                   >
                     <div
-                      className={`rounded-[14px] p-1.5 shadow-xl shadow-black/10 ${shell}`}
+                      className={`max-h-[min(72vh,36rem)] overflow-y-auto rounded-[14px] p-1.5 shadow-xl shadow-black/10 ${shell}`}
                       role="menu"
                       aria-label={group.label}
                     >
@@ -337,36 +313,27 @@ export default function Navbar() {
             {canAccessAdmin ? (
               <Link
                 href={FEATURE_ROUTES.admin}
-                className="hidden min-h-10 items-center gap-2 rounded-xl bg-[var(--brand-gold)] px-3 text-xs font-bold text-[var(--primary-foreground)] no-underline hover:opacity-90 sm:inline-flex"
+                className="hidden min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brand-gold)] px-2 text-xs font-bold text-[var(--primary-foreground)] no-underline hover:opacity-90 md:inline-flex xl:px-3"
                 aria-label="LandBD Admin Dashboard খুলুন"
               >
-                <ShieldCheck size={16} /> ড্যাশবোর্ড
+                <ShieldCheck size={16} /><span className="hidden xl:inline">ড্যাশবোর্ড</span>
               </Link>
             ) : null}
             <button
               type="button"
               onClick={() => {
-                setSidebarOpen(false);
-                setSearchOpen(true);
+                            setSearchOpen(true);
               }}
-              className="hidden min-h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-3 text-xs font-bold text-[var(--muted-foreground)] shadow-[var(--shadow-xs)] transition hover:border-[color-mix(in_srgb,var(--primary)_24%,var(--border-color))] hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] sm:flex"
+              className="hidden min-h-10 items-center gap-2 rounded-[12px] border border-[var(--border-color)] bg-white px-2 text-xs font-bold text-[var(--muted-foreground)] shadow-[var(--shadow-xs)] transition hover:border-[color-mix(in_srgb,var(--primary)_24%,var(--border-color))] hover:bg-[var(--brand-green-faint)] hover:text-[var(--foreground)] md:flex xl:px-3"
               aria-label="LandBD কমান্ড সার্চ খুলুন"
             >
               <Search size={16} />
-              <span className="hidden lg:inline">সার্চ</span>
-              <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--canvas)] px-1.5 py-0.5 text-[9px] font-extrabold text-[var(--muted-foreground)]">
+              <span className="hidden 2xl:inline">সার্চ</span>
+              <kbd className="hidden rounded-md border border-[var(--border-color)] bg-[var(--canvas)] px-1.5 py-0.5 text-[9px] font-extrabold text-[var(--muted-foreground)] xl:inline">
                 Ctrl K
               </kbd>
             </button>
-            <button
-              type="button"
-              aria-label="সাইডবার মেনু খুলুন"
-              aria-expanded={sidebarOpen}
-              onClick={openSidebar}
-              className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--brand-gold-faint)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--brand-gold)_40%,transparent)]"
-            >
-              <Menu size={20} />
-            </button>
+            <MobileSidebar />
           </div>
         </div>
       </nav>
@@ -426,225 +393,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-[1250]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="সাইডবার মেনু"
-        >
-          <button
-            type="button"
-            aria-label="সাইডবার বন্ধ করুন"
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-
-          <aside
-            className={`absolute right-0 top-0 flex h-full w-[370px] max-w-[94vw] flex-col border-l p-4 shadow-2xl ${shell}`}
-          >
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <Link
-                href={FEATURE_ROUTES.home}
-                className="flex min-w-0 items-center gap-2 no-underline"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
-                  <Calculator size={19} />
-                </span>
-                <span className="min-w-0">
-                  <strong className="block truncate text-sm">{SITE_CONFIG.name}</strong>
-                  <span className="block text-[10px] text-[var(--muted-foreground)]">
-                    {SITE_CONFIG.shortName}
-                  </span>
-                </span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="সাইডবার বন্ধ করুন"
-                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[var(--border-color)] transition-colors hover:bg-[var(--secondary)]"
-              >
-                <X size={19} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-4">
-              <section aria-label="দ্রুত নিয়ন্ত্রণ">
-                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  দ্রুত নিয়ন্ত্রণ
-                </p>
-
-                <button
-                  type="button"
-                  onClick={openSearchFromSidebar}
-                  className="mt-2 flex w-full items-center gap-3 rounded-[12px] border border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3 text-left transition-colors hover:bg-[var(--brand-gold-faint)] hover:text-[var(--foreground)]"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--card-bg)]">
-                    <Search size={17} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">সার্চ</span>
-                    <span className="block text-[11px] text-[var(--muted-foreground)]">
-                      পেজ, টুল, মানচিত্র বা ব্লগ খুঁজুন
-                    </span>
-                  </span>
-                  <kbd className="rounded-md border border-[var(--border-color)] bg-[var(--card-bg)] px-1.5 py-0.5 text-[10px] text-[var(--muted-foreground)]">
-                    Ctrl K
-                  </kbd>
-                </button>
-              </section>
-
-              <section className="mt-4" aria-label="অ্যাকাউন্ট">
-                <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  অ্যাকাউন্ট
-                </p>
-
-                {authLoading ? (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-4 text-sm text-[var(--muted-foreground)]">
-                    লগইন তথ্য যাচাই হচ্ছে…
-                  </div>
-                ) : isLoggedIn ? (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-gold)] text-[var(--primary-foreground)]">
-                        <User size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-[var(--foreground)]">
-                          {user?.name || user?.email || "স্টাফ অ্যাকাউন্ট"}
-                        </p>
-                        {user?.email ? (
-                          <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
-                            {user.email}
-                          </p>
-                        ) : null}
-                        {user?.role ? (
-                          <span className="mt-2 inline-flex rounded-full bg-[var(--secondary)] px-2.5 py-1 text-[10px] font-bold text-[var(--muted-foreground)]">
-                            {user.role}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <Link href="/my-purchases" onClick={() => setSidebarOpen(false)} className="flex items-center justify-center gap-2 rounded-[12px] border border-[var(--border-color)] px-3 py-2.5 text-sm font-bold no-underline">আমার কেনাকাটা</Link>
-                      {canAccessAdmin ? (
-                      <Link
-                        href={FEATURE_ROUTES.admin}
-                        onClick={() => setSidebarOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-3 py-2.5 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
-                      >
-                        <ShieldCheck size={15} /> ড্যাশবোর্ড
-                      </Link>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 rounded-[12px] border border-red-200 px-3 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
-                      >
-                        <LogOut size={15} /> লগআউট
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-2 rounded-[12px] border border-[var(--border-color)] p-3">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--secondary)]">
-                        <LogIn size={18} />
-                      </span>
-                      <div>
-                        <p className="text-sm font-bold">স্টাফ লগইন</p>
-                        <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">
-                          অনুমোদিত স্টাফ বা অ্যাডমিন অ্যাকাউন্ট দিয়ে প্রবেশ করুন।
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href={buildLoginHref(pathname || "/")}
-                      onClick={() => setSidebarOpen(false)}
-                      className="mt-3 flex items-center justify-center gap-2 rounded-[12px] bg-[var(--brand-gold)] px-4 py-3 text-sm font-bold text-[var(--primary-foreground)] no-underline transition-opacity hover:opacity-90"
-                    >
-                      <LogIn size={16} /> {FEATURE_LABELS.login.bn}
-                    </Link>
-                  </div>
-                )}
-              </section>
-
-              <section
-                className="mt-5 border-t border-[var(--border-color)] pt-4"
-                aria-label="সাইট মেনু"
-              >
-                <p className="px-1 pb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  সাইট মেনু
-                </p>
-
-                <div className="space-y-1">
-                  {visibleGroups.map((group) => {
-                    const GroupIcon = group.icon;
-                    const groupActive = groupIsActive(pathname, group);
-                    const expanded = sidebarGroup === group.id;
-
-                    return (
-                      <div key={group.id} className="rounded-[12px]">
-                        <button
-                          type="button"
-                          aria-expanded={expanded}
-                          onClick={() => setSidebarGroup(expanded ? null : group.id)}
-                          className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-3 text-left text-sm font-bold transition-colors ${
-                            groupActive
-                              ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
-                              : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                          }`}
-                        >
-                          <span
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                              groupActive
-                                ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
-                                : "bg-[var(--secondary)] text-[var(--foreground)]"
-                            }`}
-                          >
-                            <GroupIcon size={16} />
-                          </span>
-                          <span className="min-w-0 flex-1">{group.label}</span>
-                          <ChevronDown
-                            size={16}
-                            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                          />
-                        </button>
-
-                        {expanded ? (
-                          <div className="ml-7 mt-1 space-y-1 border-l border-[var(--border-color)] pl-3">
-                            {group.items.map((item) => {
-                              const ItemIcon = item.icon;
-                              const itemActive = activePath(pathname, item.href);
-                              return (
-                                <Link
-                                  key={item.href}
-                                  href={item.href}
-                                  onClick={() => setSidebarOpen(false)}
-                                  className={`flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold no-underline transition-colors ${
-                                    itemActive
-                                      ? "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-text)]"
-                                      : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                                  }`}
-                                >
-                                  <ItemIcon size={16} className="shrink-0" />
-                                  {item.label}
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            </div>
-          </aside>
-        </div>
-      )}
     </>
   );
 }

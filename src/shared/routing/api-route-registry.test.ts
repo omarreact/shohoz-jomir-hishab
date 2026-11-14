@@ -27,6 +27,9 @@ describe("LandBD API security inventory", () => {
     expect(apiAccessFor("/api/pages/abc", "PUT")).toBe("staff");
     expect(apiAccessFor("/api/pages/abc", "DELETE")).toBe("admin");
     expect(apiAccessFor("/api/cloudinary/sign", "POST")).toBe("staff");
+    expect(apiAccessFor("/api/cadastral/coverage", "GET")).toBe("public");
+    expect(apiAccessFor("/api/cadastral/assets", "GET")).toBe("public");
+    expect(apiAccessFor("/api/cadastral/assets/example", "GET")).toBe("public");
     expect(apiAccessFor("/api/notifications", "GET")).toBe("member");
     expect(apiAccessFor("/api/mouza-map/retrieve", "GET")).toBe("signed_token");
     expect(apiAccessFor("/api/not-yet-registered")).toBe("member");

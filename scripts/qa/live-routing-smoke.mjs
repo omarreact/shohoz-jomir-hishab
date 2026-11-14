@@ -38,22 +38,28 @@ if (maintenance) {
   await check("anonymous admin blocked", "/admin", [503]);
   await check("anonymous sensitive API blocked", "/api/porcha?q=qa", [503]);
 } else {
-  for (const path of ["/", "/khatiyan", "/dlrms-khatian", "/mouza-porcha-report",
-    "/geospatial-map", "/mouza-map", "/blog", "/login", "/faq"]) {
+  for (const path of ["/", "/khatiyan", "/dlrms-khatian", "/mouza-khatian-book",
+    "/mouza-dag-report", "/geospatial-map", "/mouza-map", "/blog", "/login", "/faq"]) {
     await check("public page " + path, path, [200]);
   }
   for (const [legacy, target] of [
-    ["/khatian", "/khatiyan"],
     ["/survey-khatian", "/dlrms-khatian"],
-    ["/map", "/geospatial-map"],
-    ["/dap-map", "/geospatial-map"],
   ]) {
     await check("legacy " + legacy, legacy, [307, 308], r =>
       !!r.location && new URL(r.location, origin).pathname === target);
   }
+  for (const path of [
+    "/dap-map", "/history", "/khatian", "/map", "/mouza-porcha-report",
+    "/my-purchases", "/namjari-khatian", "/nid-copy", "/nid_dob",
+    "/settlement-khatian", "/warish", "/warishsanad",
+  ]) {
+    await check("retired page " + path, path, [404]);
+  }
   await check("admin login return", "/admin", [307, 308], r =>
     !!r.location && new URL(r.location, origin).pathname === "/login" &&
     new URL(r.location, origin).searchParams.get("from") === "/admin");
+  await check("retired admin page remains auth-gated", "/admin/ai-assistant", [307, 308], r =>
+    !!r.location && new URL(r.location, origin).pathname === "/login");
   for (const path of ["/api/porcha?q=qa", "/api/public/bdris",
     "/api/admin/users", "/api/admin/page-access", "/api/notifications"]) {
     await check("anonymous protected " + path, path, [401, 403]);

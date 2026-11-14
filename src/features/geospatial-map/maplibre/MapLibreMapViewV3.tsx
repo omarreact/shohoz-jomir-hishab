@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import RajukStyleMapHeader from "./RajukStyleMapHeader";
 import RajukPlotFinder, { type PlotSearchOptions } from "./RajukPlotFinder";
 import RajukMapControls from "./RajukMapControls";
 import RajukCoordinateStatus from "./RajukCoordinateStatus";
 import RajukParcelInspector from "./RajukParcelInspector";
-import RajukLayerSwitcher from "./RajukLayerSwitcher";
 import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
@@ -45,7 +43,7 @@ import {
   type Tab,
 } from "./mapConstants";
 import type { BasemapKey } from "./types";
-import { canToggleRasterLayer, setRasterLayerVisibility } from "./layerControlPolicy";
+import { canToggleRasterLayer, defaultRasterLayerVisibility, hideAvailableRasterLayers, setRasterLayerVisibility } from "./layerControlPolicy";
 import { detailRows, isMsFeature, msNumber, rsNumber } from "./mapUtils";
 import {
   measurementFeatureCollection,
@@ -86,9 +84,7 @@ type Props = {
       | Record<LayerKey, number>
       | ((current: Record<LayerKey, number>) => Record<LayerKey, number>),
   ) => void;
-  showRsBoundary: boolean;
   setShowRsBoundary: (value: boolean | ((current: boolean) => boolean)) => void;
-  showMsBoundary: boolean;
   setShowMsBoundary: (value: boolean | ((current: boolean) => boolean)) => void;
   results: RajukPlotFeature[];
   clearResults: () => void;
@@ -202,9 +198,7 @@ export default function MapLibreMapViewV2({
   setLayers,
   opacity,
   setOpacity,
-  showRsBoundary,
   setShowRsBoundary,
-  showMsBoundary,
   setShowMsBoundary,
   results,
   clearResults,
@@ -223,6 +217,20 @@ export default function MapLibreMapViewV2({
   const [threeD, setThreeD] = useState(false);
   const previousIdentifyRef = useRef<boolean | null>(null);
   const scaleControlRef = useRef<ScaleControl | null>(null);
+
+  useEffect(() => {
+    // Keep the workspace expanded on wide displays, collapsed on narrow ones.
+    // A user-controlled close persists until the breakpoint changes.
+    const query = window.matchMedia("(min-width: 1024px)");
+    const syncPanel = () => setPanelOpen(query.matches);
+    syncPanel();
+    query.addEventListener("change", syncPanel);
+    return () => query.removeEventListener("change", syncPanel);
+  }, [setPanelOpen]);
+
+  useEffect(() => {
+    if (panelOpen) setMeasurePanelOpen(false);
+  }, [panelOpen]);
 
   const rsResults = results.filter((feature) => !isMsFeature(feature));
   const msResults = results.filter((feature) => isMsFeature(feature));
@@ -417,56 +425,74 @@ export default function MapLibreMapViewV2({
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-[var(--brand-green-soft)]/50 to-transparent pb-24" />
       <div className="absolute inset-x-0 top-0 z-[90]"><RajukStyleMapHeader /></div>
 
-      <div className="absolute left-3 top-[78px] z-[60] lg:hidden">
-        <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-4 text-sm font-extrabold text-[var(--primary)] shadow-lg">
-          {panelOpen ? <X size={17} /> : <Layers3 size={17} />} {panelOpen ? "প্যানেল বন্ধ" : "ম্যাপ ও তথ্য"}
+      <div className="absolute left-3 top-[82px] z-[75]">
+        <button type="button" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="atlas-map-workspace-panel" className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] px-3 text-xs font-extrabold text-[var(--primary)] shadow-lg">
+          {panelOpen ? <X size={17} /> : <Layers3 size={17} />} {panelOpen ? "প্যানেল বন্ধ" : "খুঁজুন / স্তর"}
         </button>
       </div>
 
       <aside
         id="atlas-map-workspace-panel"
         aria-label="GIS অনুসন্ধান ও লেয়ার নিয়ন্ত্রণ"
-        className={["absolute bottom-3 left-3 top-[132px] z-[65] w-[min(92vw,342px)] flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:top-[79px] lg:bottom-4", panelOpen ? "flex" : "hidden lg:flex"].join(" ")}
+        className={["absolute bottom-[84px] left-3 top-[140px] z-[65] w-[min(90vw,342px)] flex-col overflow-hidden rounded-xl border border-[var(--border-color)] bg-white/98 shadow-[0_20px_70px_rgba(11,45,30,.16)] backdrop-blur-sm lg:bottom-4", panelOpen ? "flex" : "hidden"].join(" ")}
       >
         <div className="border-b border-[var(--border-color)] bg-[var(--brand-green-faint)] px-5 pb-3 pt-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green-soft)] px-3 py-1 text-[10px] font-extrabold tracking-[.1em] text-[var(--primary)]">LANDBD · GIS MASTER PLAN</span>
             <span className="text-[11px] font-bold text-[var(--muted-foreground)]">{isAdvanced ? "GIS PRO" : "PUBLIC VIEW"}</span>
           </div>
-          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[var(--foreground)]">RAJUK-ধাঁচের <span className="text-[var(--primary)]">GIS ম্যাপ</span></h1>
-          <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">দাগ অনুসন্ধান, ভূমি-ব্যবহার, জরিপ লেয়ার ও বেসম্যাপ তুলনা।</p>
+          <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-[var(--foreground)]">LandBD <span className="text-[var(--primary)]">GIS এটলাস</span></h1>
+          <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">RAJUK উৎসের দাগ অনুসন্ধান, স্তর নির্বাচন ও স্যাটেলাইট তুলনা।</p>
         </div>
 
-        <RajukPlotFinder
-          plotNo={plotNo}
-          setPlotNo={setPlotNo}
-          searching={searching}
-          searchPlots={searchPlots}
-          vectorStatus={vectorStatus}
-        />
 
-        <div className="grid grid-cols-3 gap-1 border-y border-[var(--border-color)] bg-white px-3 py-2">
-          {(["layers", "basemap", "results"] as Tab[]).map((item) => (
-            <button key={item} type="button" onClick={() => setTab(item)} aria-pressed={tab === item}
+        <div className="grid grid-cols-4 gap-1 border-y border-[var(--border-color)] bg-white px-2 py-2" role="tablist" aria-label="GIS ওয়ার্কস্পেস বিভাগ">
+          {(["search", "layers", "basemap", "results"] as Tab[]).map((item) => (
+            <button
+              key={item}
+              id={`atlas-gis-tab-${item}`}
+              type="button"
+              role="tab"
+              aria-controls="atlas-gis-tab-panel"
+              aria-selected={tab === item}
+              tabIndex={tab === item ? 0 : -1}
+              onClick={() => setTab(item)}
+              onKeyDown={(event) => {
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                event.preventDefault();
+                const tabs: Tab[] = ["search", "layers", "basemap", "results"];
+                const index = tabs.indexOf(item);
+                const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+                  (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+                const next = tabs[nextIndex];
+                setTab(next);
+                requestAnimationFrame(() => document.getElementById(`atlas-gis-tab-${next}`)?.focus());
+              }}
               className={["min-h-10 rounded-xl px-2 text-xs font-extrabold transition", tab === item ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"].join(" ")}>
-              {item === "layers" ? "জরিপ স্তর" : item === "basemap" ? "স্যাটেলাইট" : "দাগ তালিকা"}
+              {item === "search" ? "খুঁজুন" : item === "layers" ? "স্তর" : item === "basemap" ? "বেসম্যাপ" : "ফলাফল"}
               {item === "results" && results.length > 0 ? <span className="ml-1 text-[10px]">({bn(results.length,0)})</span> : null}
             </button>
           ))}
         </div>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
-          {tab === "layers" ? (
+        <div id="atlas-gis-tab-panel" role="tabpanel" aria-labelledby={`atlas-gis-tab-${tab}`} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
+          {tab === "search" ? (
+            <>
+              <RajukPlotFinder
+                plotNo={plotNo}
+                setPlotNo={setPlotNo}
+                searching={searching}
+                searchPlots={searchPlots}
+                vectorStatus={vectorStatus}
+              />
+              <p className="px-2 text-[11px] leading-5 text-[var(--muted-foreground)]">দাগ নম্বর, জেলা, উপজেলা ও মৌজা দিয়ে খুঁজুন। ফলাফল ‘ফলাফল’ বিভাগে দেখাবে।</p>
+            </>
+          ) : tab === "layers" ? (
             <>
               <div className="rounded-2xl border border-[var(--border-color)] bg-white p-3.5">
                 <h2 className="text-sm font-black text-[var(--foreground)]">ক্যাডাস্ট্রাল লেয়ার</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">আরএস ও এমএস স্তর checkbox দিয়ে পৃথকভাবে দেখান/লুকান; ম্যাপের ডান পাশে দ্রুত লেয়ার প্যানেলও রয়েছে।</p>
-                {isAdvanced ? (
-                  <div className="mt-3 space-y-2">
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>আরএস দাগ ও লেবেল</span><input type="checkbox" checked={showRsBoundary} onChange={(e) => setShowRsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
-                    <label className="flex min-h-10 items-center justify-between rounded-xl bg-[var(--secondary)] px-3 text-xs font-bold"><span>এমএস দাগ ও লেবেল</span><input type="checkbox" checked={showMsBoundary} onChange={(e) => setShowMsBoundary(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" /></label>
-                  </div>
-                ) : <p className="mt-2 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-[11px] leading-5 text-[var(--muted-foreground)]">দাগ সীমানা উপলব্ধ থাকলে দেখানো হয়। বিস্তারিত লেয়ার নিয়ন্ত্রণ লগইনের পর পাওয়া যাবে।</p>}
+                <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">RS (কালো) ও MS (লাল) পৃথকভাবে চালু বা বন্ধ করুন।</p>
+                <p className="mt-3 rounded-xl bg-[var(--brand-green-faint)] px-3 py-2 text-[11px] leading-5 text-[var(--muted-foreground)]">একটি RS বা MS টিকবক্সই তার রাস্টার, ভেক্টর সীমানা ও দাগ লেবেল একসঙ্গে দেখাবে বা লুকাবে।</p>
               </div>
 
               {LAYERS.map((layer) => (
@@ -495,12 +521,19 @@ export default function MapLibreMapViewV2({
                       {layer.label}
                     </span>
                   ))}
-                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#dc2626]"/> RS দাগ</span>
-                  <span className="flex items-center gap-2"><i aria-hidden="true" className="h-0.5 w-3 bg-[#7c3aed]"/> MS দাগ</span>
                 </div>
                 <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">রঙ কেবল লেয়ার শনাক্তকরণে সহায়ক; সরকারি শ্রেণিবিন্যাসের বিকল্প নয়।</p>
               </section>
-              <Link href="/rajuk-test" className="flex min-h-11 items-center justify-between rounded-xl border border-[var(--border-color)] bg-[var(--brand-green-soft)] px-4 text-xs font-extrabold text-[var(--primary)]">বিস্তারিত RS/MS অনুসন্ধান <ChevronUp size={17} className="rotate-90" /></Link>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => {
+                  setLayers((current) => hideAvailableRasterLayers(current, isAdvanced));
+                }} className="min-h-11 rounded-xl border border-[var(--border-color)] bg-white px-2 text-xs font-bold text-[var(--primary)]">দৃশ্যমান স্তর বন্ধ</button>
+                <button type="button" onClick={() => {
+                  setLayers(defaultRasterLayerVisibility(isAdvanced));
+                  setShowRsBoundary(true);
+                  setShowMsBoundary(true);
+                }} className="min-h-11 rounded-xl bg-[var(--primary)] px-2 text-xs font-bold text-white">ডিফল্ট স্তর</button>
+              </div>
             </>
           ) : tab === "basemap" ? (
             <>
@@ -553,17 +586,8 @@ export default function MapLibreMapViewV2({
         </div>
       </aside>
 
-      <RajukLayerSwitcher
-        layers={layers}
-        setLayers={setLayers}
-        showRsBoundary={showRsBoundary}
-        setShowRsBoundary={setShowRsBoundary}
-        showMsBoundary={showMsBoundary}
-        setShowMsBoundary={setShowMsBoundary}
-        isAdvanced={isAdvanced}
-      />
-
-      <RajukMapControls
+      <div className={panelOpen ? "max-lg:hidden" : ""}>
+        <RajukMapControls
         mapRef={mapRef}
         mapReady={mapReady}
         locating={locating}
@@ -571,7 +595,8 @@ export default function MapLibreMapViewV2({
         resetNorth={resetNorth}
         toggleThreeD={toggleThreeD}
         threeD={threeD}
-      />
+        />
+      </div>
 
       {selected && (
         <div className="absolute right-[64px] top-[96px] z-[50] hidden max-h-[calc(100dvh-235px)] w-[min(27vw,300px)] overflow-y-auto rounded-lg shadow-2xl xl:block">
@@ -584,7 +609,7 @@ export default function MapLibreMapViewV2({
         </div>
       )}
 
-      <div className="absolute inset-x-3 bottom-4 z-[58] mx-auto max-w-[850px] lg:left-[372px] lg:right-5">
+      <div className="absolute inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[58] mx-auto w-fit max-w-[calc(100%-24px)] lg:left-[366px] lg:right-[72px] lg:w-auto lg:max-w-[520px]">
         {measurePanelOpen && (
           <div className="mb-2 rounded-[24px] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-2xl">
             <div className="flex items-center justify-between gap-2">
@@ -621,14 +646,13 @@ export default function MapLibreMapViewV2({
             <button type="button" onClick={() => { if (measureMode) finishMeasurement(); else setIdentifyMode((v) => !v); setMeasurePanelOpen(false); }} aria-pressed={identifyMode}
               className={["inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-black",identifyMode?"bg-[var(--primary)] text-white":"bg-[var(--secondary)]"].join(" ")}><MousePointer2 size={17}/> দাগ</button>
             <button type="button" onClick={() => setMeasurePanelOpen((v) => !v)} aria-expanded={measurePanelOpen} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--brand-green-soft)] px-3 text-xs font-black text-[var(--primary)]"><Ruler size={17}/> মাপ {measurePanelOpen?<ChevronDown size={13}/>:<ChevronUp size={13}/>}</button>
-            <button type="button" onClick={() => {setPanelOpen(true);setTab("basemap");}} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#eff2eb] px-3 text-xs font-black"><Layers3 size={16}/><span className="hidden sm:inline">বেসম্যাপ</span></button>
           </div>
         </div>
       </div>
 
-      <RajukCoordinateStatus mapRef={mapRef} mapReady={mapReady} />
+      <div className={measurePanelOpen ? "hidden" : ""}><RajukCoordinateStatus mapRef={mapRef} mapReady={mapReady} /></div>
 
-      {toast && <div role="status" className="absolute left-1/2 top-[76px] z-[100] w-[min(90vw,390px)] -translate-x-1/2 rounded-2xl bg-[var(--primary)] px-4 py-3 text-center text-xs font-bold text-white shadow-2xl">{toast}</div>}
+      {toast && <div role="status" className="pointer-events-none absolute left-[142px] right-[60px] top-[82px] z-[95] rounded-xl bg-[var(--primary)] px-3 py-2 text-center text-[11px] font-bold text-white shadow-xl lg:left-[380px] lg:right-[76px] lg:mx-auto lg:max-w-[440px]">{toast}</div>}
 
       {!mapReady && <div className="pointer-events-none absolute inset-0 z-[28] grid place-items-center bg-[var(--background)]/70"><div className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black shadow-xl"><Loader2 size={18} className="animate-spin"/> GIS মানচিত্র তৈরি হচ্ছে…</div></div>}
     </main>

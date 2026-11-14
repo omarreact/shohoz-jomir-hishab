@@ -1,0 +1,1363 @@
+{
+  "schemaVersion": 1,
+  "country": "Bangladesh",
+  "updatedAt": "2026-11-14T00:43:17.963Z",
+  "storage": {
+    "provider": "cloudflare-r2",
+    "binding": "LANDBD_FILES",
+    "bucket": "landbd-files",
+    "prefix": "national-cadastral/v1"
+  },
+  "policy": {
+    "nationwideInventorySurvey": "RS",
+    "metropolitanSurvey": "MS",
+    "fallbackSurveys": [
+      "BS",
+      "BRS",
+      "BDS"
+    ],
+    "completionRule": "Resolve RS applicability for every district: complete with authorized self-hosted coverage where an official RS survey applies, or not-applicable with official evidence. MS (Mahanagar Survey) is Dhaka-metropolitan-only per DLRS; acquire complete authorized coverage for its applicable Dhaka scope and record other districts not-applicable with official evidence. Only published, storage-authorized assets with redistribution rights count toward public-map readiness."
+  },
+  "sources": [
+    {
+      "id": "dlrs-map",
+      "name": "DLRS Land Record and Mouza Map",
+      "authority": "Department of Land Records and Surveys",
+      "url": "https://map.settlement.gov.bd/",
+      "access": "official-search-purchase-download",
+      "bulkExport": "not-documented",
+      "redistribution": "requires-explicit-rights"
+    },
+    {
+      "id": "smart-bhumi-naksha",
+      "name": "Smart Bhumi Naksha",
+      "authority": "Ministry of Land",
+      "url": "https://map.land.gov.bd/",
+      "access": "public-map-view",
+      "bulkExport": "not-documented",
+      "redistribution": "requires-explicit-rights"
+    },
+    {
+      "id": "settlement-map-search",
+      "name": "Settlement Map Search",
+      "authority": "Department of Land Records and Surveys",
+      "url": "https://settlement.gov.bd/Map/MapSearch",
+      "access": "public-search",
+      "bulkExport": "not-documented",
+      "redistribution": "requires-explicit-rights"
+    },
+    {
+      "id": "rajuk-masterplan",
+      "name": "RAJUK Master Plan GIS",
+      "authority": "Rajdhani Unnayan Kartripakkha",
+      "url": "https://masterplan.rajuk.gov.bd/",
+      "access": "upstream-gis-service",
+      "bulkExport": "authorized-account-only",
+      "redistribution": "requires-explicit-rights",
+      "scope": "RAJUK planning area only; not nationwide"
+    },
+    {
+      "id": "nsdi",
+      "name": "Bangladesh National Spatial Data Infrastructure",
+      "authority": "Survey of Bangladesh / NSDI",
+      "url": "https://nsdi.gov.bd/",
+      "access": "public-catalog-services",
+      "bulkExport": "dataset-specific",
+      "redistribution": "dataset-specific",
+      "scope": "supporting spatial datasets; not a substitute for DLRS cadastral RS/MS"
+    },
+    {
+      "id": "dlrs-survey-history",
+      "name": "DLRS Survey History",
+      "authority": "Department of Land Records and Surveys",
+      "url": "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33",
+      "access": "public-reference",
+      "bulkExport": "not-applicable",
+      "redistribution": "reference-only",
+      "scope": "Official survey-history/applicability evidence; Mahanagar Survey was conducted only in Dhaka metropolitan area."
+    },
+    {
+      "id": "dlrms-public-survey-metadata",
+      "name": "DLRMS Public Upazila Survey Metadata",
+      "authority": "Ministry of Land / DLRMS",
+      "url": "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys",
+      "access": "public-application-session",
+      "bulkExport": "metadata-inventory-only",
+      "redistribution": "administrative-metadata-only",
+      "scope": "Survey availability metadata; no khatian/owner/dag data and no map-sheet download."
+    }
+  ],
+  "districts": [
+    {
+      "name": "বরগুনা",
+      "nameEn": "Barguna",
+      "bbsCode": "4",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "বরিশাল",
+      "nameEn": "Barishal",
+      "bbsCode": "6",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ভোলা",
+      "nameEn": "Bhola",
+      "bbsCode": "9",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ঝালকাঠি",
+      "nameEn": "Jhalokathi",
+      "bbsCode": "42",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "পটুয়াখালী",
+      "nameEn": "Patuakhali",
+      "bbsCode": "78",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "পিরোজপুর",
+      "nameEn": "Pirojpur",
+      "bbsCode": "79",
+      "divisionBbsCode": "10",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "বান্দরবান",
+      "nameEn": "Bandarban",
+      "bbsCode": "3",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "unverified-applicability",
+          "evidence": []
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ব্রাহ্মণবাড়িয়া",
+      "nameEn": "Brahmanbaria",
+      "bbsCode": "12",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "চাঁদপুর",
+      "nameEn": "Chandpur",
+      "bbsCode": "13",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "চট্টগ্রাম",
+      "nameEn": "Chattogram",
+      "bbsCode": "15",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "কুমিল্লা",
+      "nameEn": "Cumilla",
+      "bbsCode": "19",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "কক্সবাজার",
+      "nameEn": "Cox's Bazar",
+      "bbsCode": "22",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ফেনী",
+      "nameEn": "Feni",
+      "bbsCode": "30",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "খাগড়াছড়ি",
+      "nameEn": "Khagrachhari",
+      "bbsCode": "46",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "unverified-applicability",
+          "evidence": []
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "লক্ষ্মীপুর",
+      "nameEn": "Lakshmipur",
+      "bbsCode": "51",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নোয়াখালী",
+      "nameEn": "Noakhali",
+      "bbsCode": "75",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "রাঙামাটি",
+      "nameEn": "Rangamati",
+      "bbsCode": "84",
+      "divisionBbsCode": "20",
+      "coverage": {
+        "RS": {
+          "state": "unverified-applicability",
+          "evidence": []
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ঢাকা",
+      "nameEn": "Dhaka",
+      "bbsCode": "26",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "partial",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ফরিদপুর",
+      "nameEn": "Faridpur",
+      "bbsCode": "29",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "গাজীপুর",
+      "nameEn": "Gazipur",
+      "bbsCode": "33",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "গোপালগঞ্জ",
+      "nameEn": "Gopalganj",
+      "bbsCode": "35",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "unverified-applicability",
+          "evidence": []
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "কিশোরগঞ্জ",
+      "nameEn": "Kishoreganj",
+      "bbsCode": "48",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মাদারীপুর",
+      "nameEn": "Madaripur",
+      "bbsCode": "54",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মানিকগঞ্জ",
+      "nameEn": "Manikganj",
+      "bbsCode": "56",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মুন্সীগঞ্জ",
+      "nameEn": "Munshiganj",
+      "bbsCode": "59",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নারায়ণগঞ্জ",
+      "nameEn": "Narayanganj",
+      "bbsCode": "67",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নরসিংদী",
+      "nameEn": "Narsingdi",
+      "bbsCode": "68",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "রাজবাড়ী",
+      "nameEn": "Rajbari",
+      "bbsCode": "82",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "শরীয়তপুর",
+      "nameEn": "Shariatpur",
+      "bbsCode": "86",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "টাঙ্গাইল",
+      "nameEn": "Tangail",
+      "bbsCode": "93",
+      "divisionBbsCode": "30",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "বাগেরহাট",
+      "nameEn": "Bagerhat",
+      "bbsCode": "1",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "চুয়াডাঙ্গা",
+      "nameEn": "Chuadanga",
+      "bbsCode": "18",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "যশোর",
+      "nameEn": "Jashore",
+      "bbsCode": "41",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ঝিনাইদহ",
+      "nameEn": "Jhenaidah",
+      "bbsCode": "44",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "খুলনা",
+      "nameEn": "Khulna",
+      "bbsCode": "47",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "কুষ্টিয়া",
+      "nameEn": "Kushtia",
+      "bbsCode": "50",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মাগুরা",
+      "nameEn": "Magura",
+      "bbsCode": "55",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মেহেরপুর",
+      "nameEn": "Meherpur",
+      "bbsCode": "57",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নড়াইল",
+      "nameEn": "Narail",
+      "bbsCode": "65",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "সাতক্ষীরা",
+      "nameEn": "Satkhira",
+      "bbsCode": "87",
+      "divisionBbsCode": "40",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "জামালপুর",
+      "nameEn": "Jamalpur",
+      "bbsCode": "39",
+      "divisionBbsCode": "45",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ময়মনসিংহ",
+      "nameEn": "Mymensingh",
+      "bbsCode": "61",
+      "divisionBbsCode": "45",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নেত্রকোণা",
+      "nameEn": "Netrokona",
+      "bbsCode": "72",
+      "divisionBbsCode": "45",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "শেরপুর",
+      "nameEn": "Sherpur",
+      "bbsCode": "89",
+      "divisionBbsCode": "45",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "বগুড়া",
+      "nameEn": "Bogura",
+      "bbsCode": "10",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "জয়পুরহাট",
+      "nameEn": "Joypurhat",
+      "bbsCode": "38",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নওগাঁ",
+      "nameEn": "Naogaon",
+      "bbsCode": "64",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নাটোর",
+      "nameEn": "Natore",
+      "bbsCode": "69",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "চাঁপাইনবাবগঞ্জ",
+      "nameEn": "Chapainawabganj",
+      "bbsCode": "70",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "পাবনা",
+      "nameEn": "Pabna",
+      "bbsCode": "76",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "রাজশাহী",
+      "nameEn": "Rajshahi",
+      "bbsCode": "81",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "সিরাজগঞ্জ",
+      "nameEn": "Sirajganj",
+      "bbsCode": "88",
+      "divisionBbsCode": "50",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "দিনাজপুর",
+      "nameEn": "Dinajpur",
+      "bbsCode": "27",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "গাইবান্ধা",
+      "nameEn": "Gaibandha",
+      "bbsCode": "32",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "কুড়িগ্রাম",
+      "nameEn": "Kurigram",
+      "bbsCode": "49",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "লালমনিরহাট",
+      "nameEn": "Lalmonirhat",
+      "bbsCode": "52",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "unverified-applicability",
+          "evidence": []
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "নীলফামারী",
+      "nameEn": "Nilphamari",
+      "bbsCode": "73",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "পঞ্চগড়",
+      "nameEn": "Panchagarh",
+      "bbsCode": "77",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "রংপুর",
+      "nameEn": "Rangpur",
+      "bbsCode": "85",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ঠাকুরগাঁও",
+      "nameEn": "Thakurgaon",
+      "bbsCode": "94",
+      "divisionBbsCode": "55",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "হবিগঞ্জ",
+      "nameEn": "Habiganj",
+      "bbsCode": "36",
+      "divisionBbsCode": "60",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "মৌলভীবাজার",
+      "nameEn": "Moulvibazar",
+      "bbsCode": "58",
+      "divisionBbsCode": "60",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "সুনামগঞ্জ",
+      "nameEn": "Sunamganj",
+      "bbsCode": "90",
+      "divisionBbsCode": "60",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    },
+    {
+      "name": "সিলেট",
+      "nameEn": "Sylhet",
+      "bbsCode": "91",
+      "divisionBbsCode": "60",
+      "coverage": {
+        "RS": {
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
+        },
+        "MS": {
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
+        }
+      }
+    }
+  ],
+  "assets": []
+}

@@ -76,7 +76,6 @@ export default function OperationsAdmin() {
           <h2 className="font-bold">AI সহায়ক</h2>
           <p className="mt-2 font-semibold">{data.ai.enabled && data.ai.credentialConfigured ? "সক্রিয়" : data.ai.credentialConfigured ? "কনফিগার আছে, বন্ধ" : "API Key প্রয়োজন"}</p>
           <p className="text-xs text-slate-600">প্রোভাইডার: {data.ai.provider}</p>
-          <Link href="/admin/ai-assistant" className="mt-3 inline-block text-sm text-emerald-800 underline">AI Studio</Link>
         </article>
         <article className="rounded-2xl border bg-white p-5">
           <h2 className="font-bold">CMS সংস্করণ ইতিহাস</h2>

@@ -11,7 +11,14 @@ const request = () => new NextRequest("https://landbd.example/api/auth/session",
 });
 
 describe("Firebase member and administrator login sessions", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.LANDBD_PLATFORM;
+  });
+
+  afterEach(() => {
+    delete process.env.LANDBD_PLATFORM;
+  });
 
   test.each(["User", "Basic User", "Editor", "Admin", "Super Admin"])(
     "accepts a verified %s session without granting elevated permissions",
@@ -32,6 +39,25 @@ describe("Firebase member and administrator login sessions", () => {
       );
     },
   );
+
+  test("uses public-key Firebase verification for Cloudflare member sessions", async () => {
+    process.env.LANDBD_PLATFORM = "cloudflare-workers";
+    verify.mockResolvedValue({
+      id: "firebase-uid",
+      email: "user@example.com",
+      name: null,
+      role: "User",
+    });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(response.cookies.get("access_token")?.value).toBe("verified-token");
+    expect(verify).toHaveBeenCalledWith(
+      expect.anything(),
+      { checkRevoked: false, requireAdminBackend: false },
+    );
+  });
 
   test.each(["Account disabled", "Account locked"])(
     "rejects %s",
