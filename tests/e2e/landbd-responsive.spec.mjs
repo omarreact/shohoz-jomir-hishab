@@ -285,7 +285,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
     await page.route("**/api/rajuk/query?*", async (route) => {
       const url = new URL(route.request().url());
       if (url.searchParams.get("action") !== "identify") {
-        await route.continue();
+        await route.fallback();
         return;
       }
       const feature = identifyCount < features.length ? features[identifyCount] : null;
