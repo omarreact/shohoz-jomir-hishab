@@ -157,7 +157,9 @@ test.describe("LandBD DLRMS browser data path", () => {
     await choose(page, "বিভাগ", "ঢাকা");
     await choose(page, "জেলা", "ঢাকা");
     await choose(page, "উপজেলা / থানা", "রূপগঞ্জ");
-    await expect(page.getByText("Mutation / নামজারি QR যাচাই", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Mutation \/ নামজারি (?:QR|কিউআর) যাচাই/ }),
+    ).toBeVisible();
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
     await choose(page, "মৌজা (JL নম্বর)", /^(?:110|১১০) · পাতিরা$/);
 
