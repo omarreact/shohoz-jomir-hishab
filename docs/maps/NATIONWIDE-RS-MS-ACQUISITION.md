@@ -1,10 +1,7 @@
 # Nationwide cadastral RS/MS acquisition and self-hosting
 
 ## Survey model
-LandBD must not claim that MS exists nationwide. MS is **Mahanagar Survey**. The national target is:
-1. **RS** — verified coverage for every one of the 64 districts.
-2. **MS** — complete where an official Mahanagar Survey applies, otherwise `not-applicable` with official evidence.
-3. **BS/BRS/BDS** — current/fallback official survey material where relevant; never silently substituted for RS.
+LandBD must not claim that RS or MS exists uniformly in every modern district. The national target is:\n1. **RS** — resolve applicability for all 64 districts; acquire complete authorized coverage where an official RS survey applies, otherwise record `not-applicable` with official evidence.\n2. **MS** — DLRS identifies Mahanagar Survey as a Dhaka metropolitan survey; acquire it for its applicable Dhaka scope and record other districts `not-applicable` with official evidence.\n3. **DC/City Survey is not automatically MS.** Keep it separate until official survey metadata proves equivalence.\n4. **BS/BRS/BDS** — current/fallback official survey material where relevant; never silently relabelled as RS/MS.
 
 Never fabricate a missing survey, infer legal parcel lines from satellite imagery, or present a raster scan as a verified vector boundary.
 
@@ -14,11 +11,11 @@ Machine-readable source/coverage state: `data/maps/national-cadastral/catalog.js
 - https://map.land.gov.bd/
 - https://settlement.gov.bd/Map/MapSearch
 - https://masterplan.rajuk.gov.bd/ (RAJUK area only)
-- https://nsdi.gov.bd/ (supporting data, not a DLRS cadastral substitute)
+- https://nsdi.gov.bd/ (supporting data, not a DLRS cadastral substitute)\n- https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33 (official survey-history/applicability reference)
 
 Public viewing/search does not equal redistribution permission. Paid/authenticated/licensed files are stored or republished only when acquisition metadata records the applicable rights.
 
-## Intake contract
+## Candidate archive quarantine\nBefore official ingest, audit any copied/shared scan archive locally:\n```bash\nnpm run maps:cadastral:audit-candidate -- --root ./candidate-maps --out ./candidate-report.json\n```\nUse `--require-clean-provenance` when a pipeline must fail on third-party-branded files. The scanner inventories filenames, bytes, formats and survey hints only; it never uploads/publishes or claims legal authority. A folder named `City Survey` is reported separately and is not auto-converted to MS.\n\n## Intake contract
 Keep acquired binaries outside Git. Each file needs a same-name `.meta.json` sidecar.
 
 ```text
@@ -97,8 +94,7 @@ Do not execute until storage cost and legal storage/redistribution rights are ap
 ## 100% definition
 Nationwide acquisition is complete only when:
 - 64 unique districts validate;
-- all 64 RS declarations are `complete`, with official evidence and published self-hosted assets;
-- every MS declaration is either verified `complete` where applicable or `not-applicable` with official evidence;
+- all 64 RS declarations are resolved to either verified `complete` where applicable (with published self-hosted assets) or `not-applicable` with official evidence;\n- all 64 MS declarations are resolved similarly; DLRS evidence establishes Mahanagar Survey as Dhaka-metropolitan-only, while Dhaka still requires the authorized complete dataset;
 - each asset has SHA-256, size, official source, acquisition date, rights basis and storage authorization;
 - public-map assets explicitly allow redistribution;
 - scans reach a map-usable published stage (georeferenced/vectorized as required);

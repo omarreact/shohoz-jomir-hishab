@@ -59,4 +59,22 @@ describe("national cadastral CLI safety pipeline",()=>{
     expect(plan.stdout).toContain("PLAN landbd-files/national-cadastral/v1/");
     expect(plan.stdout).toContain('"executed": false');
   });
+  it("audits candidate scan archives without promoting third-party files",()=>{
+    const candidate=path.join(tmp,"candidate");
+    fs.mkdirSync(path.join(candidate,"Rajshahi","RS"),{recursive:true});
+    fs.mkdirSync(path.join(candidate,"Dhaka","City Survey"),{recursive:true});
+    fs.writeFileSync(path.join(candidate,"Rajshahi","RS","1 - (www.mouzamap.tech).jpg"),Buffer.alloc(100));
+    fs.writeFileSync(path.join(candidate,"Dhaka","City Survey","sheet.pdf"),Buffer.alloc(200));
+    fs.writeFileSync(path.join(candidate,"Rajshahi","RS","clean.geojson"),JSON.stringify({type:"FeatureCollection",features:[]}));
+    const audit=run("scripts/maps/national-cadastral-audit-candidate.mjs",["--root",candidate]);
+    expect(audit.status).toBe(0);
+    const report=JSON.parse(audit.stdout);
+    expect(report.fileCount).toBe(3);
+    expect(report.thirdPartyBrandedFiles).toBe(1);
+    expect(report.vectorReadyFiles).toBe(1);
+    expect(report.surveyHints.RS).toBeGreaterThanOrEqual(2);
+    expect(report.citySurveyCandidates).toBe(1);
+    expect(report.publicCatalogEligible).toBe(false);
+    expect(run("scripts/maps/national-cadastral-audit-candidate.mjs",["--root",candidate,"--require-clean-provenance"]).status).toBe(2);
+  });
 });

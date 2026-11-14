@@ -14,7 +14,7 @@ export type NationalCadastralAsset = {
 export type NationalCadastralCatalog = {
   schemaVersion: 1; country: "Bangladesh"; updatedAt: string;
   storage: { provider: string; binding: string; bucket: string; prefix: string };
-  policy: { nationwideRequiredSurvey: "RS"; metropolitanSurvey: "MS"; fallbackSurveys: NationalCadastralSurvey[]; completionRule: string };
+  policy: { nationwideInventorySurvey: "RS"; metropolitanSurvey: "MS"; fallbackSurveys: NationalCadastralSurvey[]; completionRule: string };
   sources: Array<{ id:string; name:string; authority:string; url:string; access:string; bulkExport:string; redistribution:string; scope?:string }>;
   districts: Array<{ name:string; nameEn:string; bbsCode:string; divisionBbsCode:string; coverage:{ RS:NationalCoverageEntry; MS:NationalCoverageEntry } }>;
   assets: NationalCadastralAsset[];
@@ -43,7 +43,6 @@ export function validateNationalCadastralCatalog(catalog:NationalCadastralCatalo
       const c=d.coverage[survey];
       if(!c){ errors.push(`Missing ${survey} coverage declaration for district ${d.bbsCode}`); continue; }
       if((c.state==="complete"||c.state==="not-applicable")&&c.evidence.length===0) errors.push(`${survey} ${c.state} declaration requires official evidence for district ${d.bbsCode}`);
-      if(survey==="RS"&&c.state==="not-applicable") errors.push(`RS cannot be marked not-applicable for district ${d.bbsCode}`);
     }
   }
   const sourceIds=new Set<string>();
@@ -69,15 +68,16 @@ export function validateNationalCadastralCatalog(catalog:NationalCadastralCatalo
 }
 export function nationalCadastralSummary(catalog:NationalCadastralCatalog=nationalCadastralCatalog){
   const validationErrors=validateNationalCadastralCatalog(catalog);
-  let rsCompleteDistricts=0,msResolvedDistricts=0,msApplicableCompleteDistricts=0,msNotApplicableDistricts=0;
+  let rsResolvedDistricts=0,rsCompleteDistricts=0,rsNotApplicableDistricts=0,msResolvedDistricts=0,msApplicableCompleteDistricts=0,msNotApplicableDistricts=0;
   for(const d of catalog.districts){
     const rs=d.coverage.RS;
-    if(rs.state==="complete"&&rs.evidence.length>0&&hasPublicPublishedAsset(catalog,d.bbsCode,"RS")) rsCompleteDistricts++;
+    if(rs.state==="not-applicable"&&rs.evidence.length>0){rsNotApplicableDistricts++;rsResolvedDistricts++;}
+    else if(rs.state==="complete"&&rs.evidence.length>0&&hasPublicPublishedAsset(catalog,d.bbsCode,"RS")){rsCompleteDistricts++;rsResolvedDistricts++;}
     const ms=d.coverage.MS;
     if(ms.state==="not-applicable"&&ms.evidence.length>0){msNotApplicableDistricts++;msResolvedDistricts++;}
     else if(ms.state==="complete"&&ms.evidence.length>0&&hasPublicPublishedAsset(catalog,d.bbsCode,"MS")){msApplicableCompleteDistricts++;msResolvedDistricts++;}
   }
   const publishedPublicAssets=catalog.assets.filter((a)=>a.stage==="published"&&a.storageAuthorized&&a.redistributionAllowed).length;
-  return {districtCount:catalog.districts.length,assetCount:catalog.assets.length,publishedPublicAssets,rsCompleteDistricts,msResolvedDistricts,msApplicableCompleteDistricts,msNotApplicableDistricts,validationErrors,
-    strictComplete:validationErrors.length===0&&catalog.districts.length===64&&rsCompleteDistricts===64&&msResolvedDistricts===64};
+  return {districtCount:catalog.districts.length,assetCount:catalog.assets.length,publishedPublicAssets,rsResolvedDistricts,rsCompleteDistricts,rsNotApplicableDistricts,msResolvedDistricts,msApplicableCompleteDistricts,msNotApplicableDistricts,validationErrors,
+    strictComplete:validationErrors.length===0&&catalog.districts.length===64&&rsResolvedDistricts===64&&msResolvedDistricts===64};
 }

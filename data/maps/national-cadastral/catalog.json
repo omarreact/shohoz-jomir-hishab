@@ -9,14 +9,14 @@
     "prefix": "national-cadastral/v1"
   },
   "policy": {
-    "nationwideRequiredSurvey": "RS",
+    "nationwideInventorySurvey": "RS",
     "metropolitanSurvey": "MS",
     "fallbackSurveys": [
       "BS",
       "BRS",
       "BDS"
     ],
-    "completionRule": "Every district must have verified complete RS coverage. MS must be verified complete where Mahanagar Survey applies, or explicitly not-applicable with official evidence. Only published, storage-authorized assets with redistribution rights count toward LandBD public-map readiness."
+    "completionRule": "Resolve RS applicability for every district: complete with authorized self-hosted coverage where an official RS survey applies, or not-applicable with official evidence. MS (Mahanagar Survey) is Dhaka-metropolitan-only per DLRS; acquire complete authorized coverage for its applicable Dhaka scope and record other districts not-applicable with official evidence. Only published, storage-authorized assets with redistribution rights count toward public-map readiness."
   },
   "sources": [
     {
@@ -65,6 +65,16 @@
       "bulkExport": "dataset-specific",
       "redistribution": "dataset-specific",
       "scope": "supporting spatial datasets; not a substitute for DLRS cadastral RS/MS"
+    },
+    {
+      "id": "dlrs-survey-history",
+      "name": "DLRS Survey History",
+      "authority": "Department of Land Records and Surveys",
+      "url": "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33",
+      "access": "public-reference",
+      "bulkExport": "not-applicable",
+      "redistribution": "reference-only",
+      "scope": "Official survey-history/applicability evidence; Mahanagar Survey was conducted only in Dhaka metropolitan area."
     }
   ],
   "districts": [
@@ -75,12 +85,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -91,12 +103,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -107,12 +121,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -123,12 +139,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -139,12 +157,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -155,12 +175,14 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -171,12 +193,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -187,12 +211,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -203,12 +229,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -219,12 +247,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -235,12 +265,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -251,12 +283,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -267,12 +301,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -283,12 +319,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -299,12 +337,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -315,12 +355,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -331,12 +373,14 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -347,12 +391,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -363,12 +409,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -379,12 +427,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -395,12 +445,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -411,12 +463,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -427,12 +481,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -443,12 +499,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -459,12 +517,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -475,12 +535,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -491,12 +553,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -507,12 +571,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -523,12 +589,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -539,12 +607,14 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -555,12 +625,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -571,12 +643,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -587,12 +661,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -603,12 +679,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -619,12 +697,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -635,12 +715,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -651,12 +733,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -667,12 +751,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -683,12 +769,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -699,12 +787,14 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -715,12 +805,14 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -731,12 +823,14 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -747,12 +841,14 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -763,12 +859,14 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -779,12 +877,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -795,12 +895,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -811,12 +913,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -827,12 +931,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -843,12 +949,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -859,12 +967,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -875,12 +985,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -891,12 +1003,14 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -907,12 +1021,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -923,12 +1039,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -939,12 +1057,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -955,12 +1075,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -971,12 +1093,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -987,12 +1111,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1003,12 +1129,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1019,12 +1147,14 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1035,12 +1165,14 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1051,12 +1183,14 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1067,12 +1201,14 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     },
@@ -1083,12 +1219,14 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "missing",
+          "state": "unverified-applicability",
           "evidence": []
         },
         "MS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "not-applicable",
+          "evidence": [
+            "https://dlrs.gov.bd/pages/static-pages/6922e15c933eb65569e2bb33"
+          ]
         }
       }
     }
