@@ -142,6 +142,10 @@ test.describe("LandBD map-first geospatial workspace", () => {
       await expect(button).toHaveAttribute("aria-expanded", "true");
     }
 
+    await expect(panel.getByRole("button", { name: "স্থানাঙ্ক কপি" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "PNG সংরক্ষণ" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "প্রিন্ট" })).toBeVisible();
+
     const settings = page.getByRole("button", { name: "মানচিত্র সেটিংস" });
     await settings.click();
     await expect(panel).toBeHidden();
