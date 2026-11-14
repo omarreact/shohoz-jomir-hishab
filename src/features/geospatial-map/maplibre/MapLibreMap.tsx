@@ -54,19 +54,71 @@ import { shouldShowSurveyBoundary } from "./layerControlPolicy";
 
 const EMPTY_GEOJSON = EMPTY_FEATURE_COLLECTION as FeatureCollection<Geometry>;
 
+function featureCenter(feature: RajukPlotFeature): [number, number] | null {
+  const points = feature.geometry?.rings?.flat() ?? [];
+  if (!points.length) return null;
+  let west = Number.POSITIVE_INFINITY;
+  let east = Number.NEGATIVE_INFINITY;
+  let south = Number.POSITIVE_INFINITY;
+  let north = Number.NEGATIVE_INFINITY;
+  for (const [lng, lat] of points) {
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+    west = Math.min(west, lng);
+    east = Math.max(east, lng);
+    south = Math.min(south, lat);
+    north = Math.max(north, lat);
+  }
+  if (![west, east, south, north].every(Number.isFinite)) return null;
+  return [(west + east) / 2, (south + north) / 2];
+}
+
+function buildDagPopupContent(feature: RajukPlotFeature): HTMLElement {
+  const kind = isMsFeature(feature) ? "ms" : "rs";
+  const rows = detailRows(feature, kind);
+  const section = document.createElement("section");
+  section.className = "landbd-dag-popup-card";
+  section.setAttribute("aria-label", "নির্বাচিত দাগের তথ্য");
+
+  const title = document.createElement("h2");
+  title.className = "landbd-dag-popup-title";
+  const number = rows[0]?.[1] && rows[0][1] !== "—" ? rows[0][1] : "তথ্য পাওয়া যায়নি";
+  title.textContent = (kind === "ms" ? "MS দাগ " : "RS দাগ ") + number;
+  section.appendChild(title);
+
+  const list = document.createElement("dl");
+  list.className = "landbd-dag-popup-list";
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    row.className = "landbd-dag-popup-row";
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = value === "—" ? "তথ্য পাওয়া যায়নি" : value;
+    row.append(term, description);
+    list.appendChild(row);
+  }
+  section.appendChild(list);
+
+  const note = document.createElement("p");
+  note.className = "landbd-dag-popup-note";
+  note.textContent = "উৎসে পাওয়া GIS তথ্য; অনুপস্থিত মান অনুমান করা হয়নি।";
+  section.appendChild(note);
+  return section;
+}
+
 export default function MapLibreMap() {
   const router = useRouter();
   const { isLoggedIn, loading: authLoading } = useAuth();
   const isAdvanced = isLoggedIn;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreInstance | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   const extentTimerRef = useRef<number | null>(null);
   const extentControllerRef = useRef<AbortController | null>(null);
   const identifyControllerRef = useRef<AbortController | null>(null);
   const extentRequestIdRef = useRef(0);
   const identifyRequestIdRef = useRef(0);
   const mapReadyRef = useRef(false);
-  const identifyModeRef = useRef(true);
 
   const [tab, setTab] = useState<Tab>("search");
   const [panelOpen, setPanelOpen] = useState(false);
@@ -77,7 +129,6 @@ export default function MapLibreMap() {
   const [basemap, setBasemap] = useState<BasemapKey>("satellite");
   const [plotNo, setPlotNo] = useState("");
   const [searching, setSearching] = useState(false);
-  const [identifyMode, setIdentifyMode] = useState(true);
   const [results, setResults] = useState<RajukPlotFeature[]>([]);
   const [selected, setSelected] = useState<RajukPlotFeature | null>(null);
   const [toast, setToast] = useState("");
@@ -86,7 +137,6 @@ export default function MapLibreMap() {
   const [vectorStatus, setVectorStatus] = useState("");
   const [routingCalculator, setRoutingCalculator] = useState<"khatiyan" | "faraez" | null>(null);
 
-  identifyModeRef.current = identifyMode;
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -98,6 +148,39 @@ export default function MapLibreMap() {
     mapReady,
     notify,
   });
+
+  const clearPlotSelection = useCallback(() => {
+    setSelected(null);
+    const map = mapRef.current;
+    if (map) updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
+  }, []);
+
+  const showPlotPopup = useCallback((feature: RajukPlotFeature, coordinate?: [number, number]) => {
+    const map = mapRef.current;
+    if (!map || !mapReadyRef.current) return;
+
+    popupRef.current?.remove();
+    const anchor = coordinate ?? featureCenter(feature);
+    if (!anchor) return;
+
+    const popup = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: "360px",
+      className: "landbd-dag-popup",
+      offset: 14,
+    })
+      .setLngLat(anchor)
+      .setDOMContent(buildDagPopupContent(feature))
+      .addTo(map);
+
+    popup.on("close", () => {
+      if (popupRef.current !== popup) return;
+      popupRef.current = null;
+      clearPlotSelection();
+    });
+    popupRef.current = popup;
+  }, [clearPlotSelection]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -201,9 +284,10 @@ export default function MapLibreMap() {
     };
 
     const handleClick = (event: maplibregl.MapMouseEvent) => {
-      if (!identifyModeRef.current) return;
-
       identifyControllerRef.current?.abort();
+      popupRef.current?.remove();
+      clearPlotSelection();
+
       const controller = new AbortController();
       identifyControllerRef.current = controller;
       const requestId = ++identifyRequestIdRef.current;
@@ -222,17 +306,19 @@ export default function MapLibreMap() {
           if (controller.signal.aborted || requestId !== identifyRequestIdRef.current || !mapReadyRef.current) return;
 
           const found = sanitizeRajukFeatures(Array.isArray(data?.features) ? data.features : []);
-          setResults(found);
-          setSelected(found[0] ?? null);
-          setTab("results");
-          setPanelOpen(true);
+          const feature = found[0] ?? null;
+          if (!feature) {
+            notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");
+            return;
+          }
+
+          setSelected(feature);
           updateSourceData(
             map,
             VECTOR_SOURCES.selectedPlot,
-            found.length ? (featuresToFc(found) as FeatureCollection<Geometry>) : EMPTY_GEOJSON,
+            featuresToFc([feature]) as FeatureCollection<Geometry>,
           );
-
-          if (!found.length) notify("এই অবস্থানে কোনো দাগ পাওয়া যায়নি");
+          showPlotPopup(feature, [lng, lat]);
         } catch (error) {
           if (controller.signal.aborted || requestId !== identifyRequestIdRef.current) return;
           logger.warn("RAJUK identify failed", error);
@@ -269,6 +355,8 @@ export default function MapLibreMap() {
       extentTimerRef.current = null;
       extentControllerRef.current?.abort();
       identifyControllerRef.current?.abort();
+      popupRef.current?.remove();
+      popupRef.current = null;
       extentRequestIdRef.current += 1;
       identifyRequestIdRef.current += 1;
       unbindViewport();
@@ -395,16 +483,14 @@ export default function MapLibreMap() {
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || "দাগ খোঁজা যায়নি");
       const data = (await response.json()) as { features?: RajukPlotFeature[] };
       const found = sanitizeRajukFeatures(Array.isArray(data.features) ? data.features : []);
+      popupRef.current?.remove();
+      popupRef.current = null;
       setResults(found);
-      setSelected(found[0] ?? null);
-      setTab("results");
+      setSelected(null);
+      setTab("search");
       setPanelOpen(true);
       if (mapRef.current) {
-        updateSourceData(
-          mapRef.current,
-          VECTOR_SOURCES.selectedPlot,
-          found.length ? (featuresToFc(found) as FeatureCollection<Geometry>) : EMPTY_GEOJSON,
-        );
+        updateSourceData(mapRef.current, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
       }
       if (found.length && mapRef.current) {
         const bounds = new maplibregl.LngLatBounds();
@@ -460,24 +546,18 @@ export default function MapLibreMap() {
       if (rings.length) {
         const bounds = new maplibregl.LngLatBounds();
         rings.flat().forEach(([lng, lat]) => bounds.extend([lng, lat]));
-        map.fitBounds(bounds, { padding: 80, maxZoom: 19, duration: 600 });
+        map.fitBounds(bounds, { padding: 80, maxZoom: 19, duration: 450 });
       }
+      showPlotPopup(feature);
     }
-  }, []);
+  }, [showPlotPopup]);
 
   const clearResults = useCallback(() => {
+    popupRef.current?.remove();
+    popupRef.current = null;
     setResults([]);
-    setSelected(null);
-    const map = mapRef.current;
-    if (map) updateSourceData(map, VECTOR_SOURCES.selectedPlot, EMPTY_GEOJSON);
-  }, []);
-
-  const activeDetails = selected
-    ? (isMsFeature(selected) ? detailRows(selected, "ms") : detailRows(selected, "rs")).map(([label, value]) => ({
-        label,
-        value,
-      }))
-    : [];
+    clearPlotSelection();
+  }, [clearPlotSelection]);
 
   return (
     <MapLibreMapView
@@ -494,8 +574,6 @@ export default function MapLibreMap() {
       searchPlots={searchPlots}
       goToMyLocation={jumpToCurrentLocation}
       locating={locating}
-      identifyMode={identifyMode}
-      setIdentifyMode={setIdentifyMode}
       panelOpen={panelOpen}
       setPanelOpen={setPanelOpen}
       tab={tab}
@@ -514,7 +592,6 @@ export default function MapLibreMap() {
       isAdvanced={isAdvanced}
       routingCalculator={routingCalculator}
       validateAndRoute={validateAndRoute}
-      activeDetails={activeDetails}
     />
   );
 }
