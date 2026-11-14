@@ -13,8 +13,9 @@ npm run dev
 
 The RAJUK map and data pages use only the verified official runtime architecture:
 
-- `/dap-map` — ArcGIS Maps SDK 4.x map with the six verified RAJUK cached layers.
-- `/rajuk-test` — FeatureServer QA workspace for District → Upazila → Mauza → Plot and coordinate identify.
+- `/geospatial-map` — canonical MapLibre GIS workspace with LandBD layer controls and proxied official RAJUK data.
+- `/mouza-map` — Mouza selection/export workspace.
+- `/rajuk-test` — staff/admin FeatureServer QA workspace for District → Upazila → Mauza → RS/MS Plot and coordinate identify.
 - Plot/hierarchy data comes from `Rajuk_dap_db/FeatureServer` layers 10, 9, 1 and 0.
 - Map visualization uses the six verified Hosted MapServer services.
 - RAJUK credentials are server-only; the browser receives normalized application responses and proxied tiles, never the API key or generated token.
@@ -31,4 +32,4 @@ Do **not** use `NEXT_PUBLIC_RAJUK_API_KEY`, commit the real key, or store genera
 
 ### Verified RAJUK flow
 
-The backend calls RAJUK `generateToken` with the configured API key and the target service URL, caches the short-lived token in server memory, refreshes it before expiry, and retries FeatureServer requests once after HTTP 498/499. Visualization tiles are served through the allow-listed LandBD tile proxy.
+RAJUK access remains server-side. The auth service first uses the official public config/API-key path when available, then configured portal/server credentials as fallbacks. Short-lived credentials are cached server-side (Redis/local memory), refreshed before expiry, and FeatureServer/MapServer traffic is exposed to the browser only through LandBD's normalized/query/tile proxy routes.
