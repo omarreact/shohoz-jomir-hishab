@@ -238,6 +238,8 @@ export default function MapLibreMapViewV3({
   const msResults = useMemo(() => results.filter((feature) => isMsFeature(feature)), [results]);
   const activeLayers = useMemo(() => LAYERS.filter((layer) => layers[layer.key]), [layers]);
 
+  const selectedSearchResult = selected && results.includes(selected) ? selected : null;
+
   const closePanel = useCallback(() => {
     setPanelOpen(false);
     requestAnimationFrame(() => document.getElementById(`atlas-map-tool-${tab}`)?.focus());
@@ -473,14 +475,14 @@ export default function MapLibreMapViewV3({
                       />
                     ))}
                   </div>
-                  {selected ? (
+                  {selectedSearchResult ? (
                     <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-3">
                       <p className="mb-3 text-base font-black text-[var(--primary)]">নির্বাচিত দাগের কাজ</p>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <button
                           type="button"
                           disabled={routingCalculator !== null}
-                          onClick={() => void validateAndRoute("khatiyan", selected)}
+                          onClick={() => void validateAndRoute("khatiyan", selectedSearchResult)}
                           className="min-h-12 rounded-xl bg-[var(--primary)] px-3 text-base font-bold text-white disabled:opacity-50"
                         >
                           খতিয়ান হিসাব
@@ -488,7 +490,7 @@ export default function MapLibreMapViewV3({
                         <button
                           type="button"
                           disabled={routingCalculator !== null}
-                          onClick={() => void validateAndRoute("faraez", selected)}
+                          onClick={() => void validateAndRoute("faraez", selectedSearchResult)}
                           className="min-h-12 rounded-xl border border-[var(--border-color)] bg-white px-3 text-base font-bold disabled:opacity-50"
                         >
                           ফারায়েজ
