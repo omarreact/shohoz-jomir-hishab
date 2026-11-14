@@ -338,7 +338,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
           <div className="app-panel mx-auto max-w-6xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] px-4 py-3">
               <div>
-                <p className="text-xs text-[#7f9086]">খতিয়ান নং</p>
+                <p className="text-xs text-[var(--muted-foreground)]">খতিয়ান নং</p>
                 <p className="text-2xl font-semibold text-[var(--foreground)]">{selectedKhatian.KHATIAN_NO}</p>
               </div>
               <button

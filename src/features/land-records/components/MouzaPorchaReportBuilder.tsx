@@ -678,7 +678,7 @@ export default function MouzaPorchaReportBuilder() {
                 <button
                   type="button"
                   onClick={cancelGeneration}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-900/60 px-3 py-2 text-xs font-semibold text-red-700"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"
                 >
                   <Square size={14} /> বন্ধ করুন
                 </button>
@@ -724,7 +724,7 @@ export default function MouzaPorchaReportBuilder() {
         {rows.length > 0 ? (
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
             <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
-              <div className="text-sm text-[#92a39a]">
+              <div className="text-sm text-[var(--muted-foreground)]">
                 {rows.length}টি খতিয়ান {phase === "done" ? "A4 Portrait রিপোর্ট হিসেবে প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
               </div>
