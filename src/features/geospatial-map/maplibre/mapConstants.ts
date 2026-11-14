@@ -1,6 +1,6 @@
 import type { BasemapKey, MapRasterKey } from "./types";
 
-export type Tab = "search" | "layers" | "basemap" | "results";
+export type Tab = "search" | "layers" | "basemap" | "history" | "legend" | "settings";
 export type LayerKey = MapRasterKey;
 export type LayerDef = {
   key: LayerKey;
@@ -82,4 +82,5 @@ export const FREE_IMAGERY_OPTIONS: Array<{
   })),
 ];
 
-export const GOOGLE_EARTH_2003_URL = "https://earth.google.com/web/@23.82810618,90.48911986,3.60010157a,3337.57801622d,35y,-0h,0t,0r/data=ChYqEAgBEgoyMDAzLTAxLTE3GAFCAggBOgMKATBCAggASg0I____________ARAA?authuser=0";
+export const GOOGLE_EARTH_2003_URL = "https://earth.google.com/web/";
+export const GOOGLE_EARTH_HISTORICAL_DOCS_URL = "https://developers.google.com/maps/documentation/earth/historical-imagery";

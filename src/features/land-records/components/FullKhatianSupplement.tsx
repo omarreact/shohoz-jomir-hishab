@@ -269,11 +269,11 @@ export default function FullKhatianSupplement({ fullKhatian, pageOrientation }: 
             </div>
           ) : null}
         </Panel>
-      ) : (
+      ) : lisf.status === "error" ? (
         <Panel title="অতিরিক্ত উৎসের অবস্থা">
-          <p className="text-[12px]">{lisf.message || "অতিরিক্ত LISF তথ্য পাওয়া যায়নি।"}</p>
+          <p className="text-[12px]">{lisf.message || "LISF অতিরিক্ত তথ্য সাময়িকভাবে লোড করা যায়নি।"}</p>
         </Panel>
-      )}
+      ) : null}
 
       {warnings.length ? (
         <Panel title="আংশিক তথ্য / সতর্কতা">
