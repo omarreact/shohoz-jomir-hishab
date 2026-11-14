@@ -179,7 +179,9 @@ test.describe("LandBD DLRMS browser data path", () => {
     await expect(dialog.getByText(/0\.338|০\.৩৩৮/).first()).toBeVisible();
 
     await dialog.getByText("অতিরিক্ত উৎস-তথ্য দেখুন", { exact: true }).click();
-    await expect(dialog.getByText("সরকারি DLRMS উৎসের সকল প্রকাশিত ফিল্ড", { exact: true })).toBeVisible();
+    await expect(
+      dialog.getByRole("heading", { name: /সরকারি (?:DLRMS|ডিএলআরএমএস) উৎসের সকল প্রকাশিত ফিল্ড/ }),
+    ).toBeVisible();
     await expect(dialog.getByText("PREVIOUS_KHATIAN", { exact: true })).toBeVisible();
     await expect(dialog.getByText("123", { exact: true })).toBeVisible();
     await expect(dialog.getByText("পরীক্ষামূলক মাতা ১", { exact: true }).first()).toBeVisible();
