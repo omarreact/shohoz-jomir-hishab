@@ -6,6 +6,7 @@ import OfficialLandSourceDock from "../components/OfficialLandSourceDock";
 import { LEGAL_SURVEY_NOTE } from "../lib/officialLandSources";
 import {
   Compass,
+  Copy,
   Download,
   Expand,
   ExternalLink,
@@ -161,6 +162,66 @@ function PlotCard({
         ))}
       </span>
     </button>
+  );
+}
+
+function CoordinateReadout({
+  mapRef,
+  mapReady,
+}: {
+  mapRef: RefObject<MapLibreInstance | null>;
+  mapReady: boolean;
+}) {
+  const [position, setPosition] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    let frame: number | null = null;
+    const updateCenter = () => {
+      const center = map.getCenter();
+      setPosition({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
+    };
+    const onPointer = (event: { lngLat: { lat: number; lng: number } }) => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setPosition({ lat: event.lngLat.lat, lng: event.lngLat.lng, zoom: map.getZoom() });
+      });
+    };
+    updateCenter();
+    map.on("mousemove", onPointer);
+    map.on("zoomend", updateCenter);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      map.off("mousemove", onPointer);
+      map.off("zoomend", updateCenter);
+    };
+  }, [mapReady, mapRef]);
+
+  if (!position) return null;
+
+  return (
+    <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--brand-green-faint)] p-4">
+      <h3 className="text-lg font-black text-[var(--foreground)]">স্থানাঙ্ক</h3>
+      <p className="mt-2 break-words text-base leading-7 tabular-nums text-[var(--foreground)]">
+        Lat {position.lat.toFixed(6)} · Lon {position.lng.toFixed(6)} · Zoom {position.zoom.toFixed(1)}
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard
+            .writeText(`${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`)
+            .then(() => setCopied(true))
+            .catch(() => setCopied(false));
+        }}
+        className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-white px-3 text-base font-bold text-[var(--primary)]"
+      >
+        <Copy size={19} />
+        স্থানাঙ্ক কপি
+      </button>
+      {copied ? <span role="status" className="ml-3 text-base font-semibold text-[var(--primary)]">কপি হয়েছে</span> : null}
+    </section>
   );
 }
 
@@ -727,6 +788,7 @@ export default function MapLibreMapViewV3({
                 </p>
               ) : null}
 
+              <CoordinateReadout mapRef={mapRef} mapReady={mapReady} />
               <OfficialLandSourceDock detailed />
               <p className="text-base leading-7 text-[var(--muted-foreground)]">{LEGAL_SURVEY_NOTE}</p>
             </div>
