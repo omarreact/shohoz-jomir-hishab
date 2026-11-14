@@ -514,16 +514,16 @@ export default function MouzaPorchaReportBuilder() {
         : "খতিয়ান তালিকা সংগ্রহ করা হচ্ছে";
 
   return (
-    <div className="min-h-screen bg-[#0a110d] text-[#edf3ef]">
-      <section className="border-b border-[#1c2c24] bg-[#0c1510]">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-mixed">
+      <section className="border-b border-[var(--border-color)] bg-[var(--card-bg)]">
         <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-6 lg:px-8">
-          <span className="inline-flex rounded-full bg-[#123125] px-3 py-1 text-xs font-semibold text-[#2bc18a]">
+          <span className="inline-flex rounded-full bg-[var(--secondary)] px-3 py-1 text-xs font-semibold text-[var(--primary)]">
             মৌজা ভিত্তিক খতিয়ান বই
           </span>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-4xl">
             বিনামূল্যে একটি মৌজার খতিয়ান বই PDF আকারে সংগ্রহ করুন
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-[#9eada4] md:text-base">
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted-foreground)] md:text-base">
             বিভাগ, জেলা, উপজেলা, সার্ভে ও মৌজা বেছে ওই মৌজার সব খতিয়ান একটি PDF বই আকারে তৈরি করুন।
             নতুন, পুরনো রঙিন ও পুরনো সাদা-কালো—তিনটি PDF presentation রাখা হয়েছে।
           </p>
@@ -531,16 +531,16 @@ export default function MouzaPorchaReportBuilder() {
       </section>
 
       <main className="mx-auto w-full max-w-6xl px-2 py-8 md:px-6 lg:px-8">
-        <section className="report-controls rounded-2xl border border-[#1d2d25] bg-[#111a15] p-3 shadow-[0_24px_80px_rgba(0,0,0,.18)] md:p-6">
+        <section className="report-controls app-panel p-3 md:p-6">
           <div className="mb-5">
-            <h2 className="text-xl font-semibold text-white md:text-2xl">অবস্থান নির্বাচন করে খতিয়ান বই তৈরি করুন</h2>
-            <p className="mt-2 text-sm leading-6 text-[#91a198]">
+            <h2 className="text-xl font-semibold text-[var(--foreground)] md:text-2xl">অবস্থান নির্বাচন করে খতিয়ান বই তৈরি করুন</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
               বিভাগ → জেলা → উপজেলা / থানা → খতিয়ানের ধরন → মৌজা (JL) নির্বাচন করুন। সব ধাপ পূর্ণ হলে PDF download সক্রিয় হবে।
             </p>
           </div>
 
-          <div className="mb-5 rounded-xl border border-[#174333] bg-[#10271d] p-4 text-sm text-[#b8c8bf]">
-            <p className="font-semibold text-[#eaf3ed]">কিভাবে খতিয়ান বই তৈরি করবেন?</p>
+          <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-4 text-sm text-[var(--muted-foreground)]">
+            <p className="font-semibold text-[var(--foreground)]">কিভাবে খতিয়ান বই তৈরি করবেন?</p>
             <ol className="mt-2 list-inside list-decimal space-y-1 text-xs leading-5 md:text-sm">
               <li>বিভাগ → জেলা → উপজেলা / থানা ক্রমানুসারে নির্বাচন করুন।</li>
               <li>খতিয়ানের ধরন থেকে সার্ভে বেছে নিয়ে মৌজা নির্বাচন করুন।</li>
@@ -599,19 +599,19 @@ export default function MouzaPorchaReportBuilder() {
             />
           </div>
 
-          <div className="mt-5 grid gap-4 border-t border-[#1f3027] pt-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="mt-5 grid gap-4 border-t border-[var(--border-color)] pt-5 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <h3 className="text-lg font-semibold text-white">সম্পূর্ণ মৌজার খতিয়ান বই</h3>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#89998f]">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">সম্পূর্ণ মৌজার খতিয়ান বই</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
                 নির্বাচিত মৌজার সব খতিয়ান একত্র করে PDF বই তৈরি হবে। PDF প্রস্তুত হলে সরাসরি ডাউনলোড হবে।
               </p>
-              <p className="mt-2 text-xs text-[#6f8076]">
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                 {division && district && upazila && surveyId && mouzaId
                   ? `নির্বাচিত মৌজা: ${selectedMouza?.MOUZA_NAME || "—"} (JL ${selectedMouza?.JL_NUMBER || "—"}) · ${selectedSurvey?.LOCAL_NAME || "—"}`
                   : "PDF তৈরি করতে সব ধাপ নির্বাচন করুন।"}
               </p>
 
-              <label className="mt-4 flex max-w-2xl cursor-pointer items-start gap-3 rounded-xl border border-[#214132] bg-[#102219] p-3">
+              <label className="mt-4 flex max-w-2xl cursor-pointer items-start gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-3">
                 <input
                   type="checkbox"
                   checked={includeHalSabek}
@@ -619,11 +619,11 @@ export default function MouzaPorchaReportBuilder() {
                     clearReport();
                     setIncludeHalSabek(event.target.checked);
                   }}
-                  className="mt-1 h-4 w-4 accent-[#1fa775]"
+                  className="mt-1 h-4 w-4 accent-[var(--primary)]"
                 />
                 <span>
-                  <span className="block text-sm font-semibold text-[#dce7e0]">সাবেক / হাল দাগ যাচাই করুন</span>
-                  <span className="mt-1 block text-xs leading-5 text-[#809187]">
+                  <span className="block text-sm font-semibold text-[var(--foreground)]">সাবেক / হাল দাগ যাচাই করুন</span>
+                  <span className="mt-1 block text-xs leading-5 text-[var(--muted-foreground)]">
                     উৎসে mapping পাওয়া গেলে PDF-তে দেখানো হবে; কোনো দাগ অনুমান করা হবে না।
                   </span>
                 </span>
@@ -632,24 +632,24 @@ export default function MouzaPorchaReportBuilder() {
 
             <div className="min-w-[15rem] space-y-3">
               <fieldset className="space-y-2">
-                <legend className="text-xs font-medium text-[#8fa097]">PDF-এর ধরন</legend>
+                <legend className="text-xs font-medium text-[var(--muted-foreground)]">PDF-এর ধরন</legend>
 
-                <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "book" ? "border-[#1fa775] bg-[#143b2c] text-white" : "border-[#24382e] text-[#98a89f]"}`}>
-                  <input type="radio" className="accent-[#1fa775]" name="pdf-variant" checked={pdfVariant === "book"} onChange={() => setPdfVariant("book")} value="book" />
-                  <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-[#1fa775] bg-[#1fa775]" />
+                <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "book" ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_12%,var(--card-bg))] text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}>
+                  <input type="radio" className="accent-[var(--primary)]" name="pdf-variant" checked={pdfVariant === "book"} onChange={() => setPdfVariant("book")} value="book" />
+                  <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-[var(--primary)] bg-[var(--primary)]" />
                   নতুন
                 </label>
 
-                <div className="space-y-1.5 rounded-xl border border-[#24382e] bg-[#0d1611] p-2">
-                  <p className="px-1 text-xs font-medium text-[#77887e]">পুরনো</p>
+                <div className="space-y-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-2">
+                  <p className="px-1 text-xs font-medium text-[var(--muted-foreground)]">পুরনো</p>
                   <div className="flex gap-2">
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "legacy" ? "border-[#1fa775] bg-[#143b2c] text-white" : "border-[#24382e] text-[#98a89f]"}`}>
-                      <input type="radio" className="accent-[#1fa775]" name="pdf-variant" checked={pdfVariant === "legacy"} onChange={() => setPdfVariant("legacy")} value="legacy" />
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "legacy" ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_12%,var(--card-bg))] text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}>
+                      <input type="radio" className="accent-[var(--primary)]" name="pdf-variant" checked={pdfVariant === "legacy"} onChange={() => setPdfVariant("legacy")} value="legacy" />
                       <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-[#cbef77] bg-[#102632]" />
                       রঙিন
                     </label>
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "monochrome" ? "border-[#1fa775] bg-[#143b2c] text-white" : "border-[#24382e] text-[#98a89f]"}`}>
-                      <input type="radio" className="accent-[#1fa775]" name="pdf-variant" checked={pdfVariant === "monochrome"} onChange={() => setPdfVariant("monochrome")} value="monochrome" />
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${pdfVariant === "monochrome" ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_12%,var(--card-bg))] text-[var(--foreground)]" : "border-[var(--border-color)] text-[var(--muted-foreground)]"}`}>
+                      <input type="radio" className="accent-[var(--primary)]" name="pdf-variant" checked={pdfVariant === "monochrome"} onChange={() => setPdfVariant("monochrome")} value="monochrome" />
                       <span aria-hidden="true" className="h-4 w-4 rounded border-2 border-white bg-white" />
                       সাদা-কালো
                     </label>
@@ -668,7 +668,7 @@ export default function MouzaPorchaReportBuilder() {
                   void generateReport();
                 }}
                 disabled={!division || !district || !upazila || !surveyId || !mouzaId || generating || pdfBusy !== null}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1fa775] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#23b984] disabled:cursor-not-allowed disabled:bg-[#66766d]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--muted)]"
               >
                 {generating || pdfBusy === "download" ? <Loader2 className="animate-spin" size={16} /> : null}
                 {generating ? "PDF তৈরি হচ্ছে…" : pdfBusy === "download" ? "PDF প্রস্তুত হচ্ছে…" : "পূর্ণ মৌজা PDF ডাউনলোড"}
@@ -678,7 +678,7 @@ export default function MouzaPorchaReportBuilder() {
                 <button
                   type="button"
                   onClick={cancelGeneration}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-900/60 px-3 py-2 text-xs font-semibold text-red-300"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-900/60 px-3 py-2 text-xs font-semibold text-red-700"
                 >
                   <Square size={14} /> বন্ধ করুন
                 </button>
@@ -686,28 +686,28 @@ export default function MouzaPorchaReportBuilder() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#20352a] bg-[#0d1812] px-4 py-3 text-xs text-[#82938a]">
-            <ShieldCheck size={16} className="text-[#2bc18a]" />
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-4 py-3 text-xs text-[var(--muted-foreground)]">
+            <ShieldCheck size={16} className="text-[var(--primary)]" />
             <span>Source wording ও NFC normalization সংরক্ষিত</span>
-            <span className="text-[#42544a]">•</span>
+            <span className="text-[var(--muted-foreground)]">•</span>
             <span>অসম্পূর্ণ upstream record অনুমান করা হবে না</span>
           </div>
 
           {displayedError ? (
-            <div role="alert" className="mt-4 rounded-lg border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+            <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {displayedError}
             </div>
           ) : null}
 
           {verificationWarning ? (
-            <div role="status" className="mt-4 rounded-lg border border-amber-800/60 bg-amber-950/20 px-4 py-3 text-sm text-amber-300">
+            <div role="status" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
               {verificationWarning}
             </div>
           ) : null}
 
           {generating ? (
-            <div className="mt-5 rounded-xl border border-[#214333] bg-[#10251b] p-4 text-sm text-[#b8c9c0]">
-              <div className="flex items-center gap-2 font-semibold text-white">
+            <div className="mt-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-4 text-sm text-[var(--muted-foreground)]">
+              <div className="flex items-center gap-2 font-semibold text-[var(--foreground)]">
                 <Loader2 className="animate-spin" size={16} /> {phaseLabel}
               </div>
               <p className="mt-2 tabular-nums">
@@ -723,7 +723,7 @@ export default function MouzaPorchaReportBuilder() {
 
         {rows.length > 0 ? (
           <section id="mouza-porcha-report-preview" className="mt-7 scroll-mt-24">
-            <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#21342a] bg-[#111a15] p-3">
+            <div className="report-actions mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3">
               <div className="text-sm text-[#92a39a]">
                 {rows.length}টি খতিয়ান {phase === "done" ? "A4 Portrait রিপোর্ট হিসেবে প্রস্তুত" : "লোড হয়েছে"}
                 {reportMeta?.reportId ? <span className="ml-2 font-mono text-xs">· {reportMeta.reportId}</span> : null}
@@ -733,7 +733,7 @@ export default function MouzaPorchaReportBuilder() {
                   type="button"
                   onClick={() => void handlePdf("preview")}
                   disabled={generating || phase !== "done" || pdfBusy !== null}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#1fa775] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-50"
                 >
                   {pdfBusy === "preview" ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
                   {pdfBusy === "preview" ? "PDF প্রস্তুত হচ্ছে…" : "PDF প্রিভিউ"}
@@ -742,19 +742,19 @@ export default function MouzaPorchaReportBuilder() {
                   type="button"
                   onClick={() => void handlePdf("download")}
                   disabled={generating || phase !== "done" || pdfBusy !== null}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#2f4a3d] px-4 py-2 text-sm font-semibold text-[#c6d3cc] disabled:opacity-50"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] disabled:opacity-50"
                 >
                   {pdfBusy === "download" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   {pdfBusy === "download" ? "ডাউনলোড তৈরি হচ্ছে…" : "PDF ডাউনলোড"}
                 </button>
-                <ResultPrintButton onClick={handleBrowserPrint} disabled={generating || phase !== "done" || pdfBusy !== null} className="rounded-full border-[#2f4a3d] bg-transparent text-[#c6d3cc]" />
+                <ResultPrintButton onClick={handleBrowserPrint} disabled={generating || phase !== "done" || pdfBusy !== null} className="rounded-full border-[var(--border-color)] bg-transparent text-[var(--foreground)]" />
               </div>
             </div>
 
             <div className="mb-3 print:hidden">
-              <h2 className="text-lg font-semibold text-white">রিপোর্ট প্রিভিউ</h2>
-              <p className="mt-1 text-xs leading-5 text-[#83948a]">
-                A4 Portrait খতিয়ান বইটি নিচে দেখুন। PDF design uploaded reference-এর cover + compact record-table pattern অনুসরণ করে।
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">রিপোর্ট প্রিভিউ</h2>
+              <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
+                A4 Portrait খতিয়ান বইটি নিচে দেখুন। PDF নথিটি LandBD-এর যাচাইকৃত রিপোর্ট লেআউট ব্যবহার করে।
               </p>
             </div>
 

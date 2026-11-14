@@ -38,25 +38,25 @@ export default function LandRecordSelectionColumn({
 
   return (
     <section
-      className={`flex min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-xl border border-[#203129] bg-[#101813] ${className}`}
+      className={`app-surface flex min-h-[20rem] min-w-0 flex-col overflow-hidden ${className}`}
       aria-label={label}
     >
-      <div className="flex items-center justify-between border-b border-[#203129] bg-[#131e18] px-3 py-3">
+      <div className="flex items-center justify-between border-b border-[var(--border-color)] bg-[#131e18] px-3 py-3">
         <p className="text-sm font-semibold text-[#eaf1ec]">{label}</p>
-        {value ? <span className="text-xs font-semibold text-[#2bc18a]">✓</span> : null}
+        {value ? <span className="text-xs font-semibold text-[var(--primary)]">✓</span> : null}
       </div>
 
-      <div className="border-b border-[#203129] px-2.5 py-2">
+      <div className="border-b border-[var(--border-color)] px-2.5 py-2">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={placeholder}
           disabled={Boolean(disabledMessage)}
-          className="w-full min-w-0 rounded-lg border border-[#25372e] bg-[#0b120e] px-3 py-2 text-sm text-[#eaf1ec] outline-none placeholder:text-[#68766e] focus:border-[#1fa775] focus:ring-2 focus:ring-[#1fa775]/15 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full min-w-0 rounded-lg border border-[#25372e] bg-[var(--background)] px-3 py-2 text-sm text-[#eaf1ec] outline-none placeholder:text-[#68766e] focus:border-[var(--primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--primary)_15%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 [scrollbar-color:#2b4a3b_transparent] [scrollbar-width:thin]" style={{ maxHeight: "27rem" }}>
+      <div className="flex-1 overflow-y-auto p-2 [scrollbar-color:var(--border-color)_transparent] [scrollbar-width:thin]" style={{ maxHeight: "27rem" }}>
         {loading ? (
           <div className="flex h-full min-h-40 items-center justify-center px-4 text-center text-xs text-[#7c8a82]">
             তথ্য লোড হচ্ছে…
@@ -77,8 +77,8 @@ export default function LandRecordSelectionColumn({
                   aria-pressed={active}
                   className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                     active
-                      ? "bg-[#1fa775] font-semibold text-white"
-                      : "text-[#b8c4bc] hover:bg-[#17251d] hover:text-white"
+                      ? "bg-[var(--primary)] font-semibold text-[var(--primary-foreground)]"
+                      : "text-[#b8c4bc] hover:bg-[#17251d] hover:text-[var(--foreground)]"
                   }`}
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
