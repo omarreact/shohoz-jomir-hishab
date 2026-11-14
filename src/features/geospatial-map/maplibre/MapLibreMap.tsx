@@ -159,7 +159,9 @@ export default function MapLibreMap() {
     const map = mapRef.current;
     if (!map || !mapReadyRef.current) return;
 
-    popupRef.current?.remove();
+    const previousPopup = popupRef.current;
+    popupRef.current = null;
+    previousPopup?.remove();
     const anchor = coordinate ?? featureCenter(feature);
     if (!anchor) return;
 
