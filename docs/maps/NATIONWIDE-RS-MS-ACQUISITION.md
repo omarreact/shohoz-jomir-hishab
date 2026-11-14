@@ -85,6 +85,9 @@ MS not applicable requires official evidence:
 npm run maps:cadastral:mark -- --district <BBS> --survey MS --state not-applicable --evidence <official-gov-bd-url> --write
 ```
 
+## Public runtime delivery
+Only catalog assets that are simultaneously `published`, `storageAuthorized=true`, and `redistributionAllowed=true` are exposed. Metadata is available from `GET /api/cadastral/assets`, and file delivery uses `/api/cadastral/assets/:assetId`. The object route never accepts an R2 key from a client and supports single HTTP byte ranges for large PMTiles/map assets.
+
 ## Cloudflare R2
 Existing target: `LANDBD_FILES` / `landbd-files`; namespace: `national-cadastral/v1/`.
 

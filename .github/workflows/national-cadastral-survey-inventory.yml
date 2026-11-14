@@ -1,18 +1,13 @@
 name: National Cadastral Survey Metadata Inventory
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "scripts/maps/national-cadastral-dlrms-survey-inventory.mjs"
-      - ".github/workflows/national-cadastral-survey-inventory.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: national-cadastral-survey-inventory-${{ github.ref }}
+  group: national-cadastral-survey-inventory
   cancel-in-progress: true
 
 jobs:

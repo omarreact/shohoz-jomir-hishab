@@ -52,6 +52,8 @@ export const API_ROUTE_POLICIES: readonly ApiRoutePolicy[] = [
   { path: "/api/cloudinary/sign", get: "staff", mutate: "staff" },
   { path: "/api/comments", get: "public", mutate: "public" },
   { path: "/api/cadastral/coverage", get: "public", mutate: "public" },
+  { path: "/api/cadastral/assets", get: "public", mutate: "admin" },
+  { path: "/api/cadastral/assets/[assetId]", get: "public", mutate: "admin" },
   { path: "/api/dncc-directory", get: "public", mutate: "public" },
   { path: "/api/health", get: "public", mutate: "public" },
   { path: "/api/security/lockout", get: "public", mutate: "public" },
