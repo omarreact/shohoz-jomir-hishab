@@ -51,8 +51,8 @@ async function allowFreeGisAccess(page) {
 }
 
 async function waitForGis(page) {
-  await expect(page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole("navigation", { name: "GIS মানচিত্র সাইডবার" })).toBeVisible();
+  await expect(page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" })).toBeVisible();
   await expect(page.getByText("GIS মানচিত্র তৈরি হচ্ছে…")).toBeHidden({ timeout: 20_000 });
 }
 
@@ -129,7 +129,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
       await expect(page.getByText("পরিমাপ ও জরিপ টুলস")).toHaveCount(0);
       await expect(page.getByText("মানচিত্রে ট্যাপ করে বিন্দু বসান")).toHaveCount(0);
 
-      const map = page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
+      const map = page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
       const box = await map.boundingBox();
       expect(box).not.toBeNull();
       expect(box?.width ?? 0).toBeGreaterThan(viewport.width * 0.95);
