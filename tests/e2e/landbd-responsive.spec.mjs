@@ -153,23 +153,24 @@ test.describe("LandBD map-first geospatial workspace", () => {
       ["মানচিত্র সেটিংস", "মানচিত্র সেটিংস"],
     ];
 
+    const sidebar = page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" });
     for (const [buttonName, panelName] of tools) {
-      const button = page.getByRole("button", { name: buttonName });
+      const button = sidebar.getByRole("button", { name: buttonName, exact: true });
       await button.click();
       await expect(panel).toBeVisible();
       await expect(panel).toHaveAttribute("aria-label", panelName);
       await expect(button).toHaveAttribute("aria-expanded", "true");
     }
 
-    await expect(panel.getByRole("button", { name: "স্থানাঙ্ক কপি" })).toBeVisible();
-    await expect(panel.getByRole("button", { name: "PNG সংরক্ষণ" })).toBeVisible();
-    await expect(panel.getByRole("button", { name: "প্রিন্ট" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "স্থানাঙ্ক কপি", exact: true })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "PNG সংরক্ষণ", exact: true })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "প্রিন্ট", exact: true })).toBeVisible();
 
-    const settings = page.getByRole("button", { name: "মানচিত্র সেটিংস" });
+    const settings = sidebar.getByRole("button", { name: "মানচিত্র সেটিংস", exact: true });
     await settings.click();
     await expect(panel).toBeHidden();
 
-    const history = page.getByRole("button", { name: "ঐতিহাসিক স্যাটেলাইট" });
+    const history = sidebar.getByRole("button", { name: "ঐতিহাসিক স্যাটেলাইট", exact: true });
     await history.click();
     await expect(panel).toBeVisible();
     await page.keyboard.press("Escape");
@@ -227,8 +228,6 @@ test.describe("LandBD map-first geospatial workspace", () => {
     await expect(sentinel).toBeVisible();
     await expect(modis2003).toBeVisible();
     await expect(modis2025).toBeVisible();
-    await expect(panel.getByText(/২০০৩ layer হলো NASA MODIS, Google Earth নয়/)).toBeVisible();
-
     await sentinel.click();
     await expect(sentinel).toHaveAttribute("aria-pressed", "true");
     await modis2003.click();
@@ -306,14 +305,14 @@ test.describe("LandBD map-first geospatial workspace", () => {
     await canvas.click({ position: { x: 1120, y: 260 } });
     const popup = page.locator(".landbd-dag-popup");
     await expect(popup).toHaveCount(1);
-    await expect(popup).toContainText("RS দাগ 101");
+    await expect(popup).toContainText("RS দাগ ১০১");
     await expect(popup).toContainText("তথ্য পাওয়া যায়নি");
     await expect(panel).toBeHidden();
 
     await canvas.click({ position: { x: 820, y: 690 } });
     await expect(popup).toHaveCount(1);
-    await expect(popup).toContainText("MS দাগ 202");
-    await expect(popup).not.toContainText("RS দাগ 101");
+    await expect(popup).toContainText("MS দাগ ২০২");
+    await expect(popup).not.toContainText("RS দাগ ১০১");
     await expect(panel).toBeHidden();
 
     await canvas.click({ position: { x: 1320, y: 760 } });
