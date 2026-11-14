@@ -1,6 +1,7 @@
 import ServicePaywallGate from "@/src/components/services/ServicePaywallGate";
 import type { Metadata } from "next";
 import SurveyKhatianSearch from "@/src/features/land-records/components/SurveyKhatianSearch";
+import KhatianVerificationLookup from "@/src/features/land-records/components/KhatianVerificationLookup";
 import DynamicPageGate from "@/src/shared/components/DynamicPageGate";
 
 export const metadata: Metadata = {
@@ -13,8 +14,9 @@ export default function DlrmsKhatianPage() {
   return (
     <DynamicPageGate pageId="/dlrms-khatian" featureName="DLRMS খতিয়ান অনুসন্ধান">
       <ServicePaywallGate serviceId="dlrms-khatian">
-      <SurveyKhatianSearch />
-          </ServicePaywallGate>
+        <SurveyKhatianSearch />
+        <KhatianVerificationLookup />
+      </ServicePaywallGate>
     </DynamicPageGate>
   );
 }
