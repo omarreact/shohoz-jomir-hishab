@@ -5,6 +5,7 @@ const source = (file: string) => fs.readFileSync(path.join(process.cwd(), file),
 const view = source("src/features/geospatial-map/maplibre/MapLibreMapViewV3.tsx");
 const controller = source("src/features/geospatial-map/maplibre/MapLibreMap.tsx");
 const styles = source("src/features/geospatial-map/maplibre/layers.ts");
+const types = source("src/features/geospatial-map/maplibre/types.ts");
 const constants = source("src/features/geospatial-map/maplibre/mapConstants.ts");
 const client = source("src/features/geospatial-map/components/GeospatialMapClient.tsx");
 const globals = source("app/globals.css");
@@ -73,8 +74,9 @@ describe("LandBD map-first GIS workspace", () => {
   });
 
   it("labels historical imagery truthfully and never embeds Google Earth tiles", () => {
-    expect(constants).toContain('label: "NASA MODIS · 2003"');
-    expect(constants).toContain("gibs.earthdata.nasa.gov");
+    expect(constants).toContain("...([2003, 2010, 2020, 2025] as const).map");
+    expect(constants).toContain('label: `NASA MODIS · ${year}`');
+    expect(types).toContain("gibs.earthdata.nasa.gov");
     expect(constants).toContain('GOOGLE_EARTH_2003_URL = "https://earth.google.com/web/"');
     expect(constants).toContain("developers.google.com/maps/documentation/earth/historical-imagery");
     expect(view).toContain("নিচের ২০০৩ layer হলো NASA MODIS, Google Earth নয়");
