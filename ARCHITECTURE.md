@@ -179,7 +179,15 @@ Cross-domain rule: a change under `src/features/geospatial-map` or `src/services
 
 ---
 
-## 8. Safe change checklist
+## 8. Deployment policy
+
+- GitHub `main` is the only Vercel deploy-enabled branch in `vercel.json`.
+- Vercel project-level preview deployments are disabled to prevent feature/PR pushes from consuming the build quota.
+- Cloudflare/OpenNext compatibility remains validated in CI; no production promotion occurs from pull-request validation.
+
+---
+
+## 9. Safe change checklist
 
 Before modifying a file:
 
@@ -193,7 +201,7 @@ Before modifying a file:
 
 ---
 
-## 9. Incremental boundary plan (non-destructive)
+## 10. Incremental boundary plan (non-destructive)
 
 Already in place:
 - Domain modules under `src/modules/{faraez,khatiyan,land,auth}`  
@@ -210,7 +218,7 @@ Next increments (when needed, small PRs):
 
 ---
 
-## 10. Related docs
+## 11. Related docs
 
 - `AGENTS.md` — non-negotiable product constraints (Firebase, RAJUK, no Supabase/Prisma migration)  
 - `docs/architecture/PHASE-0-AUDIT.md`  
