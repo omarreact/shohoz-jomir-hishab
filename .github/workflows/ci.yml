@@ -36,6 +36,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: National cadastral catalog integrity
+        run: npm run maps:cadastral:coverage
+
       - name: Land-record regression tests
         run: >-
           npm test -- --ci

@@ -12,7 +12,11 @@
     "rajuk:export": "tsx scripts/rajuk-export.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "maps:cadastral:ingest": "node scripts/maps/national-cadastral-ingest.mjs",
+    "maps:cadastral:coverage": "node scripts/maps/national-cadastral-coverage.mjs --validate",
+    "maps:cadastral:mark": "node scripts/maps/national-cadastral-mark-coverage.mjs",
+    "maps:cadastral:upload-r2": "node scripts/maps/national-cadastral-upload-r2.mjs"
   },
   "engines": {
     "node": "22.x"
