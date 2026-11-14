@@ -22,13 +22,13 @@ The RAJUK map and data pages use only the verified official runtime architecture
 
 ### Environment
 
-Copy `.env.example` to `.env.local` and set:
+Copy `.env.example` to `.env.local`. The RAJUK runtime can use the official public config path without a private credential. If an operator configures an explicit fallback credential, keep it server-only, for example:
 
 ```env
-RAJUK_API_KEY=your-server-only-arcgis-api-key
+RAJUK_API_KEY=optional-server-only-fallback
 ```
 
-Do **not** use `NEXT_PUBLIC_RAJUK_API_KEY`, commit the real key, or store generated RAJUK tokens in Firestore.
+Do **not** use `NEXT_PUBLIC_RAJUK_API_KEY`, commit a real credential, or store generated RAJUK tokens in Firestore.
 
 ### Verified RAJUK flow
 
