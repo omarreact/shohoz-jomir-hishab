@@ -12,7 +12,6 @@ type Snapshot = {
     enabled: boolean; mode: string; merchantConfigured: boolean;
     availableMethods: string[]; riskReviewCount: number; refundReviewCount: number;
   };
-  ai: { enabled: boolean; provider: string; credentialConfigured: boolean };
   cms: { versionHistoryEnabled: boolean };
   services: { total: number; enabled: number; paid: number };
 };
@@ -37,7 +36,7 @@ export default function OperationsAdmin() {
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 className="text-2xl font-black sm:text-3xl">অপারেশন ও প্রস্তুতি</h1>
-        <p className="mt-2 text-sm text-slate-600">Firebase, Redis, PinPay ও AI স্বাস্থ্য যাচাই। এখানে কোনো অর্থ স্থানান্তর করা হয় না।</p>
+        <p className="mt-2 text-sm text-slate-600">Firebase, Redis ও PinPay স্বাস্থ্য যাচাই। এখানে কোনো অর্থ স্থানান্তর করা হয় না।</p>
       </div>
       <button disabled={loading} onClick={() => void refresh()} className="rounded-xl border px-4 py-2 font-semibold disabled:opacity-40">
         {loading ? "যাচাই চলছে" : "আবার যাচাই করুন"}
@@ -71,11 +70,6 @@ export default function OperationsAdmin() {
           <p className="mt-1 text-xs text-slate-600">যাচাই অনুরোধ: {data.payments.riskReviewCount} · রিফান্ড রিভিউ: {data.payments.refundReviewCount}</p>
           <p className="mt-1 text-xs text-slate-600">যাচাই: স্বাধীন ব্যবসায়িক স্টেটমেন্ট · SMS শুধু সংকেত</p>
           <div className="mt-3 flex gap-3"><Link href="/admin/settings/payment" className="text-sm text-emerald-800 underline">সেটিংস</Link><Link href="/admin/orders" className="text-sm text-emerald-800 underline">অর্ডার</Link></div>
-        </article>
-        <article className="rounded-2xl border bg-white p-5">
-          <h2 className="font-bold">AI সহায়ক</h2>
-          <p className="mt-2 font-semibold">{data.ai.enabled && data.ai.credentialConfigured ? "সক্রিয়" : data.ai.credentialConfigured ? "কনফিগার আছে, বন্ধ" : "API Key প্রয়োজন"}</p>
-          <p className="text-xs text-slate-600">প্রোভাইডার: {data.ai.provider}</p>
         </article>
         <article className="rounded-2xl border bg-white p-5">
           <h2 className="font-bold">CMS সংস্করণ ইতিহাস</h2>
