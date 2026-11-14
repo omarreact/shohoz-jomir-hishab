@@ -175,3 +175,23 @@ export const SURVEY_KEY_BY_ID: Record<number, string> = {
   8: "BDS",
   [MUTATION_SURVEY_ID]: MUTATION_SURVEY_KEY,
 };
+
+/**
+ * DLRMS survey keys are path/query identifiers, not a closed enum.
+ * Keep known IDs for compatibility, but accept newly published safe keys
+ * returned by the official Mouza payload so LandBD does not break when
+ * DLRMS adds another survey family.
+ */
+export const SURVEY_KEY_PATTERN = /^[A-Z][A-Z0-9_-]{0,31}$/;
+
+export function normalizeSurveyKey(value: string | null | undefined): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && SURVEY_KEY_PATTERN.test(normalized) ? normalized : undefined;
+}
+
+export function resolveSurveyKey(
+  mouza: Pick<Mouza, "SURVEY_ID" | "SURVEY_NAME_EN"> | null | undefined,
+): string | undefined {
+  if (!mouza) return undefined;
+  return normalizeSurveyKey(mouza.SURVEY_NAME_EN) ?? SURVEY_KEY_BY_ID[mouza.SURVEY_ID];
+}
