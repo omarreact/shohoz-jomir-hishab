@@ -188,6 +188,6 @@ test.describe("LandBD DLRMS browser data path", () => {
     await expect(dialog.getByText("পরীক্ষামূলক জীবনসঙ্গী ১", { exact: true })).toBeVisible();
     await expect(dialog.getByText("পরীক্ষামূলক আইনগত অভিভাবক ১", { exact: true })).toBeVisible();
     await expect(dialog.getByText("পরীক্ষামূলক ঠিকানা ১", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("৮ আনা", { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("cell", { name: "৮ আনা", exact: true })).toBeVisible();
   });
 });
