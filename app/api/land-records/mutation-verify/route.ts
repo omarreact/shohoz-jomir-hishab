@@ -1,4 +1,8 @@
-﻿import { extractMutationQrKey, fetchMutationVerification } from "@/src/features/land-records/server/mutation-provider";
+﻿import {
+  extractMutationQrKey,
+  fetchMutationDcr,
+  fetchMutationVerification,
+} from "@/src/features/land-records/server/mutation-provider";
 import type { NextRequest } from "next/server";
 
 function badRequest(message: string) {
@@ -7,14 +11,18 @@ function badRequest(message: string) {
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
-  const rawKey = sp.get("qrKey")?.trim() || sp.get("key")?.trim() || "";
-  if (!rawKey) return badRequest("qrKey পাওয়া যায়নি।");
-
-  const key = extractMutationQrKey(rawKey) ?? rawKey;
-  if (!key) return badRequest("সঠিক Mutation QR key বা URL দিন।");
+  const rawQrKey = sp.get("qrKey")?.trim() || sp.get("key")?.trim() || "";
+  const rawDcrKey = sp.get("dcrKey")?.trim() || "";
+  if (!rawQrKey && !rawDcrKey) return badRequest("Mutation QR key অথবা DCR key পাওয়া যায়নি।");
+  if (rawQrKey && rawDcrKey) return badRequest("একবারে QR অথবা DCR—একটি lookup দিন।");
 
   try {
-    const record = await fetchMutationVerification(key, request.signal);
+    const record = rawDcrKey
+      ? await fetchMutationDcr(rawDcrKey, request.signal)
+      : await fetchMutationVerification(
+          extractMutationQrKey(rawQrKey) ?? rawQrKey,
+          request.signal,
+        );
     return Response.json(record, {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
