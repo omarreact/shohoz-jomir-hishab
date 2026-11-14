@@ -45,6 +45,17 @@ incoming/cadastral/RS/26/rupganj/patira/sheet-1.tif.meta.json
 ```
 
 ## Commands
+Prepare explicit open official asset URLs in `data/maps/national-cadastral/intake.json`. The fetcher accepts only Bangladesh government HTTPS URLs, follows redirects only when the final host remains `.gov.bd`, rate-limits requests, and does not use cookies or bypass authentication/payments.
+
+Plan fetches without network writes:
+```bash
+npm run maps:cadastral:fetch -- --root ./incoming/cadastral
+```
+Execute only after reviewing the source terms recorded in the manifest:
+```bash
+npm run maps:cadastral:fetch -- --root ./incoming/cadastral --execute --acknowledge-source-terms
+```
+
 Dry-run ingest:
 ```bash
 npm run maps:cadastral:ingest -- --root ./incoming/cadastral
@@ -63,7 +74,7 @@ npm run maps:cadastral:coverage -- --strict
 ```
 Mark verified coverage:
 ```bash
-npm run maps:cadastral:mark -- --district 26 --survey RS --state complete --evidence https://map.settlement.gov.bd/ --write
+npm run maps:cadastral:mark -- --district 26 --survey RS --state complete --evidence https://map.settlement.gov.bd/ --confirm-full-district --write
 ```
 MS not applicable requires official evidence:
 ```bash
