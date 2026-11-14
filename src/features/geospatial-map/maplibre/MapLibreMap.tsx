@@ -439,9 +439,11 @@ export default function MapLibreMap() {
       map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[basemap]);
     }
     if (!map.getLayer(layerId)) {
-      const beforeId = map.getLayer(VECTOR_LAYERS.rsBoundaryFill)
-        ? VECTOR_LAYERS.rsBoundaryFill
-        : undefined;
+      const beforeId = map.getLayer(RASTER_LAYERS.dap)
+        ? RASTER_LAYERS.dap
+        : map.getLayer(VECTOR_LAYERS.rsBoundaryFill)
+          ? VECTOR_LAYERS.rsBoundaryFill
+          : undefined;
       map.addLayer(
         {
           ...BASEMAP_RASTER_LAYERS[basemap],
