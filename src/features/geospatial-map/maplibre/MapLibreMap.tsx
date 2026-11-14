@@ -241,7 +241,7 @@ export default function MapLibreMap() {
 
     const addSources = () => {
       map.resize();
-      (Object.keys(BASEMAP_SOURCE_DEFINITIONS) as BasemapKey[]).forEach((key) => {
+      (["satellite", "light"] as BasemapKey[]).forEach((key) => {
         const sourceId = BASEMAP_SOURCE_IDS[key];
         if (!map.getSource(sourceId)) map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[key]);
       });
@@ -254,7 +254,8 @@ export default function MapLibreMap() {
     };
 
     const addLayers = () => {
-      Object.values(BASEMAP_RASTER_LAYERS).forEach((layer) => {
+      (["satellite", "light"] as BasemapKey[]).forEach((key) => {
+        const layer = BASEMAP_RASTER_LAYERS[key];
         if (!map.getLayer(layer.id))
           map.addLayer({
             ...layer,
@@ -431,11 +432,32 @@ export default function MapLibreMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const sourceLayerMap = BASEMAP_LAYER_IDS;
-    (Object.entries(sourceLayerMap) as Array<[BasemapKey, string]>).forEach(([key, layerId]) => {
-      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", key === basemap ? "visible" : "none");
+
+    const sourceId = BASEMAP_SOURCE_IDS[basemap];
+    const layerId = BASEMAP_LAYER_IDS[basemap];
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, BASEMAP_SOURCE_DEFINITIONS[basemap]);
+    }
+    if (!map.getLayer(layerId)) {
+      const beforeId = map.getLayer(VECTOR_LAYERS.rsBoundaryFill)
+        ? VECTOR_LAYERS.rsBoundaryFill
+        : undefined;
+      map.addLayer(
+        {
+          ...BASEMAP_RASTER_LAYERS[basemap],
+          layout: { visibility: "visible" },
+        },
+        beforeId,
+      );
+    }
+
+    (Object.entries(BASEMAP_LAYER_IDS) as Array<[BasemapKey, string]>).forEach(([key, candidateLayerId]) => {
+      if (map.getLayer(candidateLayerId)) {
+        map.setLayoutProperty(candidateLayerId, "visibility", key === basemap ? "visible" : "none");
+      }
     });
-    // Preserve the selected parcel, zoom and bearing when comparing years.
+    // Historical sources are registered lazily. Selected parcel, zoom, bearing
+    // and RS/MS overlays stay untouched during basemap/year changes.
   }, [basemap, mapReady]);
 
   useEffect(() => {
