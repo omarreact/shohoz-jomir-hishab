@@ -210,6 +210,10 @@ function CoordinateReadout({
       <button
         type="button"
         onClick={() => {
+          if (!navigator.clipboard?.writeText) {
+            setCopied(false);
+            return;
+          }
           void navigator.clipboard
             .writeText(`${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`)
             .then(() => setCopied(true))
