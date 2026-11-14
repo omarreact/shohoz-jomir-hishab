@@ -63,7 +63,7 @@ const districts: District[] = [
   { ID: 50, NAME: "পাবনা", NAME_EN: "Pabna", BBS_CODE: "76", DIVISION_BBS_CODE: "50", ROW_STATUS: 1 },
   { ID: 51, NAME: "রাজশাহী", NAME_EN: "Rajshahi", BBS_CODE: "81", DIVISION_BBS_CODE: "50", ROW_STATUS: 1 },
   { ID: 52, NAME: "সিরাজগঞ্জ", NAME_EN: "Sirajganj", BBS_CODE: "88", DIVISION_BBS_CODE: "50", ROW_STATUS: 1 },
-  { ID: 53, NAME: "দিনাজপুর", NAME_EN: "Dinajpur", BBS_CODE: "28", DIVISION_BBS_CODE: "55", ROW_STATUS: 1 },
+  { ID: 53, NAME: "দিনাজপুর", NAME_EN: "Dinajpur", BBS_CODE: "27", DIVISION_BBS_CODE: "55", ROW_STATUS: 1 },
   { ID: 54, NAME: "গাইবান্ধা", NAME_EN: "Gaibandha", BBS_CODE: "32", DIVISION_BBS_CODE: "55", ROW_STATUS: 1 },
   { ID: 55, NAME: "কুড়িগ্রাম", NAME_EN: "Kurigram", BBS_CODE: "49", DIVISION_BBS_CODE: "55", ROW_STATUS: 1 },
   { ID: 56, NAME: "লালমনিরহাট", NAME_EN: "Lalmonirhat", BBS_CODE: "52", DIVISION_BBS_CODE: "55", ROW_STATUS: 1 },

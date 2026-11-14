@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "country": "Bangladesh",
-  "updatedAt": "2026-11-14T00:00:00.000Z",
+  "updatedAt": "2026-11-14T00:43:17.963Z",
   "storage": {
     "provider": "cloudflare-r2",
     "binding": "LANDBD_FILES",
@@ -75,6 +75,16 @@
       "bulkExport": "not-applicable",
       "redistribution": "reference-only",
       "scope": "Official survey-history/applicability evidence; Mahanagar Survey was conducted only in Dhaka metropolitan area."
+    },
+    {
+      "id": "dlrms-public-survey-metadata",
+      "name": "DLRMS Public Upazila Survey Metadata",
+      "authority": "Ministry of Land / DLRMS",
+      "url": "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys",
+      "access": "public-application-session",
+      "bulkExport": "metadata-inventory-only",
+      "redistribution": "administrative-metadata-only",
+      "scope": "Survey availability metadata; no khatian/owner/dag data and no map-sheet download."
     }
   ],
   "districts": [
@@ -85,8 +95,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -103,8 +115,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -121,8 +135,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -139,8 +155,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -157,8 +175,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -175,8 +195,10 @@
       "divisionBbsCode": "10",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -211,8 +233,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -229,8 +253,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -247,8 +273,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -265,8 +293,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -283,8 +313,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -301,8 +333,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -337,8 +371,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -355,8 +391,10 @@
       "divisionBbsCode": "20",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -391,8 +429,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "partial",
@@ -409,8 +449,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -427,8 +469,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -463,8 +507,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -481,8 +527,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -499,8 +547,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -517,8 +567,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -535,8 +587,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -553,8 +607,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -571,8 +627,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -589,8 +647,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -607,8 +667,10 @@
       "divisionBbsCode": "30",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -625,8 +687,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -643,8 +707,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -661,8 +727,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -679,8 +747,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -697,8 +767,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -715,8 +787,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -733,8 +807,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -751,8 +827,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -769,8 +847,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -787,8 +867,10 @@
       "divisionBbsCode": "40",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -805,8 +887,10 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -823,8 +907,10 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -841,8 +927,10 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -859,8 +947,10 @@
       "divisionBbsCode": "45",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -877,8 +967,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -895,8 +987,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -913,8 +1007,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -931,8 +1027,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -949,8 +1047,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -967,8 +1067,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -985,8 +1087,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1003,8 +1107,10 @@
       "divisionBbsCode": "50",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1017,12 +1123,14 @@
     {
       "name": "দিনাজপুর",
       "nameEn": "Dinajpur",
-      "bbsCode": "28",
+      "bbsCode": "27",
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1039,8 +1147,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1057,8 +1167,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1093,8 +1205,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1111,8 +1225,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1129,8 +1245,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1147,8 +1265,10 @@
       "divisionBbsCode": "55",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1165,8 +1285,10 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1183,8 +1305,10 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1201,8 +1325,10 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",
@@ -1219,8 +1345,10 @@
       "divisionBbsCode": "60",
       "coverage": {
         "RS": {
-          "state": "unverified-applicability",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "https://gateway.dlrms.land.gov.bd/core-api/api/public/upazilas/surveys"
+          ]
         },
         "MS": {
           "state": "not-applicable",

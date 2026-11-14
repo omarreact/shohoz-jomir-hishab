@@ -20,7 +20,7 @@ The public DLRMS administrative metadata can be scanned without requesting khati
 ```bash
 npm run maps:cadastral:survey-inventory
 ```
-The inventory records district/upazila survey availability only. An observed RS row is positive applicability evidence; an absent row is never treated as legal proof that RS does not apply.
+The inventory records district/upazila survey availability only. The verified 2026-11-14 run covered 64 districts / 527 upazilas with 0 failed queries and observed RS metadata in 59 districts. The five non-observed districts are Bandarban, Gopalganj, Khagrachhari, Lalmonirhat and Rangamati; they remain unverified, never auto-marked not-applicable. The compact evidence snapshot is `data/maps/national-cadastral/dlrms-rs-survey-summary.json`.
 
 ## Candidate archive quarantine\nBefore official ingest, audit any copied/shared scan archive locally:\n```bash\nnpm run maps:cadastral:audit-candidate -- --root ./candidate-maps --out ./candidate-report.json\n```\nUse `--require-clean-provenance` when a pipeline must fail on third-party-branded files. The scanner inventories filenames, bytes, formats and survey hints only; it never uploads/publishes or claims legal authority. A folder named `City Survey` is reported separately and is not auto-converted to MS.\n\n## Intake contract
 Keep acquired binaries outside Git. Each file needs a same-name `.meta.json` sidecar.

@@ -78,6 +78,7 @@ export function nationalCadastralSummary(catalog:NationalCadastralCatalog=nation
     else if(ms.state==="complete"&&ms.evidence.length>0&&hasPublicPublishedAsset(catalog,d.bbsCode,"MS")){msApplicableCompleteDistricts++;msResolvedDistricts++;}
   }
   const publishedPublicAssets=catalog.assets.filter((a)=>a.stage==="published"&&a.storageAuthorized&&a.redistributionAllowed).length;
-  return {districtCount:catalog.districts.length,assetCount:catalog.assets.length,publishedPublicAssets,rsResolvedDistricts,rsCompleteDistricts,rsNotApplicableDistricts,msResolvedDistricts,msApplicableCompleteDistricts,msNotApplicableDistricts,validationErrors,
+  const rsApplicabilityObservedDistricts=catalog.districts.filter((d)=>d.coverage.RS.state==="partial"&&d.coverage.RS.evidence.length>0).length;
+  return {districtCount:catalog.districts.length,assetCount:catalog.assets.length,publishedPublicAssets,rsApplicabilityObservedDistricts,rsResolvedDistricts,rsCompleteDistricts,rsNotApplicableDistricts,msResolvedDistricts,msApplicableCompleteDistricts,msNotApplicableDistricts,validationErrors,
     strictComplete:validationErrors.length===0&&catalog.districts.length===64&&rsResolvedDistricts===64&&msResolvedDistricts===64};
 }
