@@ -280,20 +280,20 @@ test.describe("LandBD map-first geospatial workspace", () => {
     const canvas = page.locator(".maplibregl-canvas");
     await expect(canvas).toBeVisible();
 
-    await canvas.click({ position: { x: 760, y: 500 } });
+    await canvas.click({ position: { x: 1120, y: 260 } });
     const popup = page.locator(".landbd-dag-popup");
     await expect(popup).toHaveCount(1);
     await expect(popup).toContainText("RS দাগ 101");
     await expect(popup).toContainText("তথ্য পাওয়া যায়নি");
     await expect(panel).toBeHidden();
 
-    await canvas.click({ position: { x: 1040, y: 650 } });
+    await canvas.click({ position: { x: 820, y: 690 } });
     await expect(popup).toHaveCount(1);
     await expect(popup).toContainText("MS দাগ 202");
     await expect(popup).not.toContainText("RS দাগ 101");
     await expect(panel).toBeHidden();
 
-    await canvas.click({ position: { x: 1200, y: 720 } });
+    await canvas.click({ position: { x: 1320, y: 760 } });
     await expect(popup).toHaveCount(0);
     await expect(panel).toBeHidden();
   });
