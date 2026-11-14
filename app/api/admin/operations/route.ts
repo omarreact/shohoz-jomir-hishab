@@ -12,14 +12,12 @@ export async function GET(req: NextRequest) {
   try {
     await verifyAdminAuth(req);
     const started = Date.now();
-    const [pinpay, ai, reviewRequests, refunds, services] = await Promise.all([
+    const [pinpay, reviewRequests, refunds, services] = await Promise.all([
       getPinPaySettings(),
-      db.collection("landbdPrivateConfig").doc("aiProvider").get(),
       db.collection("landbdOrders").where("status", "==", "review_requested").count().get(),
       db.collection("landbdOrders").where("refundRequiresEntitlementReview", "==", true).count().get(),
       getServiceCatalog(),
     ]);
-    const provider = ai.data() ?? {};
     let redisStatus: "connected" | "unavailable" | "not_configured" = "not_configured";
     if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
       try {
@@ -43,11 +41,6 @@ export async function GET(req: NextRequest) {
         availableMethods: methods,
         riskReviewCount: reviewRequests.data().count,
         refundReviewCount: refunds.data().count,
-      },
-      ai: {
-        enabled: provider.enabled === true,
-        provider: provider.provider === "gemini" ? "gemini" : "openai",
-        credentialConfigured: typeof provider.encryptedKey === "string" && provider.encryptedKey.length > 0,
       },
       cms: { versionHistoryEnabled: true },
       services: { total: services.length, enabled: services.filter(s => s.enabled).length, paid: services.filter(s => s.enabled && s.paid).length },
