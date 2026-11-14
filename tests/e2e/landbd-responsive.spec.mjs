@@ -125,29 +125,33 @@ test.describe("LandBD map-first geospatial workspace", () => {
     await waitForGis(page);
 
     const panel = page.locator("#atlas-map-workspace-panel");
-    const layers = page.getByRole("button", { name: "লেয়ার" });
-    const basemap = page.getByRole("button", { name: "বেসম্যাপ" });
-    const history = page.getByRole("button", { name: "ঐতিহাসিক স্যাটেলাইট" });
+    const tools = [
+      ["দাগ ও মৌজা খুঁজুন", "দাগ ও মৌজা অনুসন্ধান"],
+      ["লেয়ার", "লেয়ার নিয়ন্ত্রণ"],
+      ["বেসম্যাপ", "বেসম্যাপ"],
+      ["ঐতিহাসিক স্যাটেলাইট", "ঐতিহাসিক স্যাটেলাইট"],
+      ["লেজেন্ড", "লেজেন্ড"],
+      ["মানচিত্র সেটিংস", "মানচিত্র সেটিংস"],
+    ];
 
-    await layers.click();
-    await expect(panel).toBeVisible();
-    await expect(panel).toHaveAttribute("aria-label", "লেয়ার নিয়ন্ত্রণ");
-    await expect(layers).toHaveAttribute("aria-expanded", "true");
+    for (const [buttonName, panelName] of tools) {
+      const button = page.getByRole("button", { name: buttonName });
+      await button.click();
+      await expect(panel).toBeVisible();
+      await expect(panel).toHaveAttribute("aria-label", panelName);
+      await expect(button).toHaveAttribute("aria-expanded", "true");
+    }
 
-    await basemap.click();
-    await expect(panel).toBeVisible();
-    await expect(panel).toHaveAttribute("aria-label", "বেসম্যাপ");
-    await expect(layers).toHaveAttribute("aria-expanded", "false");
-    await expect(basemap).toHaveAttribute("aria-expanded", "true");
-
-    await basemap.click();
+    const settings = page.getByRole("button", { name: "মানচিত্র সেটিংস" });
+    await settings.click();
     await expect(panel).toBeHidden();
 
+    const history = page.getByRole("button", { name: "ঐতিহাসিক স্যাটেলাইট" });
     await history.click();
     await expect(panel).toBeVisible();
-    await expect(panel).toHaveAttribute("aria-label", "ঐতিহাসিক স্যাটেলাইট");
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
+    await expect(history).toBeFocused();
   });
 
   test("mobile sidebar panel remains reachable and dismissible", async ({ page }) => {
@@ -168,6 +172,20 @@ test.describe("LandBD map-first geospatial workspace", () => {
 
     await panel.getByRole("button", { name: "প্যানেল বন্ধ" }).click();
     await expect(panel).toBeHidden();
+  });
+
+  test("location runs only after explicit sidebar activation", async ({ page, context }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await context.grantPermissions(["geolocation"]);
+    await context.setGeolocation({ latitude: 23.81, longitude: 90.41, accuracy: 15 });
+    await allowFreeGisAccess(page);
+    await goto(page, "/geospatial-map");
+    await waitForGis(page);
+
+    await expect(page.locator('[aria-label="বর্তমান অবস্থান"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "আমার অবস্থান" }).click();
+    await expect(page.locator('[aria-label="বর্তমান অবস্থান"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("#atlas-map-workspace-panel")).toBeHidden();
   });
 
   test("historical imagery is explicit about NASA MODIS versus Google Earth", async ({ page }) => {
