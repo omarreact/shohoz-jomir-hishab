@@ -4,6 +4,8 @@
  */
 
 const MUTATION_HOME = "https://mutation.land.gov.bd";
+const SENSITIVE_FIELD = /(authorization|cookie|password|passwd|secret|token|refresh[_-]?token|access[_-]?token)/i;
+const HTML_SOURCE_MARKER = "__LANDBD_SOURCE_FORMAT";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -27,6 +29,61 @@ function unwrap(raw: unknown): unknown {
   if (r.data !== undefined) return r.data;
   if (r.result !== undefined) return r.result;
   return raw;
+}
+
+function sanitizePublicValue(value: unknown, depth = 0): unknown {
+  if (depth > 12) return "[nested data omitted]";
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.map((item) => sanitizePublicValue(item, depth + 1));
+  const record = asRecord(value);
+  if (!record) return String(value ?? "");
+  const output: JsonRecord = {};
+  for (const [key, item] of Object.entries(record)) {
+    if (SENSITIVE_FIELD.test(key) || key === HTML_SOURCE_MARKER) continue;
+    output[key] = sanitizePublicValue(item, depth + 1);
+  }
+  return output;
+}
+
+function decodeHtmlText(value: string): string {
+  return value
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .trim();
+}
+
+function parseHtmlTable(html: string): JsonRecord | null {
+  const output: JsonRecord = { [HTML_SOURCE_MARKER]: "html" };
+  const rowPattern = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  for (const rowMatch of html.matchAll(rowPattern)) {
+    const cells = [...rowMatch[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)]
+      .map((match) => decodeHtmlText(match[1]));
+    if (cells.length < 2) continue;
+    const label = cells[0].trim();
+    const value = cells.slice(1).join("\n").trim();
+    if (label && value) output[label] = value;
+  }
+  const download = html.match(/<a\b[^>]*href=["']([^"']+)["'][^>]*>[^<]*খতিয়ান\s*ডাউনলোড[^<]*<\/a>/i)?.[1];
+  if (download) {
+    try {
+      const url = new URL(download, MUTATION_HOME);
+      if (url.protocol === "https:" && url.hostname === "mutation.land.gov.bd") {
+        output.KHATIAN_DOWNLOAD_URL = url.toString();
+      }
+    } catch {
+      // Ignore malformed or third-party download targets.
+    }
+  }
+  return Object.keys(output).length > 1 ? output : null;
 }
 
 async function mutationGet(path: string, referer: string, signal?: AbortSignal): Promise<unknown> {
@@ -58,7 +115,7 @@ async function mutationGet(path: string, referer: string, signal?: AbortSignal):
   if (jsonMatch?.[1]) {
     try { return JSON.parse(jsonMatch[1]); } catch { /* fall through */ }
   }
-  return null;
+  return parseHtmlTable(html);
 }
 
 export interface MutationVerificationRecord {
@@ -81,6 +138,8 @@ export interface MutationVerificationRecord {
   verifiedAt?: string;
   verificationPageUrl: string;
   structuredResponse: boolean;
+  sourceFormat?: "json" | "html" | "none";
+  publicRecord?: Record<string, unknown>;
 }
 
 const QR_KEY_RE = /^[0-9a-f]{6,16}$/i;
@@ -100,9 +159,20 @@ export function extractMutationQrKey(input: string): string | null {
 }
 
 function parseOwnerList(record: JsonRecord): string[] {
-  const candidates = [record.OWNERS, record.owners, record.OWNER_NAMES, record.ownerNames, record.OWNER_NAME];
+  const candidates = [
+    record.OWNERS,
+    record.owners,
+    record.OWNER_NAMES,
+    record.ownerNames,
+    record.OWNER_NAME,
+    record["মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা"],
+  ];
   for (const c of candidates) {
     if (typeof c === "string" && c.trim()) {
+      const numbered = c.split(/\n+/).map((line) => line.trim())
+        .map((line) => line.match(/^\d+\)\s*(.+)$/)?.[1]?.trim())
+        .filter((value): value is string => Boolean(value));
+      if (numbered.length) return numbered;
       return c.split(/[,\u060C;]+/).map((s) => s.trim()).filter(Boolean);
     }
     if (Array.isArray(c) && c.length > 0) {
@@ -116,7 +186,15 @@ function parseOwnerList(record: JsonRecord): string[] {
 }
 
 function parseDagList(record: JsonRecord): string[] {
-  const candidates = [record.DAGS, record.dags, record.DAG_NUMBERS, record.dagNumbers, record.DAG_NO];
+  const candidates = [
+    record.DAGS,
+    record.dags,
+    record.DAG_NUMBERS,
+    record.dagNumbers,
+    record.DAG_NO,
+    record["দাগ নং"],
+    record["দাগ নম্বর"],
+  ];
   for (const c of candidates) {
     if (typeof c === "string" && c.trim()) {
       return c.split(/[,\u060C;]+/).map((s) => s.trim()).filter(Boolean);
@@ -138,25 +216,29 @@ function parseMutationRecord(qrKey: string, raw: unknown): MutationVerificationR
     dags: [],
     verificationPageUrl: `${MUTATION_HOME}/qr-vk/${encodeURIComponent(qrKey)}`,
     structuredResponse: false,
+    sourceFormat: "none",
   };
 
   const payload = asRecord(unwrap(raw));
   if (!payload) return base;
+  const sourceFormat = payload[HTML_SOURCE_MARKER] === "html" ? "html" : "json";
   base.structuredResponse = true;
+  base.sourceFormat = sourceFormat;
+  base.publicRecord = sanitizePublicValue(payload) as Record<string, unknown>;
 
-  base.khatianNo = str(payload, "KHATIAN_NO", "khatian_no", "khatianNo", "KHATIAN_NUMBER");
-  base.applicationNo = str(payload, "APPLICATION_NO", "application_no", "applicationNo", "APP_NO");
-  base.mutationCaseNo = str(payload, "MUTATION_CASE_NO", "mutation_case_no", "mutationCaseNo", "CASE_NO");
-  base.dcrNo = str(payload, "DCR_NO", "dcr_no", "dcrNo", "ONLINE_DCR", "online_dcr");
-  base.office = str(payload, "OFFICE_NAME", "office_name", "officeName", "LAND_OFFICE");
+  base.khatianNo = str(payload, "KHATIAN_NO", "khatian_no", "khatianNo", "KHATIAN_NUMBER", "খতিয়ান নং", "খতিয়ান নং");
+  base.applicationNo = str(payload, "APPLICATION_NO", "application_no", "applicationNo", "APP_NO", "আবেদন নম্বর", "আবেদন নং");
+  base.mutationCaseNo = str(payload, "MUTATION_CASE_NO", "mutation_case_no", "mutationCaseNo", "CASE_NO", "মিউটেশন মামলা নং", "নামজারি মামলা নং");
+  base.dcrNo = str(payload, "DCR_NO", "dcr_no", "dcrNo", "ONLINE_DCR", "online_dcr", "ডি সি আর নং", "DCR নং");
+  base.office = str(payload, "OFFICE_NAME", "office_name", "officeName", "LAND_OFFICE", "ভূমি অফিস এর ঠিকানা", "ভূমি অফিসের ঠিকানা");
   base.district = str(payload, "DISTRICT_NAME", "district_name", "districtName", "DISTRICT");
   base.upazila = str(payload, "UPAZILA_NAME", "upazila_name", "upazilaName", "UPAZILA", "CIRCLE");
   base.mouza = str(payload, "MOUZA_NAME", "mouza_name", "mouzaName", "MOUZA");
   base.jlNo = str(payload, "JL_NO", "jl_no", "jlNo", "JL_NUMBER", "jl_number");
   base.totalLand = str(payload, "TOTAL_LAND", "total_land", "totalLand", "TOTAL_AREA");
-  base.deedNo = str(payload, "DEED_NO", "deed_no", "deedNo");
-  base.deedDate = str(payload, "DEED_DATE", "deed_date", "deedDate");
-  base.sourceKhatian = str(payload, "SOURCE_KHATIAN", "source_khatian", "sourceKhatian", "PREVIOUS_KHATIAN", "AGATE_KHATIAN");
+  base.deedNo = str(payload, "DEED_NO", "deed_no", "deedNo", "দলিল নং");
+  base.deedDate = str(payload, "DEED_DATE", "deed_date", "deedDate", "দলিলের তারিখ");
+  base.sourceKhatian = str(payload, "SOURCE_KHATIAN", "source_khatian", "sourceKhatian", "PREVIOUS_KHATIAN", "AGATE_KHATIAN", "সাবেক খতিয়ান", "সাবেক খতিয়ান");
   base.verifiedAt = str(payload, "VERIFIED_AT", "verified_at", "verifiedAt", "CREATED_AT");
   base.owners = parseOwnerList(payload);
   base.dags = parseDagList(payload);
@@ -210,6 +292,7 @@ export async function fetchMutationVerification(
     dags: [],
     verificationPageUrl: `${MUTATION_HOME}/qr-vk/${encodeURIComponent(key)}`,
     structuredResponse: false,
+    sourceFormat: "none",
   };
 }
 
@@ -218,6 +301,7 @@ export async function fetchMutationDcr(
   signal?: AbortSignal,
 ): Promise<MutationVerificationRecord> {
   const key = dcrKey.trim();
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(key)) throw new Error("Invalid mutation DCR key");
   const referer = `${MUTATION_HOME}/online-dcr/${encodeURIComponent(key)}`;
   const endpoints = [
     `/api/online-dcr/${encodeURIComponent(key)}`,
@@ -237,5 +321,6 @@ export async function fetchMutationDcr(
     qrKey: key, owners: [], dags: [],
     verificationPageUrl: `${MUTATION_HOME}/online-dcr/${encodeURIComponent(key)}`,
     structuredResponse: false,
+    sourceFormat: "none",
   };
 }
