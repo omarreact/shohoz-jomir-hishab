@@ -33,16 +33,18 @@
   --radius-md: .7rem;
   --radius-sm: .55rem;
 
-  /* Script-aware typography without build-time network font downloads.
-     Preserve the legacy font-variable contracts used across independent pages. */
-  --font-inter: "Segoe UI", Arial, sans-serif;
-  --font-hind-siliguri: var(--font-nikosh), "Nirmala UI", "Segoe UI", sans-serif;
-  --font-noto-bengali: var(--font-nikosh), "Nirmala UI", serif;
-  --font-english: var(--font-inter);
-  --font-bangla: var(--font-nikosh), "Nirmala UI", "Segoe UI", sans-serif;
-  --font-ui: var(--font-inter), var(--font-nikosh), "Nirmala UI", sans-serif;
-  --font-report: var(--font-nikosh), "Nirmala UI", serif;
-  --font-sans: var(--font-ui);
+  /* LandBD typography policy:
+     all non-heading text uses Kalpurush; semantic headings retain the prior UI stack. */
+  --font-kalpurush: "Kalpurush", var(--font-nikosh), "Nirmala UI", serif;
+  --font-heading: "Segoe UI", Arial, var(--font-nikosh), "Nirmala UI", sans-serif;
+  --font-inter: var(--font-kalpurush);
+  --font-hind-siliguri: var(--font-kalpurush);
+  --font-noto-bengali: var(--font-kalpurush);
+  --font-english: var(--font-kalpurush);
+  --font-bangla: var(--font-kalpurush);
+  --font-ui: var(--font-kalpurush);
+  --font-report: var(--font-kalpurush);
+  --font-sans: var(--font-kalpurush);
 }
 
 @layer base {
@@ -90,6 +92,16 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color .2s ease, color .2s ease;
+  }
+
+  /* Enforce the requested application-wide font contract even on route-specific
+     components that previously declared their own font-family. Heading elements
+     and their descendants keep the existing heading stack. */
+  body :is(h1, h2, h3, h4, h5, h6, [role="heading"]) {
+    font-family: var(--font-heading) !important;
+  }
+  body :not(#landbd-font-policy):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not([role="heading"]) {
+    font-family: inherit !important;
   }
 
   button, a, input, select, textarea {

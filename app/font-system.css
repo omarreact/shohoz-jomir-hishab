@@ -1,15 +1,12 @@
 /*
- * LandBD script-aware font routing.
+ * LandBD font routing.
  *
- * App UI:
- *   Latin/English -> system UI sans stack
- *   Bangla        -> local Nikosh with Nirmala UI fallback
+ * All application copy uses Kalpurush (with the existing local Nikosh fallback).
+ * Semantic page headings are excluded by the global heading rule in globals.css
+ * and retain the previous LandBD heading stack.
  *
- * Legal/print reports:
- *   Bangla        -> local Nikosh / existing report-specific fallbacks
- *
- * This avoids build-time network requests to Google Fonts so Vercel,
- * GitHub Actions and OpenNext/Cloudflare compile deterministically.
+ * Kalpurush is loaded at runtime, so builds stay independent of remote font
+ * downloads while the UI still renders the requested face when the CDN is reachable.
  */
 
 /* The Mouza Porcha report intentionally uses Kalpurush to mirror the
