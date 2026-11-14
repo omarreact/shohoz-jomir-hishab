@@ -81,7 +81,8 @@ function buildDagPopupContent(feature: RajukPlotFeature): HTMLElement {
 
   const title = document.createElement("h2");
   title.className = "landbd-dag-popup-title";
-  const number = rows[0]?.[1] && rows[0][1] !== "—" ? rows[0][1] : "তথ্য পাওয়া যায়নি";
+  const rawNumber = rows[0]?.[1] && rows[0][1] !== "—" ? rows[0][1] : "তথ্য পাওয়া যায়নি";
+  const number = String(rawNumber).replace(/^(?:RS|MS)-/i, "");
   title.textContent = (kind === "ms" ? "MS দাগ " : "RS দাগ ") + number;
   section.appendChild(title);
 
