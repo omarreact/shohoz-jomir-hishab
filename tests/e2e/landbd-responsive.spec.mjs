@@ -57,37 +57,38 @@ async function waitForGis(page) {
 }
 
 test.describe("LandBD responsive navigation", () => {
-  test("mobile uses only the drawer navigation", async ({ page }) => {
+  test("mobile uses the compact app header and tab bar without a drawer", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await goto(page, "/");
 
-    const desktopNav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-    const opener = page.getByRole("button", { name: "মোবাইল মেনু খুলুন" });
-    await expect(desktopNav).toBeHidden();
-    await expect(opener).toBeVisible();
-
-    await opener.click();
-    const dialog = page.getByRole("dialog", { name: "মোবাইল সাইডবার মেনু" });
-    await expect(dialog).toBeVisible();
-    const section = dialog.locator('button[aria-controls="landbd-drawer-section-records"]');
-    await expect(section).toBeVisible();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "false");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await expect(dialog.locator("a[href]").first()).toBeVisible();
-
-    const firstNavLink = dialog.locator("a[href]").first();
-    expect(await firstNavLink.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
-
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    const compactHeader = page.locator("header.landbd-mobile-appbar:visible");
+    await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toHaveCount(0);
+    await expect(compactHeader).toHaveCount(1);
+    await expect(compactHeader.locator('a[href="/"]').first()).toBeVisible();
+    await expect(page.locator("nav.landbd-native-tabbar:visible")).toHaveCount(1);
+    await expect(page.locator('[aria-label="মোবাইল মেনু খুলুন"]')).toHaveCount(0);
+    await expect(page.locator('[aria-label="মোবাইল সাইডবার মেনু"]')).toHaveCount(0);
   });
 
-  test("tablet and desktop use the top navbar with 18px-or-larger menu copy", async ({ page }) => {
+  test("compact and desktop navigation follow the 1180px breakpoint contract", async ({ page }) => {
     for (const viewport of [
       { width: 768, height: 1024 },
+      { width: 1024, height: 768 },
+      { width: 1179, height: 820 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await goto(page, "/");
+
+      const compactHeader = page.locator("header.landbd-mobile-appbar:visible");
+      await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toHaveCount(0);
+      await expect(compactHeader).toHaveCount(1);
+      await expect(compactHeader.locator('a[href="/"]').first()).toBeVisible();
+      await expect(page.locator('[aria-label="মোবাইল মেনু খুলুন"]')).toHaveCount(0);
+    }
+
+    for (const viewport of [
+      { width: 1180, height: 820 },
+      { width: 1270, height: 720 },
       { width: 1440, height: 900 },
     ]) {
       await page.setViewportSize(viewport);
@@ -95,13 +96,16 @@ test.describe("LandBD responsive navigation", () => {
 
       const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
       await expect(nav).toBeVisible();
-      await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toBeHidden();
+      await expect(page.locator("header.landbd-mobile-appbar:visible")).toHaveCount(0);
+      await expect(page.locator('[aria-label="মোবাইল মেনু খুলুন"]')).toHaveCount(0);
 
       const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
       await expect(groupButton).toBeVisible();
       expect(await groupButton.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
       await groupButton.hover();
       await expect(groupButton).toHaveAttribute("aria-expanded", "true");
+
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     }
   });
 });
