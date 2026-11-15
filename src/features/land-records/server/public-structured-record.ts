@@ -4,6 +4,8 @@ import type { KhatianDetails } from "../types";
 
 type JsonRecord = Record<string, unknown>;
 
+const DEFAULT_DLRMS_ENRICH_BASE_URL = "https://eporcha.tech/api/dlrms";
+
 const OWNER_ARRAY_KEYS = new Set([
   "OWNER_DETAILS",
   "OWNERS_DETAILS",
@@ -299,12 +301,14 @@ function records(payload: unknown): JsonRecord[] {
 
 function mirrorEnabled(): boolean {
   const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
-  return raw === "1" || raw === "true" || raw === "on";
+  if (raw === "0" || raw === "false" || raw === "off") return false;
+  if (raw === "1" || raw === "true" || raw === "on") return true;
+  return process.env.NODE_ENV !== "test";
 }
 
 export function publicMirrorBaseUrl(): string | null {
   const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
-  return configured ? configured.replace(/\/$/, "") : null;
+  return (configured || DEFAULT_DLRMS_ENRICH_BASE_URL).replace(/\/$/, "");
 }
 
 export async function fetchStrictPublicMirrorRecord(

@@ -50,6 +50,6 @@ export async function getFullKhatianByVerificationUuid(
     divisionBbsCode: tracking.divisionBbsCode,
     districtBbsCode: tracking.districtBbsCode,
     upazilaBbsCode: tracking.upazilaBbsCode,
-    sourceMode: "official",
+    sourceMode: "enriched",
   }, signal);
 }

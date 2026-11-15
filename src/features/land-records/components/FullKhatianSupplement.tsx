@@ -26,6 +26,7 @@ function sourceLabel(source: FullKhatian["evidence"][number]["source"]): string 
     case "DLRMS_PUBLIC": return "DLRMS Public";
     case "DLRMS_MIRROR": return "Third-party mirror (not official)";
     case "LANDBD_REFERENCE": return "LandBD registered reference (not current DLRMS certification)";
+    case "FIREBASE_VERIFIED": return "LandBD Firebase verified snapshot";
     case "DLRMS_TRACKING": return "DLRMS Verification";
     case "DLRMS_HAL_SABEK": return "DLRMS হাল–সাবেক";
     case "LISF_AUTHORIZED": return "LISF Authorized";
@@ -39,6 +40,7 @@ function accessLabel(access: FullKhatian["evidence"][number]["access"]): string 
     case "public-session": return "পাবলিক অ্যাপ-সেশন";
     case "authorized-private": return "অনুমোদিত";
     case "bundled-reference": return "LandBD reference";
+    case "verified-snapshot": return "যাচাইকৃত LandBD snapshot";
     case "mock": return "ডেভেলপমেন্ট";
   }
 }

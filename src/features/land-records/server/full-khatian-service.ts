@@ -5,6 +5,7 @@ import { mergeTrackingOwnerRows, reconstructKhatian } from "./khatian-reconstruc
 import { providers } from "./provider";
 import { DLRMS_PUBLIC_EXTRA_ENDPOINTS, fetchPublicHalSabek, fetchPublicKhatianTracking } from "./dlrms-public-extras";
 import { getLisfProvider } from "./lisf-provider";
+import { fetchFirebaseVerifiedKhatianReference } from "./firebase-verified-reference";
 import {
   extractStructuredPublicRecord,
   extractVerifiedMirrorCompactRow,
@@ -712,6 +713,10 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     warnings.push("DLRMS-এর upstream compact তালিকার কিছু অংশ এখনো truncated/আংশিক। LandBD কেবল উৎসে পাওয়া তথ্যই দেখাচ্ছে; অনুপস্থিত তথ্য অনুমান করে যোগ করা হয়নি।");
   }
 
+  const firebaseReferencePromise = officialOnly
+    ? Promise.resolve(null)
+    : fetchFirebaseVerifiedKhatianReference(rebuilt, signal);
+
   const locationPreset = {
     divisionBbsCode: input.divisionBbsCode || (tracking?.matchesBaseRecord ? tracking.divisionBbsCode : undefined),
     districtBbsCode: input.districtBbsCode || (tracking?.matchesBaseRecord ? tracking.districtBbsCode : undefined),
@@ -769,15 +774,45 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       })
     : Promise.resolve([]);
 
-  const [halSabek, lisf] = await Promise.all([halSabekPromise, lisfPromise]);
+  const [halSabek, lisf, firebaseReference] = await Promise.all([
+    halSabekPromise,
+    lisfPromise,
+    firebaseReferencePromise,
+  ]);
+
+  if (firebaseReference?.totalLand && !rebuilt.TOTAL_LAND?.trim()) {
+    rebuilt = {
+      ...rebuilt,
+      TOTAL_LAND: firebaseReference.totalLand,
+      PUBLIC_RECORD: {
+        ...(rebuilt.PUBLIC_RECORD ?? {}),
+        LANDBD_FIREBASE_VERIFIED_REFERENCE: {
+          reportId: firebaseReference.reportId,
+          generatedAt: firebaseReference.generatedAt,
+          fields: ["TOTAL_LAND"],
+        },
+      },
+    };
+  }
+
+  const firebaseOwners: FullKhatianOwner[] = (firebaseReference?.owners ?? []).map((name, index) => ({
+    occurrence: index + 1,
+    name,
+    source: "FIREBASE_VERIFIED" as const,
+  }));
+  const firebaseDags: FullKhatianDag[] = (firebaseReference?.dags ?? []).map((dagNo) => ({
+    dagNo,
+    source: "FIREBASE_VERIFIED" as const,
+  }));
+
+  let structuredOwners: FullKhatianOwner[] = [...structuredPublicOwners, ...firebaseOwners];
+  let structuredDags: FullKhatianDag[] = [...structuredPublicDags, ...firebaseDags];
 
   const useAuthorizedLisf = !officialOnly && lisf.status === "ready";
-  const structuredOwners = useAuthorizedLisf
-    ? mergeStructuredOwners(structuredPublicOwners, lisf.owners)
-    : structuredPublicOwners;
-  const structuredDags = useAuthorizedLisf
-    ? mergeStructuredDags(structuredPublicDags, lisf.dags)
-    : structuredPublicDags;
+  if (useAuthorizedLisf) {
+    structuredOwners = mergeStructuredOwners(structuredOwners, lisf.owners);
+    structuredDags = mergeStructuredDags(structuredDags, lisf.dags);
+  }
   const compactOwnerOccurrences = new Map<string, number>();
   const compactOwners = publicOwners(rebuilt).map((row) => {
     const normalized = sourceKey(row.name);
@@ -832,6 +867,21 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
       access: "bundled-reference",
       fetchedAt,
     });
+  }
+  if (
+    firebaseReference &&
+    (firebaseReference.owners.length || firebaseReference.dags.length || firebaseReference.totalLand)
+  ) {
+    evidence.push({
+      field: `exact-match LandBD Firebase verification snapshot (${firebaseReference.reportId})`,
+      source: "FIREBASE_VERIFIED",
+      official: false,
+      access: "verified-snapshot",
+      fetchedAt,
+    });
+    warnings.push(
+      "বর্তমান upstream তালিকা আংশিক হওয়ায় exact-match পুরনো LandBD verification snapshot থেকে অনুপস্থিত display row/value যোগ করা হয়েছে; সরকারি মূল নথির সঙ্গে যাচাই করুন।",
+    );
   }
   if (mirrorRecord || mirrorDagRecords.length) {
     evidence.push({

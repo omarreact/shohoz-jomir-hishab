@@ -137,7 +137,7 @@ export const landRecordsApi = {
     upazilaName: string;
   }) => get<Mouza[]>("/mouzas", MouzaSchema.array(), input),
   khatians: (input: KhatianSearchInput) =>
-    get<KhatianPage>("/khatians", KhatianPageSchema, { ...input, sourceMode: "official" }),
+    get<KhatianPage>("/khatians", KhatianPageSchema, { ...input, sourceMode: "enriched" }),
   khatian: (
     surveyKey: string,
     id: number,

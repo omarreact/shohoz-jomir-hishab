@@ -5,6 +5,7 @@ const DLRMS_HOME_URL = "https://dlrms.land.gov.bd/";
 const DLRMS_ORIGIN = "https://dlrms.land.gov.bd";
 const DLRMS_GATEWAY_URL = "https://gateway.dlrms.land.gov.bd";
 const DLRMS_API_URL = `${DLRMS_GATEWAY_URL}/core-api/api/public`;
+const DEFAULT_DLRMS_ENRICH_BASE_URL = "https://eporcha.tech/api/dlrms";
 const REQUEST_TIMEOUT_MS = 25_000;
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
 const ENRICH_TIMEOUT_MS = 7_000;
@@ -22,12 +23,14 @@ const TRAILING_ELLIPSIS = /(?:,\s*)?(?:\.{3,}|…)+\s*$/u;
  */
 function enrichEnabled(): boolean {
   const raw = process.env.DLRMS_ENRICH_ENABLED?.trim().toLowerCase();
-  return raw === "1" || raw === "true" || raw === "on";
+  if (raw === "0" || raw === "false" || raw === "off") return false;
+  if (raw === "1" || raw === "true" || raw === "on") return true;
+  return process.env.NODE_ENV !== "test";
 }
 
 function enrichBaseUrl(): string {
   const configured = process.env.DLRMS_ENRICH_BASE_URL?.trim();
-  return configured ? configured.replace(/\/$/, "") : "";
+  return (configured || DEFAULT_DLRMS_ENRICH_BASE_URL).replace(/\/$/, "");
 }
 
 type Stage = "auth" | "divisions" | "districts" | "upazilas" | "surveys" | "mouzas" | "khatians" | "khatian-details";
@@ -283,10 +286,6 @@ function isTruncatedPublicField(value: string | undefined): boolean {
   return TRAILING_ELLIPSIS.test(v);
 }
 
-function khatianRowNeedsEnrichment(row: { OWNERS?: string; DAGS?: string; GUARDIANS?: string }): boolean {
-  return isTruncatedPublicField(row.OWNERS) || isTruncatedPublicField(row.DAGS) || isTruncatedPublicField(row.GUARDIANS);
-}
-
 function preferFullerField(primary: string, secondary: string): string {
   const a = primary.trim();
   const b = secondary.trim();
@@ -485,10 +484,7 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     // Exact khatian searches can omit the trailing ellipsis even when their
     // compact owner/dag columns contain just the first entry. Try the fuller
     // public mirror for exact-number searches as well, not only explicit "...".
-    if (
-      input.sourceMode !== "official" &&
-      (Boolean(input.khatianNo?.trim()) || items.some(khatianRowNeedsEnrichment))
-    ) {
+    if (input.sourceMode !== "official") {
       const enrichedRows = await fetchEnrichedKhatianList(input, signal);
       if (enrichedRows?.length) {
         try {

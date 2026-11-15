@@ -12,6 +12,7 @@ export const LandRecordSourceSchema = z.enum([
   "DLRMS_MIRROR",
   /** Bundled LandBD Patira reference data; useful for display fallback, never first-party DLRMS. */
   "LANDBD_REFERENCE",
+  "FIREBASE_VERIFIED",
   "DLRMS_TRACKING",
   "DLRMS_HAL_SABEK",
   "LISF_AUTHORIZED",
@@ -24,7 +25,7 @@ export const SourceEvidenceSchema = z.object({
   source: LandRecordSourceSchema,
   endpoint: z.string().optional(),
   official: z.boolean(),
-  access: z.enum(["public", "public-session", "authorized-private", "bundled-reference", "mock"]),
+  access: z.enum(["public", "public-session", "authorized-private", "bundled-reference", "verified-snapshot", "mock"]),
   fetchedAt: z.string(),
 });
 export type SourceEvidence = z.infer<typeof SourceEvidenceSchema>;

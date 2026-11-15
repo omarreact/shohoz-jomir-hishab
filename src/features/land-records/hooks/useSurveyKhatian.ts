@@ -67,7 +67,7 @@ export function useSurveyKhatian() {
       divisionBbsCode: selectedDistrict?.DIVISION_BBS_CODE,
       districtBbsCode: selectedDistrict?.BBS_CODE,
       upazilaBbsCode: selectedUpazila?.BBS_CODE,
-      sourceMode: "official",
+      sourceMode: "enriched",
     };
 
     return run("khatians", () => landRecordsApi.khatians(input), setKhatians);
@@ -80,7 +80,7 @@ export function useSurveyKhatian() {
     const resolvedContext: FullKhatianRequestContext = {
       ...(rememberedContext ?? {}),
       ...(context ?? {}),
-      sourceMode: "official",
+      sourceMode: "enriched",
     };
     const cacheKey = [
       surveyKey,

@@ -3,6 +3,7 @@ import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
 import { providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
+import { enrichKhatianWithReferenceDatasets } from "@/src/features/land-records/server/reference-khatian-resolver";
 import { z } from "zod";
 
 const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
@@ -33,15 +34,22 @@ export async function GET(request: Request) {
       jlNumberId,
       page,
       pageSize: size,
-      sourceMode: "official",
+      sourceMode: "enriched",
     });
 
-    // Direct source only: preserve exactly what the live official DLRMS index
-    // returns. Saved/bundled reference and third-party mirror data are excluded.
-    return Response.json(KhatianPageSchema.parse(data), {
+    const enrichedData = {
+      ...data,
+      items: data.items.map((item) =>
+        enrichKhatianWithReferenceDatasets(item, surveyKey)?.record ?? item
+      ),
+    };
+
+    // DLRMS remains the base. Exact-identity mirror expansion and registered
+    // LandBD references may fill compact/truncated list fields with provenance.
+    return Response.json(KhatianPageSchema.parse(enrichedData), {
       headers: {
         "Cache-Control": "no-store",
-        "X-LandBD-Source": "DLRMS_PUBLIC_LIVE",
+        "X-LandBD-Source": "DLRMS_PUBLIC_ENRICHED",
       },
     });
   } catch (error) {

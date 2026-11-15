@@ -458,8 +458,14 @@ const authorizedProvider: LisfProvider = {
 };
 
 export function getLisfProvider(): LisfProvider {
-  if (process.env.LISF_ENABLED?.trim() !== "1") return disabledProvider;
-  if (process.env.LISF_PROVIDER?.trim().toLowerCase() === "mock") return mockProvider;
+  const enabled = process.env.LISF_ENABLED?.trim().toLowerCase();
+  if (enabled === "0" || enabled === "false" || enabled === "off") return disabledProvider;
+
+  const provider = process.env.LISF_PROVIDER?.trim().toLowerCase();
+  if (provider === "mock") {
+    return process.env.NODE_ENV === "production" ? publicDlrmsFallbackProvider : mockProvider;
+  }
+
   if (!configuredCredentials()) return publicDlrmsFallbackProvider;
   return authorizedProvider;
 }
