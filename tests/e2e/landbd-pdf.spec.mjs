@@ -117,6 +117,9 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     const report = page.locator("#mouza-porcha-report");
     await expect(report).toBeVisible();
     await expect(report.getByText("LANDBD-QA-REPORT-001")).toBeVisible();
+    // 60 rows: sum(0.100..0.159) = 7.77 acre. This guards against
+    // accidentally stripping ASCII digits while normalizing source area values.
+    await expect(report.getByText("৭.৭৭", { exact: true })).toBeVisible();
     await expect(report.locator("tr[data-report-source-id]")).toHaveCount(rows.length);
     expect(await report.locator(".report-page").count()).toBeGreaterThan(2);
     // A matching row count alone can mask duplicated or omitted khatians.
