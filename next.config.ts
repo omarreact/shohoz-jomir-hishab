@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import { LEGACY_ROUTE_REDIRECTS } from "./src/shared/routing/route-registry";
+import { assertProductionFirebaseClientConfig } from "./src/modules/database/firebaseClientConfig";
+
+assertProductionFirebaseClientConfig(process.env);
 
 /**
  * Build-time performance knobs for Vercel / `next build`.
