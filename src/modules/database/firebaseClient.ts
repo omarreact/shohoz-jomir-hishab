@@ -11,14 +11,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "dummy-app-id",
 };
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const missingClientConfig = Object.entries(firebaseConfig)
+  .filter(([, value]) => value.startsWith("dummy-"))
+  .map(([key]) => key);
 
-if (firebaseConfig.apiKey === "dummy-api-key") {
-  logger.warn(
-    "🔥 FIREBASE WARNING: NEXT_PUBLIC_FIREBASE_API_KEY is missing in your environment variables! " +
-    "Using dummy keys for build. Please check your .env file before starting the app."
-  );
+if (missingClientConfig.length) {
+  const message =
+    `Firebase client configuration is incomplete: ${missingClientConfig.join(", ")}`;
+
+  if (process.env.NODE_ENV === "production" && typeof window !== "undefined") {
+    throw new Error(`[LandBD] ${message}`);
+  }
+
+  logger.warn(`🔥 FIREBASE WARNING: ${message}. Dummy values are allowed only for build/dev evaluation.`);
 }
+
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 /** Firebase Auth only on the client. User profile/role is loaded via /api/auth/me (Admin SDK). */
 const auth = getAuth(app);

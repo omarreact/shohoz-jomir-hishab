@@ -15,10 +15,26 @@ export interface LandDataProviders {
   mouzaMaps: MouzaMapProvider;
 }
 
-// Production must never return synthetic owners, dags, or khatian numbers.
-const useDlrms = process.env.NODE_ENV === "production" || process.env.LAND_RECORD_PROVIDER === "dlrms";
+// Production must never return synthetic owners, dags, khatian numbers or sample map files.
+const isProduction = process.env.NODE_ENV === "production";
+const useDlrms = isProduction || process.env.LAND_RECORD_PROVIDER === "dlrms";
+
+const unavailableMouzaMapProvider: MouzaMapProvider = {
+  async browse() {
+    throw new Error("Production Mouza PDF provider is not configured.");
+  },
+  async file() {
+    throw new Error("Production Mouza PDF provider is not configured.");
+  },
+  thumbnailUrl() {
+    return "";
+  },
+  downloadUrl() {
+    return "";
+  },
+};
 
 export const providers: LandDataProviders = {
   landRecords: useDlrms ? dlrmsLandRecordProvider : mockLandRecordProvider,
-  mouzaMaps: mockMouzaMapProvider,
+  mouzaMaps: isProduction ? unavailableMouzaMapProvider : mockMouzaMapProvider,
 };

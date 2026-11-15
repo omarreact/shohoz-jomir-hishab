@@ -104,7 +104,6 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "home",
   "records",
   "dlrmsKhatian",
-  "surveyKhatian",
   "mouzaKhatianBook",
   "mouzaDagBook",
   "landMeasurement",

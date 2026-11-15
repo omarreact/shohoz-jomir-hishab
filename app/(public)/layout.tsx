@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import PublicGlobalHeader from "@/src/shared/components/PublicGlobalHeader";
 import Footer from "@/src/shared/components/Footer";
 import MobileFloatingNav from "@/src/shared/components/MobileFloatingNav";
+import MobileLegalFooter from "@/src/shared/components/MobileLegalFooter";
 
 /**
  * Shared public shell. Home preserves its approved mobile presentation while
@@ -13,6 +14,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <PublicGlobalHeader />
       <main id="landbd-mobile-content" className="min-w-0 flex-1">{children}</main>
       <div className="hidden md:block"><Footer /></div>
+      <MobileLegalFooter />
       <MobileFloatingNav />
     </div>
   );

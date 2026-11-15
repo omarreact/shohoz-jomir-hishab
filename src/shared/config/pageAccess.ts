@@ -200,9 +200,24 @@ const PAGE_ACCESS_LEVEL_SET = new Set<string>(PAGE_ACCESS_LEVELS);
 
 // Sensitive tools require a signed member session even if a stale Firestore
 // page-access override accidentally tries to make their route public.
-const MEMBER_MINIMUM_ROUTES = new Set(["/porcha"]);
+const ACCESS_RANK: Record<PageAccessLevel, number> = {
+  public: 0,
+  logged_in: 1,
+  admin: 2,
+  super_admin: 3,
+  hidden: 4,
+};
+
+const HARD_MINIMUM_ROUTES = new Map<string, PageAccessLevel>([
+  ["/porcha", "logged_in"],
+  ["/rajuk-test", "admin"],
+  ["/ms-test", "super_admin"],
+]);
+
 function enforceMinimumAccess(route: string, level: PageAccessLevel): PageAccessLevel {
-  return MEMBER_MINIMUM_ROUTES.has(route) && level === "public" ? "logged_in" : level;
+  const minimum = HARD_MINIMUM_ROUTES.get(route);
+  if (!minimum) return level;
+  return ACCESS_RANK[level] < ACCESS_RANK[minimum] ? minimum : level;
 }
 
 export function isPageAccessLevel(value: unknown): value is PageAccessLevel {

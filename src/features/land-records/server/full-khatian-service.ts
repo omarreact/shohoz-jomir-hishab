@@ -502,6 +502,9 @@ function cachedListExpansion(base: KhatianDetails): KhatianPage["items"][number]
 }
 
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
+  const timeoutSignal = AbortSignal.timeout(25_000);
+  signal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
   const warnings: string[] = [];
   const fetchedAt = new Date().toISOString();
   const officialOnly = input.sourceMode === "official";

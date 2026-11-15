@@ -43,7 +43,10 @@ export function providerError(error: unknown, requestId?: string) {
     );
   }
 
-  if (error instanceof DOMException && error.name === "AbortError") {
+  if (
+    error instanceof DOMException &&
+    (error.name === "AbortError" || error.name === "TimeoutError")
+  ) {
     logProviderError(error, requestId);
     return NextResponse.json(
       { error: "সরকারি ভূমি রেকর্ড সেবা সময়মতো উত্তর দেয়নি। আবার চেষ্টা করুন।" },
