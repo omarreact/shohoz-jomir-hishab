@@ -46,7 +46,7 @@ test("Faraez result downloads one coherent A4 report with the textual distributi
   await expect(result).toBeVisible();
   await expect(result.getByText("সম্পত্তি বন্টন (ফারায়েজ) বিবরণী")).toBeVisible();
   await expect(result.locator("tbody tr")).toHaveCount(1);
-  await expect(result.getByText(/আনা · .*গন্ডা · .*কড়া · .*ক্রান্তি · .*তিল/)).toBeVisible();
+  await expect(result.locator("tbody td").filter({ hasText: /আনা · .*গন্ডা · .*কড়া · .*ক্রান্তি · .*তিল/ }).first()).toBeVisible();
 
   // The chart is deliberately excluded from PDF so it cannot become a
   // chart-only/near-empty sheet. The textual legal distribution must remain.
