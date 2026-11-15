@@ -1,3 +1,4 @@
+import { mkdir } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
@@ -106,6 +107,8 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
 
     expect(download.suggestedFilename()).toMatch(/^LandBD-Mouza-Khatian-Book-.*\.pdf$/);
     expect(downloadMs).toBeLessThan(45_000);
+    await mkdir("test-results", { recursive: true });
+    await download.saveAs("test-results/landbd-mouza-khatian-book.pdf");
     const stream = await download.createReadStream();
     let bytes = 0;
     for await (const chunk of stream) bytes += chunk.length;
