@@ -7,7 +7,7 @@ import Navbar from "@/src/shared/components/Navbar";
 export default function PublicGlobalHeader() {
   return (
     <>
-      <div className="hidden xl:block"><Navbar /></div>
+      <div className="hidden min-[1180px]:block"><Navbar /></div>
       <MobileAppHeader />
     </>
   );

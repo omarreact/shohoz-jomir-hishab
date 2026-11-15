@@ -10,6 +10,6 @@ const HEADER_ROUTES = ["/geospatial-map", "/mouza-map", "/rajuk-test"] as const;
 export default function ImmersiveGlobalHeader() {
   const pathname = usePathname() || "";
   return HEADER_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
-    ? <><div className="hidden xl:block"><Navbar /></div><MobileAppHeader /></>
+    ? <><div className="hidden min-[1180px]:block"><Navbar /></div><MobileAppHeader /></>
     : null;
 }

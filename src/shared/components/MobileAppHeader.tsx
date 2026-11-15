@@ -27,7 +27,7 @@ export default function MobileAppHeader() {
   return (
     <header
       className={[
-        "landbd-mobile-appbar xl:hidden print:hidden",
+        "landbd-mobile-appbar min-[1180px]:hidden print:hidden",
         onMap ? "absolute inset-x-0 top-0 z-[1150]" : "sticky top-0 z-[1150]",
       ].join(" ")}
     >
