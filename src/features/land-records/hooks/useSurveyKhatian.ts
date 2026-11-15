@@ -67,6 +67,7 @@ export function useSurveyKhatian() {
       divisionBbsCode: selectedDistrict?.DIVISION_BBS_CODE,
       districtBbsCode: selectedDistrict?.BBS_CODE,
       upazilaBbsCode: selectedUpazila?.BBS_CODE,
+      sourceMode: "official",
     };
 
     return run("khatians", () => landRecordsApi.khatians(input), setKhatians);
@@ -76,7 +77,11 @@ export function useSurveyKhatian() {
     const rememberedContext = search && search.surveyKey === surveyKey
       ? lastKhatianContext.current ?? { owner: search.owner, dagNumber: search.dagNumber, jlNumberId: search.jlNumberId }
       : undefined;
-    const resolvedContext = context ?? rememberedContext;
+    const resolvedContext: FullKhatianRequestContext = {
+      ...(rememberedContext ?? {}),
+      ...(context ?? {}),
+      sourceMode: "official",
+    };
     const cacheKey = [
       surveyKey,
       id,
@@ -84,12 +89,16 @@ export function useSurveyKhatian() {
       resolvedContext?.owner ?? "",
       resolvedContext?.dagNumber ?? "",
       resolvedContext?.verificationUuid ?? "",
+      resolvedContext.sourceMode ?? "",
     ].join("|");
 
     setSelectedFullKhatian(null);
 
     const fetchFull = () => {
-      const cached = fullKhatianCache.current.get(cacheKey);
+      // Live official mode must not replay a previously saved client result.
+      // Keep only in-flight de-duplication to avoid duplicate concurrent calls.
+      const useSavedClientResult = resolvedContext.sourceMode !== "official";
+      const cached = useSavedClientResult ? fullKhatianCache.current.get(cacheKey) : undefined;
       if (cached) return Promise.resolve(cached);
 
       const existing = fullKhatianInflight.current.get(cacheKey);
@@ -99,7 +108,7 @@ export function useSurveyKhatian() {
         .then((full) => {
           // Missing source rows are retryable; cache only a demonstrably
           // non-truncated base instead of pinning incomplete owner/dag lists.
-          if (isPartialPublicRecord(full.base)) fullKhatianCache.current.delete(cacheKey);
+          if (!useSavedClientResult || isPartialPublicRecord(full.base)) fullKhatianCache.current.delete(cacheKey);
           else fullKhatianCache.current.set(cacheKey, full);
           // Keep a small hot cache for back/forward and repeated opens.
           while (fullKhatianCache.current.size > 24) {

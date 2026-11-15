@@ -17,6 +17,17 @@ function area(value: string | undefined): string | undefined {
 function ownerRelation(owner: ReturnType<typeof normalizeKhatianRecord>["owners"][number]): string | undefined {
   const hasSeparatedRelation = Boolean(owner.father || owner.mother || owner.spouse);
   if (!hasSeparatedRelation && owner.relationRaw) return owner.relationRaw;
+
+  // A source phrase such as "পিতা গ" is already explicit. Parsing its
+  // structured value must not silently rewrite the original khatian wording.
+  // Reuse it only when it represents *all* known relations; separate official
+  // mother/spouse/guardian fields must not be lost behind a shorter raw label.
+  const raw = owner.relationRaw?.trim();
+  const labelled = raw && /^\s*(?:পিতার নাম|পিতা|পিং|father|মাতার নাম|মাতা|mother|স্বামীর নাম|স্বামী|স্ত্রীর নাম|স্ত্রী|spouse|husband|wife)(?=\s|[:：-]|$)/iu.test(raw);
+  const values = [owner.father, owner.mother, owner.spouse, owner.guardian].filter(
+    (value): value is string => Boolean(value),
+  );
+  if (labelled && values.every((value) => raw.includes(value))) return raw;
   const parts = [
     owner.father ? `পিতা: ${owner.father}` : "",
     owner.mother ? `মাতা: ${owner.mother}` : "",

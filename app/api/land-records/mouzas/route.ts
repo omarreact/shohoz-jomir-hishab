@@ -12,8 +12,10 @@ export async function GET(request: Request) {
     const surveyId = surveyIdParam.parse(params.get("surveyId"));
     const districtName = params.get("districtName")?.trim() || "";
     const upazilaName = params.get("upazilaName")?.trim() || "";
-    const surveyKey = SURVEY_KEY_BY_ID[surveyId];
-    if (!surveyKey) return Response.json({ error: "Unsupported survey" }, { status: 400 });
+    // Mouza discovery itself is keyed by SURVEY_ID. For a newly published
+    // DLRMS survey, let the official response provide SURVEY_NAME_EN instead
+    // of rejecting the ID before we can discover its key.
+    const surveyKey = SURVEY_KEY_BY_ID[surveyId] ?? "";
     const data = surveyKey === MUTATION_SURVEY_KEY
       ? await listMutationMouzas({ districtBbsCode, upazilaBbsCode, districtName, upazilaName }, request.signal)
       : await providers.landRecords.listMouzas({ districtBbsCode, upazilaBbsCode, surveyId, surveyKey, districtName, upazilaName }, request.signal);

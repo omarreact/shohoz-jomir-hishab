@@ -39,6 +39,7 @@ async function mockDlrmsUiPath(page) {
   ]));
   await page.route("**/api/land-records/surveys**", (route) => json(route, [
     { SURVEY_ID: 7, LOCAL_NAME: "বি আর এস", SURVEY_ORDER: 7 },
+    { SURVEY_ID: 99, LOCAL_NAME: "নামজারি খতিয়ান (নামজারি)", SURVEY_ORDER: 999 },
   ]));
   await page.route("**/api/land-records/mouzas**", (route) => json(route, [
     {
@@ -72,7 +73,12 @@ async function mockDlrmsUiPath(page) {
     MOUZA_NAME: "পাতিরা",
     SURVEY_ID: 7,
     SURVEY_NAME: "বি আর এস",
-    PUBLIC_RECORD: { source: "browser-qa-fixture" },
+    PUBLIC_RECORD: {
+      source: "browser-qa-fixture",
+      PREVIOUS_KHATIAN: "123",
+      LAND_CLASS: "ভিটা",
+      OWNER_DETAILS: [{ NAME: "পরীক্ষামূলক মালিক ১", MOTHER_NAME: "পরীক্ষামূলক মাতা ১" }],
+    },
   };
 
   await page.route("**/api/land-records/khatians?**", (route) => json(route, {
@@ -95,7 +101,17 @@ async function mockDlrmsUiPath(page) {
   await page.route("**/api/land-records/full-khatian/BRS/7940305**", (route) => json(route, {
     base,
     owners: [
-      { occurrence: 1, name: "পরীক্ষামূলক মালিক ১", father: "পরীক্ষামূলক অভিভাবক ১", source: "DLRMS_PUBLIC" },
+      {
+        occurrence: 1,
+        name: "পরীক্ষামূলক মালিক ১",
+        father: "পরীক্ষামূলক অভিভাবক ১",
+        mother: "পরীক্ষামূলক মাতা ১",
+        spouse: "পরীক্ষামূলক জীবনসঙ্গী ১",
+        guardian: "পরীক্ষামূলক আইনগত অভিভাবক ১",
+        address: "পরীক্ষামূলক ঠিকানা ১",
+        shareRaw: "৮ আনা",
+        source: "DLRMS_PUBLIC",
+      },
       { occurrence: 2, name: "পরীক্ষামূলক মালিক ২", father: "পরীক্ষামূলক অভিভাবক ২", source: "DLRMS_PUBLIC" },
     ],
     dags: [
@@ -141,6 +157,9 @@ test.describe("LandBD DLRMS browser data path", () => {
     await choose(page, "বিভাগ", "ঢাকা");
     await choose(page, "জেলা", "ঢাকা");
     await choose(page, "উপজেলা / থানা", "রূপগঞ্জ");
+    await expect(
+      page.getByRole("heading", { name: /Mutation \/ নামজারি (?:QR|কিউআর) যাচাই/ }),
+    ).toBeVisible();
     await choose(page, "খতিয়ানের ধরন", "বি আর এস");
     await choose(page, "মৌজা (JL নম্বর)", /^(?:110|১১০) · পাতিরা$/);
 
@@ -158,5 +177,17 @@ test.describe("LandBD DLRMS browser data path", () => {
     await expect(dialog.getByText("পরীক্ষামূলক অভিভাবক ২").first()).toBeVisible();
     await expect(dialog.getByText(/1977|১৯৭৭/).first()).toBeVisible();
     await expect(dialog.getByText(/0\.338|০\.৩৩৮/).first()).toBeVisible();
+
+    await dialog.getByText("অতিরিক্ত উৎস-তথ্য দেখুন", { exact: true }).click();
+    await expect(
+      dialog.getByRole("heading", { name: /সরকারি (?:DLRMS|ডিএলআরএমএস) উৎসের সকল প্রকাশিত ফিল্ড/ }),
+    ).toBeVisible();
+    await expect(dialog.getByText("PREVIOUS_KHATIAN", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("123", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("পরীক্ষামূলক মাতা ১", { exact: true }).first()).toBeVisible();
+    await expect(dialog.getByText("পরীক্ষামূলক জীবনসঙ্গী ১", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("পরীক্ষামূলক আইনগত অভিভাবক ১", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("পরীক্ষামূলক ঠিকানা ১", { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("cell", { name: "৮ আনা", exact: true })).toBeVisible();
   });
 });

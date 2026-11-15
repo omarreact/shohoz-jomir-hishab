@@ -37,6 +37,33 @@ describe("normalized khatian record", () => {
     expect(record.missingFields).toContain("dags");
   });
 
+  it("maps Bengali father, mother and spouse labels into separate fields", () => {
+    const record = normalizeKhatianRecord(row({
+      OWNERS: "আসমা",
+      GUARDIANS: "পিতার নাম: করিম | মাতার নাম: সালমা | স্বামীর নাম: রফিক",
+    }));
+    expect(record.owners).toHaveLength(1);
+    expect(record.owners[0]).toMatchObject({
+      name: "আসমা",
+      father: "করিম",
+      mother: "সালমা",
+      spouse: "রফিক",
+    });
+    expect(record.owners[0].guardian).toBeUndefined();
+  });
+
+  it("keeps distinct same-name guardian rows aligned to their source occurrences", () => {
+    const record = normalizeKhatianRecord(row({
+      OWNERS: "একই নাম, একই নাম",
+      GUARDIANS: "পিতা: প্রথম অভিভাবক, মাতা: দ্বিতীয় অভিভাবক",
+    }));
+    expect(record.owners).toHaveLength(2);
+    expect(record.owners[0].father).toBe("প্রথম অভিভাবক");
+    expect(record.owners[0].mother).toBeUndefined();
+    expect(record.owners[1].mother).toBe("দ্বিতীয় অভিভাবক");
+    expect(record.owners[1].father).toBeUndefined();
+  });
+
   it("matches the unified query across khatian, dag, owner and guardian", () => {
     const record = normalizeKhatianRecord(row());
     expect(normalizedRecordMatches(record, "৪১")).toBe(true);

@@ -74,11 +74,15 @@ function relationParts(value: string | undefined): Pick<NormalizedOwnerRow, "fat
   if (!text) return {};
   const result: Pick<NormalizedOwnerRow, "father" | "mother" | "spouse" | "guardian"> = {};
   const parts = text.split(/[|;\n]+/u).map((item) => item.trim()).filter(Boolean);
+  // JS \b only recognizes ASCII-style word boundaries, not Bengali script.
+  // Require a real label terminator to avoid misclassifying ordinary names.
+  const fatherLabel = /^\s*(?:পিতার নাম|পিতা|পিং|father)(?=\s|[:：-]|$)\s*[:：-]?\s*/iu;
+  const motherLabel = /^\s*(?:মাতার নাম|মাতা|mother)(?=\s|[:：-]|$)\s*[:：-]?\s*/iu;
+  const spouseLabel = /^\s*(?:স্বামীর নাম|স্বামী|স্ত্রীর নাম|স্ত্রী|spouse|husband|wife)(?=\s|[:：-]|$)\s*[:：-]?\s*/iu;
   for (const part of parts.length ? parts : [text]) {
-    const stripped = part.replace(/^\s*(?:পিতা|পিং|father)\s*[:：-]?\s*/iu, "").trim();
-    if (/^\s*(?:পিতা|পিং|father)\b/iu.test(part)) result.father = stripped;
-    else if (/^\s*(?:মাতা|মাতার নাম|mother)\b/iu.test(part)) result.mother = part.replace(/^\s*(?:মাতা|মাতার নাম|mother)\s*[:：-]?\s*/iu, "").trim();
-    else if (/^\s*(?:স্বামী|স্ত্রী|spouse|husband|wife)\b/iu.test(part)) result.spouse = part.replace(/^\s*(?:স্বামী|স্ত্রী|spouse|husband|wife)\s*[:：-]?\s*/iu, "").trim();
+    if (fatherLabel.test(part)) result.father = part.replace(fatherLabel, "").trim();
+    else if (motherLabel.test(part)) result.mother = part.replace(motherLabel, "").trim();
+    else if (spouseLabel.test(part)) result.spouse = part.replace(spouseLabel, "").trim();
     else result.guardian = result.guardian ? `${result.guardian}; ${part}` : part;
   }
   return result;

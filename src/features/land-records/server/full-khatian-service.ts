@@ -27,6 +27,8 @@ export interface FullKhatianInput {
   divisionBbsCode?: string;
   districtBbsCode?: string;
   upazilaBbsCode?: string;
+  /** Live official DLRMS only: no bundled reference, mirror or LISF enrichment. */
+  sourceMode?: "official" | "enriched";
 }
 
 interface BbsLocationCodes {
@@ -139,15 +141,22 @@ function publicDags(base: KhatianDetails, tracking?: KhatianTracking): FullKhati
   return dags.map((dagNo) => ({ dagNo, source: "DLRMS_PUBLIC" as const }));
 }
 
-function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
+export function mergeStructuredOwners(publicRows: FullKhatianOwner[], enriched: FullKhatianOwner[]): FullKhatianOwner[] {
   // Equal names alone do not prove that the source lists refer to the same
-  // ownership entry. Parent, share and address can distinguish separate rows.
+  // ownership entry. Preserve every structured relationship that can
+  // distinguish same-name owners; never collapse a mother/spouse/guardian-only row.
   const normalize = (text: string | undefined) =>
     (text ?? "").replace(/\s+/g, " ").trim().toLocaleLowerCase("bn-BD");
   const detail = (row: FullKhatianOwner) =>
-    Boolean(row.fatherOrHusband || row.shareRaw || row.address);
+    Boolean(
+      row.fatherOrHusband || row.father || row.mother || row.spouse ||
+      row.guardian || row.shareRaw || row.address,
+    );
   const identity = (row: FullKhatianOwner) =>
-    [row.name, row.fatherOrHusband, row.shareRaw, row.address].map(normalize).join("|");
+    [
+      row.name, row.fatherOrHusband, row.father, row.mother, row.spouse,
+      row.guardian, row.shareRaw, row.address,
+    ].map(normalize).join("|");
   const result: FullKhatianOwner[] = [];
   for (const candidate of [...enriched, ...publicRows]) {
     const sameName = result.filter((row) => normalize(row.name) === normalize(candidate.name));
@@ -275,6 +284,7 @@ async function findUnfilteredPublicKhatian(
   base: KhatianDetails,
   surveyKey: string,
   warnings: string[],
+  sourceMode: "official" | "enriched" | undefined,
   signal?: AbortSignal,
 ): Promise<KhatianPage["items"][number] | null> {
   if (!base.JL_NUMBER_ID) return null;
@@ -288,6 +298,7 @@ async function findUnfilteredPublicKhatian(
       jlNumberId: base.JL_NUMBER_ID,
       page,
       pageSize: PUBLIC_INDEX_PAGE_SIZE,
+      sourceMode,
     }, warnings, lookupSignal);
   const findSameRecord = (page: KhatianPage | null) =>
     page?.items.find((row) =>
@@ -329,6 +340,7 @@ async function collectFilteredDagRows(
   base: KhatianDetails,
   surveyKey: string,
   warnings: string[],
+  sourceMode: "official" | "enriched" | undefined,
   signal?: AbortSignal,
 ): Promise<KhatianPage["items"]> {
   if (!base.JL_NUMBER_ID) return [];
@@ -356,6 +368,7 @@ async function collectFilteredDagRows(
             pageSize: 100,
             khatianNo: base.KHATIAN_NO,
             dagNumber,
+            sourceMode,
           },
           warnings,
           signal,
@@ -490,7 +503,13 @@ function cachedListExpansion(base: KhatianDetails): KhatianPage["items"][number]
 export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSignal): Promise<FullKhatian> {
   const warnings: string[] = [];
   const fetchedAt = new Date().toISOString();
-  const upstreamBase = await providers.landRecords.getKhatian(input.surveyKey, input.id, signal);
+  const officialOnly = input.sourceMode === "official";
+  const upstreamBase = await providers.landRecords.getKhatian(
+    input.surveyKey,
+    input.id,
+    signal,
+    { officialOnly },
+  );
   const officialBase = restoreOfficialDetailBase(upstreamBase);
   const baseDetail: KhatianDetails = {
     ...officialBase,
@@ -515,6 +534,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
           page: 1,
           pageSize: 100,
           khatianNo: baseDetail.KHATIAN_NO,
+          sourceMode: input.sourceMode,
         }, warnings, signal);
     const ownerLookup = input.owner
       ? safeSearch({
@@ -524,6 +544,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
           pageSize: 100,
           khatianNo: baseDetail.KHATIAN_NO,
           owner: input.owner,
+          sourceMode: input.sourceMode,
         }, warnings, signal)
       : Promise.resolve(null);
     const dagLookup = input.dagNumber
@@ -534,6 +555,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
           pageSize: 100,
           khatianNo: baseDetail.KHATIAN_NO,
           dagNumber: input.dagNumber,
+          sourceMode: input.sourceMode,
         }, warnings, signal)
       : Promise.resolve(null);
 
@@ -552,7 +574,13 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     // The uploaded ZIP recovered fuller BRS records from the unfiltered mouza
     // index. Only attempt this when the filtered official record is partial.
     if (reconstructionStillPartial(rebuilt) || exactRows.some(hasTruncatedListValue)) {
-      const unfiltered = await findUnfilteredPublicKhatian(rebuilt, input.surveyKey, warnings, signal);
+      const unfiltered = await findUnfilteredPublicKhatian(
+        rebuilt,
+        input.surveyKey,
+        warnings,
+        input.sourceMode,
+        signal,
+      );
       if (unfiltered) rebuilt = reconstructKhatian(rebuilt, [unfiltered]);
     }
   }
@@ -560,7 +588,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   // Per-dag reconstruction and optional verification are independent after the
   // exact row is known. Run them together to avoid serial network latency.
   const filteredDagPromise = rebuilt.JL_NUMBER_ID
-    ? collectFilteredDagRows(rebuilt, input.surveyKey, warnings, signal)
+    ? collectFilteredDagRows(rebuilt, input.surveyKey, warnings, input.sourceMode, signal)
     : Promise.resolve([]);
   const trackingPromise: Promise<KhatianTracking | undefined> = input.tracking
     ? Promise.resolve(input.tracking)
@@ -616,7 +644,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
     ...officialStructured.dags.map((dag) => sourceKey(dag.dagNo)),
   ]);
   const [unverifiedMirrorRecord, unverifiedMirrorDagRecords] = await Promise.all([
-    rebuilt.JL_NUMBER_ID
+    !officialOnly && rebuilt.JL_NUMBER_ID
       ? fetchStrictPublicMirrorRecord({
           surveyKey: input.surveyKey,
           jlNumberId: rebuilt.JL_NUMBER_ID,
@@ -625,9 +653,9 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
           mouzaId: rebuilt.MOUZA_ID || undefined,
         }, signal)
       : Promise.resolve(null),
-    rebuilt.JL_NUMBER_ID
+    !officialOnly && rebuilt.JL_NUMBER_ID
       ? fetchFilteredMirrorRecords(rebuilt, input.surveyKey, warnings, signal)
-      : Promise.resolve([]),
+      : Promise.resolve([] as Record<string, unknown>[]),
   ]);
   // Reject misidentified mirror payloads before structured extraction.
   const mirrorRecord = mirrorRecordMatchesBase(rebuilt, unverifiedMirrorRecord, input.surveyKey)
@@ -672,7 +700,9 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   }
   const preReferenceDags = new Set(splitList(rebuilt.DAGS).map(sourceKey));
 
-  const referenceMatch = enrichKhatianDetailsWithReferenceDatasets(rebuilt, input.surveyKey);
+  const referenceMatch = officialOnly
+    ? null
+    : enrichKhatianDetailsWithReferenceDatasets(rebuilt, input.surveyKey);
   if (referenceMatch) {
     rebuilt = referenceMatch.record;
     warnings.push(
@@ -697,17 +727,27 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   // LISF is optional enrichment, so start it while DLRMS location/hal-sabek
   // work is progressing instead of waiting for those requests serially.
-  const lisfPromise = getLisfProvider()
-    .enrichKhatian(rebuilt, locationPreset, signal)
-    .catch((error) => ({
-      status: "error" as const,
-      message: error instanceof Error ? error.message : "LISF enrichment failed",
-      owners: [],
-      dags: [],
-      referenceKhatians: [],
-      referenceDags: [],
-      deeds: [],
-    }));
+  const lisfPromise: Promise<FullKhatian["lisf"]> = officialOnly
+    ? Promise.resolve({
+        status: "disabled" as const,
+        message: "Direct official DLRMS API mode; non-DLRMS enrichment is disabled.",
+        owners: [],
+        dags: [],
+        referenceKhatians: [],
+        referenceDags: [],
+        deeds: [],
+      })
+    : getLisfProvider()
+        .enrichKhatian(rebuilt, locationPreset, signal)
+        .catch((error) => ({
+          status: "error" as const,
+          message: error instanceof Error ? error.message : "LISF enrichment failed",
+          owners: [],
+          dags: [],
+          referenceKhatians: [],
+          referenceDags: [],
+          deeds: [],
+        }));
 
   const locationCodes = await locationPromise;
   const halSabekPromise: Promise<FullKhatian["halSabek"]> = (
@@ -731,7 +771,7 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
 
   const [halSabek, lisf] = await Promise.all([halSabekPromise, lisfPromise]);
 
-  const useAuthorizedLisf = lisf.status === "ready";
+  const useAuthorizedLisf = !officialOnly && lisf.status === "ready";
   const structuredOwners = useAuthorizedLisf
     ? mergeStructuredOwners(structuredPublicOwners, lisf.owners)
     : structuredPublicOwners;
@@ -767,6 +807,12 @@ export async function getFullKhatian(input: FullKhatianInput, signal?: AbortSign
   });
   const owners = mergeStructuredOwners(compactOwners, structuredOwners);
   const dags = mergeStructuredDags(compactDags, structuredDags);
+
+  if (officialOnly) {
+    warnings.unshift(
+      "লাইভ সরকারি DLRMS API mode: saved/reference dataset, third-party mirror এবং LISF enrichment ব্যবহার করা হয়নি।",
+    );
+  }
 
   const evidence: SourceEvidence[] = [
     {

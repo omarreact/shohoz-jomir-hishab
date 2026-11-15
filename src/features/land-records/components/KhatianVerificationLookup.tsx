@@ -14,6 +14,7 @@ import {
 import { landRecordsApi } from "../api";
 import type { FullKhatian } from "../full-khatian";
 import KhatianDetailsView from "./KhatianDetailsView";
+import FormattedKhatianRecord from "./FormattedKhatianRecord";
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
 const MUTATION_QR_RE = /^[0-9a-f]{6,16}$/i;
@@ -34,13 +35,24 @@ function extractVerificationUuid(value: string): string | null {
   return match[0].toLowerCase();
 }
 
-function extractMutationKey(value: string): string | null {
+type MutationLookup = { type: "qr" | "dcr"; key: string };
+
+function extractMutationLookup(value: string): MutationLookup | null {
   const trimmed = value.trim();
-  const urlMatch = trimmed.match(
+  const qrUrl = trimmed.match(
     /https?:\/\/mutation\.land\.gov\.bd\/qr-vk\/([0-9a-f]{6,16})/i,
   );
-  if (urlMatch?.[1]) return urlMatch[1].toLowerCase();
-  if (MUTATION_QR_RE.test(trimmed)) return trimmed.toLowerCase();
+  if (qrUrl?.[1]) return { type: "qr", key: qrUrl[1].toLowerCase() };
+
+  const dcrUrl = trimmed.match(
+    /https?:\/\/mutation\.land\.gov\.bd\/online-dcr\/([A-Za-z0-9_-]{3,64})/i,
+  );
+  if (dcrUrl?.[1]) return { type: "dcr", key: dcrUrl[1] };
+
+  const dcrPrefixed = trimmed.match(/^dcr\s*[:#-]?\s*([A-Za-z0-9_-]{3,64})$/i);
+  if (dcrPrefixed?.[1]) return { type: "dcr", key: dcrPrefixed[1] };
+
+  if (MUTATION_QR_RE.test(trimmed)) return { type: "qr", key: trimmed.toLowerCase() };
   return null;
 }
 
@@ -71,6 +83,8 @@ interface MutationRecord {
   verifiedAt?: string;
   verificationPageUrl: string;
   structuredResponse: boolean;
+  sourceFormat?: "json" | "html" | "none";
+  publicRecord?: Record<string, unknown>;
 }
 
 function MutationResultCard({ record }: { record: MutationRecord }) {
@@ -85,7 +99,7 @@ function MutationResultCard({ record }: { record: MutationRecord }) {
           </span>
           {record.structuredResponse ? (
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
-              JSON
+              {record.sourceFormat === "html" ? "PUBLIC HTML" : "JSON"}
             </span>
           ) : (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
@@ -196,9 +210,20 @@ function MutationResultCard({ record }: { record: MutationRecord }) {
         </div>
       )}
 
+      {record.publicRecord && Object.keys(record.publicRecord).length > 0 ? (
+        <details className="border-t border-slate-100 p-4 dark:border-slate-800">
+          <summary className="cursor-pointer text-sm font-bold text-slate-800 dark:text-slate-100">
+            সরকারি Mutation উৎসের সকল প্রকাশিত ফিল্ড
+          </summary>
+          <div className="mt-3 overflow-x-auto">
+            <FormattedKhatianRecord record={record.publicRecord} />
+          </div>
+        </details>
+      ) : null}
+
       {!record.structuredResponse && (
         <div className="border-t border-amber-100 bg-amber-50/60 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
-          সরকারি API থেকে structured JSON পাওয়া যায়নি। সরকারি পেজে গিয়ে সম্পূর্ণ তথ্য ও PDF দেখুন।
+          সরকারি public response থেকে structured তথ্য পাওয়া যায়নি। সরকারি পেজে গিয়ে সম্পূর্ণ তথ্য ও PDF যাচাই করুন।
         </div>
       )}
     </div>
@@ -243,9 +268,9 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
 
   const submitMutation = async (event: FormEvent) => {
     event.preventDefault();
-    const key = extractMutationKey(mutationValue);
-    if (!key) {
-      setMutationError("সঠিক Mutation QR key বা mutation.land.gov.bd/qr-vk/... লিংক দিন।");
+    const lookup = extractMutationLookup(mutationValue);
+    if (!lookup) {
+      setMutationError("সঠিক Mutation QR link/key অথবা online-DCR link দিন। Raw DCR হলে DCR: নম্বর লিখুন।");
       setMutationRecord(null);
       return;
     }
@@ -253,7 +278,8 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
     setMutationError(null);
     setMutationRecord(null);
     try {
-      const res = await fetch(`/api/land-records/mutation-verify?qrKey=${encodeURIComponent(key)}`);
+      const parameter = lookup.type === "dcr" ? "dcrKey" : "qrKey";
+      const res = await fetch(`/api/land-records/mutation-verify?${parameter}=${encodeURIComponent(lookup.key)}`);
       const data = await res.json() as MutationRecord | { error: string };
       if (!res.ok) {
         setMutationError((data as { error: string }).error || "Mutation যাচাইকরণ ব্যর্থ হয়েছে।");
@@ -346,14 +372,14 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
                 </span>
               </div>
               <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                নামজারি খতিয়ানের QR লিংক (mutation.land.gov.bd/qr-vk/...) বা ৬–১৬ ডিজিটের QR কোড দিন।
+                নামজারি খতিয়ানের QR link/key অথবা mutation.land.gov.bd/online-dcr/... লিংক দিন। DCR নম্বর সরাসরি দিলে আগে DCR: লিখুন।
               </p>
             </div>
           </div>
 
           <form onSubmit={submitMutation} className="min-w-0">
             <label htmlFor="mutation-verification-input" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-              Mutation QR লিংক / কোড
+              Mutation QR / DCR লিংক বা কোড
             </label>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <div className="relative min-w-0 flex-1">
@@ -362,7 +388,7 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
                   id="mutation-verification-input"
                   value={mutationValue}
                   onChange={(event) => setMutationValue(event.target.value)}
-                  placeholder="https://mutation.land.gov.bd/qr-vk/b610d4d2 অথবা b610d4d2"
+                  placeholder="QR link/key, online-DCR link, অথবা DCR: 26109413903402"
                   autoComplete="off"
                   spellCheck={false}
                   className="h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"

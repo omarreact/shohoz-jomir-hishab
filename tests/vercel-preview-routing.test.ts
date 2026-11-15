@@ -17,12 +17,10 @@ describe("Vercel deployment safety gate for LandBD", () => {
     expect((rules as Record<string, boolean>)["*"]).toBe(false);
   });
 
-  test("main plus only explicitly reviewed preview branches are enabled", () => {
+  test("only main is deploy-enabled; all preview branches are disabled", () => {
     expect(rules).toEqual({
       "*": false,
       main: true,
-      "feat/gis-layer-checkbox-controls-20261108": true,
-      "feat/landbd-hires-plot-view-20261109": true,
     });
   });
 });

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import MapVisitConsent from "@/src/features/geospatial-map/components/MapVisitConsent";
 
 const MapLibreMap = dynamic(
   () => import("@/src/features/geospatial-map/maplibre/MapLibreMap"),
@@ -49,7 +48,6 @@ export default function GeospatialMapClient() {
       }}
     >
       <MapLibreMap />
-      <MapVisitConsent />
     </div>
   );
 }

@@ -10,9 +10,9 @@ type DynamicPageGateProps = {
 
 /**
  * Backward-compatible wrapper kept for pages that already import it.
- * Access enforcement now lives centrally in PageAccessGate inside
- * ConditionalShell so every registered user-facing route follows the same
- * rules without duplicate network requests or conflicting decisions.
+ * Runtime page-access enforcement is centralized in proxy.ts, which resolves
+ * the current page policy before the route renders. ConditionalShell only
+ * controls application chrome/layout; it is not an authorization boundary.
  */
 export default function DynamicPageGate({ children }: DynamicPageGateProps) {
   return <>{children}</>;

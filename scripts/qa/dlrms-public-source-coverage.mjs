@@ -8,6 +8,7 @@ const HOME="https://dlrms.land.gov.bd/";
 const ORIGIN="https://dlrms.land.gov.bd";
 const API="https://gateway.dlrms.land.gov.bd/core-api/api/public";
 const STRICT=process.env.DLRMS_QA_STRICT==="1";
+const REQUIRED_SOURCE_SURVEYS=["BRS","RS","SA","CS"];
 const TARGETS=[
   {survey:"BRS",jlNumberId:382911,khatianNo:"349",expectedId:7940305},
   {survey:"RS",surveyId:2},
@@ -104,6 +105,8 @@ if(!session.token){
   process.exit();
 }
 let verifiedSampleCount=0,partialSampleCount=0,knownBrsVerified=false;
+const verifiedSurveys=new Set();
+const partialSurveys=new Set();
 for(const target of TARGETS){
   const outcome={
     survey:target.survey,query:target.khatianNo?"KNOWN_KHATIAN":"SURVEY_SAMPLE",
@@ -150,6 +153,7 @@ for(const target of TARGETS){
     if(target.survey==="BRS"&&target.khatianNo==="349"){
       let unfilteredCandidate=null;
       const officialKhatianNumbers=new Set();
+      let officialScanComplete=false;
       for(let pageNo=1;pageNo<=12;pageNo++){
         const unfilteredUrl=new URL(API+"/index-khatian/"+target.survey);
         unfilteredUrl.searchParams.set("SURVEY",target.survey);
@@ -168,7 +172,11 @@ for(const target of TARGETS){
           outcome.unfilteredIdentityMatched=true;
           outcome.unfilteredFields=coverage(unfilteredCandidate);
         }
-        if(unfiltered.status!==200||unfilteredRows.length<100)break;
+        if(unfiltered.status!==200||unfilteredRows.length<100){
+          // Only claim an exhaustive scan when the official API returned the final short page.
+          if(unfiltered.status===200&&unfilteredRows.length<100)officialScanComplete=true;
+          break;
+        }
       }
       if(!unfilteredCandidate)outcome.unfilteredIdentityMatched=false;
 
@@ -180,6 +188,7 @@ for(const target of TARGETS){
       let overlap=0;
       for(const no of referenceNumbers)if(officialKhatianNumbers.has(no))overlap++;
       outcome.referenceScopeComparison={
+        officialScanComplete,
         officialKhatianCount:officialKhatianNumbers.size,
         bundledReferenceCount:referenceNumbers.size,
         overlapCount:overlap,
@@ -200,23 +209,32 @@ for(const target of TARGETS){
       if(outcome.detailIdentityMatched){
         outcome.detailFields=coverage(selected);
         verifiedSampleCount++;
+        verifiedSurveys.add(target.survey);
         if(target.survey==="BRS"&&target.khatianNo==="349"&&id===7940305){
           knownBrsVerified=true;
         }
         if(outcome.detailFields.owner.ellipsis||outcome.detailFields.guardian.ellipsis
-          ||outcome.detailFields.dag.ellipsis)partialSampleCount++;
+          ||outcome.detailFields.dag.ellipsis){
+          partialSampleCount++;
+          partialSurveys.add(target.survey);
+        }
       }
     }
   }
   console.log("DLRMS_PUBLIC_QA_SAMPLE",JSON.stringify(outcome));
 }
-const strictPass=knownBrsVerified&&verifiedSampleCount>0;
+const missingRequiredSurveys=REQUIRED_SOURCE_SURVEYS.filter((survey)=>!verifiedSurveys.has(survey));
+const strictPass=knownBrsVerified&&missingRequiredSurveys.length===0;
 console.log("DLRMS_PUBLIC_QA_RESULT",JSON.stringify({
-  result:strictPass?"KNOWN_BRS_VERIFIED":verifiedSampleCount?"SOURCE_SAMPLED":"NO_VERIFIED_RECORDS",
+  result:strictPass?"REQUIRED_SURVEY_SAMPLES_VERIFIED":verifiedSampleCount?"SOURCE_PARTIALLY_SAMPLED":"NO_VERIFIED_RECORDS",
   verifiedSampleCount,partialSampleCount,knownBrsVerified,
-  note:"Public source coverage only; never certifies khatian completeness.",
+  verifiedSurveyKeys:[...verifiedSurveys].sort(),
+  partialSurveyKeys:[...partialSurveys].sort(),
+  missingRequiredSurveys,
+  optionalSurveyKeys:TARGETS.filter((target)=>!REQUIRED_SOURCE_SURVEYS.includes(target.survey)).map((target)=>target.survey),
+  note:"Only matched official source samples are verified; missing/truncated rows remain incomplete. No ownership completeness is certified.",
 }));
 if(STRICT&&!strictPass){
-  console.error("STRICT_FAIL: known BRS 349 (ID 7940305) was not verified from the official public source.");
+  console.error("STRICT_FAIL: known BRS identity and at least one official detail sample for CS/SA/RS/BRS are required.");
   process.exitCode=1;
 }

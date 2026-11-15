@@ -29,6 +29,7 @@ export async function getFullKhatianByVerificationUuid(
     page: 1,
     pageSize: 100,
     khatianNo: tracking.khatianNo,
+    sourceMode: "official",
   }, signal);
 
   const exact = page.items.find((row) =>
@@ -49,5 +50,6 @@ export async function getFullKhatianByVerificationUuid(
     divisionBbsCode: tracking.divisionBbsCode,
     districtBbsCode: tracking.districtBbsCode,
     upazilaBbsCode: tracking.upazilaBbsCode,
+    sourceMode: "official",
   }, signal);
 }
