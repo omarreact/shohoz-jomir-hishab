@@ -113,6 +113,15 @@ jobs:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-pdf.spec.mjs --workers=1 --reporter=line
 
+      - name: Upload generated PDF for visual QA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-mouza-khatian-book-pdf
+          path: test-results/landbd-mouza-khatian-book.pdf
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload browser QA diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
