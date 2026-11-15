@@ -341,6 +341,20 @@ const disabledProvider: LisfProvider = {
   },
 };
 
+const publicDlrmsFallbackProvider: LisfProvider = {
+  async enrichKhatian() {
+    return {
+      status: "disabled",
+      message: "LISF authorization is not configured; the existing DLRMS public API fallback remains active.",
+      owners: [],
+      dags: [],
+      referenceKhatians: [],
+      referenceDags: [],
+      deeds: [],
+    };
+  },
+};
+
 /** Development-only adapter; never invents legal detail fields. */
 const mockProvider: LisfProvider = {
   async enrichKhatian(base) {
@@ -370,15 +384,7 @@ const authorizedProvider: LisfProvider = {
     const preset = isAbortSignal(contextOrSignal) ? {} : (contextOrSignal ?? {});
     const credentials = configuredCredentials();
     if (!credentials) {
-      return {
-        status: "not-configured",
-        message: "Authorized LISF service_id/access_code are not configured on the LandBD server.",
-        owners: [],
-        dags: [],
-        referenceKhatians: [],
-        referenceDags: [],
-        deeds: [],
-      };
+      return publicDlrmsFallbackProvider.enrichKhatian(base, contextOrSignal, explicitSignal);
     }
 
     const surveyType = lisfSurveyType(base);
@@ -454,5 +460,6 @@ const authorizedProvider: LisfProvider = {
 export function getLisfProvider(): LisfProvider {
   if (process.env.LISF_ENABLED?.trim() !== "1") return disabledProvider;
   if (process.env.LISF_PROVIDER?.trim().toLowerCase() === "mock") return mockProvider;
+  if (!configuredCredentials()) return publicDlrmsFallbackProvider;
   return authorizedProvider;
 }

@@ -135,7 +135,7 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
     return () => controller.abort();
   }, [upazilaGuid, layerKind]);
 
-  const fieldClass = "min-h-10 w-full rounded-md border border-[var(--border-color)] bg-white px-3 text-xs font-semibold text-[var(--foreground)] outline-none focus-visible:border-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]/20 disabled:cursor-not-allowed disabled:bg-[var(--secondary)]";
+  const fieldClass = "min-h-12 w-full rounded-md border border-[var(--border-color)] bg-white px-3 text-base font-semibold text-[var(--foreground)] outline-none focus-visible:border-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]/20 disabled:cursor-not-allowed disabled:bg-[var(--secondary)]";
 
   return (
     <form
@@ -160,43 +160,43 @@ export default function RajukPlotFinder({ plotNo, setPlotNo, searching, searchPl
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label htmlFor="rajuk-search-kind" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">জরিপ স্তর</label>
+          <label htmlFor="rajuk-search-kind" className="mb-1 block text-base font-bold text-[var(--muted-foreground)]">জরিপ স্তর</label>
           <select id="rajuk-search-kind" className={fieldClass} value={kind} onChange={(event) => handleKindChange(event.target.value as PlotSearchOptions["kind"])}>
             <option value="rs">RS</option><option value="ms">MS</option><option value="all">RS + MS</option>
           </select>
         </div>
         <div>
-          <label htmlFor="rajuk-search-district" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">জেলা</label>
+          <label htmlFor="rajuk-search-district" className="mb-1 block text-base font-bold text-[var(--muted-foreground)]">জেলা</label>
           <select id="rajuk-search-district" className={fieldClass} value={districtGuid} onChange={(event) => handleDistrictChange(event.target.value)}>
             <option value="">সব জেলা</option>
             {districts.map((item) => <option key={item.d_guid} value={item.d_guid}>{item.m_district}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="rajuk-search-upazila" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">থানা / উপজেলা</label>
+          <label htmlFor="rajuk-search-upazila" className="mb-1 block text-base font-bold text-[var(--muted-foreground)]">থানা / উপজেলা</label>
           <select id="rajuk-search-upazila" className={fieldClass} value={upazilaGuid} disabled={!districtGuid} onChange={(event) => handleUpazilaChange(event.target.value)}>
             <option value="">উপজেলা নির্বাচন</option>
             {upazilas.map((item) => <option key={item.t_guid} value={item.t_guid}>{item.upazila_ps}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="rajuk-search-mouza" className="mb-1 block text-[11px] font-bold text-[var(--muted-foreground)]">মৌজা</label>
+          <label htmlFor="rajuk-search-mouza" className="mb-1 block text-base font-bold text-[var(--muted-foreground)]">মৌজা</label>
           <select id="rajuk-search-mouza" className={fieldClass} value={mouzaGuid} disabled={!upazilaGuid} onChange={(event) => setMouzaGuid(event.target.value)}>
             <option value="">মৌজা নির্বাচন</option>
             {mouzas.map((item) => <option key={item.m_guid} value={item.m_guid}>{item.mauza} · JL {item.jl_no}</option>)}
           </select>
         </div>
       </div>
-      <label htmlFor="atlas-dag-search" className="block text-[11px] font-bold text-[var(--muted-foreground)]">RS / MS দাগ নম্বর</label>
+      <label htmlFor="atlas-dag-search" className="block text-base font-bold text-[var(--muted-foreground)]">RS / MS দাগ নম্বর</label>
       <div className="flex gap-2">
         <input id="atlas-dag-search" inputMode="numeric" value={plotNo} onChange={(event) => setPlotNo(event.target.value)} placeholder="যেমন: 349 / ৩৪৯" className={fieldClass + " min-w-0 flex-1"} />
-        <button type="submit" disabled={searching || !plotNo.trim()} className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-md bg-[var(--primary)] px-3 text-xs font-bold text-white transition hover:bg-[var(--brand-gold-strong)] disabled:opacity-50">
+        <button type="submit" disabled={searching || !plotNo.trim()} className="inline-flex min-h-12 shrink-0 items-center gap-1 rounded-md bg-[var(--primary)] px-3 text-base font-bold text-white transition hover:bg-[var(--brand-gold-strong)] disabled:opacity-50">
           {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />} খুঁজুন
         </button>
       </div>
-      {lookupError && <p role="alert" className="rounded-md bg-[#fff1ed] px-2.5 py-2 text-[11px] leading-5 text-[#a43a24]">{lookupError}। শুধু দাগ নম্বর দিয়েও খোঁজা যাবে।</p>}
-      {vectorStatus && <p role="status" className="text-[11px] leading-5 text-[var(--muted-foreground)]">{vectorStatus}</p>}
-      <p className="text-[10px] leading-4 text-[var(--muted-foreground)]">উৎস: LandBD-এর বিদ্যমান RAJUK GIS সংযোগ। এলাকার বাইরে ফলাফল নাও থাকতে পারে।</p>
+      {lookupError && <p role="alert" className="rounded-md bg-[#fff1ed] px-2.5 py-2 text-base leading-7 text-[#a43a24]">{lookupError}। শুধু দাগ নম্বর দিয়েও খোঁজা যাবে।</p>}
+      {vectorStatus && <p role="status" className="text-base leading-7 text-[var(--muted-foreground)]">{vectorStatus}</p>}
+      <p className="text-base leading-7 text-[var(--muted-foreground)]">উৎস: LandBD-এর বিদ্যমান RAJUK GIS সংযোগ। এলাকার বাইরে ফলাফল নাও থাকতে পারে।</p>
     </form>
   );
 }

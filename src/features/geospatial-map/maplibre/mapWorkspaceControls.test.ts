@@ -5,52 +5,90 @@ const source = (file: string) => fs.readFileSync(path.join(process.cwd(), file),
 const view = source("src/features/geospatial-map/maplibre/MapLibreMapViewV3.tsx");
 const controller = source("src/features/geospatial-map/maplibre/MapLibreMap.tsx");
 const styles = source("src/features/geospatial-map/maplibre/layers.ts");
+const types = source("src/features/geospatial-map/maplibre/types.ts");
 const constants = source("src/features/geospatial-map/maplibre/mapConstants.ts");
-const header = source("src/features/geospatial-map/maplibre/RajukStyleMapHeader.tsx");
-const controls = source("src/features/geospatial-map/maplibre/RajukMapControls.tsx");
-const coordinates = source("src/features/geospatial-map/maplibre/RajukCoordinateStatus.tsx");
+const client = source("src/features/geospatial-map/components/GeospatialMapClient.tsx");
+const globals = source("app/globals.css");
 
-describe("LandBD DAP-style map workspace UI consolidation", () => {
-  it("uses a single scrollable panel for plot search, layers, basemaps and results", () => {
-    expect(constants).toContain('type Tab = "search" | "layers" | "basemap" | "results"');
-    expect(controller).toContain('useState<Tab>("search")');
-    expect(view).toContain('role="tablist"');
-    expect(view).toContain('tab === "search"');
-    expect(view).toContain('tab === "layers"');
-    expect(view).toContain('tab === "basemap"');
-    expect(view).toContain('role="tab"');
-    expect(view).toContain('role="tabpanel"');
-    expect(view).toContain('"ArrowLeft", "ArrowRight", "Home", "End"');
-    expect(view).toContain("tabIndex={tab === item ? 0 : -1}");
-    expect(view).toContain("overflow-y-auto overscroll-contain");
-    expect(view).not.toContain("RajukLayerSwitcher");
+describe("LandBD map-first GIS workspace", () => {
+  it("starts with a collapsed icon sidebar and exposes one tool panel at a time", () => {
+    expect(constants).toContain(
+      'export type Tab = "search" | "layers" | "basemap" | "history" | "legend" | "settings"',
+    );
+    expect(controller).toContain("const [panelOpen, setPanelOpen] = useState(false)");
+    expect(view).toContain('aria-label="GIS মানচিত্র সাইডবার"');
+    expect(view).toContain('id="atlas-map-workspace-panel"');
+    expect(view).toContain("if (panelOpen && tab === next)");
+    expect(view).toContain('event.key !== "Escape"');
+    expect(view).not.toContain("window.matchMedia");
+    expect(view).not.toContain('setPanelOpen(query.matches)');
+    expect(view).not.toContain('role="tablist"');
   });
 
-  it("provides one RS/MS visibility control per survey with no redundant palette", () => {
+  it("removes measurement/drawing UI and all always-on map tool cards", () => {
+    expect(view).not.toContain("পরিমাপ ও জরিপ টুলস");
+    expect(view).not.toContain("মানচিত্রে ট্যাপ করে বিন্দু বসান");
+    expect(view).not.toContain("MEASURE_SOURCE_ID");
+    expect(view).not.toContain("mapMeasurement");
+    expect(view).not.toContain("measurePanelOpen");
+    expect(view).not.toContain("RajukMapControls");
+    expect(view).not.toContain("RajukCoordinateStatus");
+    expect(view).not.toContain("RajukParcelInspector");
+    expect(client).not.toContain("MapVisitConsent");
+    for (const file of [
+      "src/features/geospatial-map/maplibre/mapMeasurement.ts",
+      "src/features/geospatial-map/maplibre/RajukMapControls.tsx",
+      "src/features/geospatial-map/maplibre/RajukCoordinateStatus.tsx",
+      "src/features/geospatial-map/maplibre/RajukParcelInspector.tsx",
+    ]) {
+      expect(fs.existsSync(path.join(process.cwd(), file))).toBe(false);
+    }
+  });
+
+  it("keeps dag identify on the map and renders only one selected-dag popup", () => {
+    expect(controller).toContain('action: "identify"');
+    expect(controller).toContain("new maplibregl.Popup");
+    expect(controller).toContain("closeOnClick: false");
+    expect(controller).toContain("popupRef.current?.remove()");
+    expect(controller).toContain("featuresToFc([feature])");
+    expect(controller).toContain("buildDagPopupContent");
+    expect(controller).toContain("তথ্য পাওয়া যায়নি");
+    expect(controller).not.toContain('setTab("results")');
+  });
+
+  it("keeps RS/MS layer controls and canonical black/red survey styling", () => {
     expect(view).toContain("setRasterLayerVisibility");
     expect(view).toContain("defaultRasterLayerVisibility");
     expect(view).toContain("hideAvailableRasterLayers");
-    expect(view).not.toContain("checked={showRsBoundary}");
-    expect(view).not.toContain("checked={showMsBoundary}");
-    expect(view).not.toContain('setTab("basemap")');
-    expect(header).not.toContain('href="/rajuk-test"');
-  });
-
-  it("uses the requested RS-black and MS-red vector/legend colors", () => {
     expect(styles).toContain('"line-color": "#181e1d"');
     expect(styles).toContain('"line-color": "#dc2626"');
     expect(constants).toContain('color: "#151c1a"');
     expect(constants).toContain('color: "#dc2626"');
   });
 
-  it("avoids colliding mobile overlays and retains map navigation, export and print", () => {
-    expect(view).toContain('window.matchMedia("(min-width: 1024px)")');
-    expect(view).toContain("max-lg:hidden");
-    expect(view).toContain("lg:max-w-[520px]");
-    expect(coordinates).toContain("bottom-[92px]");
-    for (const handler of ["zoomIn", "zoomOut", "fitBounds", "resetNorth", "goToMyLocation", "toggleFullscreen", "savePng", "window.print()"]) {
-      expect(controls).toContain(handler);
-    }
-    expect(controls).toContain("overflow-y-auto overscroll-contain");
+  it("registers historical raster sources lazily instead of at map startup", () => {
+    expect(controller).toContain('(["satellite", "light"] as BasemapKey[])');
+    expect(controller).toContain("if (!map.getSource(sourceId))");
+    expect(controller).toContain("BASEMAP_SOURCE_DEFINITIONS[basemap]");
+    expect(controller).toContain("Historical sources are registered lazily");
+  });
+
+  it("labels historical imagery truthfully and never embeds Google Earth tiles", () => {
+    expect(constants).toContain("...([2003, 2010, 2020, 2025] as const).map");
+    expect(constants).toContain('label: `NASA MODIS · ${year}`');
+    expect(types).toContain("gibs.earthdata.nasa.gov");
+    expect(constants).toContain('GOOGLE_EARTH_2003_URL = "https://earth.google.com/web/"');
+    expect(constants).toContain("developers.google.com/maps/documentation/earth/historical-imagery");
+    expect(view).toContain("নিচের ২০০৩ layer হলো NASA MODIS, Google Earth নয়");
+    expect(view).not.toContain("earth.google.com/web/@");
+  });
+
+  it("locks screen UI copy to at least 18px without changing print or map-canvas labels", () => {
+    expect(globals).toContain("Screen typography contract");
+    expect(globals).toContain("font-size: 18px !important");
+    expect(globals).toContain("MapLibre canvas labels");
+    expect(globals).toContain("@media print");
+    // MapLibre's internal symbol text remains deliberately independent.
+    expect(styles).toContain('"text-size": 12');
   });
 });
