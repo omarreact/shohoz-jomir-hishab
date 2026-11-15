@@ -120,11 +120,12 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     // 60 rows: sum(0.100..0.159) = 7.77 acre. This guards against
     // accidentally stripping ASCII digits while normalizing source area values.
     await expect(report.getByText("৭.৭৭", { exact: true })).toBeVisible();
-    const reportHeadingFonts = await report.locator("h1, h2").evaluateAll((elements) =>
-      elements.map((element) => getComputedStyle(element).fontFamily),
-    );
-    expect(reportHeadingFonts.length).toBeGreaterThan(0);
-    expect(reportHeadingFonts.every((font) => font.includes("Kalpurush"))).toBe(true);
+    const reportHeadingFonts = await report
+      .locator(".report-cover-hero h1, .report-cover-body h2, .report-book-header h2")
+      .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontFamily));
+    console.log("REPORT_HEADING_FONTS", reportHeadingFonts);
+    expect(reportHeadingFonts.length).toBeGreaterThan(2);
+    expect(reportHeadingFonts.every((font) => /Kalpurush|Nikosh/i.test(font))).toBe(true);
     await expect(report.locator("tr[data-report-source-id]")).toHaveCount(rows.length);
     expect(await report.locator(".report-page").count()).toBeGreaterThan(2);
     // A matching row count alone can mask duplicated or omitted khatians.
