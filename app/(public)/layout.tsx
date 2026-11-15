@@ -1,18 +1,16 @@
 import type { ReactNode } from "react";
-import Navbar from "@/src/shared/components/Navbar";
-import MobileAppHeader from "@/src/shared/components/MobileAppHeader";
+import PublicGlobalHeader from "@/src/shared/components/PublicGlobalHeader";
 import Footer from "@/src/shared/components/Footer";
 import MobileFloatingNav from "@/src/shared/components/MobileFloatingNav";
 
 /**
- * One native-feeling mobile shell for public app routes.
- * The desktop navbar remains intact. Navigation sheets are not mounted on mobile.
+ * Shared public shell. Home preserves its approved mobile presentation while
+ * every service/content route receives the same responsive global header.
  */
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="landbd-native-shell flex min-h-[100dvh] min-w-0 flex-1 flex-col">
-      <div className="hidden md:block"><Navbar /></div>
-      <MobileAppHeader />
+      <PublicGlobalHeader />
       <main id="landbd-mobile-content" className="min-w-0 flex-1">{children}</main>
       <div className="hidden md:block"><Footer /></div>
       <MobileFloatingNav />

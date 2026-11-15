@@ -4,12 +4,38 @@ import { LEGACY_ROUTE_REDIRECTS } from "../routing/route-registry";
 
 /** One source of navigation group/order for desktop, mobile and footer. */
 export const NAV_SECTIONS = [
-  { id: "records", label: "রেকর্ড", keys: ["records", "dlrmsKhatian"] },
+  { id: "records", label: "রেকর্ড", keys: ["records", "dlrmsKhatian", "surveyKhatian"] },
   { id: "calculations", label: "হিসাব", keys: ["landMeasurement", "inheritance"] },
   { id: "maps", label: "মানচিত্র", keys: ["landMap", "mouzaDownload", "mapQa"] },
   { id: "documents", label: "ডকুমেন্ট", keys: ["documents", "mouzaKhatianBook"] },
   { id: "guides", label: "গাইড", keys: ["blog", "faq", "contact", "terms", "privacy"] },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; keys: readonly FeatureRouteKey[] }>;
+
+export type GlobalNavigationItem =
+  | { type: "link"; label: string; key: FeatureRouteKey }
+  | { type: "dropdown"; label: string; id: string; keys: readonly FeatureRouteKey[] };
+
+/** Owner-approved global header order. Keep desktop and mobile rendering on this source. */
+export const GLOBAL_NAVIGATION: readonly GlobalNavigationItem[] = [
+  { type: "link", label: "হিস্যা ক্যালকুলেটর", key: "records" },
+  { type: "link", label: "জমির মাপার ক্যালকুলেটর", key: "landMeasurement" },
+  { type: "link", label: "ফরায়েজ", key: "inheritance" },
+  {
+    type: "dropdown",
+    id: "survey-records",
+    label: "সার্ভে খতিয়ান",
+    keys: ["dlrmsKhatian", "surveyKhatian", "mouzaKhatianBook", "documents"],
+  },
+  {
+    type: "dropdown",
+    id: "maps",
+    label: "ম্যাপ",
+    keys: ["landMap", "mouzaDownload", "mapQa"],
+  },
+  { type: "link", label: "ব্লগ", key: "blog" },
+  { type: "link", label: "যোগাযোগ", key: "contact" },
+  { type: "link", label: "সকল সেবা", key: "allServices" },
+] as const;
 
 /** Compact mobile sheet. Labels and destination paths resolve from feature routes. */
 export const MOBILE_MENU_KEYS = [

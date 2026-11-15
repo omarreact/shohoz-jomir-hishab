@@ -23,7 +23,7 @@ const TABS: readonly Tab[] = [
   { href: FEATURE_ROUTES.records, label: "রেকর্ড", icon: FileSearch, match: p => sectionMatches("records", p) },
   { href: FEATURE_ROUTES.landMeasurement, label: "হিসাব", icon: Ruler, match: p => sectionMatches("calculations", p) },
   { href: FEATURE_ROUTES.landMap, label: "মানচিত্র", icon: MapPinned, match: p => sectionMatches("maps", p) },
-  { href: "/explore", label: "সব সেবা", icon: Compass, match: p => p === "/explore" },
+  { href: FEATURE_ROUTES.allServices, label: "সকল সেবা", icon: Compass, match: p => isFeatureRouteActive(p, FEATURE_ROUTES.allServices) },
 ];
 
 /** Fixed 5-destination native navigation: all other screens open as full pages, never modal sheets. */

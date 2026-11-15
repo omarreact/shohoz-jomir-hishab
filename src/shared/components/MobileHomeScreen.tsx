@@ -59,7 +59,7 @@ export default function MobileHomeScreen() {
           <p className="mt-3 max-w-sm text-[13px] leading-6 text-white/85">
             খতিয়ান, পরিমাপ, মানচিত্র ও সনদ—প্রয়োজনীয় সেবায় সরাসরি যান।
           </p>
-          <Link href="/explore"
+          <Link href={FEATURE_ROUTES.allServices}
             className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-[14px] bg-white px-4 py-2 text-sm font-black text-[#0B5D3B] no-underline shadow-sm active:scale-[.98]">
             সব সেবা দেখুন <ArrowRight size={17} />
           </Link>
@@ -73,7 +73,7 @@ export default function MobileHomeScreen() {
           </p>
           <h2 className="mt-1 text-lg font-black">আজ কী করতে চান?</h2>
         </div>
-        <Link href="/explore" className="inline-flex min-h-11 items-center gap-1 text-xs font-black text-[var(--primary)] no-underline">
+        <Link href={FEATURE_ROUTES.allServices} className="inline-flex min-h-11 items-center gap-1 text-xs font-black text-[var(--primary)] no-underline">
           সবগুলো <ArrowRight size={16} />
         </Link>
       </div>

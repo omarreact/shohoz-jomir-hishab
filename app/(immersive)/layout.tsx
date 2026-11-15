@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import ImmersiveGlobalHeader from "@/src/shared/components/ImmersiveGlobalHeader";
 
-/** Fullscreen maps and standalone certificate editors own their viewport. */
+/** Fullscreen maps share global navigation; standalone certificate editors stay print-isolated. */
 export default function ImmersiveLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <><ImmersiveGlobalHeader />{children}</>;
 }

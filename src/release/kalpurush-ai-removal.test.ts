@@ -5,13 +5,17 @@ const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 
 describe("LandBD Kalpurush and AI-removal policy", () => {
-  it("loads Kalpurush and keeps semantic headings on the existing heading stack", () => {
+  it("loads Kalpurush for Bengali and Josefin Sans for Latin text", () => {
     const layout = read("app/layout.tsx");
     const css = read("app/globals.css");
 
     expect(layout).toContain("https://fonts.maateen.me/kalpurush/font.css");
+    expect(layout).toContain("family=Josefin+Sans");
     expect(css).toContain('--font-kalpurush: "Kalpurush"');
-    expect(css).toContain("--font-ui: var(--font-kalpurush)");
+    expect(css).toContain('--font-josefin: "Josefin Sans"');
+    expect(css).toContain("--font-ui: var(--font-josefin), var(--font-kalpurush)");
+    expect(css).toContain("--font-english: var(--font-josefin)");
+    expect(css).toContain("--font-bangla: var(--font-kalpurush)");
     expect(css).toContain('body :is(h1, h2, h3, h4, h5, h6, [role="heading"])');
     expect(css).toContain("font-family: var(--font-heading) !important");
     expect(css).toContain(":not(#landbd-font-policy)");

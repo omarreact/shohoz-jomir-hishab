@@ -33,18 +33,19 @@
   --radius-md: .7rem;
   --radius-sm: .55rem;
 
-  /* LandBD typography policy:
-     all non-heading text uses Kalpurush; semantic headings retain the prior UI stack. */
+  /* Script-aware font stack: Josefin Sans has no Bengali glyphs, so Bengali
+     automatically falls through to Kalpurush while Latin text stays Josefin. */
   --font-kalpurush: "Kalpurush", var(--font-nikosh), "Nirmala UI", serif;
-  --font-heading: "Segoe UI", Arial, var(--font-nikosh), "Nirmala UI", sans-serif;
-  --font-inter: var(--font-kalpurush);
+  --font-josefin: "Josefin Sans", "Segoe UI", Arial, sans-serif;
+  --font-heading: var(--font-josefin), var(--font-kalpurush);
+  --font-inter: var(--font-josefin), var(--font-kalpurush);
   --font-hind-siliguri: var(--font-kalpurush);
   --font-noto-bengali: var(--font-kalpurush);
-  --font-english: var(--font-kalpurush);
+  --font-english: var(--font-josefin);
   --font-bangla: var(--font-kalpurush);
-  --font-ui: var(--font-kalpurush);
+  --font-ui: var(--font-josefin), var(--font-kalpurush);
   --font-report: var(--font-kalpurush);
-  --font-sans: var(--font-kalpurush);
+  --font-sans: var(--font-ui);
 
   /* Readability scale: keep the existing hierarchy while making dense LandBD
      UI copy easier to read across desktop and mobile. */
@@ -107,9 +108,7 @@
     transition: background-color .2s ease, color .2s ease;
   }
 
-  /* Enforce the requested application-wide font contract even on route-specific
-     components that previously declared their own font-family. Heading elements
-     and their descendants keep the existing heading stack. */
+  /* Enforce the script-aware application font contract on route UI. */
   body :is(h1, h2, h3, h4, h5, h6, [role="heading"]) {
     font-family: var(--font-heading) !important;
   }

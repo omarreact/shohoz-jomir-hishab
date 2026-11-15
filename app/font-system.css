@@ -1,9 +1,9 @@
 /*
  * LandBD font routing.
  *
- * All application copy uses Kalpurush (with the existing local Nikosh fallback).
- * Semantic page headings are excluded by the global heading rule in globals.css
- * and retain the previous LandBD heading stack.
+ * Bengali application copy uses Kalpurush; Latin glyphs use Josefin Sans.
+ * The composite stack is declared in globals.css so mixed labels render each
+ * script with the correct face without client-side DOM rewriting.
  *
  * Kalpurush is loaded at runtime, so builds stay independent of remote font
  * downloads while the UI still renders the requested face when the CDN is reachable.

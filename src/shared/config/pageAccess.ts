@@ -39,8 +39,15 @@ export const PAGE_ACCESS_PAGES: readonly PageAccessDefinition[] = [
   },
   {
     id: "/explore",
-    name: "সব ভূমি সেবা",
-    description: "মোবাইল অ্যাপ-স্টাইল সেবা নির্দেশিকা, বিভাগ ও অনুসন্ধান।",
+    name: "সকল সেবা (পুরনো লিংক)",
+    description: "/all-services-এ রিডাইরেক্ট হওয়া পুরনো সেবা নির্দেশিকা।",
+    category: "মূল",
+    defaultAccess: "public",
+  },
+  {
+    id: "/all-services",
+    name: "সকল সেবা",
+    description: "সাইডবার থেকে হিসাব, খতিয়ান ও মানচিত্র সেবা বেছে নেওয়ার কেন্দ্রীয় পেজ।",
     category: "মূল",
     defaultAccess: "public",
   },

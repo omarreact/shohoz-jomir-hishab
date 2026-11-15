@@ -12,6 +12,7 @@ export const FEATURE_ROUTES = {
   home: "/",
   records: "/khatiyan",
   dlrmsKhatian: "/dlrms-khatian",
+  surveyKhatian: "/survey-khatian",
   mouzaKhatianBook: "/mouza-khatian-book",
   mouzaDagBook: "/mouza-dag-report",
   landMeasurement: "/land-measurement",
@@ -19,12 +20,13 @@ export const FEATURE_ROUTES = {
   /** Primary interactive RAJUK GIS map */
   landMap: "/geospatial-map",
   mouzaDownload: "/mouza-map",
-  /** Staff QA workspace — exposed in navigation only to Admin/Super Admin. */
+  /** Staff QA workspace — visible as requested; route policy still enforces access. */
   mapQa: "/rajuk-test",
   documents: "/porcha",
   blog: "/blog",
   faq: "/faq",
   contact: "/contact",
+  allServices: "/all-services",
   privacy: "/privacy",
   terms: "/terms",
   login: "/login",
@@ -37,6 +39,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   home: { en: "Home", bn: "হোম" },
   records: { en: "Land records", bn: "খতিয়ান" },
   dlrmsKhatian: { en: "DLRMS khatian", bn: "ডিএলআরএমএস খতিয়ান" },
+  surveyKhatian: { en: "Survey khatian", bn: "সার্ভে খতিয়ান" },
   mouzaKhatianBook: { en: "Mouza khatian book", bn: "মৌজা খতিয়ান বই" },
   mouzaDagBook: { en: "Mouza dag book", bn: "মৌজা দাগ বই" },
   landMeasurement: { en: "Land measurement", bn: "জমি পরিমাপ" },
@@ -48,6 +51,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
   blog: { en: "Blog", bn: "ব্লগ" },
   faq: { en: "FAQ", bn: "প্রশ্নোত্তর" },
   contact: { en: "Contact", bn: "যোগাযোগ" },
+  allServices: { en: "All services", bn: "সকল সেবা" },
   privacy: { en: "Privacy", bn: "গোপনীয়তা" },
   terms: { en: "Terms", bn: "শর্তাবলি" },
   login: { en: "Login", bn: "লগইন" },
@@ -58,6 +62,7 @@ export const FEATURE_LABELS: Record<FeatureRouteKey, { en: string; bn: string }>
 export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
+  "surveyKhatian",
   "landMeasurement",
   "inheritance",
   "landMap",
@@ -68,6 +73,7 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "blog",
   "faq",
   "contact",
+  "allServices",
   "terms",
   "privacy",
 ];
@@ -76,6 +82,7 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
 export const FOOTER_QUICK_LINKS: FeatureRouteKey[] = [
   "records",
   "dlrmsKhatian",
+  "surveyKhatian",
   "landMeasurement",
   "inheritance",
   "landMap",
@@ -98,6 +105,7 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "home",
   "records",
   "dlrmsKhatian",
+  "surveyKhatian",
   "mouzaKhatianBook",
   "mouzaDagBook",
   "landMeasurement",
@@ -107,6 +115,7 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "blog",
   "faq",
   "contact",
+  "allServices",
   "privacy",
   "terms",
 ];

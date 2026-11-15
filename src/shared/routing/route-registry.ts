@@ -8,6 +8,7 @@ import type { AppRole } from "@/src/modules/auth/roles";
  */
 export const LEGACY_ROUTE_REDIRECTS = [
   { source: "/survey-khatian", destination: "/dlrms-khatian", permanent: true },
+  { source: "/explore", destination: "/all-services", permanent: true },
 ] as const;
 
 export type AdminMinimumRole = "staff" | "admin" | "super_admin";

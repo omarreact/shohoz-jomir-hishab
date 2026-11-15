@@ -18,12 +18,12 @@ export default function MobileAppHeader() {
     .find((key) => isFeatureRouteActive(pathname, FEATURE_ROUTES[key]));
   const title = pathname === "/"
     ? "LandBD"
-    : pathname === "/explore"
-      ? "সব সেবা"
+    : pathname === FEATURE_ROUTES.allServices
+      ? "সকল সেবা"
       : (activeKey ? FEATURE_LABELS[activeKey].bn : "LandBD");
   const accountHref = isLoggedIn && isStaffRole(user?.role)
     ? FEATURE_ROUTES.admin
-    : isLoggedIn ? "/explore" : FEATURE_ROUTES.login;
+    : isLoggedIn ? FEATURE_ROUTES.allServices : FEATURE_ROUTES.login;
 
   return (
     <header
