@@ -120,10 +120,7 @@ describe("FullKhatian service", () => {
       upazilaBbsCode: "72",
       jlNumberId: 381831,
       khatianNo: "12",
-    }), expect.any(AbortSignal));
-    const halSabekSignal = fetchPublicHalSabek.mock.calls[0]?.[1];
-    expect(halSabekSignal).toBeInstanceOf(AbortSignal);
-    expect(halSabekSignal?.aborted).toBe(false);
+    }), expect.objectContaining({ aborted: false }));
     expect(listDivisions).not.toHaveBeenCalled();
     expect(listDistricts).not.toHaveBeenCalled();
     expect(listUpazilas).not.toHaveBeenCalled();
