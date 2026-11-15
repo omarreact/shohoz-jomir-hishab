@@ -14,6 +14,7 @@ async function unifiedMouzaSearch(input: {
   query: string;
   page: number;
   pageSize: number;
+  sourceMode?: "official" | "enriched";
 }, signal?: AbortSignal) {
   const byId = new Map<number, KhatianIndex>();
   let sourcePage = 1;
@@ -25,6 +26,7 @@ async function unifiedMouzaSearch(input: {
       jlNumberId: input.jlNumberId,
       page: sourcePage,
       pageSize: SEARCH_BATCH_SIZE,
+      sourceMode: input.sourceMode,
     }, signal);
     for (const row of chunk.items) byId.set(row.ID, row);
     keepGoing = chunk.hasNextPage;
@@ -68,9 +70,10 @@ export async function GET(request: Request) {
     const khatianNo = khatianSearchText.parse(params.get("khatianNo") || undefined);
     const owner = khatianSearchText.parse(params.get("owner") || undefined);
     const dagNumber = khatianSearchText.parse(params.get("dagNumber") || undefined);
+    const sourceMode = params.get("sourceMode") === "official" ? "official" : "enriched";
 
     const data = query
-      ? await unifiedMouzaSearch({ surveyKey, jlNumberId, query, page, pageSize: size }, request.signal)
+      ? await unifiedMouzaSearch({ surveyKey, jlNumberId, query, page, pageSize: size, sourceMode }, request.signal)
       : await providers.landRecords.listKhatians({
           surveyKey,
           jlNumberId,
@@ -79,9 +82,18 @@ export async function GET(request: Request) {
           khatianNo,
           owner,
           dagNumber,
+          sourceMode,
         }, request.signal);
 
-    return ok(KhatianPageSchema.parse(data));
+    const parsed = KhatianPageSchema.parse(data);
+    return sourceMode === "official"
+      ? Response.json(parsed, {
+          headers: {
+            "Cache-Control": "no-store",
+            "X-LandBD-Source": "DLRMS_PUBLIC_LIVE",
+          },
+        })
+      : ok(parsed);
   } catch (error) {
     return providerError(error);
   }

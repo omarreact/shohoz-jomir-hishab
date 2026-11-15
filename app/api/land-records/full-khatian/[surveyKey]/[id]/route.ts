@@ -42,6 +42,7 @@ export async function GET(
     const id = parsedId;
 
     const sp = new URL(request.url).searchParams;
+    const sourceMode = sp.get("sourceMode") === "official" ? "official" : "enriched";
     const ownerParsed = khatianSearchText.safeParse(sp.get("owner") || undefined);
     if (!ownerParsed.success) return badRequest("Invalid owner search text");
     const dagParsed = khatianSearchText.safeParse(sp.get("dagNumber") || undefined);
@@ -78,9 +79,18 @@ export async function GET(
       divisionBbsCode: divisionParsed?.success ? divisionParsed.data : undefined,
       districtBbsCode: districtParsed?.success ? districtParsed.data : undefined,
       upazilaBbsCode: upazilaParsed?.success ? upazilaParsed.data : undefined,
+      sourceMode,
     }, request.signal);
 
-    return ok(FullKhatianSchema.parse(result));
+    const parsed = FullKhatianSchema.parse(result);
+    return sourceMode === "official"
+      ? Response.json(parsed, {
+          headers: {
+            "Cache-Control": "no-store",
+            "X-LandBD-Source": "DLRMS_PUBLIC_LIVE",
+          },
+        })
+      : ok(parsed);
   } catch (error) {
     return providerError(error);
   }

@@ -130,6 +130,8 @@ export interface KhatianSearchInput {
   dagNumber?: string;
   /** One-box mouza search across khatian, dag, owner and guardian. */
   query?: string;
+  /** "official" bypasses bundled/reference/mirror enrichment and uses live DLRMS only. */
+  sourceMode?: "official" | "enriched";
 }
 
 export interface LandRecordProvider {
@@ -139,7 +141,12 @@ export interface LandRecordProvider {
   listSurveys(input: { districtBbsCode: string; upazilaBbsCode: string }, signal?: AbortSignal): Promise<Survey[]>;
   listMouzas(input: { districtBbsCode: string; upazilaBbsCode: string; surveyId: number; surveyKey: string; districtName: string; upazilaName: string }, signal?: AbortSignal): Promise<Mouza[]>;
   listKhatians(input: KhatianSearchInput, signal?: AbortSignal): Promise<KhatianPage>;
-  getKhatian(surveyKey: string, id: number, signal?: AbortSignal): Promise<KhatianDetails>;
+  getKhatian(
+    surveyKey: string,
+    id: number,
+    signal?: AbortSignal,
+    options?: { officialOnly?: boolean },
+  ): Promise<KhatianDetails>;
 }
 
 export interface MouzaMapEntry {

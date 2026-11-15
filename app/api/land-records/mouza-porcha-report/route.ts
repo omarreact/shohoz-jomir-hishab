@@ -1,9 +1,8 @@
 import type { NextRequest as LandBDNextRequest } from "next/server";
 import { enforceServiceAccess } from "@/src/lib/service-entitlement";
 import { KhatianPageSchema, idParam, pageSize, positivePage } from "@/src/features/land-records/schemas";
-import { ok, providerError } from "@/src/features/land-records/server/http";
+import { providerError } from "@/src/features/land-records/server/http";
 import { providers } from "@/src/features/land-records/server/provider";
-import { enrichKhatianWithReferenceDatasets } from "@/src/features/land-records/server/reference-khatian-resolver";
 import { z } from "zod";
 
 const surveyKeySchema = z.enum(["CS", "RS", "SA", "BS", "DIARA", "PETY", "BRS", "BDS", "MUTATION"]);
@@ -34,20 +33,17 @@ export async function GET(request: Request) {
       jlNumberId,
       page,
       pageSize: size,
+      sourceMode: "official",
     });
 
-    // The live public DLRMS mouza index is authoritative for identity/counts.
-    // Any survey/mouza may use a registered LandBD reference dataset when the
-    // current public row is compact and the reference strictly extends the
-    // visible official values without contradicting them.
-    const enriched = {
-      ...data,
-      items: data.items.map((item) =>
-        enrichKhatianWithReferenceDatasets(item, surveyKey)?.record ?? item
-      ),
-    };
-
-    return ok(KhatianPageSchema.parse(enriched));
+    // Direct source only: preserve exactly what the live official DLRMS index
+    // returns. Saved/bundled reference and third-party mirror data are excluded.
+    return Response.json(KhatianPageSchema.parse(data), {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-LandBD-Source": "DLRMS_PUBLIC_LIVE",
+      },
+    });
   } catch (error) {
     return providerError(error);
   }

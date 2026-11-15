@@ -100,6 +100,7 @@ export interface FullKhatianRequestContext {
   divisionBbsCode?: string;
   districtBbsCode?: string;
   upazilaBbsCode?: string;
+  sourceMode?: "official" | "enriched";
 }
 
 function fullKhatianParams(context?: FullKhatianRequestContext): Record<string, string | number> {
@@ -112,6 +113,7 @@ function fullKhatianParams(context?: FullKhatianRequestContext): Record<string, 
   if (context?.divisionBbsCode) params.divisionBbsCode = context.divisionBbsCode;
   if (context?.districtBbsCode) params.districtBbsCode = context.districtBbsCode;
   if (context?.upazilaBbsCode) params.upazilaBbsCode = context.upazilaBbsCode;
+  if (context?.sourceMode) params.sourceMode = context.sourceMode;
   return params;
 }
 
@@ -135,7 +137,7 @@ export const landRecordsApi = {
     upazilaName: string;
   }) => get<Mouza[]>("/mouzas", MouzaSchema.array(), input),
   khatians: (input: KhatianSearchInput) =>
-    get<KhatianPage>("/khatians", KhatianPageSchema, { ...input }),
+    get<KhatianPage>("/khatians", KhatianPageSchema, { ...input, sourceMode: "official" }),
   khatian: (
     surveyKey: string,
     id: number,

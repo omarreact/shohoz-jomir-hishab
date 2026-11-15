@@ -485,7 +485,10 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     // Exact khatian searches can omit the trailing ellipsis even when their
     // compact owner/dag columns contain just the first entry. Try the fuller
     // public mirror for exact-number searches as well, not only explicit "...".
-    if (Boolean(input.khatianNo?.trim()) || items.some(khatianRowNeedsEnrichment)) {
+    if (
+      input.sourceMode !== "official" &&
+      (Boolean(input.khatianNo?.trim()) || items.some(khatianRowNeedsEnrichment))
+    ) {
       const enrichedRows = await fetchEnrichedKhatianList(input, signal);
       if (enrichedRows?.length) {
         try {
@@ -522,7 +525,7 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
     };
   },
 
-  async getKhatian(surveyKey, id, signal): Promise<KhatianDetails> {
+  async getKhatian(surveyKey, id, signal, options): Promise<KhatianDetails> {
     const payload = await requestJson(`${DLRMS_API_URL}/index-khatian/${surveyKey}/${id}`, "khatian-details", signal);
     const row = dataRecord(payload);
     let base = {
@@ -552,6 +555,7 @@ export const dlrmsLandRecordProvider: LandRecordProvider = {
             page: 1,
             pageSize: 50,
             khatianNo: base.KHATIAN_NO,
+            sourceMode: options?.officialOnly ? "official" : "enriched",
           },
           signal,
         );
