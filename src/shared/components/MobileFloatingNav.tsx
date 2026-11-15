@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, FileSearch, Home, MapPinned, Ruler, type LucideIcon } from "lucide-react";
+import { BookOpen, FileSearch, Home, MapPinned, Ruler, type LucideIcon } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
 import { NAV_SECTIONS, isFeatureRouteActive } from "@/src/shared/config/navigation";
 
@@ -23,7 +23,7 @@ const TABS: readonly Tab[] = [
   { href: FEATURE_ROUTES.records, label: "রেকর্ড", icon: FileSearch, match: p => sectionMatches("records", p) },
   { href: FEATURE_ROUTES.landMeasurement, label: "হিসাব", icon: Ruler, match: p => sectionMatches("calculations", p) },
   { href: FEATURE_ROUTES.landMap, label: "মানচিত্র", icon: MapPinned, match: p => sectionMatches("maps", p) },
-  { href: FEATURE_ROUTES.allServices, label: "সকল সেবা", icon: Compass, match: p => isFeatureRouteActive(p, FEATURE_ROUTES.allServices) },
+  { href: FEATURE_ROUTES.blog, label: "ব্লগ", icon: BookOpen, match: p => isFeatureRouteActive(p, FEATURE_ROUTES.blog) },
 ];
 
 /** Fixed 5-destination native navigation: all other screens open as full pages, never modal sheets. */

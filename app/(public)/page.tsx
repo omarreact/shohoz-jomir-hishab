@@ -1,10 +1,10 @@
 import AnnouncementBanner from "@/src/features/home/components/AnnouncementBanner";
 import HeroSection from "@/src/features/home/components/HeroSection";
-import MobileHomeScreen from "@/src/shared/components/MobileHomeScreen";
 import EasyToolsHub from "@/src/features/home/components/EasyToolsHub";
 import FaqSection from "@/src/features/home/components/FaqSection";
 import LiveHomeContent from "@/src/components/cms/LiveHomeContent";
 import LandBDStructuredData from "@/src/components/seo/LandBDStructuredData";
+import AllServicesWorkspace from "@/src/features/all-services/components/AllServicesWorkspace";
 import { cmsMetadata,getCmsPage } from "@/src/lib/cms-store";
 export const dynamic="force-dynamic";
 export async function generateMetadata(){return cmsMetadata("homepage");}
@@ -16,10 +16,10 @@ export default async function HomePage() {
   return (
     <div className="flex w-full flex-col">
       <LandBDStructuredData />
-      <div className="md:hidden"><MobileHomeScreen /></div>
-      <LiveHomeContent />
-      <AnnouncementBanner />
+      <div className="md:hidden"><AllServicesWorkspace /></div>
       <div className="hidden md:block">
+        <LiveHomeContent />
+        <AnnouncementBanner />
         <HeroSection />
         <EasyToolsHub />
         <FaqSection items={items}/>

@@ -15,7 +15,7 @@ export type GlobalNavigationItem =
   | { type: "link"; label: string; key: FeatureRouteKey }
   | { type: "dropdown"; label: string; id: string; keys: readonly FeatureRouteKey[] };
 
-/** Owner-approved global header order. Keep desktop and mobile rendering on this source. */
+/** Owner-approved desktop/tablet navigation order. Mobile uses its service-first home. */
 export const GLOBAL_NAVIGATION: readonly GlobalNavigationItem[] = [
   { type: "link", label: "হিস্যা ক্যালকুলেটর", key: "records" },
   { type: "link", label: "জমির মাপার ক্যালকুলেটর", key: "landMeasurement" },
@@ -34,7 +34,6 @@ export const GLOBAL_NAVIGATION: readonly GlobalNavigationItem[] = [
   },
   { type: "link", label: "ব্লগ", key: "blog" },
   { type: "link", label: "যোগাযোগ", key: "contact" },
-  { type: "link", label: "সকল সেবা", key: "allServices" },
 ] as const;
 
 /** Compact mobile sheet. Labels and destination paths resolve from feature routes. */

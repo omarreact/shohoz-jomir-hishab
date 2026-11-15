@@ -97,7 +97,7 @@ export default function AllServicesWorkspace() {
   };
 
   return (
-    <main className="min-h-[calc(100dvh-6rem)] bg-[linear-gradient(180deg,var(--brand-green-faint)_0,transparent_24rem)] px-4 py-8 sm:px-6 lg:py-12">
+    <section className="min-h-[calc(100dvh-6rem)] bg-[linear-gradient(180deg,var(--brand-green-faint)_0,transparent_24rem)] px-4 py-8 sm:px-6 lg:py-12">
       <div className="mx-auto max-w-[1440px]">
         <header className="mb-8 max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] px-4 py-2 text-sm font-bold text-[var(--primary)] shadow-sm">
@@ -198,6 +198,6 @@ export default function AllServicesWorkspace() {
           </section>
         </div>
       </div>
-    </main>
+    </section>
   );
 }

@@ -66,7 +66,6 @@ describe("LandBD single-PR release integrity", () => {
       "src/shared/routing/route-registry.ts",
       "src/shared/config/navigation.ts",
       "src/shared/components/Navbar.tsx",
-      "src/shared/components/MobileSidebar.tsx",
       "src/shared/components/MobileAppHeader.tsx",
       "src/features/home/components/EasyToolsHub.tsx",
       "src/features/home/components/InteractiveCommandCenter.tsx",

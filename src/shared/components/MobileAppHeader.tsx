@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, MapPinned, ShieldCheck, UserRound } from "lucide-react";
-import MobileSidebar from "@/src/shared/components/MobileSidebar";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
 import { FEATURE_ROUTES, FEATURE_LABELS } from "@/src/shared/config/feature-routes";
@@ -23,7 +22,7 @@ export default function MobileAppHeader() {
       : (activeKey ? FEATURE_LABELS[activeKey].bn : "LandBD");
   const accountHref = isLoggedIn && isStaffRole(user?.role)
     ? FEATURE_ROUTES.admin
-    : isLoggedIn ? FEATURE_ROUTES.allServices : FEATURE_ROUTES.login;
+    : isLoggedIn ? FEATURE_ROUTES.home : FEATURE_ROUTES.login;
 
   return (
     <header
@@ -46,7 +45,6 @@ export default function MobileAppHeader() {
           </p>
           <p className="truncate text-[17px] font-black leading-tight text-[var(--foreground)]">{title}</p>
         </div>
-        <MobileSidebar />
         <Link
           href={accountHref}
           aria-label={isLoggedIn ? "আমার অ্যাকাউন্ট" : "লগইন"}

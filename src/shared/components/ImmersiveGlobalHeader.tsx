@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import MobileAppHeader from "@/src/shared/components/MobileAppHeader";
 import Navbar from "@/src/shared/components/Navbar";
 
 const HEADER_ROUTES = ["/geospatial-map", "/mouza-map", "/rajuk-test"] as const;
@@ -9,6 +10,6 @@ const HEADER_ROUTES = ["/geospatial-map", "/mouza-map", "/rajuk-test"] as const;
 export default function ImmersiveGlobalHeader() {
   const pathname = usePathname() || "";
   return HEADER_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
-    ? <Navbar />
+    ? <><div className="hidden md:block"><Navbar /></div><MobileAppHeader /></>
     : null;
 }

@@ -9,7 +9,6 @@ import {
   ChevronDown,
   FileSearch,
   FileText,
-  LayoutGrid,
   Map as MapIcon,
   Ruler,
   Scale,
@@ -21,7 +20,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/src/modules/auth/hooks/useAuth";
 import { isStaffRole } from "@/src/modules/auth/roles";
-import MobileSidebar from "@/src/shared/components/MobileSidebar";
 import {
   FEATURE_LABELS,
   FEATURE_ROUTES,
@@ -50,7 +48,6 @@ const ICONS: Partial<Record<FeatureRouteKey, LucideIcon>> = {
   mapQa: MapIcon,
   blog: BookOpen,
   contact: Users,
-  allServices: LayoutGrid,
   admin: ShieldCheck,
 };
 
@@ -126,7 +123,7 @@ export default function Navbar() {
         className={`${isMapRoute ? "absolute inset-x-0 top-0" : "sticky top-0"} z-[1200] px-3 pt-3 print:hidden sm:px-4`}
         data-landbd-global-header
       >
-        <div className={`mx-auto flex min-h-[4.5rem] max-w-[1600px] items-center gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}>
+        <div className={`mx-auto flex min-h-[4.5rem] max-w-[1600px] flex-wrap items-center gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}>
           <Link
             href={FEATURE_ROUTES.home}
             aria-label={`${SITE_CONFIG.name} — হোম`}
@@ -144,7 +141,7 @@ export default function Navbar() {
           <nav
             ref={navigationRef}
             aria-label="প্রধান নেভিগেশন"
-            className="hidden min-w-0 flex-1 items-center justify-end gap-0.5 xl:flex"
+            className="order-3 flex w-full flex-wrap items-center justify-center gap-0.5 border-t border-[var(--border-color)] py-2 xl:order-none xl:min-w-0 xl:flex-1 xl:flex-nowrap xl:justify-end xl:border-0 xl:py-0"
           >
             {GLOBAL_NAVIGATION.map((item) => {
               if (item.type === "link") {
@@ -231,7 +228,7 @@ export default function Navbar() {
               <Link
                 href={FEATURE_ROUTES.admin}
                 aria-label="অ্যাডমিন ড্যাশবোর্ড"
-                className="hidden h-11 w-11 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] no-underline 2xl:flex"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] no-underline"
               >
                 <ShieldCheck size={20} aria-hidden="true" />
               </Link>
@@ -240,11 +237,10 @@ export default function Navbar() {
               type="button"
               onClick={() => setSearchOpen(true)}
               aria-label="সেবা খুঁজুন"
-              className="hidden h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--primary)] hover:bg-[var(--secondary)] xl:flex"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--primary)] hover:bg-[var(--secondary)]"
             >
               <Search size={20} aria-hidden="true" />
             </button>
-            <MobileSidebar />
           </div>
         </div>
       </header>

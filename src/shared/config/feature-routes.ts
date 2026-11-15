@@ -73,7 +73,6 @@ export const PRIMARY_NAV_KEYS: FeatureRouteKey[] = [
   "blog",
   "faq",
   "contact",
-  "allServices",
   "terms",
   "privacy",
 ];
@@ -115,7 +114,6 @@ export const PUBLIC_SITEMAP_KEYS: FeatureRouteKey[] = [
   "blog",
   "faq",
   "contact",
-  "allServices",
   "privacy",
   "terms",
 ];
