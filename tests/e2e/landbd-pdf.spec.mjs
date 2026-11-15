@@ -31,9 +31,16 @@ async function mockLandRecordBook(page) {
   const rows = Array.from({ length: 60 }, (_, index) => ({
     ID: 900000 + index + 1,
     KHATIAN_NO: String(index + 1),
-    OWNERS: `মালিক ${index + 1}`,
-    GUARDIANS: `পিতা ${index + 1}`,
-    DAGS: `${1000 + index},${2000 + index}`,
+    // Repeatable long multi-owner rows expose pagination errors missed by one-line fixtures.
+    OWNERS: index % 20 === 0
+      ? Array.from({ length: 5 }, (_, part) => `মালিক ${index + 1} বিস্তারিত পরিচয় ${part + 1}`).join(", ")
+      : `মালিক ${index + 1}`,
+    GUARDIANS: index % 20 === 0
+      ? Array.from({ length: 5 }, (_, part) => `পিতা/অভিভাবক ${index + 1} বিস্তারিত ${part + 1}`).join(", ")
+      : `পিতা ${index + 1}`,
+    DAGS: index % 20 === 0
+      ? Array.from({ length: 5 }, (_, part) => String(1000 + index * 10 + part)).join(",")
+      : `${1000 + index},${2000 + index}`,
     JL_NUMBER_ID: 382911,
     MOUZA_ID: 71947,
     TOTAL_LAND: (0.1 + index / 1000).toFixed(3),
@@ -109,6 +116,38 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     await expect(report.getByText("LANDBD-QA-REPORT-001")).toBeVisible();
     await expect(report.locator("tr[data-report-source-id]")).toHaveCount(rows.length);
     expect(await report.locator(".report-page").count()).toBeGreaterThan(2);
+    // A matching row count alone can mask duplicated or omitted khatians.
+    const renderedIds = await report.locator("tr[data-report-source-id]").evaluateAll((elements) =>
+      elements.map((element) => Number(element.getAttribute("data-report-source-id"))),
+    );
+    expect(renderedIds).toEqual(rows.map((row) => row.ID));
+
+    // Match the PDF exporter's own A4 guard on every page, including long multi-owner rows.
+    const pageGeometry = await report.locator(".report-page").evaluateAll((elements) =>
+      elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const footer = element.querySelector(".report-page-footer");
+        const table = element.querySelector(".report-table-wrapper");
+        return {
+          width: bounds.width,
+          height: bounds.height,
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          tableBottom: table?.getBoundingClientRect().bottom ?? null,
+          footerTop: footer?.getBoundingClientRect().top ?? null,
+        };
+      }),
+    );
+    for (const [pageIndex, geometry] of pageGeometry.entries()) {
+      const label = `A4 source page ${pageIndex + 1}`;
+      const maxHeight = geometry.width * (297 / 210) + Math.max(8, geometry.width * 0.01);
+      expect(geometry.height, `${label} must not be taller than portrait A4`).toBeLessThanOrEqual(maxHeight);
+      expect(geometry.scrollHeight, `${label} must not clip hidden rows`).toBeLessThanOrEqual(geometry.clientHeight + 8);
+      if (geometry.tableBottom !== null && geometry.footerTop !== null) {
+        expect(geometry.tableBottom, `${label} table must not overlap the footer`)
+          .toBeLessThanOrEqual(geometry.footerTop - 3);
+      }
+    }
 
     const previewStarted = Date.now();
     await page.getByRole("button", { name: /^(?:PDF|পিডিএফ) প্রিভিউ$/ }).click();
