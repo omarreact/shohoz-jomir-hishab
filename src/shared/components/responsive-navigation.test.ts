@@ -13,12 +13,14 @@ describe("LandBD responsive navigation", () => {
 
   it("uses the navigation bar on desktop/tablet and the compact header on mobile", () => {
     expect(publicLayout).toContain("<PublicGlobalHeader />");
-    expect(publicHeader).toContain('<div className="hidden md:block"><Navbar /></div>');
+    expect(publicHeader).toContain('<div className="hidden xl:block"><Navbar /></div>');
     expect(publicHeader).toContain("<MobileAppHeader />");
     expect(desktop).toContain("GLOBAL_NAVIGATION.map");
     expect(navigation).toContain('label: "হিস্যা ক্যালকুলেটর"');
     expect(navigation).not.toContain('label: "সকল সেবা"');
-    expect(desktop).toContain("order-3 flex w-full flex-wrap");
+    expect(desktop).toContain("flex h-[4.5rem] max-w-[1600px] flex-nowrap");
+    expect(desktop).toContain("flex min-w-0 flex-1 flex-nowrap items-center justify-end");
+    expect(desktop).not.toContain("order-3 flex w-full flex-wrap");
     expect(desktop).toContain('aria-haspopup="menu"');
     expect(desktop).toContain('aria-expanded={open}');
     expect(desktop).toContain('onFocus={() => setOpenDropdown(item.id)}');
@@ -29,6 +31,7 @@ describe("LandBD responsive navigation", () => {
 
   it("removes the hamburger drawer from every header", () => {
     expect(fs.existsSync(path.join(process.cwd(), "src/shared/components/MobileSidebar.tsx"))).toBe(false);
+    expect(mobileHeader).toContain("xl:hidden print:hidden");
     expect(mobileHeader).not.toContain("MobileSidebar");
     expect(desktop).not.toContain("MobileSidebar");
     expect(desktop).not.toContain("aria-label=\"মেনু খুলুন\"");

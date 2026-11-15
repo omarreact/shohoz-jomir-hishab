@@ -123,25 +123,25 @@ export default function Navbar() {
         className={`${isMapRoute ? "absolute inset-x-0 top-0" : "sticky top-0"} z-[1200] px-3 pt-3 print:hidden sm:px-4`}
         data-landbd-global-header
       >
-        <div className={`mx-auto flex min-h-[4.5rem] max-w-[1600px] flex-wrap items-center gap-3 rounded-2xl px-3 sm:px-4 ${shell}`}>
+        <div className={`mx-auto flex h-[4.5rem] max-w-[1600px] flex-nowrap items-center gap-3 rounded-2xl px-4 ${shell}`}>
           <Link
             href={FEATURE_ROUTES.home}
             aria-label={`${SITE_CONFIG.name} — হোম`}
-            className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline"
+            className="mr-1 flex min-w-0 shrink-0 items-center gap-2.5 no-underline"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-gold)] text-[var(--primary-foreground)] shadow-sm">
               <Calculator size={21} aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span lang="en" className="block truncate text-lg font-bold leading-tight tracking-tight">{SITE_CONFIG.name}</span>
-              <span className="block truncate text-sm font-semibold leading-tight text-[var(--muted-foreground)]">সহজ জমির হিসাব</span>
+              <span lang="en" className="block truncate text-xl font-black leading-none tracking-tight">{SITE_CONFIG.shortName}</span>
+              <span className="hidden truncate text-sm font-semibold leading-tight text-[var(--muted-foreground)] 2xl:block">ডিজিটাল ভূমি সেবা</span>
             </span>
           </Link>
 
           <nav
             ref={navigationRef}
             aria-label="প্রধান নেভিগেশন"
-            className="order-3 flex w-full flex-wrap items-center justify-center gap-0.5 border-t border-[var(--border-color)] py-2 xl:order-none xl:min-w-0 xl:flex-1 xl:flex-nowrap xl:justify-end xl:border-0 xl:py-0"
+            className="flex min-w-0 flex-1 flex-nowrap items-center justify-end gap-0.5"
           >
             {GLOBAL_NAVIGATION.map((item) => {
               if (item.type === "link") {
@@ -223,7 +223,7 @@ export default function Navbar() {
             })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-1 flex shrink-0 items-center gap-2">
             {canAccessAdmin ? (
               <Link
                 href={FEATURE_ROUTES.admin}

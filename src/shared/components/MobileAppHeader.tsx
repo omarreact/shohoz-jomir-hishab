@@ -27,11 +27,11 @@ export default function MobileAppHeader() {
   return (
     <header
       className={[
-        "landbd-mobile-appbar md:hidden print:hidden",
+        "landbd-mobile-appbar xl:hidden print:hidden",
         onMap ? "absolute inset-x-0 top-0 z-[1150]" : "sticky top-0 z-[1150]",
       ].join(" ")}
     >
-      <div className="mx-auto flex h-[3.75rem] max-w-screen-sm items-center gap-2.5 px-3">
+      <div className="mx-auto flex h-[4.25rem] max-w-[1600px] items-center gap-2.5 px-3 sm:px-4">
         <Link
           href="/"
           aria-label="LandBD হোম"

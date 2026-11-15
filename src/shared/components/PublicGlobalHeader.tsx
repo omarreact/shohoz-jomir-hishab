@@ -3,11 +3,11 @@
 import MobileAppHeader from "@/src/shared/components/MobileAppHeader";
 import Navbar from "@/src/shared/components/Navbar";
 
-/** Desktop/tablet use the full navigation bar; mobile uses the compact app header. */
+/** Wide desktop uses the full navigation bar; smaller screens use the compact header. */
 export default function PublicGlobalHeader() {
   return (
     <>
-      <div className="hidden md:block"><Navbar /></div>
+      <div className="hidden xl:block"><Navbar /></div>
       <MobileAppHeader />
     </>
   );
