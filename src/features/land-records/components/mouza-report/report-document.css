@@ -1366,6 +1366,7 @@
 #mouza-porcha-report .report-cover-body h2 {
   margin: 1.5mm 0 7mm;
   color: var(--book-navy);
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
   font-size: 19pt;
   font-weight: 700;
 }
@@ -1471,6 +1472,7 @@
 #mouza-porcha-report .report-book-header h2 {
   margin: 2.2mm 0 1.4mm;
   color: #fff;
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
   font-size: 15pt;
   font-weight: 700;
   line-height: 1.15;
