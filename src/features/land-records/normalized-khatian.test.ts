@@ -60,7 +60,7 @@ describe("normalized khatian record", () => {
     expect(record.owners).toHaveLength(2);
     expect(record.owners[0].father).toBe("প্রথম অভিভাবক");
     expect(record.owners[0].mother).toBeUndefined();
-    expect(record.owners[1].mother).toBe("দ্বিতীয় অভিভাবক");
+    expect(record.owners[1].mother).toBe("দ্বিতীয় অভিভাবক");
     expect(record.owners[1].father).toBeUndefined();
   });
 
