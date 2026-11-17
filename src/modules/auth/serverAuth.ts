@@ -25,6 +25,14 @@ let publicKeysCache: Record<string, string> | null = null;
 let publicKeysCacheTime = 0;
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
 
+function hasExplicitFirebaseAdminCredentials(): boolean {
+  return Boolean(
+    process.env.FIREBASE_PROJECT_ID?.trim() &&
+    process.env.FIREBASE_CLIENT_EMAIL?.trim() &&
+    process.env.FIREBASE_PRIVATE_KEY?.trim(),
+  );
+}
+
 async function getAdminServices() {
   return import("@/src/modules/database/firebaseAdmin");
 }
@@ -134,14 +142,15 @@ export async function verifyServerAuth(
 
   const isCloudflareWorker = process.env.LANDBD_PLATFORM === "cloudflare-workers";
 
-  // Firebase Admin/Firestore is not a supported dependency in the current
-  // Cloudflare Workers staging runtime. Avoid importing it for ordinary
-  // member-session verification there; validate the signed Firebase ID token
-  // directly against Google's public certificates instead.
+  // A Cloudflare deployment without explicit service-account credentials must
+  // not import the privileged Admin backend. Ordinary members can still be
+  // verified from Google's signed Firebase certificates, while privileged
+  // routes continue to fail closed.
   //
-  // Privileged/admin callers remain fail-closed and MUST have the authoritative
-  // Admin backend so account lock/deletion/revocation state cannot be bypassed.
-  if (isCloudflareWorker) {
+  // When credentials are explicitly configured, firebaseAdmin.ts forces
+  // Firestore onto its REST transport so the same authoritative account-state
+  // and token-revocation checks can run on Cloudflare Workers.
+  if (isCloudflareWorker && !hasExplicitFirebaseAdminCredentials()) {
     if (options.requireAdminBackend) {
       throw new Error("Firebase Admin unavailable");
     }
