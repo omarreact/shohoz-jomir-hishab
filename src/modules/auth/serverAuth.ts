@@ -25,14 +25,6 @@ let publicKeysCache: Record<string, string> | null = null;
 let publicKeysCacheTime = 0;
 const FIREBASE_KEYS_TTL_MS = 60 * 60 * 1000;
 
-function hasExplicitFirebaseAdminCredentials(): boolean {
-  return Boolean(
-    process.env.FIREBASE_PROJECT_ID?.trim() &&
-    process.env.FIREBASE_CLIENT_EMAIL?.trim() &&
-    process.env.FIREBASE_PRIVATE_KEY?.trim(),
-  );
-}
-
 async function getAdminServices() {
   return import("@/src/modules/database/firebaseAdmin");
 }
@@ -142,20 +134,88 @@ export async function verifyServerAuth(
 
   const isCloudflareWorker = process.env.LANDBD_PLATFORM === "cloudflare-workers";
 
-  // A Cloudflare deployment without explicit service-account credentials must
-  // not import the privileged Admin backend. Ordinary members can still be
-  // verified from Google's signed Firebase certificates, while privileged
-  // routes continue to fail closed.
-  //
-  // When credentials are explicitly configured, firebaseAdmin.ts forces
-  // Firestore onto its REST transport so the same authoritative account-state
-  // and token-revocation checks can run on Cloudflare Workers.
-  if (isCloudflareWorker && !hasExplicitFirebaseAdminCredentials()) {
-    if (options.requireAdminBackend) {
-      throw new Error("Firebase Admin unavailable");
-    }
+  if (isCloudflareWorker) {
+    // firebase-admin contains runtime code-generation paths that Cloudflare
+    // Workers correctly blocks. Verify the signed ID token first, then use
+    // Firebase Auth + Firestore REST APIs for account state. Privileged access
+    // remains fail-closed if either authoritative lookup is unavailable.
     const payload = await verifyFirebaseIdTokenWithoutAdmin(token);
-    return userFromClaims(payload as Record<string, unknown>, payload.sub!);
+    const claims = payload as Record<string, unknown>;
+    const uid = payload.sub!;
+
+    const { getFirestoreDocument, lookupFirebaseAccount } = await import(
+      "@/src/modules/database/firebaseRest"
+    );
+
+    let account;
+    try {
+      account = await lookupFirebaseAccount(token);
+    } catch (error) {
+      if (options.requireAdminBackend) {
+        throw new Error("Firebase Admin unavailable");
+      }
+      console.error(
+        "[serverAuth] Firebase account lookup unavailable; using verified Firebase claims.",
+        error instanceof Error ? error.message : String(error),
+      );
+      return userFromClaims(claims, uid);
+    }
+
+    if (account.localId !== uid || account.disabled) {
+      throw new Error("Account disabled");
+    }
+
+    if (options.checkRevoked === true && account.validSince !== null) {
+      const authTime =
+        typeof payload.auth_time === "number" ? payload.auth_time : Number(payload.auth_time);
+      if (!Number.isFinite(authTime) || authTime < account.validSince) {
+        throw new Error("Unauthorized");
+      }
+    }
+
+    let userData: Record<string, unknown> | null = null;
+    try {
+      userData = await getFirestoreDocument(`users/${uid}`, {
+        idToken: token,
+        allowMissing: true,
+      });
+    } catch (error) {
+      if (options.requireAdminBackend) {
+        throw new Error("Firebase Admin unavailable");
+      }
+      console.error(
+        "[serverAuth] Firestore user lookup unavailable; using verified Firebase claims.",
+        error instanceof Error ? error.message : String(error),
+      );
+      return userFromClaims(claims, uid);
+    }
+
+    if (!userData) return userFromClaims(claims, uid);
+    if (userData.status === "deleted") throw new Error("Account disabled");
+
+    if (userData.lockedUntil) {
+      const lockedUntil = new Date(String(userData.lockedUntil));
+      if (!Number.isNaN(lockedUntil.getTime()) && lockedUntil.getTime() > Date.now()) {
+        throw new Error("Account locked");
+      }
+    }
+
+    return {
+      id: uid,
+      email:
+        typeof userData.email === "string"
+          ? userData.email
+          : typeof claims.email === "string"
+            ? claims.email
+            : "",
+      name:
+        typeof userData.name === "string"
+          ? userData.name
+          : typeof claims.name === "string"
+            ? claims.name
+            : null,
+      role: roleFromVerifiedClaims(claims),
+    };
   }
 
   const { auth, collections, isFirebaseAdminReady } = await getAdminServices();
