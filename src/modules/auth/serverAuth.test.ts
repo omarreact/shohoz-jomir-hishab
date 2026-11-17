@@ -11,6 +11,9 @@ describe("privileged authentication", () => {
   beforeEach(() => {
     jest.resetModules();
     delete process.env.LANDBD_PLATFORM;
+    delete process.env.FIREBASE_PROJECT_ID;
+    delete process.env.FIREBASE_CLIENT_EMAIL;
+    delete process.env.FIREBASE_PRIVATE_KEY;
     jest.clearAllMocks();
   });
 
@@ -57,6 +60,37 @@ describe("privileged authentication", () => {
       role: "User",
     });
     expect(jose.jwtVerify).toHaveBeenCalled();
+  });
+
+  it("uses authoritative Firebase Admin on Cloudflare when explicit credentials are configured", async () => {
+    process.env.LANDBD_PLATFORM = "cloudflare-workers";
+    process.env.FIREBASE_PROJECT_ID = "landbd-test";
+    process.env.FIREBASE_CLIENT_EMAIL = "admin@example.invalid";
+    process.env.FIREBASE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\\nsynthetic\\n-----END PRIVATE KEY-----";
+
+    const verifyIdToken = jest.fn(async () => ({
+      uid: "cloudflare-admin",
+      email: "admin@example.com",
+      role: "Admin",
+    }));
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => ({
+      isFirebaseAdminReady: () => true,
+      auth: { verifyIdToken },
+      collections: { users: { doc: jest.fn(() => ({
+        get: jest.fn(async () => ({ exists: false })),
+      })) } },
+    }));
+
+    const { verifyAdminAuth } = await import("./serverAuth");
+    const req = new NextRequest("https://landbd.example/admin", {
+      headers: { authorization: "Bearer admin-token" },
+    });
+
+    await expect(verifyAdminAuth(req)).resolves.toMatchObject({
+      id: "cloudflare-admin",
+      role: "Admin",
+    });
+    expect(verifyIdToken).toHaveBeenCalledWith("admin-token", true);
   });
 
   it("fails closed if the Firestore account-state lookup fails", async () => {
