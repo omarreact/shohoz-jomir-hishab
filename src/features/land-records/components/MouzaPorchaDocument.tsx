@@ -50,7 +50,7 @@ function numericLand(value: string): number {
   const latin = value
     .replace(/[০-৯]/g, (digit) => String(bnDigits.indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String(arDigits.indexOf(digit)))
-    .replace(/[^d.+-]/g, "");
+    .replace(/[^\d.+-]/g, "");
   const parsed = Number(latin);
   return Number.isFinite(parsed) ? parsed : 0;
 }

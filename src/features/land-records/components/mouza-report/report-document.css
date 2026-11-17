@@ -1282,9 +1282,18 @@
 #mouza-porcha-report .report-cover-hero h1 {
   margin: 7mm 0 0;
   color: #fff;
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
   font-size: 24pt;
   font-weight: 700;
   line-height: 1.15;
+}
+
+/* The global application heading policy intentionally uses the Latin/display
+   heading stack. Generated Bengali reports are an exception: semantic h1/h2
+   elements must stay on a Bengali-capable face even when the remote Kalpurush
+   stylesheet is unavailable in CI/offline print contexts. */
+#mouza-porcha-report :is(h1, h2, h3, h4, h5, h6, [role="heading"]) {
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
 }
 
 #mouza-porcha-report .report-cover-hero h1 em {
@@ -1357,6 +1366,7 @@
 #mouza-porcha-report .report-cover-body h2 {
   margin: 1.5mm 0 7mm;
   color: var(--book-navy);
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
   font-size: 19pt;
   font-weight: 700;
 }
@@ -1462,6 +1472,7 @@
 #mouza-porcha-report .report-book-header h2 {
   margin: 2.2mm 0 1.4mm;
   color: #fff;
+  font-family: "Kalpurush", var(--font-nikosh), "Nirmala UI", sans-serif !important;
   font-size: 15pt;
   font-weight: 700;
   line-height: 1.15;

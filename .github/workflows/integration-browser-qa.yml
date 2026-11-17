@@ -95,15 +95,46 @@ jobs:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-responsive.spec.mjs --workers=1 --reporter=line
 
+      - name: Calculator common-flow browser QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-calculators.spec.mjs --workers=1 --reporter=line
+
+      - name: Live RAJUK RS/MS/Mouza source smoke
+        run: npx tsx scripts/rajuk-smoke-test.ts
+
       - name: DLRMS BRS browser data-path QA
         env:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-dlrms.spec.mjs --workers=1 --reporter=line
 
+      - name: Faraez PDF browser QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-faraez-pdf.spec.mjs --workers=1 --reporter=line
+
       - name: Mouza Khatian Book PDF browser QA
         env:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-pdf.spec.mjs --workers=1 --reporter=line
+
+      - name: Upload generated PDF for visual QA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-mouza-khatian-book-pdf
+          path: test-results/landbd-mouza-khatian-book.pdf
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload generated Faraez PDF for visual QA
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-faraez-result-pdf
+          path: test-results/landbd-faraez-result.pdf
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload browser QA diagnostics on failure
         if: failure()

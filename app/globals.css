@@ -112,6 +112,13 @@
   body :is(h1, h2, h3, h4, h5, h6, [role="heading"]) {
     font-family: var(--font-heading) !important;
   }
+
+  /* Generated Bengali land-record documents are the intentional exception to
+     the application heading stack. Keep this next to the global heading rule
+     so CSS ordering cannot send report h1/h2 text back to Segoe UI/Arial. */
+  body #mouza-porcha-report :is(h1, h2, h3, h4, h5, h6, [role="heading"]) {
+    font-family: var(--font-report) !important;
+  }
   body :not(#landbd-font-policy):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not([role="heading"]) {
     font-family: inherit !important;
   }
