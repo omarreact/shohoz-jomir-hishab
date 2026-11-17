@@ -290,12 +290,30 @@ export async function adminCreateFirestoreDocument(
 export async function adminSetFirestoreDocument(
   path: string,
   data: Record<string, unknown>,
+  options: { updateTime?: string } = {},
 ): Promise<void> {
-  const response = await firestoreFetch(documentUrl(path), {
+  const url = new URL(documentUrl(path));
+  if (options.updateTime) {
+    url.searchParams.set("currentDocument.updateTime", options.updateTime);
+  }
+  const response = await firestoreFetch(url.toString(), {
     method: "PATCH",
     body: JSON.stringify({ fields: encodeFields(data) }),
   });
+  if (response.status === 409 || response.status === 412) {
+    throw new Error("Firestore optimistic concurrency conflict");
+  }
   if (!response.ok) throw new Error(`Firestore document write failed (${response.status})`);
+}
+
+export function stripFirestoreMetadata(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...value };
+  delete result.id;
+  delete result.__createTime;
+  delete result.__updateTime;
+  return result;
 }
 
 export async function lookupFirebaseAccount(idToken: string): Promise<{
