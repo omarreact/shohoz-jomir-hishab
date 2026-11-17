@@ -51,58 +51,49 @@ async function allowFreeGisAccess(page) {
 }
 
 async function waitForGis(page) {
-  await expect(page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" })).toBeVisible();
+  await expect(page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("navigation", { name: "GIS মানচিত্র সাইডবার" })).toBeVisible();
   await expect(page.getByText("GIS মানচিত্র তৈরি হচ্ছে…")).toBeHidden({ timeout: 20_000 });
 }
 
 test.describe("LandBD responsive navigation", () => {
-  test("mobile uses only the drawer navigation", async ({ page }) => {
+  test("mobile home uses the all-services workspace with the compact app header", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await goto(page, "/");
 
-    const desktopNav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-    const opener = page.getByRole("button", { name: "মোবাইল মেনু খুলুন" });
-    await expect(desktopNav).toBeHidden();
-    await expect(opener).toBeVisible();
-
-    await opener.click();
-    const dialog = page.getByRole("dialog", { name: "মোবাইল সাইডবার মেনু" });
-    await expect(dialog).toBeVisible();
-    const section = dialog.locator('button[aria-controls="landbd-drawer-section-records"]');
-    await expect(section).toBeVisible();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "false");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await expect(dialog.locator("a[href]").first()).toBeVisible();
-
-    const firstNavLink = dialog.locator("a[href]").first();
-    expect(await firstNavLink.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
-
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "সকল ভূমি সেবা, এক জায়গায়" })).toBeVisible();
+    await expect(page.locator("#mobile-service-selector")).toBeVisible();
   });
 
-  test("tablet and desktop use the top navbar with 18px-or-larger menu copy", async ({ page }) => {
+  test("compact header remains active below the 1180px desktop breakpoint", async ({ page }) => {
     for (const viewport of [
       { width: 768, height: 1024 },
-      { width: 1440, height: 900 },
+      { width: 1024, height: 768 },
     ]) {
       await page.setViewportSize(viewport);
       await goto(page, "/");
 
-      const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-      await expect(nav).toBeVisible();
-      await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toBeHidden();
-
-      const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
-      await expect(groupButton).toBeVisible();
-      expect(await groupButton.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
-      await groupButton.hover();
-      await expect(groupButton).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
+      await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeVisible();
     }
+  });
+
+  test("wide desktop uses the top navbar with 18px-or-larger menu copy", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await goto(page, "/");
+
+    const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
+    await expect(nav).toBeVisible();
+    await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeHidden();
+
+    const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
+    await expect(groupButton).toBeVisible();
+    expect(await groupButton.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
+    await groupButton.hover();
+    await expect(groupButton).toHaveAttribute("aria-expanded", "true");
   });
 });
 
@@ -129,7 +120,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
       await expect(page.getByText("পরিমাপ ও জরিপ টুলস")).toHaveCount(0);
       await expect(page.getByText("মানচিত্রে ট্যাপ করে বিন্দু বসান")).toHaveCount(0);
 
-      const map = page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
+      const map = page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
       const box = await map.boundingBox();
       expect(box).not.toBeNull();
       expect(box?.width ?? 0).toBeGreaterThan(viewport.width * 0.95);
@@ -153,7 +144,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
       ["মানচিত্র সেটিংস", "মানচিত্র সেটিংস"],
     ];
 
-    const sidebar = page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" });
+    const sidebar = page.getByRole("navigation", { name: "GIS মানচিত্র সাইডবার" });
     for (const [buttonName, panelName] of tools) {
       const button = sidebar.getByRole("button", { name: buttonName, exact: true });
       await button.click();
