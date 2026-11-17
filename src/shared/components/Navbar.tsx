@@ -152,7 +152,7 @@ export default function Navbar() {
                     key={item.key}
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`whitespace-nowrap rounded-xl px-2.5 py-2.5 text-base font-bold no-underline transition-colors 2xl:px-3 ${
+                    className={`whitespace-nowrap rounded-xl px-2.5 py-2.5 text-[18px] font-bold no-underline transition-colors 2xl:px-3 ${
                       active
                         ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                         : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -182,7 +182,7 @@ export default function Navbar() {
                     aria-haspopup="menu"
                     aria-expanded={open}
                     onClick={() => setOpenDropdown(open ? null : item.id)}
-                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 py-2 text-base font-bold transition-colors 2xl:px-3 ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 py-2 text-[18px] font-bold transition-colors 2xl:px-3 ${
                       active
                         ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                         : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -203,7 +203,7 @@ export default function Navbar() {
                             href={link.href}
                             role="menuitem"
                             onClick={() => setOpenDropdown(null)}
-                            className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-base font-bold no-underline transition-colors ${
+                            className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-[18px] font-bold no-underline transition-colors ${
                               linkActive
                                 ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                                 : "text-[var(--foreground)] hover:bg-[var(--secondary)]"
