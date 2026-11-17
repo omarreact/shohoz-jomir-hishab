@@ -120,7 +120,7 @@ describe("FullKhatian service", () => {
       upazilaBbsCode: "72",
       jlNumberId: 381831,
       khatianNo: "12",
-    }), undefined);
+    }), expect.any(AbortSignal));
     expect(listDivisions).not.toHaveBeenCalled();
     expect(listDistricts).not.toHaveBeenCalled();
     expect(listUpazilas).not.toHaveBeenCalled();
