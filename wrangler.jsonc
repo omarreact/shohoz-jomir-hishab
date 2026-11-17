@@ -21,7 +21,8 @@
   "vars": {
     "NEXTJS_ENV": "production",
     "LANDBD_PLATFORM": "cloudflare-workers",
-    "LANDBD_ENV": "staging",
+    "LANDBD_ENV": "production",
+    "LANDBD_PUBLIC_ACCESS": "true",
     "LAND_EXPORT_STORAGE_PROVIDER": "cloudflare"
   },
   "r2_buckets": [
