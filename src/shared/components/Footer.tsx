@@ -3,18 +3,20 @@ import { getCmsPage } from "@/src/lib/cms-store";
 import { toBanglaDigits } from "@/src/shared/i18n/bangla";
 import Link from "next/link";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
-import { NAV_SECTIONS, navRoute } from "@/src/shared/config/navigation";
+import { navRoute } from "@/src/shared/config/navigation";
 import { SITE_CONFIG } from "@/src/shared/config/site";
 
-const FOOTER_EXCLUSIONS = new Set(["mapQa"]);
-const GROUPS = NAV_SECTIONS.map(section => ({
-  title: section.label,
-  links: section.keys
-    .filter(key => !FOOTER_EXCLUSIONS.has(key))
-    .map(key => {
-      const link = navRoute(key);
-      return [link.href, link.label] as const;
-    }),
+// Compact fallback groups. Published CMS footer content remains authoritative.
+const GROUPS = [
+  { title: "সেবাসমূহ", keys: ["records", "landMeasurement", "inheritance", "dlrmsKhatian"] },
+  { title: "রেকর্ড ও ম্যাপ", keys: ["mouzaKhatianBook", "mouzaDagBook", "landMap", "mouzaDownload"] },
+  { title: "সহায়তা", keys: ["blog", "faq", "contact", "privacy", "terms"] },
+].map((group) => ({
+  title: group.title,
+  links: group.keys.map((key) => {
+    const link = navRoute(key as Parameters<typeof navRoute>[0]);
+    return [link.href, link.label] as const;
+  }),
 }));
 
 export default async function Footer() {
@@ -31,7 +33,7 @@ export default async function Footer() {
  })) : GROUPS;
 
   return (
-    <footer className="mt-auto border-t border-[var(--border-color)] bg-white text-[var(--foreground)] print:hidden">
+    <footer className="mt-auto border-t border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--foreground)] print:hidden">
       <div className="mx-auto max-w-[1440px] px-4 py-9 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.2fr_2fr]">
           <div>
@@ -57,7 +59,7 @@ export default async function Footer() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3">
             {groups.map((group) => (
               <div key={group.title}>
                 <p className="text-xs font-black uppercase tracking-[.12em] text-[var(--foreground)]">{group.title}</p>

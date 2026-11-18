@@ -24,7 +24,7 @@ export const GLOBAL_NAVIGATION: readonly GlobalNavigationItem[] = [
     type: "dropdown",
     id: "survey-records",
     label: "সার্ভে খতিয়ান",
-    keys: ["dlrmsKhatian", "surveyKhatian", "mouzaKhatianBook", "documents"],
+    keys: ["dlrmsKhatian", "mouzaKhatianBook", "documents"],
   },
   {
     type: "dropdown",

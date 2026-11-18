@@ -149,6 +149,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
 
   const displayedError = localError || error;
   const locationReady = Boolean(division && district && upazila && surveyId && mouzaId && surveyKey);
+  const completedSteps = [division, district, upazila, surveyId, mouzaId].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-mixed">
@@ -169,7 +170,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-6xl px-2 py-8 md:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl px-3 py-6 sm:px-4 md:px-6 md:py-8 lg:px-8">
         <section className="app-panel p-3 md:p-6">
           <div className="mb-5">
             <h2 className="text-xl font-semibold text-[var(--foreground)] md:text-2xl">অনলাইনে সার্ভে খতিয়ান অনুসন্ধান ও ডাউনলোড করুন</h2>
@@ -178,16 +179,20 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
             </p>
           </div>
 
-          <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-4 text-sm text-[var(--muted-foreground)]">
-            <p className="font-semibold text-[var(--foreground)]">কিভাবে তথ্য ব্রাউজ করবেন?</p>
-            <ol className="mt-2 list-inside list-decimal space-y-1 text-xs leading-5 md:text-sm">
-              <li>বিভাগ → জেলা → উপজেলা / থানা ক্রমানুসারে নির্বাচন করুন।</li>
-              <li>খতিয়ানের ধরন নির্বাচন করে মৌজা / JL নম্বর বাছাই করুন।</li>
-              <li>মৌজা নির্বাচন করলে তালিকা স্বয়ংক্রিয়ভাবে লোড হবে; search দিলে পুরো মৌজার ওপর filter হবে।</li>
-            </ol>
+          <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] px-4 py-3" aria-label="অনুসন্ধানের অগ্রগতি">
+            <div className="mb-2 flex items-center justify-between gap-2 text-[var(--foreground)]">
+              <span className="font-bold">ধাপে ধাপে মৌজা নির্বাচন</span>
+              <span className="font-semibold text-[var(--primary)]">ধাপ {completedSteps}/5</span>
+            </div>
+            <div role="progressbar" aria-label="অনুসন্ধান ধাপ সম্পন্ন" aria-valuenow={completedSteps} aria-valuemin={0} aria-valuemax={5}
+              className="h-2 overflow-hidden rounded-full bg-[var(--border-color)]">
+              <div className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-200 motion-reduce:transition-none"
+                style={{ width: String(completedSteps * 20) + "%" }} />
+            </div>
+            <p className="mt-2 text-[var(--muted-foreground)]">বিভাগ → জেলা → উপজেলা → সার্ভে → মৌজা। মৌজা বাছলেই খতিয়ান তালিকা আসবে।</p>
           </div>
 
-          <div className="grid grid-cols-2 items-stretch gap-2 md:gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             <LandRecordSelectionColumn
               label="বিভাগ"
               placeholder="বিভাগের নাম লিখুন"
@@ -231,7 +236,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
               options={mouzas.map((item) => ({ value: String(item.ID), label: `${item.JL_NUMBER} · ${item.MOUZA_NAME}` }))}
               loading={loading.mouzas}
               disabledMessage={!surveyId ? "প্রথমে সার্ভে নির্বাচন করুন।" : undefined}
-              className="max-lg:col-span-2"
+              className="sm:col-span-2 lg:col-span-1"
             />
           </div>
 
@@ -250,9 +255,11 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
                 </div>
 
                 <div className="w-full md:max-w-md">
-                  <label className="mb-1 block text-xs font-medium text-[var(--muted-foreground)]">খতিয়ান, দাগ, মালিক বা অভিভাবক</label>
+                  <label htmlFor="khatian-record-filter" className="mb-1 block font-medium text-[var(--muted-foreground)]">খতিয়ান, দাগ, মালিক বা অভিভাবক</label>
                   <div className="flex gap-2">
                     <input
+                      id="khatian-record-filter"
+                      type="search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
                       onKeyDown={(event) => { if (event.key === "Enter") runSearch(1); }}
@@ -281,7 +288,29 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
               {khatians.items.length === 0 ? (
                 <div className="py-10 text-center text-sm text-[var(--muted-foreground)]">কোনো খতিয়ান পাওয়া যায়নি।</div>
               ) : (
-                <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--border-color)]">
+                <div className="mt-4 grid gap-3 md:hidden" role="list" aria-label="খতিয়ান ফলাফল">
+                  {khatians.items.map((item) => (
+                    <article key={item.ID} role="listitem" className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[var(--muted-foreground)]">খতিয়ান নম্বর</p>
+                          <p className="mt-1 text-2xl font-black text-[var(--primary)]">{item.KHATIAN_NO || "—"}</p>
+                        </div>
+                        <button type="button" onClick={() => showDetails(item)}
+                          aria-label={"খতিয়ান " + (item.KHATIAN_NO || "") + " বিস্তারিত দেখুন"}
+                          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-[var(--primary)] px-3 font-bold text-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
+                          <Eye size={18} aria-hidden="true" /> দেখুন
+                        </button>
+                      </div>
+                      <dl className="mt-3 grid gap-3 border-t border-[var(--border-color)] pt-3">
+                        <div><dt className="font-semibold text-[var(--muted-foreground)]">মালিক / দলিলধারী</dt><dd className="mt-1 break-words text-[var(--foreground)]">{item.OWNERS || "—"}</dd></div>
+                        <div><dt className="font-semibold text-[var(--muted-foreground)]">দাগ নম্বর</dt><dd className="mt-1 break-words text-[var(--foreground)]">{item.DAGS || "—"}</dd></div>
+                        <div><dt className="font-semibold text-[var(--muted-foreground)]">মোট জমি (একর)</dt><dd className="mt-1 font-bold text-[var(--foreground)]">{item.TOTAL_LAND || "—"}</dd></div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+                <div className="mt-4 hidden overflow-x-auto rounded-lg border border-[var(--border-color)] md:block">
                   <table className="w-full min-w-[48rem] border-collapse text-sm">
                     <thead>
                       <tr className="bg-[var(--background)] text-left text-xs text-[var(--muted-foreground)]">
@@ -316,14 +345,14 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
               )}
 
               <div className="mt-3 flex items-center justify-end gap-2 text-xs text-[var(--muted-foreground)]">
-                <button type="button" onClick={() => goPage(page - 1)} disabled={page <= 1 || loading.khatians}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-30">
-                  <ChevronLeft size={15} />
+                <button type="button" onClick={() => goPage(page - 1)} disabled={page <= 1 || loading.khatians} aria-label="আগের পৃষ্ঠা"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-30">
+                  <ChevronLeft size={18} aria-hidden="true" />
                 </button>
                 <span>পৃষ্ঠা {page}</span>
-                <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-30">
-                  <ChevronRight size={15} />
+                <button type="button" onClick={() => goPage(page + 1)} disabled={!khatians.hasNextPage || loading.khatians} aria-label="পরের পৃষ্ঠা"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--border-color)] disabled:opacity-30">
+                  <ChevronRight size={18} aria-hidden="true" />
                 </button>
               </div>
             </section>
@@ -341,10 +370,10 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
             </a>
           </section>
         </section>
-      </main>
+      </div>
 
       {viewMode === "details" && selectedKhatian ? (
-        <div id="khatian-details-panel" className="fixed inset-0 z-[120] overflow-y-auto bg-black/40 p-3 backdrop-blur-sm md:p-6 font-mixed" role="dialog" aria-modal="true" aria-label="খতিয়ান বিস্তারিত">
+        <div id="khatian-details-panel" className="fixed inset-0 z-[1300] overflow-y-auto bg-black/40 p-3 backdrop-blur-sm md:p-6 font-mixed" role="dialog" aria-modal="true" aria-label="খতিয়ান বিস্তারিত">
           <div className="app-panel mx-auto max-w-6xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] px-4 py-3">
               <div>
