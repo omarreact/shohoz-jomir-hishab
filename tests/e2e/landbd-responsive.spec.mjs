@@ -5,12 +5,18 @@ test.use({
   baseURL,
   launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-    args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
+    args: ["--no-sandbox", "--disable-dev-shm-usage", "--no-proxy-server", "--proxy-bypass-list=<-loopback>", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
   } : undefined,
 });
 
 async function goto(page, path) {
-  await page.goto(path, { waitUntil: "domcontentloaded" });
+  const response = await page.goto(path, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  if (!response) {
+    throw new Error("Browser navigation returned no HTTP response for " + path + "; current URL: " + page.url());
+  }
+  if (response.status() >= 500) {
+    throw new Error("Browser navigation returned HTTP " + response.status() + " for " + path);
+  }
   await page.waitForTimeout(250);
 }
 
