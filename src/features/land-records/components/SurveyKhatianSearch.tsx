@@ -288,6 +288,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
               {khatians.items.length === 0 ? (
                 <div className="py-10 text-center text-sm text-[var(--muted-foreground)]">কোনো খতিয়ান পাওয়া যায়নি।</div>
               ) : (
+                <>
                 <div className="mt-4 grid gap-3 md:hidden" role="list" aria-label="খতিয়ান ফলাফল">
                   {khatians.items.map((item) => (
                     <article key={item.ID} role="listitem" className="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm">
@@ -342,6 +343,7 @@ export default function SurveyKhatianSearch({ variant = "survey" }: { variant?: 
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
 
               <div className="mt-3 flex items-center justify-end gap-2 text-xs text-[var(--muted-foreground)]">
