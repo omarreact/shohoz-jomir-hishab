@@ -57,8 +57,8 @@ async function allowFreeGisAccess(page) {
 }
 
 async function waitForGis(page) {
-  await expect(page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole("navigation", { name: "GIS মানচিত্র সাইডবার" })).toBeVisible();
+  await expect(page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" })).toBeVisible();
   await expect(page.getByText("GIS মানচিত্র তৈরি হচ্ছে…")).toBeHidden({ timeout: 20_000 });
 }
 
@@ -68,7 +68,7 @@ test.describe("LandBD responsive navigation", () => {
     await goto(page, "/");
     await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
     await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "আপনার জমির কাজ, সহজে" })).toBeVisible();
 
     const search = page.locator("#landbd-mobile-service-search");
@@ -89,7 +89,7 @@ test.describe("LandBD responsive navigation", () => {
       await page.setViewportSize(viewport);
       await goto(page, "/");
       await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
-      await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeVisible();
+      await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeVisible();
       await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toHaveCount(0);
     }
   });
@@ -100,7 +100,7 @@ test.describe("LandBD responsive navigation", () => {
 
     const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
     await expect(nav).toBeVisible();
-    await expect(page.getByRole("link", { name: "LandBD হোম" })).toBeHidden();
+    await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeHidden();
 
     const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
     await expect(groupButton).toBeVisible();
@@ -133,7 +133,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
       await expect(page.getByText("পরিমাপ ও জরিপ টুলস")).toHaveCount(0);
       await expect(page.getByText("মানচিত্রে ট্যাপ করে বিন্দু বসান")).toHaveCount(0);
 
-      const map = page.locator('[aria-label="বাংলাদেশের GIS মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
+      const map = page.locator('[aria-label="বাংলাদেশের জিআইএস মানচিত্র · আরএস এমএস ও স্যাটেলাইট"]');
       const box = await map.boundingBox();
       expect(box).not.toBeNull();
       expect(box?.width ?? 0).toBeGreaterThan(viewport.width * 0.95);
@@ -157,7 +157,7 @@ test.describe("LandBD map-first geospatial workspace", () => {
       ["মানচিত্র সেটিংস", "মানচিত্র সেটিংস"],
     ];
 
-    const sidebar = page.getByRole("navigation", { name: "GIS মানচিত্র সাইডবার" });
+    const sidebar = page.getByRole("navigation", { name: "জিআইএস মানচিত্র সাইডবার" });
     for (const [buttonName, panelName] of tools) {
       const button = sidebar.getByRole("button", { name: buttonName, exact: true });
       await button.click();
