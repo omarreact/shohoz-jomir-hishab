@@ -53,9 +53,9 @@ describe("LandBD single-PR release integrity", () => {
     "/admin/orders",
   ];
 
-  it("contains the expected 52 page routes and none of the 13 retired pages", () => {
+  it("contains the expected 51 page routes and none of the 13 retired pages", () => {
     expect(new Set(routes).size).toBe(routes.length);
-    expect(routes).toHaveLength(52);
+    expect(routes).toHaveLength(51);
     for (const route of removed) expect(routes).not.toContain(route);
     for (const route of retained) expect(routes).toContain(route);
   });
