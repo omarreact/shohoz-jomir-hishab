@@ -230,3 +230,37 @@ nav[aria-label="প্রধান নেভিগেশন"] a[aria-label$="—
   .landbd-primary-button,.landbd-secondary-button,.landbd-action-chip,.landbd-domain-tab,.landbd-tool-card,.landbd-compact-link{transition:none}
   .landbd-skeleton{animation:none;background:#EDF3EF}
 }
+
+
+/* LandBD screen-only UX refinements. Print/PDF documents are intentionally excluded. */
+@media screen {
+  .landbd-native-shell, .landbd-admin-shell { min-inline-size: 0; }
+  .landbd-native-shell :where(img,video,canvas),
+  .landbd-admin-shell :where(img,video,canvas) { max-inline-size: 100%; }
+  .landbd-service-workspace, .landbd-service-workspace > *,
+  .landbd-admin-shell #admin-content, .landbd-admin-shell #admin-content > * { min-inline-size: 0; }
+  .landbd-service-workspace :where(input,select,textarea),
+  .landbd-admin-shell :where(input,select,textarea) { max-inline-size: 100%; }
+  .landbd-service-workspace :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea),
+  .landbd-admin-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) {
+    font-size: max(16px,1rem);
+  }
+  :where(.landbd-native-shell,.landbd-admin-shell) :where(button,a,input,select,textarea,summary):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+  }
+  .landbd-service-workspace :where(.app-panel,.landbd-card) { overflow-wrap: anywhere; }
+  .landbd-service-workspace :where(table) { font-variant-numeric: tabular-nums; }
+  .landbd-service-workspace :where(button,a) { touch-action: manipulation; }
+  .landbd-admin-shell [aria-current="page"] { box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--primary) 18%,transparent); }
+}
+@media screen and (max-width: 640px) {
+  .landbd-service-workspace .report-controls { padding: 1rem; }
+  .landbd-service-workspace .report-actions { gap: .75rem; }
+  .landbd-service-workspace .report-actions button { min-height: 44px; }
+  .landbd-service-workspace :where(.app-panel,.landbd-card) { max-inline-size: 100%; }
+  .landbd-admin-shell #admin-content { padding-inline: .75rem; }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  .landbd-service-workspace *, .landbd-admin-shell * { scroll-behavior: auto !important; }
+}

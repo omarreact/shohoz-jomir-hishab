@@ -61,7 +61,7 @@ export default function LandMeasurementCalculator() {
   }, [inputs, shape]);
 
   return (
-    <div className="space-y-5">
+    <div className="landbd-service-workspace space-y-5">
       <div className="landbd-card p-3 sm:p-4" aria-label="জমি পরিমাপের ধাপ">
         <div className="grid gap-2 sm:grid-cols-3">
           {[
@@ -74,7 +74,7 @@ export default function LandMeasurementCalculator() {
               className={`flex items-center gap-3 rounded-[12px] border px-3 py-2.5 ${
                 complete
                   ? "border-[color-mix(in_srgb,var(--primary)_20%,var(--border-color))] bg-[var(--brand-green-faint)]"
-                  : "border-[var(--border-color)] bg-white"
+                  : "border-[var(--border-color)] bg-[var(--card-bg)]"
               }`}
             >
               <span
@@ -85,10 +85,10 @@ export default function LandMeasurementCalculator() {
                 {complete && index < 2 ? <Check size={14} /> : number}
               </span>
               <span>
-                <span className="block text-[10px] font-extrabold uppercase tracking-[.12em] text-[var(--muted-foreground)]">
+                <span className="block text-sm font-extrabold uppercase tracking-wide text-[var(--muted-foreground)]">
                   ধাপ {number}
                 </span>
-                <strong className="block text-sm text-[var(--foreground)]">{label}</strong>
+                <strong className="block text-base text-[var(--foreground)]">{label}</strong>
               </span>
             </div>
           ))}
@@ -99,7 +99,7 @@ export default function LandMeasurementCalculator() {
         <div className="mb-4 flex items-center gap-2">
           <MousePointer2 size={17} className="text-[var(--survey-teal)]" />
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[.12em] text-[var(--survey-teal)]">SHAPE</p>
+            <p className="text-sm font-extrabold uppercase tracking-wide text-[var(--survey-teal)]">আকৃতি</p>
             <h2 className="text-lg font-black text-[var(--foreground)]">জমির আকৃতি নির্বাচন করুন</h2>
           </div>
         </div>

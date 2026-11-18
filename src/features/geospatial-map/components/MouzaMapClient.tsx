@@ -23,7 +23,7 @@ export default function MouzaMapClient() {
 
   if (admin) {
     return (
-      <div className="relative h-[min(72dvh,760px)] min-h-[470px] w-full overflow-hidden rounded-[26px] border border-[#dce5dc] bg-[#ebf0e8] shadow-[0_12px_40px_rgba(29,62,51,.12)]">
+      <div className="relative h-[min(72dvh,760px)] min-h-[360px] sm:min-h-[470px] w-full overflow-hidden rounded-[26px] border border-[#dce5dc] bg-[#ebf0e8] shadow-[0_12px_40px_rgba(29,62,51,.12)]">
         <MouzaExportMap />
         <VectorPdfExportControl />
       </div>
@@ -31,9 +31,9 @@ export default function MouzaMapClient() {
   }
 
   return (
-    <div className="w-full">
+    <div className="min-w-0 w-full">
       <VisitorMouzaShareDownload />
-      <p className="mt-3 text-xs leading-6 text-[#788680]">অ্যাডভান্সড GeoTIFF, RAW ও Vector PDF export সার্ভার নীতির সাথে সামঞ্জস্য রেখে শুধু Admin / Super Admin-এর জন্য।</p>
+      <p className="mt-4 max-w-prose text-sm leading-7 text-[var(--muted-foreground)]">অ্যাডভান্সড GeoTIFF, RAW ও Vector PDF export সার্ভার নীতির সাথে সামঞ্জস্য রেখে শুধু Admin / Super Admin-এর জন্য।</p>
     </div>
   );
 }
