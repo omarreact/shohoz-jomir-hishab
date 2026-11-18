@@ -50,19 +50,6 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
-              {[
-                ["01", "তথ্য দিন", "প্রয়োজনীয় রেকর্ড বা জমির তথ্য"],
-                ["02", "যাচাই করুন", "উৎস, অবস্থা ও প্রাসঙ্গিক সতর্কতা"],
-                ["03", "ব্যবহার করুন", "প্রিন্ট, এক্সপোর্ট বা পরবর্তী কাজ"],
-              ].map(([number, title, description]) => (
-                <div key={number} className="landbd-step-card">
-                  <span>{number}</span>
-                  <strong>{title}</strong>
-                  <small>{description}</small>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="relative z-20 lg:pt-2">

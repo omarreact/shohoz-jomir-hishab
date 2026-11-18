@@ -791,3 +791,14 @@
 @media print {
   .landbd-mobile-appbar, .landbd-native-tabbar { display: none !important; }
 }
+
+/* LandBD UI accessibility: reduced-motion; excludes PDF and print. */
+@media screen and (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  :where(.landbd-native-shell, .landbd-native-shell *) {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

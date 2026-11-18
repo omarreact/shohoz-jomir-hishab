@@ -40,5 +40,8 @@ describe("LandBD responsive navigation", () => {
   it("keeps admin-specific links restricted to permitted users", () => {
     expect(mobileHeader).toContain('isStaffRole(user?.role)');
     expect(desktop).toContain('canAccessAdmin ?');
+    const tabs = source("src/shared/components/MobileFloatingNav.tsx");
+    expect(tabs).toContain('label: "ম্যাপ"');
+    expect(mobileHeader).toContain('text-lg font-black leading-tight');
   });
 });

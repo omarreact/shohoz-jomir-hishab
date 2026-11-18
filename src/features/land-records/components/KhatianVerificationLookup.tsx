@@ -297,7 +297,7 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
   };
 
   return (
-    <section className="mx-auto w-full max-w-7xl space-y-4 px-3 pt-4 sm:px-6 sm:pt-6" aria-labelledby="dlrms-verify-heading">
+    <section className="landbd-service-workspace mx-auto w-full max-w-7xl space-y-4 px-3 pt-4 sm:px-6 sm:pt-6" aria-labelledby="dlrms-verify-heading">
       {/* DLRMS QR Verification */}
       <div className={mode === "mutation" ? "hidden" : "overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 shadow-sm dark:border-emerald-900/70 dark:from-emerald-950/30 dark:via-slate-950 dark:to-sky-950/20"}>
         <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[.72fr_1.28fr] lg:items-center">
@@ -321,7 +321,7 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
           </div>
 
           <form onSubmit={submitDlrms} className="min-w-0">
-            <label htmlFor="dlrms-verification-input" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <label htmlFor="dlrms-verification-input" className="mb-1.5 block text-base font-semibold text-[var(--foreground)]">
               DLRMS যাচাইকরণ লিংক / UUID
             </label>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
@@ -334,13 +334,13 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
                   placeholder="https://dlrms.land.gov.bd/v/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   autoComplete="off"
                   spellCheck={false}
-                  className="h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#006a4e] focus:ring-2 focus:ring-[#006a4e]/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="min-h-12 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] pl-9 pr-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#006a4e] focus:ring-2 focus:ring-[#006a4e]/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                 />
               </div>
               <button
                 type="submit"
                 disabled={dlrmsLoading || !dlrmsValue.trim()}
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#006a4e] px-4 text-sm font-bold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 text-base font-bold text-white transition hover:bg-[#005a42] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {dlrmsLoading ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
                 {dlrmsLoading ? "যাচাই হচ্ছে…" : "যাচাই ও বিস্তারিত দেখুন"}
@@ -378,7 +378,7 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
           </div>
 
           <form onSubmit={submitMutation} className="min-w-0">
-            <label htmlFor="mutation-verification-input" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <label htmlFor="mutation-verification-input" className="mb-1.5 block text-base font-semibold text-[var(--foreground)]">
               Mutation QR / DCR লিংক বা কোড
             </label>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
@@ -391,7 +391,7 @@ export default function KhatianVerificationLookup({ mode = "all" }: { mode?: "al
                   placeholder="QR link/key, online-DCR link, অথবা DCR: 26109413903402"
                   autoComplete="off"
                   spellCheck={false}
-                  className="h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="min-h-12 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] pl-9 pr-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                 />
               </div>
               <button

@@ -131,8 +131,8 @@ export default function PorchaPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 fade-in visible">
-      <div className="mb-12 flex justify-center">
+    <div className="landbd-service-workspace mx-auto w-full max-w-7xl px-3 py-7 sm:px-6 sm:py-12 lg:px-8 fade-in visible">
+      <div className="mb-8 flex justify-center sm:mb-12">
         <div className="w-full max-w-2xl text-center">
           <h1 className="mb-4 flex items-center justify-center text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
             <FileText size={32} className="mr-3 text-[#006a4e]" /> ডিজিটাল খতিয়ান (পর্চা) সংগ্রহ
@@ -143,7 +143,7 @@ export default function PorchaPage() {
           <div className="relative">
             <input
               type="search"
-              className="w-full rounded-full border border-slate-200 bg-white px-6 py-4 pl-14 text-lg text-slate-900 shadow-sm transition-colors focus:border-[#006a4e] focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+              className="min-h-14 w-full min-w-0 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] px-4 py-3 pl-12 text-base sm:text-lg text-slate-900 shadow-sm transition-colors focus:border-[#006a4e] focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               placeholder="খতিয়ান নং, দাগ নং বা মালিকের নাম..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -178,7 +178,7 @@ export default function PorchaPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedPorcha(item)}
-                    className="flex w-full items-center justify-center rounded-full border border-[#006a4e] px-4 py-2 font-bold text-[#006a4e] transition-colors hover:bg-[#006a4e] hover:text-white"
+                    className="flex min-h-12 w-full items-center justify-center rounded-xl border border-[var(--primary)] px-4 py-3 font-bold text-[#006a4e] transition-colors hover:bg-[#006a4e] hover:text-white"
                   >
                     <Download size={18} className="mr-2" /> বিস্তারিত দেখুন
                   </button>
@@ -217,7 +217,7 @@ export default function PorchaPage() {
 
       {selectedPorcha ? (
         <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
-          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-2xl border border-slate-200 bg-slate-50 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-800">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">পর্চা প্রিভিউ</h2>
               <button
@@ -230,7 +230,7 @@ export default function PorchaPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <ResultDocument ref={exportRef} className="p-6 sm:p-10">
                 <div className="mb-8 border-b-2 border-green-600 pb-4 text-center">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#006a4e]">ল্যান্ডবিডি</p>
