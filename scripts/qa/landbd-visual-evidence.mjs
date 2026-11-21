@@ -18,6 +18,10 @@ const primary = ["/", "/all-services", "/dlrms-khatian", "/mouza-khatian-book", 
 const secondary = ["/about", "/faq", "/blog", "/api-docs", "/privacy", "/terms", "/ms-test",
   "/checkout/result", "/checkout/pinpay", "/403", "/maintenance", "/security-locked",
   "/survey-khatian", "/admin", "/admin/users"];
+const servicePreviewRoutes = new Set([
+  "/dlrms-khatian", "/mouza-khatian-book", "/mouza-dag-report",
+  "/khatiyan", "/faraez", "/land-measurement", "/geospatial-map", "/mouza-map"
+]);
 const records = [];
 const findings = [];
 const browser = await chromium.launch({ headless: true,
@@ -29,11 +33,29 @@ try {
   for (const [width,height] of sizes) {
     const context = await browser.newContext({ viewport: { width,height }, deviceScaleFactor: 1,
       reducedMotion: "reduce", colorScheme: "light", locale: "bn-BD", serviceWorkers: "block" });
+    // CI-only stub: lets screenshots show service UIs; does not alter product auth.
+    // The normal unauthenticated gate screenshots remain in the previous run artifact.
+    let currentRoute = "/";
+    await context.route((url) => url.origin === baseURL &&
+      (url.pathname === "/api/services/access" || url.pathname === "/api/payment/pinpay/methods"),
+      async (route) => {
+        if (!servicePreviewRoutes.has(currentRoute)) return route.continue();
+        const u = new URL(route.request().url());
+        if (u.pathname === "/api/payment/pinpay/methods") {
+          return route.fulfill({ status:200, contentType:"application/json",
+            body:JSON.stringify({methods:[]}) });
+        }
+        const serviceId = u.searchParams.get("serviceId") || "synthetic-visual-qa";
+        return route.fulfill({ status:200, contentType:"application/json",
+          body:JSON.stringify({serviceId,allowed:true,requiresLogin:false,
+            enabled:true,paid:false,priceBdt:0}) });
+      });
     const page = await context.newPage();
     const routes = primary.concat([390,1440].includes(width) ? secondary : []);
     for (const route of routes) {
+      currentRoute = route;
       const name = (route === "/" ? "home" : route.slice(1).replace(/[^a-z0-9-]/gi, "-")) + "-" + width + ".jpg";
-      const row = {route,width,height,file:name,status:null,finalPath:null,overflow:null,captured:false,error:null};
+      const row = {route,width,height,file:name,accessMode:servicePreviewRoutes.has(route) ? "synthetic-service-access" : "anonymous",status:null,finalPath:null,overflow:null,captured:false,error:null};
       try {
         const response = await page.goto(baseURL + route, { waitUntil: "domcontentloaded", timeout:25000 });
         row.status = response?.status() ?? null;
@@ -61,7 +83,7 @@ try {
   }
 } finally { await browser.close(); }
 const result = {
-  environment: "local GitHub Actions production build using synthetic Firebase",
+  environment: "local GitHub Actions production build using synthetic Firebase and CI-only service-access stubs",
   commit: process.env.GITHUB_SHA || "local", humanReviewed:false, authTested:false,
   expectedCount:sizes.length*primary.length+secondary.length*2,
   capturedCount:records.filter(r=>r.captured).length, findings, records
@@ -71,7 +93,8 @@ const summary = ["# LandBD PR #184 visual evidence (automated; not human-approve
   "Commit: "+result.commit, "Target: local CI production server, synthetic Firebase.",
   "Widths: "+sizes.map(s=>s[0]).join(", ")+" px.",
   "Images: "+result.capturedCount+"/"+result.expectedCount+".",
-  "Human visual sign-off: **PENDING**. Authenticated Firebase: **NOT RUN**.", "",
+  "Human visual sign-off: **PENDING**. Authenticated Firebase: **NOT RUN**.",
+  "Some service interfaces are rendered using synthetic entitlement responses; this is not live access-policy evidence.", "",
   "## Defects and automated findings", ...(findings.length?findings.map(f=>"- "+f):["- No automated overflow/HTTP/capture errors."]),
   "", "## Screenshot inventory",
   "| Route | Width | HTTP | Redirect/final path | Overflow px | File |",
