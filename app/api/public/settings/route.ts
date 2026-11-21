@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { collections, isFirebaseAdminReady } from "@/src/modules/database/firebaseAdmin";
 
 const ALLOWED_KEYS = [
   "siteName",
@@ -20,22 +19,46 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 };
 
 export async function GET() {
-  if (!isFirebaseAdminReady()) {
-    return NextResponse.json({ settings: DEFAULT_SETTINGS }, { status: 200 });
-  }
-
   try {
-    const settingsSnapshot = await collections.settings.where("key", "in", ALLOWED_KEYS).get();
     const result: Record<string, string> = { ...DEFAULT_SETTINGS };
 
+    if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+      const { adminQueryFirestore, hasFirebaseRestAdminCredentials } = await import(
+        "@/src/modules/database/firebaseRest"
+      );
+      if (!hasFirebaseRestAdminCredentials()) {
+        return NextResponse.json({ settings: result }, { status: 200 });
+      }
+      const docs = await adminQueryFirestore("siteSettings", [
+        { field: "key", op: "IN", value: ALLOWED_KEYS },
+      ]);
+      for (const data of docs) {
+        if (
+          data.public === true &&
+          typeof data.key === "string" &&
+          ALLOWED_KEYS.includes(data.key) &&
+          typeof data.value === "string"
+        ) {
+          result[data.key] = data.value;
+        }
+      }
+      return NextResponse.json({ settings: result }, { status: 200 });
+    }
+
+    const { collections, isFirebaseAdminReady } = await import(
+      "@/src/modules/database/firebaseAdmin"
+    );
+    if (!isFirebaseAdminReady()) {
+      return NextResponse.json({ settings: result }, { status: 200 });
+    }
+    const settingsSnapshot = await collections.settings.where("key", "in", ALLOWED_KEYS).get();
     for (const doc of settingsSnapshot.docs) {
       const data = doc.data();
       result[data.key] = data.value;
     }
-
     return NextResponse.json({ settings: result }, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to fetch public settings:", error);
-    return NextResponse.json({ settings: {} }, { status: 200 });
+    return NextResponse.json({ settings: DEFAULT_SETTINGS }, { status: 200 });
   }
 }

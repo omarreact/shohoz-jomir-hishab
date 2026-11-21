@@ -11,11 +11,18 @@ describe("privileged authentication", () => {
   beforeEach(() => {
     jest.resetModules();
     delete process.env.LANDBD_PLATFORM;
+    delete process.env.FIREBASE_PROJECT_ID;
+    delete process.env.FIREBASE_CLIENT_EMAIL;
+    delete process.env.FIREBASE_PRIVATE_KEY;
+    delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     jest.clearAllMocks();
   });
 
   afterEach(() => {
     delete process.env.LANDBD_PLATFORM;
+    delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     jest.restoreAllMocks();
   });
 
@@ -36,10 +43,29 @@ describe("privileged authentication", () => {
       },
     });
 
-    jest.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      json: async () => ({ kid: "test-certificate" }),
-    } as Response);
+    jest.spyOn(global, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/robot/v1/metadata/x509/")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ kid: "test-certificate" }),
+        } as Response;
+      }
+      if (url.includes("identitytoolkit.googleapis.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            users: [{ localId: "cloudflare-user", disabled: false, validSince: "0" }],
+          }),
+        } as Response;
+      }
+      if (url.includes("firestore.googleapis.com")) {
+        return { ok: false, status: 404 } as Response;
+      }
+      throw new Error("Unexpected fetch: " + url);
+    });
 
     jest.doMock("@/src/modules/database/firebaseAdmin", () => {
       throw new Error("Firebase Admin must not load on Cloudflare member auth");
@@ -57,6 +83,118 @@ describe("privileged authentication", () => {
       role: "User",
     });
     expect(jose.jwtVerify).toHaveBeenCalled();
+  });
+
+  it("uses authoritative Firebase REST account state for Cloudflare admin auth", async () => {
+    process.env.LANDBD_PLATFORM = "cloudflare-workers";
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "landbd-test";
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "public-test-key";
+
+    const jose = jest.requireMock("jose") as {
+      importX509: jest.Mock;
+      jwtVerify: jest.Mock;
+    };
+    jose.importX509.mockResolvedValue({});
+    jose.jwtVerify.mockResolvedValue({
+      payload: {
+        sub: "cloudflare-admin",
+        email: "admin@example.com",
+        role: "Admin",
+        auth_time: 200,
+      },
+    });
+
+    jest.spyOn(global, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/robot/v1/metadata/x509/")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ kid: "test-certificate" }),
+        } as Response;
+      }
+      if (url.includes("identitytoolkit.googleapis.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            users: [{ localId: "cloudflare-admin", disabled: false, validSince: "100" }],
+          }),
+        } as Response;
+      }
+      if (url.includes("firestore.googleapis.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            name:
+              "projects/landbd-test/databases/(default)/documents/users/cloudflare-admin",
+            fields: {
+              email: { stringValue: "admin@example.com" },
+              name: { stringValue: "Cloudflare Admin" },
+            },
+          }),
+        } as Response;
+      }
+      throw new Error("Unexpected fetch: " + url);
+    });
+
+    jest.doMock("@/src/modules/database/firebaseAdmin", () => {
+      throw new Error("Firebase Admin must not load on Cloudflare");
+    });
+
+    const { verifyAdminAuth } = await import("./serverAuth");
+    const req = new NextRequest("https://landbd.example/admin", {
+      headers: { authorization: "Bearer eyJraWQiOiJraWQifQ.e30.signature" },
+    });
+
+    await expect(verifyAdminAuth(req)).resolves.toMatchObject({
+      id: "cloudflare-admin",
+      role: "Admin",
+    });
+    expect(jose.jwtVerify).toHaveBeenCalled();
+  });
+
+  it("fails closed for Cloudflare privileged auth when account-state lookup fails", async () => {
+    process.env.LANDBD_PLATFORM = "cloudflare-workers";
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "landbd-test";
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "public-test-key";
+
+    const jose = jest.requireMock("jose") as {
+      importX509: jest.Mock;
+      jwtVerify: jest.Mock;
+    };
+    jose.importX509.mockResolvedValue({});
+    jose.jwtVerify.mockResolvedValue({
+      payload: {
+        sub: "cloudflare-admin",
+        email: "admin@example.com",
+        role: "Admin",
+        auth_time: 200,
+      },
+    });
+
+    jest.spyOn(global, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/robot/v1/metadata/x509/")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ kid: "test-certificate" }),
+        } as Response;
+      }
+      if (url.includes("identitytoolkit.googleapis.com")) {
+        return { ok: false, status: 503 } as Response;
+      }
+      throw new Error("Unexpected fetch: " + url);
+    });
+
+    const { verifyAdminAuth } = await import("./serverAuth");
+    const req = new NextRequest("https://landbd.example/admin", {
+      headers: { authorization: "Bearer eyJraWQiOiJraWQifQ.e30.signature" },
+    });
+
+    await expect(verifyAdminAuth(req)).rejects.toThrow("Firebase Admin unavailable");
   });
 
   it("fails closed if the Firestore account-state lookup fails", async () => {

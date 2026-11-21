@@ -203,7 +203,7 @@ export default function Navbar() {
                             href={link.href}
                             role="menuitem"
                             onClick={() => setOpenDropdown(null)}
-                            className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-base font-bold no-underline transition-colors ${
+                            className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-[18px] font-bold no-underline transition-colors ${
                               linkActive
                                 ? "bg-[var(--brand-gold-faint)] text-[var(--brand-gold-text)]"
                                 : "text-[var(--foreground)] hover:bg-[var(--secondary)]"

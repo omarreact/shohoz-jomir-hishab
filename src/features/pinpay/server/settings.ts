@@ -1,14 +1,11 @@
 import "server-only";
 
-import { db } from "@/src/modules/database/firebaseAdmin";
 import {
   PINPAY_PROVIDERS,
   type PinPayMethod,
   type PinPayProvider,
   type PinPaySettings,
 } from "../types";
-
-const pinPaySettingsRef = db.collection("landbdPrivateConfig").doc("pinpay");
 
 const EMPTY_METHOD: PinPayMethod = {
   enabled: false,
@@ -38,11 +35,23 @@ export function validateMethod(provider: PinPayProvider, method: PinPayMethod): 
   return /^01[3-9]\d{8}$/.test(method.receiver) && method.accountLabel.trim().length >= 2;
 }
 
+async function readPinPaySettingsData(): Promise<Record<string, unknown> | null> {
+  if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+    const { adminGetFirestoreDocument, hasFirebaseRestAdminCredentials } = await import(
+      "@/src/modules/database/firebaseRest"
+    );
+    if (!hasFirebaseRestAdminCredentials()) throw new Error("PinPay settings unavailable");
+    return adminGetFirestoreDocument("landbdPrivateConfig/pinpay");
+  }
+  const { db } = await import("@/src/modules/database/firebaseAdmin");
+  const snapshot = await db.collection("landbdPrivateConfig").doc("pinpay").get();
+  return snapshot.exists ? (snapshot.data() ?? {}) : null;
+}
+
 export async function getPinPaySettings(): Promise<PinPaySettings> {
   const fallback = defaultPinPaySettings();
-  const snapshot = await pinPaySettingsRef.get();
-  if (!snapshot.exists) return fallback;
-  const data = snapshot.data() ?? {};
+  const data = await readPinPaySettingsData();
+  if (!data) return fallback;
   const methodData = data.methods && typeof data.methods === "object" ? data.methods as Record<string, unknown> : {};
   for (const provider of PINPAY_PROVIDERS) {
     const raw = methodData[provider] as Record<string, unknown> | undefined;
@@ -70,12 +79,22 @@ export async function savePinPaySettings(settings: PinPaySettings, actorId: stri
   if (settings.enabled && !PINPAY_PROVIDERS.some(p => validateMethod(p, settings.methods[p]))) {
     throw new Error("Activate at least one approved receiving account");
   }
-  await pinPaySettingsRef.set({
+  const data = {
     enabled: settings.enabled,
     methods: settings.methods,
     updatedAt: new Date().toISOString(),
     updatedBy: actorId,
-  });
+  };
+  if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+    const { adminSetFirestoreDocument, hasFirebaseRestAdminCredentials } = await import(
+      "@/src/modules/database/firebaseRest"
+    );
+    if (!hasFirebaseRestAdminCredentials()) throw new Error("PinPay settings unavailable");
+    await adminSetFirestoreDocument("landbdPrivateConfig/pinpay", data);
+    return;
+  }
+  const { db } = await import("@/src/modules/database/firebaseAdmin");
+  await db.collection("landbdPrivateConfig").doc("pinpay").set(data);
 }
 
 export function availablePinPayMethods(settings: PinPaySettings): PinPayProvider[] {
