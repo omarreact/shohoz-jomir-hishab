@@ -5,7 +5,7 @@ import {
   initializeApp,
   type App,
 } from "firebase-admin/app";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
 
 let adminReady = false;
@@ -135,8 +135,24 @@ export function isFirebaseAdminReady(): boolean {
   return adminReady;
 }
 
-export const db: Firestore = getFirestore();
-export const auth: Auth = getAuth();
+function adminFirestore(app: App): Firestore {
+  if (process.env.LANDBD_PLATFORM !== "cloudflare-workers") {
+    return getFirestore(app);
+  }
+
+  // Cloudflare Workers does not provide gRPC. Firebase Admin supports forcing
+  // Firestore onto HTTP/1.1 REST transport; reuse an existing initialized
+  // Firestore instance if this server bundle is evaluated more than once.
+  try {
+    return initializeFirestore(app, { preferRest: true });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+const firebaseApp = getApps()[0];
+export const db: Firestore = adminFirestore(firebaseApp);
+export const auth: Auth = getAuth(firebaseApp);
 
 export const collections = {
   users: db.collection("users"),

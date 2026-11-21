@@ -28,6 +28,7 @@ export default function LandRecordSelectionColumn({
   className?: string;
 }) {
   const [query, setQuery] = useState("");
+  const selectedLabel = options.find((option) => option.value === value)?.label;
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("bn-BD");
     if (!needle) return options;
@@ -38,16 +39,18 @@ export default function LandRecordSelectionColumn({
 
   return (
     <section
-      className={`app-surface flex min-h-[20rem] min-w-0 flex-col overflow-hidden ${className}`}
+      className={`app-surface flex min-h-[13rem] min-w-0 md:min-h-[20rem] flex-col overflow-hidden ${className}`}
       aria-label={label}
     >
       <div className="flex items-center justify-between border-b border-[var(--border-color)] bg-[var(--secondary)] px-3 py-3">
         <p className="text-sm font-semibold text-[var(--foreground)]">{label}</p>
-        {value ? <span className="text-xs font-semibold text-[var(--primary)]">✓</span> : null}
+        {value ? <span className="max-w-[65%] truncate font-semibold text-[var(--primary)]" title={selectedLabel || value}>✓ {selectedLabel || value}</span> : null}
       </div>
 
       <div className="border-b border-[var(--border-color)] px-2.5 py-2">
         <input
+          type="search"
+          aria-label={label + " খুঁজুন"}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={placeholder}
@@ -56,7 +59,7 @@ export default function LandRecordSelectionColumn({
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 [scrollbar-color:var(--border-color)_transparent] [scrollbar-width:thin]" style={{ maxHeight: "27rem" }}>
+      <div className="max-h-52 flex-1 overflow-y-auto p-2 [scrollbar-color:var(--border-color)_transparent] [scrollbar-width:thin] md:max-h-[27rem]">
         {loading ? (
           <div className="flex h-full min-h-40 items-center justify-center px-4 text-center text-xs text-[var(--muted-foreground)]">
             তথ্য লোড হচ্ছে…
@@ -73,7 +76,7 @@ export default function LandRecordSelectionColumn({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => onSelect(option.value)}
+                  onClick={() => { onSelect(option.value); setQuery(""); }}
                   aria-pressed={active}
                   className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                     active

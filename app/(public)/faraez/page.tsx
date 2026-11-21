@@ -52,7 +52,7 @@ export default function FaraezPage() {
         pattern="none"
       /></div>
 
-      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8 fade-in visible">
+      <div className="landbd-service-workspace mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8 fade-in visible">
         <div className="mx-auto max-w-4xl">
           <div className="mb-5 grid gap-2 sm:grid-cols-3" aria-label="ফারায়েজ হিসাবের ধাপ">
             {[
@@ -72,8 +72,8 @@ export default function FaraezPage() {
                   complete ? "bg-[var(--primary)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                 }`}>{number}</span>
                 <span>
-                  <span className="block text-[10px] font-extrabold uppercase tracking-[.12em] text-[var(--muted-foreground)]">ধাপ {number}</span>
-                  <strong className="block text-sm text-[var(--foreground)]">{label}</strong>
+                  <span className="block text-sm font-extrabold uppercase tracking-wide text-[var(--muted-foreground)]">ধাপ {number}</span>
+                  <strong className="block text-base text-[var(--foreground)]">{label}</strong>
                 </span>
               </div>
             ))}
@@ -82,6 +82,8 @@ export default function FaraezPage() {
           <Card className="mb-8 overflow-hidden">
             <button
               type="button"
+              aria-expanded={isGuideOpen}
+              aria-controls="faraez-usage-guide"
               onClick={() => setIsGuideOpen((value) => !value)}
               className="flex w-full items-center justify-between p-5 text-left font-bold text-foreground transition-colors hover:bg-muted/50 focus:outline-none"
             >
@@ -89,7 +91,7 @@ export default function FaraezPage() {
               {isGuideOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {isGuideOpen ? (
-              <div className="border-t border-border bg-muted/30 p-5 leading-relaxed text-muted-foreground">
+              <div id="faraez-usage-guide" className="border-t border-border bg-muted/30 p-5 leading-relaxed text-muted-foreground">
                 <ol className="ml-2 list-inside list-decimal space-y-2">
                   <li>প্রথমে <strong className="text-foreground">ধর্ম এবং মৃত ব্যক্তির লিঙ্গ</strong> নির্বাচন করুন।</li>
                   <li><strong className="text-foreground">সম্পত্তির বিবরণ</strong> অংশে মোট জমি, স্বর্ণ বা নগদ অর্থ দিন।</li>
@@ -121,19 +123,19 @@ export default function FaraezPage() {
           ) : null}
 
           <Card className="mb-8">
-            <CardContent className="flex flex-col justify-between gap-6 p-6 md:flex-row">
+            <CardContent className="flex flex-col justify-between gap-6 p-4 sm:p-6 md:flex-row">
               <div className="flex-1">
                 <label className="mb-3 block text-sm font-bold uppercase tracking-wider text-muted-foreground">ধর্ম (আইন)</label>
                 <div className="flex rounded-[12px] border border-border bg-[var(--canvas)] p-1">
-                  <button type="button" onClick={() => setReligion("muslim")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${religion === "muslim" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মুসলিম</button>
-                  <button type="button" onClick={() => setReligion("hindu")} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${religion === "hindu" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>হিন্দু (দায়ভাগ)</button>
+                  <button type="button" aria-pressed={religion === "muslim"} onClick={() => setReligion("muslim")} className={`flex-1 rounded-[10px] min-h-11 px-3 py-2 text-base font-bold transition-colors ${religion === "muslim" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মুসলিম</button>
+                  <button type="button" aria-pressed={religion === "hindu"} onClick={() => setReligion("hindu")} className={`flex-1 rounded-[10px] min-h-11 px-3 py-2 text-base font-bold transition-colors ${religion === "hindu" ? "bg-primary text-primary-foreground shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>হিন্দু (দায়ভাগ)</button>
                 </div>
               </div>
               <div className="flex-1">
                 <label className="mb-3 block text-sm font-bold uppercase tracking-wider text-muted-foreground">মৃত ব্যক্তির লিঙ্গ</label>
                 <div className="flex rounded-[12px] border border-border bg-[var(--canvas)] p-1">
-                  <button type="button" onClick={() => { setGender("male"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${gender === "male" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>পুরুষ</button>
-                  <button type="button" onClick={() => { setGender("female"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] px-4 py-2 text-sm font-bold transition-colors ${gender === "female" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মহিলা</button>
+                  <button type="button" aria-pressed={gender === "male"} onClick={() => { setGender("male"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] min-h-11 px-3 py-2 text-base font-bold transition-colors ${gender === "male" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>পুরুষ</button>
+                  <button type="button" aria-pressed={gender === "female"} onClick={() => { setGender("female"); setHeirs((value) => ({ ...value, spouse: 1 })); }} className={`flex-1 rounded-[10px] min-h-11 px-3 py-2 text-base font-bold transition-colors ${gender === "female" ? "bg-foreground text-background shadow-[var(--shadow-xs)]" : "text-muted-foreground"}`}>মহিলা</button>
                 </div>
               </div>
             </CardContent>

@@ -40,10 +40,10 @@ export default function MobileAppHeader() {
           {onMap ? <MapPinned size={21} /> : <Home size={21} />}
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[10px] font-extrabold uppercase tracking-[.13em] text-[var(--muted-foreground)]">
+          <p className="hidden truncate text-sm font-bold uppercase tracking-wide text-[var(--muted-foreground)] sm:block">
             LANDBD · ভূমি সেবা
           </p>
-          <p className="truncate text-[17px] font-black leading-tight text-[var(--foreground)]">{title}</p>
+          <p className="truncate text-lg font-black leading-tight text-[var(--foreground)]">{title}</p>
         </div>
         <Link
           href={accountHref}

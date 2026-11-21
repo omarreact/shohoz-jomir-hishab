@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
 const baseURL = process.env.QA_BASE_URL || "http://127.0.0.1:3000";
 test.use({
@@ -110,6 +112,10 @@ test.describe("LandBD Mouza Khatian Book PDF engine", () => {
     let bytes = 0;
     for await (const chunk of stream) bytes += chunk.length;
     expect(bytes).toBeGreaterThan(10_000);
+    // Synthetic fixture only: store the generated 60-row, multi-owner A4 specimen for human QA.
+    const evidenceDir = process.env.LANDBD_VISUAL_DIR || "test-results/landbd-visual-evidence";
+    mkdirSync(evidenceDir, { recursive: true });
+    await download.saveAs(path.join(evidenceDir, "multi-owner-60-khatian-specimen.pdf"));
 
     const report = page.locator("#mouza-porcha-report");
     await expect(report).toBeVisible();

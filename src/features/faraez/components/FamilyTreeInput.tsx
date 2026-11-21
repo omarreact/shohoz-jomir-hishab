@@ -90,12 +90,12 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
 
   return (
     <Card className="mb-4">
-      <CardHeader className="bg-success text-success-foreground py-4 rounded-t-xl flex flex-row justify-between items-center">
+      <CardHeader className="bg-[var(--primary)] text-[var(--primary-foreground)] px-4 py-4 rounded-t-xl flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-lg flex items-center m-0">
           <Users size={18} className="mr-2" /> 
           <span>ওয়ারিশ/উত্তরাধিকারী নির্বাচন করুন</span>
         </CardTitle>
-        <div className="bg-background text-success px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center">
+        <div className="bg-[var(--card-bg)] text-[var(--primary)] px-3 py-1.5 rounded-full text-sm font-bold shadow-sm flex items-center">
           <UserCheck size={14} className="mr-1.5" /> মোট নির্বাচিত: {toBn(totalSelected)} জন
         </div>
       </CardHeader>
@@ -108,19 +108,22 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
           return (
             <Card key={group.id} className="overflow-hidden border-border shadow-sm">
               <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={`faraez-heirs-group-${group.id}`}
                 onClick={() => setOpenSection(isOpen ? -1 : group.id)}
-                className={`w-full text-left flex justify-between items-center p-4 transition-all focus:outline-none ${
+                className={`w-full min-h-14 text-left flex justify-between items-center gap-3 p-4 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] ${
                   isOpen ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50"
                 }`}
               >
                 <div>
-                  <h6 className="font-bold mb-1 flex items-center text-sm">
+                  <h6 className="font-bold mb-1 flex items-center text-base">
                     {group.title} 
                     {!isOpen && hasSelectedInGroup && (
                       <span className="w-2 h-2 rounded-full bg-primary ml-2"></span>
                     )}
                   </h6>
-                  <small className={isOpen ? "text-primary-foreground/80" : "text-muted-foreground"} style={{ fontSize: "12px" }}>
+                  <small className={isOpen ? "text-primary-foreground/80" : "text-muted-foreground"} style={{ fontSize: "14px" }}>
                     {group.desc}
                   </small>
                 </div>
@@ -128,7 +131,7 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
               </button>
 
               {isOpen && (
-                <div className="p-4 bg-card border-t border-border animate-in slide-in-from-top-2">
+                <div id={`faraez-heirs-group-${group.id}`} className="p-3 sm:p-4 bg-card border-t border-border animate-in slide-in-from-top-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {group.controls.map((ctrl) => {
                       const count = heirs[ctrl.key as keyof HeirsInput];
@@ -137,11 +140,11 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
                       return (
                         <div 
                           key={ctrl.key} 
-                          className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          className={`flex min-w-0 flex-wrap items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
                             isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-background"
                           }`}
                         >
-                          <span className={`font-semibold text-sm ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                          <span className={`min-w-0 flex-1 font-semibold text-base ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                             {ctrl.label}
                           </span>
                           
@@ -149,9 +152,11 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
                             <Button
                               variant="ghost"
                               size="icon"
+                              type="button"
+                              aria-label={`${ctrl.label} একজন কমান`}
                               onClick={() => updateCount(ctrl.key as keyof HeirsInput, -1)}
                               disabled={count === 0}
-                              className={`h-7 w-7 rounded-full ${
+                              className={`min-h-11 min-w-11 rounded-full ${
                                 count === 0 ? "text-muted-foreground opacity-50" : "text-destructive hover:bg-destructive/10 hover:text-destructive"
                               }`}
                             >
@@ -165,9 +170,11 @@ export default function FamilyTreeInput({ heirs, setHeirs, gender }: Props) {
                             <Button
                               variant="ghost"
                               size="icon"
+                              type="button"
+                              aria-label={`${ctrl.label} একজন যোগ করুন`}
                               onClick={() => updateCount(ctrl.key as keyof HeirsInput, 1)}
                               disabled={count >= ctrl.max}
-                              className={`h-7 w-7 rounded-full ${
+                              className={`min-h-11 min-w-11 rounded-full ${
                                 count >= ctrl.max ? "text-muted-foreground opacity-50" : "text-success hover:bg-success/10 hover:text-success"
                               }`}
                             >

@@ -113,7 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[var(--background)] text-[var(--foreground)]">
+    <div className="landbd-admin-shell flex min-h-[100dvh] min-w-0 flex-col bg-[var(--background)] text-[var(--foreground)]">
       <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-[var(--border-color)] bg-[var(--card-bg)] px-3 shadow-sm sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Link
@@ -187,7 +187,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex min-w-0 items-center gap-2">
           <nav
             aria-label="অ্যাডমিন ট্যাব"
-            className="flex min-w-0 flex-1 snap-x snap-mandatory items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]"
+            className="flex min-w-0 flex-1 snap-x snap-mandatory items-center gap-2 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin] scroll-px-3"
           >
             {visibleItems.map((item) => {
               const Icon = item.icon;
@@ -199,7 +199,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   onClick={closeInlineNavigation}
                   aria-current={selected ? "page" : undefined}
                   className={[
-                    "inline-flex min-h-11 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-bold no-underline transition-colors sm:text-sm",
+                    "inline-flex min-h-11 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-bold no-underline transition-colors sm:text-base",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]",
                     selected
                       ? "border-[var(--brand-gold)] bg-[var(--brand-gold-soft)] text-[var(--foreground)]"
@@ -223,7 +223,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             aria-expanded={showAllModules}
             aria-controls="admin-module-grid"
             className={[
-              "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border px-3 text-xs font-extrabold sm:text-sm",
+              "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border px-3 text-sm font-extrabold sm:text-base",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)]",
               showAllModules
                 ? "border-[var(--brand-gold)] bg-[var(--brand-gold-soft)]"
@@ -246,7 +246,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               value={adminQuery}
               onChange={(event) => setAdminQuery(event.target.value)}
               placeholder="ইউজার, ব্লগ, সেটিংস বা অন্য মডিউল খুঁজুন"
-              className="h-12 min-w-0 w-full bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
+              className="h-12 min-w-0 w-full bg-transparent text-base text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
             />
           </div>
         )}
@@ -284,7 +284,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       </section>
 
-      <main id="admin-content" className="min-w-0 w-full flex-1 bg-[var(--background)] p-3 sm:p-6">
+      <main id="admin-content" className="min-w-0 w-full flex-1 bg-[var(--background)] p-3 sm:p-6 lg:px-8">
         {children}
       </main>
     </div>

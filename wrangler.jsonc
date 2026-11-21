@@ -54,7 +54,7 @@
       "LANDBD_PLATFORM": "cloudflare-workers",
       "LANDBD_ENV": "preview",
       "LAND_EXPORT_STORAGE_PROVIDER": "cloudflare",
-      "LANDBD_PUBLIC_ACCESS": "false"
+      "LANDBD_PUBLIC_ACCESS": "true"
     },
     "r2_buckets": [
       {

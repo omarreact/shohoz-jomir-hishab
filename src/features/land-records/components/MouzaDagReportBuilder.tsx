@@ -263,7 +263,7 @@ export default function MouzaDagReportBuilder() {
         pattern="grid"
       />
 
-      <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
+      <main className="landbd-service-workspace mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
         <Card>
           <CardHeader>
             <CardTitle>দাগ বইয়ের এলাকা নির্বাচন</CardTitle>
@@ -272,7 +272,7 @@ export default function MouzaDagReportBuilder() {
             </CardDescription>
           </CardHeader>
           <CardBody>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
               <Select
                 label="বিভাগ"
                 value={division}
@@ -338,12 +338,12 @@ export default function MouzaDagReportBuilder() {
               </div>
             ) : null}
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <button
                 type="button"
                 onClick={() => void generateReport()}
                 disabled={generating || !mouzaId}
-                className="landbd-primary-button inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                className="landbd-primary-button inline-flex min-h-12 items-center justify-center gap-2 px-4 py-3 text-base font-bold disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {generating ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
                 দাগ বই তৈরি করুন
@@ -352,7 +352,7 @@ export default function MouzaDagReportBuilder() {
                 <button
                   type="button"
                   onClick={cancelGeneration}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700"
                 >
                   <Square size={15} /> বন্ধ করুন
                 </button>
@@ -361,7 +361,7 @@ export default function MouzaDagReportBuilder() {
                 <button
                   type="button"
                   onClick={() => void generateReport()}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border-color)] px-4 py-2.5 text-sm font-semibold"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] px-4 py-2.5 text-sm font-semibold"
                 >
                   <RefreshCcw size={16} /> আবার তৈরি
                 </button>
@@ -393,7 +393,7 @@ export default function MouzaDagReportBuilder() {
                   type="button"
                   onClick={() => void handlePdf("preview")}
                   disabled={pdfBusy !== null}
-                  className="landbd-primary-button inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-60"
+                  className="landbd-primary-button inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-bold disabled:opacity-60"
                 >
                   {pdfBusy === "preview" ? <Loader2 className="animate-spin" size={16} /> : <Eye size={16} />}
                   PDF প্রিভিউ
@@ -402,7 +402,7 @@ export default function MouzaDagReportBuilder() {
                   type="button"
                   onClick={() => void handlePdf("download")}
                   disabled={pdfBusy !== null}
-                  className="landbd-secondary-button inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-60"
+                  className="landbd-secondary-button inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-bold disabled:opacity-60"
                 >
                   {pdfBusy === "download" ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
                   PDF ডাউনলোড

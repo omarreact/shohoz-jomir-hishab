@@ -20,7 +20,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { FEATURE_ROUTES } from "@/src/shared/config/feature-routes";
-import { SITE_CONFIG } from "@/src/shared/config/site";
 
 type Tool = {
   href: string;
@@ -100,7 +99,7 @@ export default function EasyToolsHub() {
   );
 
   return (
-    <section id="tools" className="border-b border-[var(--border-color)] bg-white">
+    <section id="tools" className="border-b border-[var(--border-color)] bg-[var(--card-bg)]">
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
@@ -176,7 +175,7 @@ export default function EasyToolsHub() {
                 ["২", "যাচাই করুন", "উৎস, সতর্কতা ও প্রাসঙ্গিক অবস্থা দেখুন।"],
                 ["৩", "পরবর্তী কাজ", "প্রিন্ট, এক্সপোর্ট, সংরক্ষণ বা সংশ্লিষ্ট টুলে যান।"],
               ].map(([n, title, copy]) => (
-                <div key={n} className="rounded-[14px] border border-[var(--border-color)] bg-white p-4">
+                <div key={n} className="rounded-[14px] border border-[var(--border-color)] bg-[var(--card-bg)] p-4">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-green-faint)] text-sm font-black text-[var(--primary)]">{n}</span>
                   <h4 className="mt-3 font-black text-[var(--foreground)]">{title}</h4>
                   <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">{copy}</p>
@@ -199,9 +198,6 @@ export default function EasyToolsHub() {
           </div>
         </div>
 
-        <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-6 text-[var(--muted-foreground)]">
-          {SITE_CONFIG.legalDisclaimer}
-        </p>
       </div>
     </section>
   );

@@ -99,10 +99,43 @@ export async function GET(req: NextRequest) {
         return json(
           {
             success: true,
+            data: { blog: cleanListItem({ ...staticPost, comments: [] }) },
+          },
+          200,
+          requestId,
+        );
+      }
+
+      if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+        const { adminQueryFirestore, hasFirebaseRestAdminCredentials } = await import(
+          "@/src/modules/database/firebaseRest"
+        );
+        if (!hasFirebaseRestAdminCredentials()) return jsonError("Not found", 404, requestId);
+        const blogs = await adminQueryFirestore(
+          "blogs",
+          [
+            { field: "slug", op: "EQUAL", value: slug },
+            { field: "status", op: "EQUAL", value: "Published" },
+          ],
+          1,
+        );
+        const blogData = blogs[0];
+        if (!blogData) return jsonError("Not found", 404, requestId);
+        const comments = await adminQueryFirestore("blogComments", [
+          { field: "blogId", op: "EQUAL", value: blogData.id },
+        ]);
+        comments.sort(
+          (a, b) =>
+            new Date(String(b.createdAt || 0)).getTime() -
+            new Date(String(a.createdAt || 0)).getTime(),
+        );
+        return json(
+          {
+            success: true,
             data: {
               blog: cleanListItem({
-                ...staticPost,
-                comments: [],
+                ...(blogData as any),
+                comments,
               }),
             },
           },
@@ -123,7 +156,10 @@ export async function GET(req: NextRequest) {
       const commentsSnapshot = await collections.comments.where("blogId", "==", doc.id).get();
       const comments = commentsSnapshot.docs
         .map((c: any) => ({ id: c.id, ...c.data() }))
-        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
       return json(
         {
           success: true,
@@ -142,32 +178,58 @@ export async function GET(req: NextRequest) {
 
     let firestoreBlogs: ReturnType<typeof staticAsListItem>[] = [];
     try {
-      const { collections } = await import("@/src/modules/database/firebaseAdmin");
-      // Public API never accepts a status override: drafts/review content is private.
-      const snapshot = await collections.blogs.where("status", "==", "Published").get();
-      firestoreBlogs = snapshot.docs.map((doc: any) => {
-        const data = doc.data();
-        return cleanListItem({
-          id: doc.id,
-          title: data.title,
-          slug: data.slug,
-          excerpt: data.excerpt,
-          coverImage: data.coverImage,
-          author: data.author,
-          category: data.category,
-          categorySlug: data.categorySlug,
-          status: data.status,
-          readingTime: data.readingTime,
-          createdAt:
-            typeof data.createdAt?.toDate === "function"
-              ? data.createdAt.toDate().toISOString()
-              : data.createdAt,
-          updatedAt:
-            typeof data.updatedAt?.toDate === "function"
-              ? data.updatedAt.toDate().toISOString()
-              : data.updatedAt,
+      if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
+        const { adminQueryFirestore, hasFirebaseRestAdminCredentials } = await import(
+          "@/src/modules/database/firebaseRest"
+        );
+        if (hasFirebaseRestAdminCredentials()) {
+          const docs = await adminQueryFirestore("blogs", [
+            { field: "status", op: "EQUAL", value: "Published" },
+          ]);
+          firestoreBlogs = docs.map((data: any) =>
+            cleanListItem({
+              id: String(data.id || ""),
+              title: String(data.title || ""),
+              slug: String(data.slug || ""),
+              excerpt: typeof data.excerpt === "string" ? data.excerpt : "",
+              coverImage: typeof data.coverImage === "string" ? data.coverImage : null,
+              author: typeof data.author === "string" ? data.author : "",
+              category: typeof data.category === "string" ? data.category : "",
+              categorySlug: typeof data.categorySlug === "string" ? data.categorySlug : "",
+              status: typeof data.status === "string" ? data.status : "Published",
+              readingTime: typeof data.readingTime === "string" ? data.readingTime : null,
+              createdAt: typeof data.createdAt === "string" ? data.createdAt : "",
+              updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : "",
+            }),
+          );
+        }
+      } else {
+        const { collections } = await import("@/src/modules/database/firebaseAdmin");
+        const snapshot = await collections.blogs.where("status", "==", "Published").get();
+        firestoreBlogs = snapshot.docs.map((doc: any) => {
+          const data = doc.data();
+          return cleanListItem({
+            id: doc.id,
+            title: data.title,
+            slug: data.slug,
+            excerpt: data.excerpt,
+            coverImage: data.coverImage,
+            author: data.author,
+            category: data.category,
+            categorySlug: data.categorySlug,
+            status: data.status,
+            readingTime: data.readingTime,
+            createdAt:
+              typeof data.createdAt?.toDate === "function"
+                ? data.createdAt.toDate().toISOString()
+                : data.createdAt,
+            updatedAt:
+              typeof data.updatedAt?.toDate === "function"
+                ? data.updatedAt.toDate().toISOString()
+                : data.updatedAt,
+          });
         });
-      });
+      }
     } catch (fbError) {
       console.warn("Firestore blogs unavailable, serving static only:", fbError);
     }
@@ -178,21 +240,20 @@ export async function GET(req: NextRequest) {
 
     const firestoreSlugs = new Set(firestoreBlogs.map((b) => b.slug));
     const merged = [
-      ...staticList.filter((s) => !firestoreSlugs.has(s.slug)),
+      ...staticList.filter((item) => !firestoreSlugs.has(item.slug)),
       ...firestoreBlogs,
-    ].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+    );
 
     return json({ success: true, data: { blogs: merged } }, 200, requestId);
   } catch (error: any) {
     console.error("GET /api/blogs failed:", { requestId, error });
-    try {
-      const staticList = STATIC_BLOG_POSTS
-        .filter((p) => p.status === "Published")
-        .map(staticAsListItem);
-      return json({ success: true, data: { blogs: staticList } }, 200, requestId);
-    } catch {
-      return jsonError(error?.message || "Failed to load blogs", 500, requestId);
-    }
+    const staticList = STATIC_BLOG_POSTS
+      .filter((p) => p.status === "Published")
+      .map(staticAsListItem);
+    return json({ success: true, data: { blogs: staticList } }, 200, requestId);
   }
 }
 

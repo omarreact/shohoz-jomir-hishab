@@ -22,7 +22,16 @@ concurrency:
 jobs:
   browser-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
+    # Browser-only synthetic config. Do not use actual Firebase secrets for public UI QA.
+    # firebaseClient.ts intentionally rejects missing NEXT_PUBLIC_* settings in production browsers.
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: "landbd-e2e-synthetic-key"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "landbd-e2e.invalid"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "landbd-e2e"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "landbd-e2e.invalid"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:1234567890:web:abcdef0123456789"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,6 +104,11 @@ jobs:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-responsive.spec.mjs --workers=1 --reporter=line
 
+      - name: Public service responsive UI QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test tests/e2e/landbd-ui-coverage.spec.mjs --workers=1 --reporter=line
+
       - name: DLRMS BRS browser data-path QA
         env:
           QA_BASE_URL: http://127.0.0.1:3000
@@ -104,6 +118,22 @@ jobs:
         env:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-pdf.spec.mjs --workers=1 --reporter=line
+
+      - name: Capture 7-width visual QA evidence (synthetic Firebase only)
+        timeout-minutes: 14
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+          LANDBD_VISUAL_DIR: test-results/landbd-visual-evidence
+        run: node scripts/qa/landbd-visual-evidence.mjs
+
+      - name: Upload visual QA screenshots and PDF specimen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-pr184-visual-evidence
+          path: test-results/landbd-visual-evidence/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload browser QA diagnostics on failure
         if: failure()

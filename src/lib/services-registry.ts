@@ -36,18 +36,21 @@ function normalize(id:ServiceId,doc:Record<string,unknown>|undefined):ServiceRec
 }
 export function servicePrice(s:ServiceRecord){return !s.paid?0:(s.discountBdt??s.priceBdt);}
 
-async function getAuthoritativeServiceStore() {
- // Firebase Admin's Firestore internals are not supported in Cloudflare Workers.
- // Refuse privileged pricing/entitlement decisions rather than guessing.
- if (process.env.LANDBD_PLATFORM === "cloudflare-workers") {
-  throw new Error("Service registry unavailable");
- }
- return import("@/src/modules/database/firebaseAdmin");
+async function getServiceFromCloudflare(id: ServiceId): Promise<ServiceRecord> {
+ const { adminGetFirestoreDocument, hasFirebaseRestAdminCredentials } = await import(
+  "@/src/modules/database/firebaseRest"
+ );
+ if (!hasFirebaseRestAdminCredentials()) throw new Error("Service registry unavailable");
+ const doc = await adminGetFirestoreDocument("landbdServicePricing/" + id);
+ return normalize(id, doc ?? undefined);
 }
 
 export async function getService(id:ServiceId):Promise<ServiceRecord>{
  if(!SERVICE_DEFINITIONS.some(s=>s.id===id))throw new Error("Unknown service");
- const {db,isFirebaseAdminReady}=await getAuthoritativeServiceStore();
+ if(process.env.LANDBD_PLATFORM==="cloudflare-workers"){
+  return getServiceFromCloudflare(id);
+ }
+ const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady()){
   if(process.env.NODE_ENV==="production")throw new Error("Service registry unavailable");
   return defaultService(id);
@@ -57,7 +60,10 @@ export async function getService(id:ServiceId):Promise<ServiceRecord>{
 }
 
 export async function getServiceCatalog():Promise<ServiceRecord[]>{
- const {db,isFirebaseAdminReady}=await getAuthoritativeServiceStore();
+ if(process.env.LANDBD_PLATFORM==="cloudflare-workers"){
+  return Promise.all(SERVICE_DEFINITIONS.map((service)=>getServiceFromCloudflare(service.id)));
+ }
+ const {db,isFirebaseAdminReady}=await import("@/src/modules/database/firebaseAdmin");
  if(!isFirebaseAdminReady()){
   if(process.env.NODE_ENV==="production")throw new Error("Service catalog unavailable");
   return SERVICE_DEFINITIONS.map(s=>defaultService(s.id));

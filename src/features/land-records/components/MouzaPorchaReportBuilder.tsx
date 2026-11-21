@@ -530,7 +530,7 @@ export default function MouzaPorchaReportBuilder() {
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-6xl px-2 py-8 md:px-6 lg:px-8">
+      <main className="landbd-service-workspace mx-auto w-full max-w-6xl px-3 py-6 sm:px-4 md:px-6 md:py-8 lg:px-8">
         <section className="report-controls app-panel p-3 md:p-6">
           <div className="mb-5">
             <h2 className="text-xl font-semibold text-[var(--foreground)] md:text-2xl">অবস্থান নির্বাচন করে খতিয়ান বই তৈরি করুন</h2>
@@ -539,16 +539,16 @@ export default function MouzaPorchaReportBuilder() {
             </p>
           </div>
 
-          <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-4 text-sm text-[var(--muted-foreground)]">
+          <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--secondary)] p-4 text-base text-[var(--muted-foreground)]">
             <p className="font-semibold text-[var(--foreground)]">কিভাবে খতিয়ান বই তৈরি করবেন?</p>
-            <ol className="mt-2 list-inside list-decimal space-y-1 text-xs leading-5 md:text-sm">
+            <ol className="mt-2 list-inside list-decimal space-y-1 text-sm leading-6 md:text-base">
               <li>বিভাগ → জেলা → উপজেলা / থানা ক্রমানুসারে নির্বাচন করুন।</li>
               <li>খতিয়ানের ধরন থেকে সার্ভে বেছে নিয়ে মৌজা নির্বাচন করুন।</li>
               <li>PDF-এর ধরন বেছে “পূর্ণ মৌজা PDF ডাউনলোড” চাপুন।</li>
             </ol>
           </div>
 
-          <div className="grid grid-cols-2 items-stretch gap-2 md:gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             <LandRecordSelectionColumn
               label="বিভাগ"
               placeholder="বিভাগের নাম লিখুন"
@@ -595,7 +595,7 @@ export default function MouzaPorchaReportBuilder() {
               options={mouzas.map((item) => ({ value: String(item.ID), label: `${item.JL_NUMBER} · ${item.MOUZA_NAME}` }))}
               loading={loading.mouzas}
               disabledMessage={!surveyId ? "প্রথমে সার্ভে নির্বাচন করুন।" : undefined}
-              className="max-lg:col-span-2"
+              className="sm:col-span-2 lg:col-span-1"
             />
           </div>
 
@@ -630,7 +630,7 @@ export default function MouzaPorchaReportBuilder() {
               </label>
             </div>
 
-            <div className="min-w-[15rem] space-y-3">
+            <div className="min-w-0 w-full space-y-3 sm:min-w-[15rem] lg:w-auto">
               <fieldset className="space-y-2">
                 <legend className="text-xs font-medium text-[var(--muted-foreground)]">PDF-এর ধরন</legend>
 
@@ -668,7 +668,7 @@ export default function MouzaPorchaReportBuilder() {
                   void generateReport();
                 }}
                 disabled={!division || !district || !upazila || !surveyId || !mouzaId || generating || pdfBusy !== null}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--muted)]"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-5 py-3 text-base font-semibold text-[var(--primary-foreground)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--muted)]"
               >
                 {generating || pdfBusy === "download" ? <Loader2 className="animate-spin" size={16} /> : null}
                 {generating ? "PDF তৈরি হচ্ছে…" : pdfBusy === "download" ? "PDF প্রস্তুত হচ্ছে…" : "পূর্ণ মৌজা PDF ডাউনলোড"}

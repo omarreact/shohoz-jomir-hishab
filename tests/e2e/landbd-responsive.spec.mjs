@@ -5,12 +5,18 @@ test.use({
   baseURL,
   launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-    args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
+    args: ["--no-sandbox", "--disable-dev-shm-usage", "--no-proxy-server", "--proxy-bypass-list=<-loopback>", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
   } : undefined,
 });
 
 async function goto(page, path) {
-  await page.goto(path, { waitUntil: "domcontentloaded" });
+  const response = await page.goto(path, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  if (!response) {
+    throw new Error("Browser navigation returned no HTTP response for " + path + "; current URL: " + page.url());
+  }
+  if (response.status() >= 500) {
+    throw new Error("Browser navigation returned HTTP " + response.status() + " for " + path);
+  }
   await page.waitForTimeout(250);
 }
 
@@ -57,52 +63,50 @@ async function waitForGis(page) {
 }
 
 test.describe("LandBD responsive navigation", () => {
-  test("mobile uses only the drawer navigation", async ({ page }) => {
+  test("mobile home opens services directly without a hamburger or detail panel", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await goto(page, "/");
+    await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "আপনার জমির কাজ, সহজে" })).toBeVisible();
 
-    const desktopNav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-    const opener = page.getByRole("button", { name: "মোবাইল মেনু খুলুন" });
-    await expect(desktopNav).toBeHidden();
-    await expect(opener).toBeVisible();
-
-    await opener.click();
-    const dialog = page.getByRole("dialog", { name: "মোবাইল সাইডবার মেনু" });
-    await expect(dialog).toBeVisible();
-    const section = dialog.locator('button[aria-controls="landbd-drawer-section-records"]');
-    await expect(section).toBeVisible();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "false");
-    await section.click();
-    await expect(section).toHaveAttribute("aria-expanded", "true");
-    await expect(dialog.locator("a[href]").first()).toBeVisible();
-
-    const firstNavLink = dialog.locator("a[href]").first();
-    expect(await firstNavLink.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
-
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    const search = page.locator("#landbd-mobile-service-search");
+    await expect(search).toBeVisible();
+    const launcher = page.locator('section[aria-labelledby="landbd-mobile-services-title"]');
+    await expect(launcher.locator('a[href="/dlrms-khatian"]')).toBeVisible();
+    await search.fill("ফরায়েজ");
+    await expect(launcher.locator('a[href="/faraez"]')).toBeVisible();
+    await expect(launcher.locator('a[href="/dlrms-khatian"]')).toHaveCount(0);
+    await expect(page.locator("#mobile-service-selector")).toHaveCount(0);
   });
 
-  test("tablet and desktop use the top navbar with 18px-or-larger menu copy", async ({ page }) => {
+  test("the compact header remains active on tablet and narrow desktop", async ({ page }) => {
     for (const viewport of [
       { width: 768, height: 1024 },
-      { width: 1440, height: 900 },
+      { width: 1024, height: 768 },
     ]) {
       await page.setViewportSize(viewport);
       await goto(page, "/");
-
-      const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-      await expect(nav).toBeVisible();
-      await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toBeHidden();
-
-      const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
-      await expect(groupButton).toBeVisible();
-      expect(await groupButton.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(18);
-      await groupButton.hover();
-      await expect(groupButton).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("navigation", { name: "প্রধান নেভিগেশন" })).toBeHidden();
+      await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: "মোবাইল মেনু খুলুন" })).toHaveCount(0);
     }
+  });
+
+  test("wide desktop keeps the top navbar and 18px-or-larger dropdown text", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await goto(page, "/");
+
+    const nav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
+    await expect(nav).toBeVisible();
+    await expect(page.getByRole("link", { name: /^(?:LandBD|ল্যান্ডবিডি) হোম$/ })).toBeHidden();
+
+    const groupButton = nav.locator('button[aria-haspopup="menu"]').first();
+    await expect(groupButton).toBeVisible();
+    expect(await groupButton.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
+    await groupButton.hover();
+    await expect(groupButton).toHaveAttribute("aria-expanded", "true");
   });
 });
 

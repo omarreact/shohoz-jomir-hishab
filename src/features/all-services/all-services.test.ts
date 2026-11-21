@@ -32,4 +32,14 @@ describe("all services catalogue", () => {
     expect(alias).toContain('router.replace("/")');
     expect(alias).toContain('className="md:hidden"');
   });
+  it("renders direct service links rather than a two-step selector", () => {
+    const workspace = fs.readFileSync(path.join(process.cwd(), "src/features/all-services/components/AllServicesWorkspace.tsx"), "utf8");
+    expect(workspace).toContain('href={service.href}');
+    expect(workspace).toContain('type="search"');
+    expect(workspace).not.toContain('mobile-service-selector');
+    expect(workspace).not.toContain('active-service-panel');
+    expect(workspace).toContain('service.id !== "survey-khatian"');
+    expect(workspace).toContain('service.id !== "rajuk-plot"');
+  });
+
 });
