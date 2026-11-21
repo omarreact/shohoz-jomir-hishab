@@ -22,7 +22,7 @@ concurrency:
 jobs:
   browser-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     # Browser-only synthetic config. Do not use actual Firebase secrets for public UI QA.
     # firebaseClient.ts intentionally rejects missing NEXT_PUBLIC_* settings in production browsers.
     env:
@@ -118,6 +118,22 @@ jobs:
         env:
           QA_BASE_URL: http://127.0.0.1:3000
         run: npx playwright test tests/e2e/landbd-pdf.spec.mjs --workers=1 --reporter=line
+
+      - name: Capture 7-width visual QA evidence (synthetic Firebase only)
+        timeout-minutes: 14
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+          LANDBD_VISUAL_DIR: test-results/landbd-visual-evidence
+        run: node scripts/qa/landbd-visual-evidence.mjs
+
+      - name: Upload visual QA screenshots and PDF specimen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landbd-pr184-visual-evidence
+          path: test-results/landbd-visual-evidence/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload browser QA diagnostics on failure
         if: failure()
